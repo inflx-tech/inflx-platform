@@ -114,13 +114,14 @@ async function shopper() {
 describe('what can appear in the feed (checks 1–3)', () => {
   beforeAll(fresh);
 
-  test('only live posts: not before the posting date, not taken down, not after the offer ends, not sold out', async () => {
+  // BUSINESS-RULE DRIFT, posting-date-last-day (rules v1.15 §4.1, §5.12): this check began with "not
+  // before the posting date". An approved post is now in the shop at once; the waiting case (an offer
+  // not started) is proved in the last describe of this file.
+  test('only live posts: in the shop once approved (the posting date is not asked), not taken down, not after the offer ends, not sold out', async () => {
     const w = await world();
     const a = await post(w, { caption: 'Live one' });
-    expect(ids(await feed())).not.toContain(a);                         // approved, posting date ahead
-    expect((await get(`/follower/posts/${a}`)).status).toBe(404);
-    await goLive(w);
-    expect(ids(await feed())).toContain(a);
+    expect(ids(await feed())).toContain(a);                             // approved, posting date twelve days ahead
+    expect((await get(`/follower/posts/${a}`)).status).toBe(200);
     const b = await post(w, { caption: 'Sold out one', products: [w.jeans[1], w.jeans[2]] });
     await query(`UPDATE brand_products SET stock = 0 WHERE id = ANY($1::uuid[])`, [[w.jeans[1], w.jeans[2]]]);
     expect(ids(await feed())).not.toContain(b);
@@ -334,6 +335,8 @@ describe('a post as the shopper sees it (checks 12–14)', () => {
     expect((await get('/follower/code/ZZZZZZ')).body.data).toMatchObject({ state: 'unknown', message: 'No post has this code. Check the letters and numbers.' });
     const W2 = await world({ name: 'Rama K' });
     const up = await post(W2);
+    // posting-date-last-day: "upcoming" is now a post whose offer has not started, not one before its posting date.
+    await query(`UPDATE brand_offers SET starts_on = $2 WHERE id = $1`, [W2.deal, day(2)]);
     const { rows: [u] } = await query(`SELECT post_code FROM creator_posts WHERE id = $1`, [up]);
     expect((await get(`/follower/code/${u.post_code}`)).body.data).toMatchObject({ state: 'upcoming' });
     expect((await get(`/follower/code/${u.post_code}`)).body.data.message).toMatch(/^This post goes live on \d+ [A-Z][a-z]{2}$/);
@@ -639,5 +642,56 @@ describe('what the app records, the learning feed and its switch (checks 29–32
     const c = await api.patch('/admin/app-config', admin.token, { config: { video_sound_default: true } });
     expect(c.body.data.config.video_sound_default).toBe(true);
     expect((await get('/follower/app-config')).body.data.config.video_sound_default).toBe(true);
+  });
+});
+
+/* ═══════════════════════════════════════════ the posting date is the last day (rules v1.15 §4.1) */
+
+// features/posting-date-last-day (founder, 1 Oct 2026). An approved post is in the shop at once —
+// the set's posting date is not asked. An offer post is visible only while its offer is active.
+describe('posting-date-last-day · an approved post is live at once; an offer post only while its offer is active', () => {
+  beforeAll(fresh);
+  const mine = async (w, id) => (await api.get(`${P}/${id}`, w.cr.token)).body.data.post;
+  const codeOf = async (id) => (await query(`SELECT post_code FROM creator_posts WHERE id = $1`, [id])).rows[0].post_code;
+
+  test('approved with the posting date twelve days ahead: in the feed, openable, "live" on her screen, the brand\'s and from its code', async () => {
+    const w = await world({ name: 'Kavya N' });
+    const a = await post(w);                                              // posting date 12 days ahead
+    expect(ids(await feed())).toContain(a);
+    expect((await get(`/follower/posts/${a}`)).status).toBe(200);
+    expect(await mine(w, a)).toMatchObject({ state: 'live', goes_live_on: null, live_since: day(0) });
+    expect((await get(`/follower/code/${await codeOf(a)}`)).body.data).toMatchObject({ state: 'live', post: { id: a } });
+    const brandSide = (await api.get(`${w.url}/invitations/${w.ciId}/content`, w.b.token)).body.data.content;
+    expect(brandSide.path1.posts.find((p) => p.id === a)).toMatchObject({ state: 'live', goesLiveOn: null, late: false });
+  });
+
+  test('an offer post waits for its offer to start, says which day, and leaves the shop when the offer ends', async () => {
+    const w = await world({ name: 'Meera J' });
+    const a = await post(w);
+    const code = await codeOf(a);
+    expect(ids(await feed())).toContain(a);
+    await query(`UPDATE brand_offers SET starts_on = $2 WHERE id = $1`, [w.deal, day(3)]);
+    expect(ids(await feed())).not.toContain(a);
+    expect((await get(`/follower/posts/${a}`)).status).toBe(404);
+    expect(await mine(w, a)).toMatchObject({ state: 'approved', goes_live_on: day(3), live_since: null });
+    const early = (await get(`/follower/code/${code}`)).body.data;
+    expect(early.state).toBe('upcoming');
+    expect(early.message).toMatch(/^This post goes live on \d+ [A-Z][a-z]{2}$/);
+    const brandSide = (await api.get(`${w.url}/invitations/${w.ciId}/content`, w.b.token)).body.data.content;
+    expect(brandSide.path1.posts.find((p) => p.id === a)).toMatchObject({ state: 'approved', goesLiveOn: day(3) });
+    await query(`UPDATE brand_offers SET starts_on = $2 WHERE id = $1`, [w.deal, day(-5)]);
+    expect(ids(await feed())).toContain(a);
+    await query(`UPDATE brand_offers SET ends_on = $2 WHERE id = $1`, [w.deal, day(-1)]);
+    expect(ids(await feed())).not.toContain(a);
+    expect((await mine(w, a)).state).toBe('removed');
+  });
+
+  test('a post approved after the posting date is still live, and is marked late for the brand', async () => {
+    const w = await world({ name: 'Ira S' });
+    await goLive(w, 2);                                                   // the posting date was two days ago
+    const a = await post(w);
+    expect(ids(await feed())).toContain(a);
+    const brandSide = (await api.get(`${w.url}/invitations/${w.ciId}/content`, w.b.token)).body.data.content;
+    expect(brandSide.path1.posts.find((p) => p.id === a)).toMatchObject({ state: 'live', late: true });
   });
 });

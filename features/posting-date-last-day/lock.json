@@ -1,0 +1,30 @@
+{
+  "feature": "posting-date-last-day",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 1 Oct 2026: \"post date should be a last day for going live all… when post with offer then this post visible to followers only when that offer is active… offer end date should be greater than post date\"; \"your two rules recommendation is accepting\"; \"why cant make it permanent instead of admin switches?\") — decisions L1–L6 in 01-spec.md under standing autonomy",
+  "approved_at": "2026-10-01T18:30:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated (standing autonomy): board L1–L2 is the founder's rules written as the sentences the screens show; drawn alongside the build (06-diff/notes.md, \"Order of work\")",
+  "mockup_locked_at": "2026-10-01T18:30:00+05:30",
+  "mockup_final": "04-preview/mockups/posting-date-last-day-mockups-v1.html",
+  "notes": "The posting date is the last day to go live. A post is in the shop from INFLX's approval; an offer post only while its offer is active. Offers given must start on or before the posting date and end at least a day after it; products without offers must be free of offers from the day terms are sent. Rules v1.15. Server + both phone apps; NO migration, NO Admin switch, no money. Production-impacting: explicit go before OTA and push. At deploy the one approved post (KNTZXR) becomes visible and buyable.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "at": "2026-10-01",
+    "backend": "rule suites 110/110 (shopper-app-v2, shoppable-posts-v2, post-links-codes, creator-terms-v2); drift recorded in 03-expected-outputs.md",
+    "backend_full_run": "vs today's earlier full run: 138 suites / 1831 tests / 1625 passed / 178 failed -> 137 / 1834 / 1629 / 177; 0 newly failing, 0 new tests failing, 1 old red now green (item6 settings list). Certification is no-regression; qa_all_green stays false on the pre-existing failures (06-diff/backend-compare.txt).",
+    "mobile": "840/840",
+    "migration": "none",
+    "rules": "Docs/OFFER_TERMS_POSTS_RULES.md v1.15 (2.1, 2.3, 2.4, 4.1, 4.14, 5.12, change log)"
+  }
+}

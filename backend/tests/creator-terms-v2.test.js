@@ -42,6 +42,7 @@ describe('the offers a brand can give for a set (check 1, 2)', () => {
     await H.ready(B.token, { name: 'Starts the day after', ids: [await p(2)], from: day(11), to: day(30) });
     late = await H.ready(B.token, { name: 'Starts too late', ids: [await p(3)], from: day(12), to: day(30) });
     early = await H.ready(B.token, { name: 'Over before posting', ids: [await p(4)], from: day(1), to: day(9) });
+    await H.ready(B.token, { name: 'Ends on the posting day', ids: [await p(8)], from: day(1), to: day(10) });
     soon = await H.ready(B.token, { name: 'Ends soon', ids: [await p(5)], from: day(1), to: day(15) });
     drafted = await H.ready(B.token, { name: 'Just a draft', ids: [await p(6)], from: day(1), to: day(30), publishIt: false });
     ended = await H.ready(B.token, { name: 'Ended early', ids: [await p(7)], from: day(1), to: day(30) });
@@ -49,13 +50,17 @@ describe('the offers a brand can give for a set (check 1, 2)', () => {
     await H.ready(other.token, { name: 'Another brand', ids: [await H.prod(other.brandId, t.jeans, 'x', 900)], from: day(1), to: day(30) });
   });
 
-  test('valid on the posting date or the day after; others are left out with the reason', async () => {
+  // BUSINESS-RULE DRIFT, posting-date-last-day (founder, 1 Oct 2026; rules v1.15 §2.3): was "valid on
+  // the posting date or the day after". The posting date is now the last day to go live, so an offer
+  // must start on or before it and end at least a day after it: "Starts the day after" left the list,
+  // and one ending on the posting day itself is not offered either.
+  test('starts on or before the posting date and ends after it; others are left out with the reason', async () => {
     const r = await api.get(`${w.url}/offer-choices`, B.token);
     expect(r.status).toBe(200);
     const names = r.body.data.offers.map((o) => o.name).sort();
-    expect(names).toEqual(['Ends soon', 'Runs over posting', 'Starts the day after']);
+    expect(names).toEqual(['Ends soon', 'Runs over posting']);
     const hidden = Object.fromEntries(r.body.data.hidden.map((h) => [h.name, h.why]));
-    expect(hidden).toMatchObject({ 'Starts too late': 'starts', 'Over before posting': 'ended', 'Ended early': 'ended' });
+    expect(hidden).toMatchObject({ 'Starts the day after': 'starts', 'Starts too late': 'starts', 'Over before posting': 'ends', 'Ends on the posting day': 'ends', 'Ended early': 'ended' });
     expect(hidden['Just a draft']).toBeUndefined();
     expect(names).not.toContain('Another brand');
     const row = r.body.data.offers.find((o) => o.name === 'Runs over posting');
@@ -70,7 +75,10 @@ describe('the offers a brand can give for a set (check 1, 2)', () => {
 });
 
 describe('products without offers for a set (check 3)', () => {
-  test('only products not held by an offer on or after the posting date; an offer that ended before it frees them', async () => {
+  // BUSINESS-RULE DRIFT, posting-date-last-day (rules v1.15 §2.4): was "not held by an offer on or after
+  // the posting date", so a product whose offer ran day 1–5 was free for a day-10 posting. Her post at
+  // normal price can now be live from its approval, so the product must be free from TODAY.
+  test('only products not held by any offer from today on; an offer that is already over frees them', async () => {
     const X = await H.brand();
     const w = await campaignSet(X);
     const free = await H.prod(X.brandId, t.shirts, 'Free shirt', 1299);
@@ -78,8 +86,10 @@ describe('products without offers for a set (check 3)', () => {
     const before = await H.prod(X.brandId, t.shirts, 'Offer ended before posting', 899);
     await H.ready(X.token, { ids: [later], from: day(20), to: day(25) });
     await H.ready(X.token, { ids: [before], from: day(1), to: day(5) });
+    const over = await H.prod(X.brandId, t.shirts, 'Offer already over', 799);
+    await api.post(`/brands/me/offers/${await H.ready(X.token, { ids: [over], from: day(-3), to: day(5) })}/end`, X.token);
     const r = await api.get(`${w.url}/products-without-offers`, X.token);
-    expect(r.body.data.products.map((p) => p.id).sort()).toEqual([free, before].sort());
+    expect(r.body.data.products.map((p) => p.id).sort()).toEqual([free, over].sort());
   });
 });
 
@@ -121,11 +131,11 @@ describe('sending the new terms (checks 4–8)', () => {
     const say = async (sell) => (await invite(X, w, [sale(cr, sell)])).body.error.message;
     expect(await say({ offers: [], productsWithoutOffers: { mode: 'none' } })).toBe('Give Sneha at least one offer or one product without an offer.');
     const late = await H.ready(X.token, { name: 'Late start', ids: [await H.prod(X.brandId, t.jackets, 'J', 3000)], from: day(15), to: day(30) });
-    expect(await say({ offers: [late] })).toMatch(/^"Late start" isn't running on \d+ \w+ or the day after/);
+    expect(await say({ offers: [late] })).toMatch(/^"Late start" has to start by \d+ \w+ and end after it\. It can't be given for this set\.$/);
     const foreign = await H.ready(other.token, { ids: [await H.prod(other.brandId, t.jackets, 'Oj', 3000)], from: day(1), to: day(30) });
     expect(await say({ offers: [foreign] })).toBe("One of those offers isn't one of yours.");
     const held = (await query(`SELECT product_id FROM offer_pool_items WHERE offer_id = $1`, [o1])).rows[0].product_id;
-    expect(await say({ productsWithoutOffers: { mode: 'chosen', productIds: [held] } })).toMatch(/^"Levi 511" is in an offer on or after .+\. To give it, give its offer\.$/);
+    expect(await say({ productsWithoutOffers: { mode: 'chosen', productIds: [held] } })).toBe('"Levi 511" is in an offer, now or later. To give it, give its offer.');
     const old = await invite(X, w, [{ influencerId: cr.influencerId, terms: { commissionPct: 10, scope: 'store' } }]);
     expect(old.status).toBe(422);
     expect(old.body.error.details.failures[0].message).toBe('What a creator can sell has changed. Update the app, then set her terms again.');

@@ -84,7 +84,7 @@ export const C6 = {
   move: {
     title: 'Ask for a change', thisSet: 'This set',
     what: "What doesn't suit?",
-    dateOpt: 'The posting date', dateOptSub: "You'd post on a different day",
+    dateOpt: 'The posting date', dateOptSub: "You'd go live by a different day",
     modeOpt: 'The mode of work', modeOptSub: "You'd rather they ship the products",
     dateLabel: 'The date that suits you',
     why: 'Say why (optional)',

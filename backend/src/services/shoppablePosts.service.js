@@ -9,7 +9,10 @@
  * or a PRICE post (her products without offers). Every step saves; the post is a draft until she
  * sends it to INFLX. States (D3):
  *
- *   draft ─send→ submitted (in review) ─approve→ approved ─posting date→ live (worked out, never stored)
+ *   draft ─send→ submitted (in review) ─approve→ live (worked out, never stored). Since 1 Oct 2026
+ *                     │    (features/posting-date-last-day) an approved post is live AT ONCE; only an
+ *                     │    offer post whose offer has not started yet waits ("approved") for that day.
+ *                     │    The set's posting date is the LAST day to go live, not the day it does.
  *                     └─send back→ rejected (sent back) ─fix and send again→ submitted
  *   approved / submitted ─offer ended · products gone · sold out · taken down→ removed (final)
  *
@@ -20,7 +23,7 @@
 const crypto = require('crypto');
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
-const { calendarDay, todayInIndia, daysBetween } = require('../utils/indiaDay');
+const { calendarDay, todayInIndia, daysBetween, istDayOf } = require('../utils/indiaDay');
 const rules = require('./offerRules');
 const pool = require('./offerPool.service');
 const terms = require('./creatorTerms.service');
@@ -285,6 +288,17 @@ const POST_SQL = `
     LEFT JOIN brand_offers o ON o.id = cp.offer_id
     LEFT JOIN price_bands pb ON pb.id = cp.price_band_id`;
 
+/**
+ * features/posting-date-last-day (founder, 1 Oct 2026; rules v1.15 §4.1). An approved post is in
+ * the shop at once. The one thing it can wait for is its offer: an offer post is visible only
+ * while its offer is active, so one approved before its offer starts waits for that day. The set's
+ * posting date is not asked here — it is the last day to go live (late after it), nothing more.
+ * Returns the day an approved post waits for, or null when it waits for nothing.
+ */
+function liveDayOf(p) {
+  return p.post_kind === 'offer' && p.offer_starts_on ? calendarDay(p.offer_starts_on) : null;
+}
+
 /** The state she sees (D3). An offer that has ended takes an approved post out, even before the sweep. */
 function stateOf(p, today = todayInIndia()) {
   if (p.status === 'draft') return 'draft';
@@ -292,7 +306,7 @@ function stateOf(p, today = todayInIndia()) {
   if (p.status === 'rejected') return 'sent_back';
   if (p.status === 'removed') return 'removed';
   if (offerOver(p, today)) return 'removed';
-  const live = calendarDay(p.go_live_date);
+  const live = liveDayOf(p);
   return live && today < live ? 'approved' : 'live';
 }
 
@@ -382,6 +396,11 @@ async function shape(p, { media, products, sales, tags, paths, today = todayInIn
     id: p.id, state, status: p.status, title: titleOf(p), caption: p.caption,
     // post-links-codes: the code given at approval (4.14); null for drafts and posts in review.
     code: p.post_code || null, influencer_id: p.influencer_id, set_id: p.set_id,
+    // The day a post waiting for its offer enters the shop (null once it is in).
+    goes_live_on: state === 'approved' ? liveDayOf(p) : null,
+    // The day it entered the shop: its approval, or its offer's start if that came later.
+    live_since: state !== 'live' ? null
+      : [p.approved_at ? istDayOf(new Date(p.approved_at)) : null, liveDayOf(p)].filter(Boolean).sort().pop() || null,
     collaboration: { id: p.campaign_influencer_id, brand_id: p.brand_id, brand_name: p.brand_name, brand_logo: p.brand_logo,
       campaign_name: p.campaign_name, set_name: p.set_name, posting_date: calendarDay(p.go_live_date) },
     kind: p.post_kind, offer_id: p.offer_id, offer,
@@ -881,10 +900,11 @@ async function afterDecision(postId, approve, reason) {
   if (!approve) await db.query(`UPDATE creator_posts SET sent_back_count = sent_back_count + 1 WHERE id = $1`, [p.id]);
   // post-links-codes (4.14): the code and links appear the moment INFLX approves.
   if (approve) await require('./postLinks.service').issuePostCode(p.id);
-  const posting = calendarDay(p.go_live_date);
+  // It is in the shop now, unless its offer has not started yet — then it says which day.
+  const liveDay = liveDayOf(p);
   const today = todayInIndia();
   const m = approve
-    ? NOTIFY.approved(titleOf(p), posting && today < posting ? rules.dayMonth(posting) : null)
+    ? NOTIFY.approved(titleOf(p), liveDay && today < liveDay ? rules.dayMonth(liveDay) : null)
     : NOTIFY.sentBack(titleOf(p), String(reason || '').trim() || 'Not specified');
   await tellCreator(p.influencer_id, m, { screen: 'post', post_id: p.id });
   // Item 14 (rules v1.30 §19): an approval can be what reaches the minimum on a collaboration the
@@ -1037,7 +1057,7 @@ async function sweepEndedOffers(today = todayInIndia()) {
 module.exports = {
   MAX_SLIDES, MAX_PRODUCTS, MAX_VIDEO_S, GROUPS,
   postable, brands, collaborations, createDraft, options, update, uploadUrl, submit, takeDown, remove,
-  getPost, getMany, getAny, listMine, createHome, stateOf, titleOf, bandFor, shopperPrice, priceBands, themeTags,
+  getPost, getMany, getAny, listMine, createHome, stateOf, liveDayOf, titleOf, bandFor, shopperPrice, priceBands, themeTags,
   approveCheck, afterDecision, adminShape,
   afterOfferEnded, afterProductsLeftOffer, afterProductChange, sweepEndedOffers, refreshFacets, offerPostStats,
   doneCounts, myCollabs,

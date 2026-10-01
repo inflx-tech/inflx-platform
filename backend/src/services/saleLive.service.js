@@ -48,6 +48,7 @@ async function postsOf(ciId, conn = db) {
   const { rows } = await conn.query(
     `SELECT cp.id, cp.status, cp.caption, cp.post_kind, cp.offer_id, cp.post_code, cp.approved_at, cp.submitted_at,
             cp.removed_reason, cs.go_live_date, o.name AS offer_name, o.status AS offer_status, o.ends_on AS offer_ends_on,
+            o.starts_on AS offer_starts_on,
             (SELECT pm.id FROM post_media pm WHERE pm.post_id = cp.id ORDER BY pm.slide_index LIMIT 1) AS cover_id,
             (SELECT pm.mime FROM post_media pm WHERE pm.post_id = cp.id ORDER BY pm.slide_index LIMIT 1) AS cover_mime
        FROM creator_posts cp
@@ -64,14 +65,17 @@ function postOut(p, postingDate, today) {
   const shoppable = require('./shoppablePosts.service');
   const approvedDay = p.approved_at ? istDayOf(new Date(p.approved_at)) : null;
   const base = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_PUBLIC_URL || '';
+  const state = shoppable.stateOf(p, today);
   return {
     id: p.id, title: shoppable.titleOf(p), code: p.post_code || null, kind: p.post_kind,
     offerName: p.offer_name || null,
-    state: shoppable.stateOf(p, today),
+    state,
+    // An approved post is in the shop at once; one waiting for its offer says from which day.
+    goesLiveOn: state === 'approved' ? shoppable.liveDayOf(p) : null,
     counts: !!p.approved_at,
     approvedAt: p.approved_at || null,
     late: !!(approvedDay && postingDate && approvedDay > postingDate),
-    sharable: p.status === 'approved' && !!p.approved_at && shoppable.stateOf(p, today) !== 'removed',
+    sharable: p.status === 'approved' && !!p.approved_at && state !== 'removed',
     cover: p.cover_id ? { url: `${base}/v1/media/post/${p.cover_id}`, isVideo: String(p.cover_mime || '').startsWith('video/') } : null,
   };
 }

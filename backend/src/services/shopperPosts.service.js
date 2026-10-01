@@ -102,16 +102,20 @@ async function livePool({ segments = [], videosOnly = false, influencerId = null
   if (offerId) where.push(`cp.offer_id = ${add(offerId)}`);
   if (leafId) where.push(`${add(leafId)}::uuid = ANY(cp.category_node_ids)`);
   if (ids) where.push(`cp.id = ANY(${add(cleanIds(ids))}::uuid[])`);
+  // features/posting-date-last-day (rules v1.15 §4.1, §5.12): a post is in the shop from the moment
+  // INFLX approves it. An offer post is visible only while its offer is active, so it also waits for
+  // the offer's start. The set's posting date is the last day to go live and is not asked here.
+  const liveDay = `CASE WHEN cp.post_kind = 'offer' THEN o.starts_on END`;
   const { rows } = await db.query(
     `SELECT cp.id, cp.influencer_id, cp.brand_id, cp.post_kind, cp.offer_id, o.offer_type, cp.media_kind,
             cp.category_node_ids, cp.theme_tag_ids, cp.price_band_id,
-            GREATEST(COALESCE((cs.go_live_date::timestamp AT TIME ZONE 'Asia/Kolkata'), cp.approved_at), cp.approved_at) AS live_at
+            GREATEST(COALESCE(((${liveDay})::timestamp AT TIME ZONE 'Asia/Kolkata'), cp.approved_at), cp.approved_at) AS live_at
        FROM creator_posts cp
        JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
        JOIN campaign_sets cs ON cs.id = ci.set_id
        LEFT JOIN brand_offers o ON o.id = cp.offer_id
       WHERE cp.v2 AND cp.status = 'approved' AND cp.approved_at IS NOT NULL AND cp.post_code IS NOT NULL
-        AND (cs.go_live_date IS NULL OR cs.go_live_date <= $1::date)
+        AND ((${liveDay}) IS NULL OR (${liveDay}) <= $1::date)
         AND (cp.post_kind <> 'offer' OR (o.status = 'published' AND o.ends_on >= $1::date))
         -- Gifts run out → the offer can't keep its promise → its posts leave the shop (4.9, 6.4).
         AND (o.offer_type IS DISTINCT FROM 'free_gift' OR EXISTS (
@@ -367,7 +371,7 @@ async function byCode(raw, who, visitor = {}, channel = 'code') {
   const [c] = await cards([hit.id], who);
   if (c) return { state: 'live', post: c };
   const p = await posts.getAny(hit.id);
-  if (p && p.state === 'approved') return { state: 'upcoming', message: MSG.UPCOMING(rules.dayMonth(calendarDay(hit.go_live_date))), creator, title: p.title };
+  if (p && p.state === 'approved') return { state: 'upcoming', message: MSG.UPCOMING(rules.dayMonth(p.goes_live_on || calendarDay(hit.go_live_date))), creator, title: p.title };
   return { state: 'gone', message: MSG.GONE, creator, title: p ? p.title : null };
 }
 

@@ -85,7 +85,7 @@ export const C4 = {
     modeLabel: 'Mode of work', modeHint: 'Store Visit: the creator shoots at your branch. Remote: you ship the products.',
     branchLabel: 'Branch', branchPlaceholder: 'Choose a branch', branchHint: 'Creators see the city, not the address. Your main branch is listed first.',
     branchSheetTitle: 'Branch',
-    dateLabel: 'Posting date', datePlaceholder: 'Choose a date', dateHint: 'Everyone in this set posts on this day.',
+    dateLabel: 'Posting date', datePlaceholder: 'Choose a date', dateHint: 'The last day for everyone in this set to go live.',
     cutoffLine: (cutoff) => `Invitations close ${longDate4(cutoff)}, three days before posting.`,
     pickerHint: (earliest) => `Dates before ${shortDate4(earliest)} are greyed out: a posting date must be at least seven days from today.`,
     pickerCutoff: (cutoff) => `Invitations would close ${longDate4(cutoff)}.`,

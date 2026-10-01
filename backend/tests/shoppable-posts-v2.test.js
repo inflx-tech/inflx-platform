@@ -74,6 +74,9 @@ async function finishShoot(ciId) {
 const P = '/influencers/me/shoppable-posts';
 /** The posting date has passed (the invite deadline moves with it, as the set's own rule requires). */
 const pastPosting = (w) => query(`UPDATE campaign_sets SET invites_close_at = $2::date - 3, go_live_date = $2 WHERE id = $1`, [w.s.id, day(-1)]);
+// posting-date-last-day (rules v1.15 §4.1): what makes an approved post live is its offer running,
+// not the posting date. These worlds' offers start tomorrow; this starts them.
+const offersStarted = (w) => query(`UPDATE brand_offers SET starts_on = $2 WHERE id = ANY($1::uuid[])`, [[w.bundle, w.discount, w.fixed], day(-1)]);
 const draft = async (w) => {
   const r = await api.post(P, w.cr.token, { campaign_influencer_id: w.ciId });
   if (r.status !== 200) throw new Error(`draft: ${JSON.stringify(r.body)}`);
@@ -358,7 +361,9 @@ describe('INFLX approves or sends back (P12, P13; checks 17–21)', () => {
     expect((await send(w, p.id)).body.data.post.state).toBe('in_review');
   });
 
-  test('approved before the posting date: "approved", goes live on the date; it counts toward her minimum; she can take it down', async () => {
+  // BUSINESS-RULE DRIFT, posting-date-last-day: "approved" used to mean "waiting for the posting date".
+  // It now means only "waiting for its offer to start" (this world's offer starts tomorrow).
+  test('approved before its offer starts: "approved", goes live on the offer\'s start; it counts toward her minimum; she can take it down', async () => {
     const w = await world({ min: 1 });
     let home = (await api.get('/influencers/me/create', w.cr.token)).body.data;
     expect(home.needs).toEqual([expect.objectContaining({ campaign_influencer_id: w.ciId, done: 0, min: 1 })]);
@@ -367,8 +372,8 @@ describe('INFLX approves or sends back (P12, P13; checks 17–21)', () => {
     const a = await approve(p.id);
     expect(a.status).toBe(200);
     let post = await read(w, p.id);
-    expect(post).toMatchObject({ state: 'approved', can: { take_down: true, edit: false } });
-    expect((await H.notices(w.cr.userId, 'post.approved'))[0].body).toMatch(/^It goes live on \d+ \w{3}, your posting date\.$/);
+    expect(post).toMatchObject({ state: 'approved', goes_live_on: day(1), can: { take_down: true, edit: false } });
+    expect((await H.notices(w.cr.userId, 'post.approved'))[0].body).toMatch(/^It goes live on \d+ \w{3}, when its offer starts\.$/);
     home = (await api.get('/influencers/me/create', w.cr.token)).body.data;
     expect(home.needs).toEqual([]);
     expect((await patch(w, p.id, { caption: 'x' })).body.error.message).toBe(MSG.APPROVED_LOCKED);
@@ -376,12 +381,18 @@ describe('INFLX approves or sends back (P12, P13; checks 17–21)', () => {
     expect(d.body.data.post).toMatchObject({ state: 'removed', removed: { reason: 'taken_down', why: 'You took this post down.' } });
   });
 
-  test('after the posting date an approved post is live', async () => {
+  // BUSINESS-RULE DRIFT, posting-date-last-day: was "after the posting date an approved post is live".
+  test('an approved post is live once its offer is running, with the posting date still ahead; and at once when the offer already runs', async () => {
     const w = await world();
     const p = await readyBundlePost(w);
     await send(w, p.id); await approve(p.id);
-    await pastPosting(w);
-    expect((await read(w, p.id)).state).toBe('live');
+    expect((await read(w, p.id)).state).toBe('approved');                // its offer starts tomorrow
+    await offersStarted(w);
+    expect(await read(w, p.id)).toMatchObject({ state: 'live', goes_live_on: null, live_since: day(0) });
+    const p2 = await readyBundlePost(w);
+    await send(w, p2.id); await approve(p2.id);
+    expect((await read(w, p2.id)).state).toBe('live');                   // approved while the offer runs: live at once
+    expect((await H.notices(w.cr.userId, 'post.approved')).pop().body).toBe('It is live in the shop now.');
   });
 
   test('approval re-checks the post: an offer that ended after sending cannot be approved', async () => {
@@ -418,7 +429,7 @@ describe("a post's life after it is approved (4.9; checks 22–27)", () => {
   test('the brand ends the offer: the post leaves the shop, she is told why, and the offer page counted it first', async () => {
     const w = await world();
     const p = await approvedBundle(w);
-    await pastPosting(w);
+    await offersStarted(w);                                               // was pastPosting(w): live = its offer running
     const view = (await api.get(`/brands/me/offers/${w.bundle}`, w.b.token)).body.data;
     expect(view.posts.live).toBe(1);
     expect(view.creators[0].posts).toBe(1);

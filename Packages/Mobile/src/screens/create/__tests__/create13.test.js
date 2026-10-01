@@ -161,7 +161,7 @@ describe('P2 · P3 — brand, then collaboration', () => {
     const n = nav();
     const { getByText, getByTestId } = render(<PostCollab navigation={n} route={{ params: { brandId: 'b1' } }} />);
     await waitFor(() => getByTestId('post-collab'));
-    getByText('2 offers + 12 products · posts on 10 Oct');
+    getByText('2 offers + 12 products · live by 10 Oct');   // posting-date-last-day: was "posts on"
     getByText('0 of 1 posts done · earning 10%');
     getByText('0 of 1 posts done · earning 8% + ₹5,000');
     expect(disabled(getByTestId('next'))).toBe(true);
@@ -323,13 +323,13 @@ describe('P11 — review and send', () => {
 });
 
 describe('P12 · P13 · P15 — a post after sending', () => {
-  it('in review: INFLX checks it, not the brand; goes live on the posting date', async () => {
+  it('in review: INFLX checks it, not the brand; goes live as soon as it is approved', async () => {
     influencerApi.getPost.mockResolvedValue(ok({ post: POST({ state: 'in_review', status: 'submitted', submitted_at: `${yr}-10-08T09:00:00Z` }) }));
     const { getByText, getByTestId } = render(<PostStatus navigation={nav()} route={{ params: { postId: 'p1' } }} />);
     await waitFor(() => getByTestId('post-status-in_review'));
     getByText('WEEKEND DENIM'); getByText('In review since 8 Oct'); getByText('Usually within a day.');
     getByText("INFLX, not the brand. We check the products and offer match your collaboration, and that there's no copyrighted music.");
-    getByText('On 10 Oct, your posting date, once approved.');
+    getByText('As soon as INFLX approves it. Your last day to go live is 10 Oct.');
   });
 
   it('sent back: what INFLX said, what she can change, fix or start over', async () => {
@@ -365,7 +365,7 @@ describe('P12 · P13 · P15 — a post after sending', () => {
     influencerApi.getPost.mockResolvedValue(ok({ post: POST({ state: 'approved', status: 'approved', can: { take_down: true } }) }));
     const { getByText, getByTestId } = render(<PostStatus navigation={nav()} route={{ params: { postId: 'p1' } }} />);
     await waitFor(() => getByTestId('post-status-approved'));
-    getByText('Approved by INFLX. It goes live on 10 Oct, your posting date.');
+    getByText('Approved by INFLX. It goes live on 10 Oct, when its offer starts.');   // only an offer post waiting for its offer is still "approved"
     getByText("An approved post can't be changed. You can take it down: it leaves the shop and keeps its earnings history.");
     getByTestId('take-down');
   });

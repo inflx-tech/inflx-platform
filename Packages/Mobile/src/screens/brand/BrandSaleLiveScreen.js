@@ -161,7 +161,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
               const ns = (c.notShared || []).find((n) => n.postId === p.id);
               return (
                 <PostLine14 key={p.id} post={p}
-                  sub={p.late ? C14.approvedLate(p.approvedAt) : c.postingDate && p.state === 'approved' ? C14.inShopFrom(c.postingDate) : null}
+                  sub={p.late ? C14.approvedLate(p.approvedAt) : p.state === 'approved' && (p.goesLiveOn || c.postingDate) ? C14.inShopFrom(p.goesLiveOn || c.postingDate) : null}
                   right={ns ? <Chip tone="yourMove" text={C14.notSharedYet} /> : p.late ? <Chip tone="yourMove" text={C14.late} /> : <Chip tone={STATE_TONE[p.state]} text={C14.postState[p.state] || p.state} />} />
               );
             })}

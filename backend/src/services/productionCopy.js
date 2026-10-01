@@ -25,7 +25,7 @@ const MSG = {
   CONTACT_NAME: 'Enter who she should ask for.',
   CONTACT_PHONE: 'Enter a contact number.',
   TIME_REQUIRED: 'Choose a date and time.',
-  TIME_AFTER_POSTING: (day) => `The visit has to be before ${longDate(day)}, the day she posts.`,
+  TIME_AFTER_POSTING: (day) => `The visit has to be before ${longDate(day)}, her last day to go live.`,
   TIME_IN_PAST: 'Choose a time in the future.',
   NOTES_LONG: 'Keep it under 500 characters.',
   PLAN_ALREADY_SENT: (name) => `A plan is already with ${name}.`,

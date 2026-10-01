@@ -70,7 +70,10 @@ async function sentPost(w, caption = 'Festive Sarees') {
   return id;
 }
 const approve = (id) => api.post(`/admin/posts/${id}/approve`, admin.token);
-const livePosting = (w) => query(`UPDATE campaign_sets SET invites_close_at = $2::date - 3, go_live_date = $2 WHERE id = $1`, [w.s.id, day(-1)]);
+// BUSINESS-RULE DRIFT, posting-date-last-day (rules v1.15 §4.1): this helper used to move the set's
+// posting date into the past. An approved post is now live as soon as its offer is running, whatever
+// the posting date, so the helper starts the world's offer (it begins tomorrow) instead.
+const livePosting = (w) => query(`UPDATE brand_offers SET starts_on = $2 WHERE id = $1`, [w.bundle, day(-1)]);
 const codeOf = async (id) => (await query(`SELECT post_code FROM creator_posts WHERE id = $1`, [id])).rows[0].post_code;
 const tap = (path, headers = {}) => request(app).get(`/v1/links${path}`).set(headers);
 const visits = async (postId) => (await query(`SELECT channel, real_source FROM link_visits WHERE post_id = $1 ORDER BY id`, [postId])).rows;
@@ -101,13 +104,13 @@ describe('a post code (checks 1–4)', () => {
     await expect(query(`UPDATE creator_posts SET post_code = 'KAEIOU' WHERE id = $1`, [b])).rejects.toThrow();
   });
 
-  test('share (approved, before the posting date): the code, the caption line, five links, "goes live on"', async () => {
+  test('share (approved, its offer not started yet): the code, the caption line, five links, "goes live on" the offer\'s start', async () => {
     const w = await world();
     const id = await sentPost(w, 'Festive kurtis');
     await approve(id);
     const code = await codeOf(id);
     const s = (await api.get(`${P}/${id}/share`, w.cr.token)).body.data;
-    expect(s).toMatchObject({ code, state: 'approved', goes_live_on: day(12), caption_line: `Shop this look on INFLX: search code ${code}` });
+    expect(s).toMatchObject({ code, state: 'approved', goes_live_on: day(1), caption_line: `Shop this look on INFLX: search code ${code}` });
     expect(s.links.map((l) => [l.label, l.display, l.where])).toEqual([
       ['Instagram', `inflx.in/p/${code}/ig`, 'story link sticker'],
       ['YouTube', `inflx.in/p/${code}/yt`, 'description or pinned comment'],
@@ -131,12 +134,12 @@ describe('a post code (checks 1–4)', () => {
 /* ═══════════════════════════════════════════ what a link opens, and visits (checks 5–10) */
 
 describe('what a post link opens, and the visits it counts (checks 5–10)', () => {
-  test('before the posting date: "goes live on", her store; the ending is the channel; a lower-case code works', async () => {
+  test('before its offer starts: "goes live on" that day, her store; the ending is the channel; a lower-case code works', async () => {
     const w = await world();
     const id = await sentPost(w); await approve(id);
     const code = await codeOf(id);
     const r = await tap(`/p/${code.toLowerCase()}?ch=ig`, { 'x-visitor-ua': 'Mozilla/5.0 (iPhone)' });
-    expect(r.body.data).toMatchObject({ kind: 'post', state: 'upcoming', goes_live_on: day(12), store: { handle: w.handle, url: `https://inflx.in/s/${w.handle}` } });
+    expect(r.body.data).toMatchObject({ kind: 'post', state: 'upcoming', goes_live_on: day(1), store: { handle: w.handle, url: `https://inflx.in/s/${w.handle}` } });
     expect(await visits(id)).toEqual([{ channel: 'ig', real_source: null }]);
   });
 

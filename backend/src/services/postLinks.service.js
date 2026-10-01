@@ -155,7 +155,7 @@ async function resolvePost(code, { channel = 'o', visitor = {} } = {}) {
   await recordVisit({ kind: 'post', channel, influencerId: hit.influencer_id, postId: hit.id, visitor });
   return {
     kind: 'post', state, store,
-    goes_live_on: state === 'upcoming' ? p.collaboration.posting_date : null,
+    goes_live_on: state === 'upcoming' ? p.goes_live_on : null,
     creator: store ? { name: store.name, handle: store.handle } : null,
     post: state === 'gone' ? { code: p.code, title: p.title } : publicPost(p),
   };
@@ -232,8 +232,8 @@ async function shareFor(influencerId, postId) {
   return {
     post_id: p.id, title: p.title, state: p.state, brand_name: p.collaboration.brand_name,
     offer_line: p.offer ? p.offer.deal : 'Normal price',
-    live_since: p.state === 'live' ? p.collaboration.posting_date : null,
-    goes_live_on: p.state === 'approved' ? p.collaboration.posting_date : null,
+    live_since: p.state === 'live' ? p.live_since : null,
+    goes_live_on: p.state === 'approved' ? p.goes_live_on : null,
     code: p.code, caption_line: captionLine(p.code),
     links: linksFor(`/p/${p.code}`),
     follower_view: url(`/p/${p.code}`),
@@ -284,7 +284,7 @@ async function statsOf(p) {
   const sum = (xs, k) => xs.reduce((n, x) => n + x[k], 0);
   return {
     post_id: p.id, title: p.title, code: p.code, brand_name: p.collaboration.brand_name,
-    live_since: p.state === 'live' ? p.collaboration.posting_date : null, state: p.state,
+    live_since: p.state === 'live' ? p.live_since : null, state: p.state,
     totals: { visits: sum(visits, 'visits'), orders: sum(orders, 'orders'), sales: sum(orders, 'sales'), commission: Math.round(sum(orders, 'commission') * 100) / 100 },
     visits, orders,
   };
@@ -321,7 +321,7 @@ async function setPosts(brandUserId, campaignId, setId, { ciId = null } = {}) {
     const s = await statsOf(p);
     const creator = await storeOf(p.influencer_id);
     out.push({ id: p.id, title: p.title, code: p.code, state: p.state, creator_name: creator ? creator.name : '',
-      goes_live_on: p.state === 'approved' ? p.collaboration.posting_date : null, totals: s.totals });
+      goes_live_on: p.state === 'approved' ? p.goes_live_on : null, totals: s.totals });
   }
   const live = out.filter((p) => p.state === 'live');
   const { rows: [t] } = await db.query(

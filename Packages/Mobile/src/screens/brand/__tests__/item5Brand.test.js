@@ -308,7 +308,7 @@ describe('I3 · I4 · I5 — terms, creator by creator (creator-terms-v2: offers
     // T2: the offers checklist — only offers valid on the posting day or the day after; the ends-soon warning; the ones left out
     fireEvent.press(getByTestId('sell-offers'));
     await waitFor(() => getByText('Offers for Priya'));
-    getByText(`Your offers valid on the posting day (20 Oct) or the day after.`);
+    getByText(`Your offers that start by 20 Oct and end after it.`);   // posting-date-last-day: was "valid on the posting day or the day after"
     getByText('⚠ Ends 25 Oct, 5 days after posting. Her posts using it leave the shop then.');
     getByText("2 offers aren't listed: one starts 30 Oct, one ended 5 Oct.");
     fireEvent.press(getByTestId('offer-o1'));
@@ -388,7 +388,7 @@ describe('I3 · I4 · I5 — terms, creator by creator (creator-terms-v2: offers
     fireEvent.changeText(getByTestId('fee'), '5000');
     fireEvent.press(getByTestId('sell-products'));
     await waitFor(() => getByText('3 products, fixed when you send'));
-    getByText('Sold at normal price. Only products not in any offer on or after 20 Oct are shown.');
+    getByText('Sold at normal price. Only products not in any offer from today on are shown.');   // posting-date-last-day: was "on or after 20 Oct"
     getByText("To give a product that's in an offer, give its offer.");
     fireEvent.press(getByTestId('products-all'));
     fireEvent.press(getByTestId('products-done'));

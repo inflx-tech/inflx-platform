@@ -88,7 +88,7 @@ describe('ContentScreen (her)', () => {
     await waitFor(() => r.getByText('Shoot done on 19 Oct. Now the content.'));
     expect(r.getByTestId('what-you-agreed')).toBeTruthy();
     expect(r.getByText('90 days · social')).toBeTruthy();
-    expect(r.getByText('You post on 24 Oct · 5 days')).toBeTruthy();
+    expect(r.getByText('Go live by 24 Oct · 5 days')).toBeTruthy();
     expect(r.getByText('Upload everything here first. Urban Threads see it before it goes anywhere, and you post once they approve.')).toBeTruthy();
     fireEvent.press(r.getByTestId('start-uploading'));
     await waitFor(() => r.getByText('Nothing uploaded yet'));
@@ -202,7 +202,7 @@ describe('BrandContentScreen', () => {
     await waitFor(() => r.getByText('Tanvi is working on the content. You review it here before she posts anything.'));
     expect(r.getByText('Pay for Content · Store Visit')).toBeTruthy();
     expect(r.getByText('INFLX campaign fee ₹960 · charged to you at signing, never to her.')).toBeTruthy();
-    expect(r.getByText('She posts on 24 Oct · 5 days')).toBeTruthy();
+    expect(r.getByText('She goes live by 24 Oct · 5 days')).toBeTruthy();
   });
 
   it('C6 · 28 · reviewing: the round, the files, the two buttons; Approve honours busy', async () => {

@@ -69,8 +69,8 @@ export const C12 = {
     done: (d) => `Done ${d}`, visited: (d) => `Visited ${d}`, posts: (d) => `Posts ${d}`,
     uploadWhat: 'Upload what you agreed', withHer: (name) => `With ${first(name)}`,
   },
-  countdownHers: (day, n) => `You post on ${day10(day)} · ${plural(n, 'day', 'days')}`,
-  countdownBrand: (day, n) => `She posts on ${day10(day)} · ${plural(n, 'day', 'days')}`,
+  countdownHers: (day, n) => `Go live by ${day10(day)} · ${plural(n, 'day', 'days')}`,
+  countdownBrand: (day, n) => `She goes live by ${day10(day)} · ${plural(n, 'day', 'days')}`,
 
   /* ── C1 ── */
   shootDone: (d) => `Shoot done on ${day10(d)}. Now the content.`,

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>posting-date-last-day — what the screens say</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EFEFEA;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#0A0A0A;font-size:13.5px;line-height:1.5;padding:22px}
+h1{font-size:18px;margin:0 0 4px}.lead{color:#52525B;margin:0 0 18px;max-width:880px}
+.board{background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;margin:0 0 18px;max-width:980px}
+.tag{display:inline-block;font:700 11px ui-monospace,monospace;background:#0A0A0A;color:#fff;border-radius:6px;padding:2px 7px;margin-right:8px}
+.cap{font-weight:700;margin:0 0 10px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;padding:8px 10px;border-top:1px solid #E4E4E7}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#71717A;border-top:0}
+.was{color:#71717A;text-decoration:line-through}.now{font-weight:600}
+.where{color:#52525B;font-size:12px;white-space:nowrap}
+.phone{width:300px;border:1px solid #E4E4E7;border-radius:18px;padding:14px;background:#FAFAFA;display:grid;gap:8px}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.chip{font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px;background:#D1FAE5;color:#047857}
+.chip.wait{background:#E6EFFC;color:#1D5FBF}.small{font-size:12px;color:#52525B}
+.thumb{width:40px;height:48px;border-radius:9px;background:#F4F4F5;flex:none}
+.grid{display:flex;gap:16px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<h1>The posting date is the last day to go live</h1>
+<p class="lead">Founder's rules of 1 Oct 2026 (rules doc v1.15). No screen is added or rearranged. A post row's state changes, and the sentences that said "on" the posting date now say "by" it. The field keeps its name, "Posting date".</p>
+
+<div class="board">
+  <p class="cap"><span class="tag">L1</span>A post row, on the creator's and the brand's Going live</p>
+  <div class="grid">
+    <div class="phone"><span class="small">Approved — its offer is running (or it has no offer)</span>
+      <div class="row"><span class="thumb"></span><div style="flex:1"><b>Outfits and accessories</b><div class="small">KNTZXR</div></div><span class="chip">Live</span></div></div>
+    <div class="phone"><span class="small">Approved — its offer starts on 5 Oct</span>
+      <div class="row"><span class="thumb"></span><div style="flex:1"><b>Festive denim</b><div class="small">QWRT7K</div><div class="small">In the shop from 5 Oct</div></div><span class="chip wait">Approved</span></div></div>
+    <div class="phone"><span class="small">Approved two days after the posting date</span>
+      <div class="row"><span class="thumb"></span><div style="flex:1"><b>Linen for the heat</b><div class="small">ZXCV2B</div><div class="small">Approved 10 Oct · after the posting date</div></div><span class="chip wait" style="background:#FFEBDD;color:#B04600">Late</span></div></div>
+  </div>
+</div>
+
+<div class="board">
+  <p class="cap"><span class="tag">L2</span>The sentences</p>
+  <table>
+    <tr><th>Where</th><th>Was</th><th>Now</th></tr>
+    <tr><td class="where">Brand · new set, the date field</td><td class="was">Everyone in this set posts on this day.</td><td class="now">The last day for everyone in this set to go live.</td></tr>
+    <tr><td class="where">Brand · shoot and content screens</td><td class="was">She posts on 8 Oct · 7 days</td><td class="now">She goes live by 8 Oct · 7 days</td></tr>
+    <tr><td class="where">Creator · shoot and content screens</td><td class="was">You post on 8 Oct · 7 days</td><td class="now">Go live by 8 Oct · 7 days</td></tr>
+    <tr><td class="where">Brand · shoot plan</td><td class="was">She posts on</td><td class="now">She goes live by</td></tr>
+    <tr><td class="where">Creator · the plan she was sent</td><td class="was">You post on 8 Oct, so this has to happen before then.</td><td class="now">You go live by 8 Oct, so this has to happen before then.</td></tr>
+    <tr><td class="where">Creator · choosing a collaboration</td><td class="was">2 offers + 12 products · posts on 10 Oct</td><td class="now">2 offers + 12 products · live by 10 Oct</td></tr>
+    <tr><td class="where">Creator · a post in review</td><td class="was">Goes live: On 10 Oct, your posting date, once approved.</td><td class="now">Goes live: As soon as INFLX approves it. Your last day to go live is 10 Oct.</td></tr>
+    <tr><td class="where">Creator · a post waiting for its offer</td><td class="was">Approved by INFLX. It goes live on 10 Oct, your posting date.</td><td class="now">Approved by INFLX. It goes live on 5 Oct, when its offer starts.</td></tr>
+    <tr><td class="where">Creator · notice at approval</td><td class="was">It goes live on 10 Oct, your posting date.</td><td class="now">It is live in the shop now. <span class="small">(or: It goes live on 5 Oct, when its offer starts.)</span></td></tr>
+    <tr><td class="where">Brand · terms, the offers sheet</td><td class="was">Your offers valid on the posting day (8 Oct) or the day after.</td><td class="now">Your offers that start by 8 Oct and end after it.</td></tr>
+    <tr><td class="where">Brand · terms, offers not listed</td><td class="was">one starts 15 Oct · one ended 5 Oct</td><td class="now">one starts 9 Oct · one ends 8 Oct · one ended 5 Oct</td></tr>
+    <tr><td class="where">Brand · terms, products without offers</td><td class="was">Only products not in any offer on or after 8 Oct are shown.</td><td class="now">Only products not in any offer from today on are shown.</td></tr>
+    <tr><td class="where">Brand · sending terms, refused</td><td class="was">"Late start" isn't running on 8 Oct or the day after…</td><td class="now">"Late start" has to start by 8 Oct and end after it. It can't be given for this set.</td></tr>
+  </table>
+</div>
+</body>
+</html>

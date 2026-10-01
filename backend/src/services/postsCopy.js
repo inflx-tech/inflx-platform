@@ -56,7 +56,9 @@ const REMOVED_WHY = {
 };
 
 const NOTIFY = {
-  approved: (title, liveOn) => ({ type: 'post.approved', title: `"${title}" is approved`, body: liveOn ? `It goes live on ${liveOn}, your posting date.` : 'It is live in the shop now.' }),
+  // `liveOn`: set only when its offer has not started yet (posting-date-last-day: an approved post is live at once).
+  approved: (title, liveOn) => ({ type: 'post.approved', title: `"${title}" is approved`,
+    body: liveOn ? `It goes live on ${liveOn}, when its offer starts.` : 'It is live in the shop now.' }),
   sentBack: (title, reason) => ({ type: 'post.rejected', title: `"${title}" was sent back`, body: `What INFLX said: "${reason}"` }),
   removed: (title, why) => ({ type: 'post.removed', title: `"${title}" left the shop`, body: why }),
   productsLeft: (title, n) => ({ type: 'post.products_removed', title: `${n} product${n > 1 ? 's' : ''} left "${title}"`, body: 'The brand took them out of the offer. The rest of the post stays in the shop.' }),

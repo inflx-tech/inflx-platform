@@ -37,8 +37,8 @@ export function PostRow({ post, onPress, testID }) {
 
 /** L1 — a post on the Create tab: its code and what it can do now (Share from approval, Stats once live). */
 export function LinkPostRow({ post, onOpen, onShare, onStats }) {
-  const line = post.state === 'live' ? CL.codeLive(post.collaboration.brand_name, post.code, post.collaboration.posting_date)
-    : post.state === 'approved' ? CL.codeApproved(post.collaboration.posting_date, post.code)
+  const line = post.state === 'live' ? CL.codeLive(post.collaboration.brand_name, post.code, post.live_since || post.collaboration.posting_date)
+    : post.state === 'approved' ? CL.codeApproved(post.goes_live_on || post.collaboration.posting_date, post.code)
     : post.state === 'in_review' ? CL.noCodeYet
     : post.state === 'draft' ? CP.savedAt(post.draft_step || 3, String(post.updated_at || '').slice(0, 10))
     : post.state === 'removed' && post.removed && post.removed.reason === 'offer_ended' ? CP.offerEndedRow(post.removed.offer_ended_on)

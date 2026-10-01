@@ -5,11 +5,13 @@
  * Rules: Docs/OFFER_TERMS_POSTS_RULES.md §2 (v1.4); locked screens T1–T7 (brand), C1–C5 (creator).
  *
  * For Pay for Sale and Hybrid, "what she can sell" is:
- *   · her OFFERS — one or more of the brand's published offers valid on the posting date or the
- *     day after (2.3). LINKED through collab_offers, never copied: ending an offer or removing its
- *     products reaches her collaboration by itself;
+ *   · her OFFERS — one or more of the brand's published offers that start on or before the posting
+ *     date and end at least a day after it (2.3, v1.15: the posting date is the LAST day to go
+ *     live, so the offer must be there for a creator who goes live on it). LINKED through
+ *     collab_offers, never copied: ending an offer reaches her collaboration by itself;
  *   · her PRODUCTS WITHOUT OFFERS — none, all, or chosen (2.4), from the products not held by any
- *     offer on or after the posting date, FROZEN when the invitation is sent (founder Q2).
+ *     offer from the day the terms are sent (v1.15: her post can be live from that day on),
+ *     FROZEN when the invitation is sent (founder Q2).
  * At least one of the two (2.2). Offers and products can't be countered (2.6) or added after
  * signing (2.8). When the brand ends an offer that sits in unsigned invitations, it drops out of
  * them, the creators are told, and an invitation left with nothing to sell is withdrawn (Q1).
@@ -17,7 +19,7 @@
 
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
-const { calendarDay, addDays, daysBetween, todayInIndia, istDayOf } = require('../utils/indiaDay');
+const { calendarDay, daysBetween, todayInIndia, istDayOf } = require('../utils/indiaDay');
 const rules = require('./offerRules');
 const pool = require('./offerPool.service');
 const notificationService = require('./notification.service');
@@ -32,10 +34,10 @@ const MSG = {
   SELL_NOTHING: (name) => `Give ${first(name)} at least one offer or one product without an offer.`,
   OLD_TERMS: 'What a creator can sell has changed. Update the app, then set her terms again.',
   OFFER_UNKNOWN: "One of those offers isn't one of yours.",
-  OFFER_NOT_VALID: (offer, day) => `"${offer}" isn't running on ${rules.dayMonth(day)} or the day after, so it can't be given for this set.`,
-  PRODUCT_IN_OFFER: (product, day) => `"${product}" is in an offer on or after ${rules.dayMonth(day)}. To give it, give its offer.`,
+  OFFER_NOT_VALID: (offer, day) => `"${offer}" has to start by ${rules.dayMonth(day)} and end after it. It can't be given for this set.`,
+  PRODUCT_IN_OFFER: (product) => `"${product}" is in an offer, now or later. To give it, give its offer.`,
   PRODUCT_UNKNOWN: "One of those products isn't one of your published products.",
-  NO_PRODUCTS_FREE: (day) => `No product is free of offers on or after ${rules.dayMonth(day)}.`,
+  NO_PRODUCTS_FREE: () => 'No product is free of offers from today.',
 };
 
 const NOTIFY = {
@@ -69,12 +71,13 @@ const NOTIFY = {
 /* ───────────────────────────────────────────── the brand's choices (T2, T3, T4, T6) */
 
 /**
- * Offers the brand can give for a posting date: published, valid on that day or the next (2.3),
- * with the "ends within 7 days after posting" warning; plus the offers left out and why.
+ * Offers the brand can give for a posting date (2.3, v1.15): published, starting on or before that
+ * day and ending at least one day after it — the posting date is the last day to go live, so a
+ * creator who goes live on it must still have the offer, and one that starts later could never be
+ * live in time. With the "ends within 7 days after posting" warning; plus the offers left out and why.
  */
 async function offerChoices(brandId, postingDate) {
   const D = calendarDay(postingDate);
-  const D1 = addDays(D, 1);
   const { rows } = await db.query(
     `SELECT o.id, o.name, o.offer_type, o.sub_type, o.offer_config_json, o.status, o.starts_on, o.ends_on, o.ended_at,
             (SELECT count(*)::int FROM offer_pool_items i WHERE i.offer_id = o.id AND i.pool = 'buy' AND i.removed_at IS NULL) AS products,
@@ -85,7 +88,7 @@ async function offerChoices(brandId, postingDate) {
   const offers = [], hidden = [];
   for (const r of rows) {
     const s = calendarDay(r.starts_on), e = calendarDay(r.ends_on);
-    const valid = r.status === 'published' && daysBetween(s, D1) >= 0 && daysBetween(D, e) >= 0;
+    const valid = r.status === 'published' && daysBetween(s, D) >= 0 && daysBetween(D, e) >= 1;
     const shaped = { ...r, starts_on: s, ends_on: e, offer_config_json: r.offer_config_json || {} };
     if (valid) {
       const after = daysBetween(D, e);
@@ -97,15 +100,21 @@ async function offerChoices(brandId, postingDate) {
       });
     } else if (r.status === 'ended') {
       hidden.push({ name: r.name, why: 'ended', date: r.ended_at ? istDayOf(r.ended_at) : e });
-    } else if (daysBetween(D1, s) > 0) hidden.push({ name: r.name, why: 'starts', date: s });
-    else hidden.push({ name: r.name, why: 'ended', date: e });
+    } else if (daysBetween(D, s) > 0) hidden.push({ name: r.name, why: 'starts', date: s });
+    // Over already, or still running but gone by the posting date (it must end after it).
+    else hidden.push({ name: r.name, why: daysBetween(e, todayInIndia()) > 0 ? 'ended' : 'ends', date: e });
   }
   return { posting_date: D, offers, hidden };
 }
 
-/** Products not held by any offer on or after the posting date (2.4). */
-async function freeProducts(brandId, postingDate, filters = {}) {
-  return pool.productsWithoutOffers(brandId, { ...filters, day: calendarDay(postingDate), mode: 'on_or_after' });
+/**
+ * Products not held by any offer from TODAY on (2.4, v1.15). It used to be "from the posting date":
+ * with the posting date as the last day, her post at normal price can be live from the day it is
+ * approved, so a product still inside another offer until then must not be given. `postingDate` is
+ * kept in the signature for its callers and no longer decides anything.
+ */
+async function freeProducts(brandId, postingDate, filters = {}) { // eslint-disable-line no-unused-vars
+  return pool.productsWithoutOffers(brandId, { ...filters, day: todayInIndia(), mode: 'on_or_after' });
 }
 
 /* ───────────────────────────────────────────── at sending */
@@ -154,9 +163,9 @@ async function resolveSell({ brandId, postingDate, sell, creatorName }) {
         const { rows } = await db.query(`SELECT id, name FROM brand_products WHERE id = ANY($1::uuid[]) AND brand_id = $2`,
           [bad.filter((x) => /^[0-9a-f-]{36}$/i.test(x)), brandId]);
         if (!rows.length) throw new AppError('VALIDATION_ERROR', MSG.PRODUCT_UNKNOWN, 422, 'products_without_offers');
-        const heldNow = await pool.offersByProduct(brandId, { productIds: rows.map((r) => r.id), today: D });
+        const heldNow = await pool.offersByProduct(brandId, { productIds: rows.map((r) => r.id) });
         const held = rows.find((r) => heldNow[r.id]);
-        if (held) throw new AppError('VALIDATION_ERROR', MSG.PRODUCT_IN_OFFER(held.name, D), 422, 'products_without_offers');
+        if (held) throw new AppError('VALIDATION_ERROR', MSG.PRODUCT_IN_OFFER(held.name), 422, 'products_without_offers');
         throw new AppError('VALIDATION_ERROR', MSG.PRODUCT_UNKNOWN, 422, 'products_without_offers');
       }
       out.productIds = sell.productIds;

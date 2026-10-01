@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.14 · 1 October 2026 · living document**
+**Version 1.15 · 1 October 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -192,8 +192,13 @@ an offer onto an invitation · the bulk "Attach offer" action in the product lis
 
 ## 2. Creator terms in a collaboration
 
-### 2.1 Posting date and the join window
-- The **posting date** is the day the set's creators go live on social media. It's set on the set.
+### 2.1 Posting date and the join window (changed 1 Oct, v1.15)
+- The **posting date** is the **last day** for the set's creators to go live: in the INFLX shop and
+  on social media. It's set on the set. It is a deadline, not the one day everything appears: a
+  creator who is ready earlier goes live earlier (4.1). After it she is late (4.10) and the
+  collaboration is flagged Delayed.
+- It must be **at least 7 days ahead** when the set is made; the brand may choose any later day.
+  It locks when the first invitation is sent.
 - Creators can be invited and can join until **posting date − 3 days**. That gives at least three days
   to negotiate, shoot, and build shoppable posts.
 
@@ -215,10 +220,16 @@ Pay for Sale commission must be above 0%; a collaboration whose whole point is c
 
 ### 2.3 What she can sell, part 1: offers
 - The brand ticks one or more of its offers. There's a "Select all".
-- **Only offers valid on the posting date or the day after are shown.** Example, posting 10 Oct:
-  - an offer running 1–31 Oct → shown (valid on the 10th);
-  - an offer starting 15 Oct → not shown;
-  - an offer that ended 5 Oct → not shown.
+- **Only offers that start on or before the posting date and end at least one day after it are
+  shown** (changed 1 Oct, v1.15). The posting date is the last day to go live, so a creator who goes
+  live on it must still have the offer, and an offer that starts later could never be live in time.
+  Example, posting 8 Oct:
+  - 1–20 Oct → shown;
+  - 1–9 Oct → shown, with the warning below;
+  - 5–20 Oct → shown (not started yet; her post goes live on the 5th, 4.1);
+  - 1–8 Oct → **not shown** (ends on the last day itself);
+  - 9–20 Oct → **not shown** (starts after the last day);
+  - an offer that ended 5 Oct, or one starting 15 Oct → not shown.
 - Each row shows the name, type, product count and dates.
 - 🟡 If an offer ends within 7 days after the posting date, the brand sees a warning: *"This offer ends
   20 Oct, only 5 days after posting. When it ends, her posts using it are removed from the shop."*
@@ -228,8 +239,10 @@ Pay for Sale commission must be above 0%; a collaboration whose whole point is c
 ### 2.4 What she can sell, part 2: products without offers
 - Choices: **None** · **All products without offers** · **Choose products** (the same pool builder:
   category → all / filters / search).
-- Only products **not held by any offer on or after the posting date** appear. Jeans whose offer ended
-  5 Oct can be given for a 10 Oct posting.
+- Only products **not held by any offer from the day the terms are sent** appear (changed 1 Oct,
+  v1.15; it was "on or after the posting date"). Her post at normal price can be live from the day
+  INFLX approves it, so a product still inside an offer until then can't be given: jeans whose offer
+  runs to 5 Oct can be given from 6 Oct, not before.
 - To give a product that's in an offer, the brand gives that offer.
 - The list is **frozen at sending**, including "All products without offers" (the products on the day of
   sending; products listed later don't join). These products sell at their normal price.
@@ -310,7 +323,11 @@ Locked screens: `features/creator-terms-v2/04-preview/mockups/`.
 ### 4.1 When a creator can make posts
 - After both signatures, and after the **shoot plan**. **OPEN**: the founder will provide the shoot-plan
   business rules that gate post creation.
-- Posts go live from the posting date.
+- **A post goes live as soon as INFLX approves it** (changed 1 Oct, v1.15; it was "from the posting
+  date"). The posting date is the last day to go live (2.1).
+- **An offer post is visible to shoppers only while its offer is active.** Approved before the offer
+  starts → it waits and goes live on the offer's start date. When the offer ends → it leaves the shop
+  (4.9). A brand that wants one launch day gets it through the offer's start date.
 - **INFLX admin approves every post** before it goes live.
 
 ### 4.2 The flow
@@ -483,7 +500,9 @@ channel the visit came from. (Replaces the August list of seven; X and LinkedIn 
 **Post links**
 - Each post gets `inflx.in/p/<code>` with the five channel endings.
 - A tap opens that post straight away, with its products and the offer already applied.
-- **They appear the moment INFLX approves the post.** Before the posting date, a tap shows "This post goes
+- **They appear the moment INFLX approves the post**, and open the post at once (v1.15). Only an offer
+  post whose offer has not started yet shows "This post goes live on <the offer's start>". The old
+  wording, kept for the record: Before the posting date, a tap shows "This post goes
   live on <date>" and her store. Posts in review and drafts have no links.
 - The `/p/` address was used for single-product links; products are no longer shared on their own, so it
   now belongs to posts.
@@ -691,7 +710,8 @@ store come next, in their own discussion.
 **Where it applies.** The feed rules order **Home** and **Play**. A post never disappears anywhere else:
 the creator store, brand store, search, Saved, collections, its link and its code always show it.
 
-**What can appear.** Live posts only: approved, posting date reached, not removed, at least one product
+**What can appear.** Live posts only: approved (the posting date is not asked, v1.15), its offer active
+if it has one, not removed, at least one product
 in stock and on sale. Filtered to her **Women / Men / Kids** choice (none chosen = everything). Play takes
 videos only.
 
@@ -1059,3 +1079,4 @@ invoices · a "pay now" nudge for cash-on-delivery orders · map-based addresses
 | 2026-09-30 | 1.12 | **Final, locked by the founder.** One board for ordering and deals: `features/shopper-ordering/04-preview/mockups/shopper-ordering-mockups-final.html` (38 screens: O1, O2, D1, P1–P3, B1–B4, V1–V4, K1–K5, G1–G5, D4, D11, O6–O17); the deals board's screens replace D2, D3 and D5–D10. One-time check against the screens: screen references in 6.3–6.5 brought to the final names; the "Your picks" tray dropped (picks show on the cards, slots and pair list, and in the review); volume quantity is chosen in the pop-up, not a stepper on the card; BOGO is one pop-up in two parts; the volume example corrected to "save ₹900"; **rounding written down**: a % comes off each unit, rounded to the rupee; shared prices put any leftover rupee on the costliest item. |
 | 2026-09-30 | 1.13 | Founder: every order's money divided clearly. 6.13 now shows how each rupee splits: creator's share at her collaboration's %, INFLX's share at the admin rate (category via creator, or the brand's own rate), the brand the rest; worked per item at Place order, frozen on the item, adding up to the paisa. Example ₹1,000 → ₹100 / ₹50 / ₹850 (fashion Path B 5%). BOGO wording aligned: the free one is ₹0 in the money too. Delivery and COD fees go to the brand. Cash on delivery: the brand owes creator's share + INFLX's share, taken from its next online payouts. |
 | 2026-10-01 | 1.14 | Founder: a published offer needs "Add products", and products may change only while no creator has the offer. 1.10 rewritten: add and remove are allowed until the offer is given to a creator (an unsigned invitation counts), then both are greyed out with the reason; End offer now unchanged. This **reverses** v1.0's "a removed product leaves her posts": removal from an offer a creator has is no longer possible (2.8 row replaced). 1.4 and 1.12 aligned. Contract `features/offer-add-products`. |
+| 2026-10-01 | 1.15 | Founder: **the posting date is the last day to go live, not the day itself.** A post is in the shop as soon as INFLX approves it; an offer post is visible only while its offer is active (it waits for the offer's start, leaves at its end) (2.1, 4.1, 4.14, 5.12). Offers a brand may give: start on or before the posting date and end at least one day after it — an offer ending on the posting date, or starting the day after it, is no longer given (2.3). Products without offers: free of offers from the day the terms are sent, not from the posting date (2.4). Unchanged: invitations close 3 days before the date; the date is at least 7 days ahead; the minimum is counted by the date; late and Delayed after it. Contract `features/posting-date-last-day`. |

@@ -150,7 +150,7 @@ describe('C4 · C5 — New set and the date picker', () => {
     fireEvent.press(getByTestId('date-confirm'));
     await waitFor(() => getByTestId('cutoff-line'));
     getByText(`Invitations close ${longDate4(addDays(earliest, -3))}, three days before posting.`);
-    getByText('Everyone in this set posts on this day.');
+    getByText('The last day for everyone in this set to go live.');   // posting-date-last-day (1 Oct 2026): was "posts on this day"
 
     brandApi.createCampaignSet.mockResolvedValue(ok({ set: { id: 'sN' }, cutoff: addDays(earliest, -3) }));
     fireEvent.press(getByTestId('save-set'));

@@ -103,7 +103,7 @@ export default function PostStatusScreen({ navigation, route }) {
         {post.state === 'approved' || post.state === 'live' ? (
           <>
             <Block title={post.state === 'approved' ? CP.approvedTitle : CP.liveBody} testID="approved">
-              {post.state === 'approved' ? <Text style={b.hint}>{CP.approvedBody(posting)}</Text> : <Text style={b.hint}>{post.sales_words}</Text>}
+              {post.state === 'approved' ? <Text style={b.hint}>{CP.approvedBody(post.goes_live_on || posting)}</Text> : <Text style={b.hint}>{post.sales_words}</Text>}
             </Block>
             {/* post-links-codes (L1): the code and links from approval, the stats once live. */}
             {post.code ? <View style={{ flexDirection: 'row', marginBottom: 10 }}>

@@ -48,7 +48,7 @@ export const CP = {
   // P3
   collabQ: 'Which collaboration?',
   collabHint: 'The post can only use what this collaboration lets you sell.',
-  collabLine: (c) => [c.sell_words, c.posting_date ? `posts on ${dayMonthP(c.posting_date)}` : null].filter(Boolean).join(' · '),
+  collabLine: (c) => [c.sell_words, c.posting_date ? `live by ${dayMonthP(c.posting_date)}` : null].filter(Boolean).join(' · '),
   collabDone: (c) => [`${c.posts_done} of ${c.posts_min} posts done`, c.earning].filter(Boolean).join(' · '),
   // P4
   typeQ: 'What kind of post?',
@@ -122,7 +122,8 @@ export const CP = {
   whoChecks: 'Who checks it',
   whoChecksBody: "INFLX, not the brand. We check the products and offer match your collaboration, and that there's no copyrighted music.",
   goesLive: 'Goes live',
-  goesLiveBody: (d) => (d ? `On ${dayMonthP(d)}, your posting date, once approved.` : 'Once approved.'),
+  // posting-date-last-day: an approved post is in the shop at once; the posting date is the last day.
+  goesLiveBody: (d) => (d ? `As soon as INFLX approves it. Your last day to go live is ${dayMonthP(d)}.` : 'As soon as INFLX approves it.'),
   // P13
   sentBackTitle: 'Sent back',
   whatSaid: 'What INFLX said',
@@ -137,7 +138,7 @@ export const CP = {
   deleted: 'Deleted.',
   // approved / live
   approvedTitle: 'Approved',
-  approvedBody: (d) => `Approved by INFLX. It goes live on ${dayMonthP(d)}, your posting date.`,
+  approvedBody: (d) => `Approved by INFLX. It goes live on ${dayMonthP(d)}, when its offer starts.`,
   liveBody: 'In the shop now.',
   noEdits: "An approved post can't be changed. You can take it down: it leaves the shop and keeps its earnings history.",
   takeDown: 'Take it down',

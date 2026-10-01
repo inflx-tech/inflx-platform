@@ -1,0 +1,28 @@
+posting-date-last-day — full backend run, 1 Oct 2026 (private database inflx_test_offeradd)
+Compared with the full run taken earlier the same day for offer-add-products. The 'before' run predates today's store-visit walk fixes (item10-store-visit), so their renamed tests appear below too.
+
+before (full run earlier today, after offer-add-products): suites 138 tests 1831 passed 1625 failed 178 pending 28
+after  (this change, plus the store-visit walk fixes of today): suites 137 tests 1834 passed 1629 failed 177 pending 28
+passed before, failing now: 0
+new tests failing: 0
+failed before, passing now: 1
+   item6-negotiation.test.js :: admin settings, Needs You, privacy and access (checks 29–35, 42, 44) the settings read with their ranges; a change is audited; out of range is refused (check 29)
+tests renamed or rewritten (gone under their old name): 12
+   item10-flow.test.js :: passed, attended, confirmed (checks 15–20, 43) 16 · she marks attended: only from the day, the due date is stamped from the admin number and shown to both [was passed]
+   item10-flow.test.js :: passed, attended, confirmed (checks 15–20, 43) 19 · changing the admin number afterwards moves no due date already stamped, and applies to the next [was passed]
+   item10-flow.test.js :: the auto-confirm job and the money (checks 18, 21) 18 · the brand does nothing: at the due date it confirms itself, records that, tells both once, and a re-run is a no-op [was passed]
+   item10-flow.test.js :: the auto-confirm job and the money (checks 18, 21) 21 · NO MONEY MOVES anywhere in item 10 — balances, escrow and ledgers byte-equal before the plan and after auto-confirm [was passed]
+   item10-flow.test.js :: the admin number and the lists shoot_auto_confirm_days is on the settings page, 3 by default, 1–30 [was passed]
+   shopper-app-v2.test.js :: what can appear in the feed (checks 1–3) only live posts: not before the posting date, not taken down, not after the offer ends, not sold out [was passed]
+   shoppable-posts-v2.test.js :: INFLX approves or sends back (P12, P13; checks 17–21) approved before the posting date: "approved", goes live on the date; it counts toward her minimum; she can take it down [was passed]
+   shoppable-posts-v2.test.js :: INFLX approves or sends back (P12, P13; checks 17–21) after the posting date an approved post is live [was passed]
+   post-links-codes.test.js :: a post code (checks 1–4) share (approved, before the posting date): the code, the caption line, five links, "goes live on" [was passed]
+   post-links-codes.test.js :: what a post link opens, and the visits it counts (checks 5–10) before the posting date: "goes live on", her store; the ending is the channel; a lower-case code works [was passed]
+   creator-terms-v2.test.js :: the offers a brand can give for a set (check 1, 2) valid on the posting date or the day after; others are left out with the reason [was passed]
+   creator-terms-v2.test.js :: products without offers for a set (check 3) only products not held by an offer on or after the posting date; an offer that ended before it frees them [was passed]
+new test names by suite: {"item10-flow.test.js":{"passed":5,"failed":0},"shopper-app-v2.test.js":{"passed":4,"failed":0},"shoppable-posts-v2.test.js":{"passed":2,"failed":0},"post-links-codes.test.js":{"passed":2,"failed":0},"creator-terms-v2.test.js":{"passed":2,"failed":0}}
+suites that did not load: collection-library.test.js | before: zz-demo17.test.js, collection-library.test.js
+
+Notes
+- collection-library.test.js fails to load in both runs (missing service; pre-existing).
+- zz-demo17.test.js in the earlier run was a temporary file from another window; gone.

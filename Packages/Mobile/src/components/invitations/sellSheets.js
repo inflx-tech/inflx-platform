@@ -56,7 +56,7 @@ export function OffersSheet({ visible, campaignId, setId, postingDate, creatorNa
   const all = offers.length > 0 && picked.length === offers.length;
   const toggle = (id) => setPicked(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
   const hiddenLine = data && data.hidden && data.hidden.length
-    ? S.hidden(data.hidden.length, data.hidden.slice(0, 3).map(h => (h.why === 'starts' ? S.hiddenStarts(dayMonth(h.date)) : S.hiddenEnded(dayMonth(h.date)))).join(', '))
+    ? S.hidden(data.hidden.length, data.hidden.slice(0, 3).map(h => (h.why === 'starts' ? S.hiddenStarts(dayMonth(h.date)) : h.why === 'ends' ? S.hiddenEnds(dayMonth(h.date)) : S.hiddenEnded(dayMonth(h.date)))).join(', '))
     : null;
   const use = () => onUse(offers.filter(o => picked.includes(o.id)));
 
@@ -132,7 +132,7 @@ export function ProductsSheet({ visible, campaignId, setId, postingDate, value, 
   return (
     <Sheet visible={visible} onClose={onClose} testID="products-sheet">
       <Text style={s.title}>{S.productsTitle}</Text>
-      <Text style={s.hint}>{S.productsHint(dayMonth(postingDate))}</Text>
+      <Text style={s.hint}>{S.productsHint()}</Text>
       <View style={{ height: 8 }} />
       <Option k="none" title={S.none} sub={S.noneSub} testID="products-none" />
       <Option k="all" title={S.all} sub={free ? S.allSub(free.length) : '…'} testID="products-all" />

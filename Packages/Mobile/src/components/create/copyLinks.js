@@ -15,7 +15,7 @@ export const CL = {
   myPosts: 'My posts',
   share: 'Share', stats: 'Stats',
   codeLive: (brand, code, since) => `${brand} · Code ${code}${since ? ` · live since ${dayMonthP(since)}` : ''}`,
-  codeApproved: (date, code) => `Approved · goes live ${dayMonthP(date)} · Code ${code}`,
+  codeApproved: (date, code) => `Approved · goes live ${dayMonthP(date)}, when its offer starts · Code ${code}`,
   noCodeYet: 'With INFLX · no code until approved',
   // L2 / L3
   shareTitle: 'Share your post',

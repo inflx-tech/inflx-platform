@@ -673,7 +673,11 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
         'sale_live_autoconfirm_days',
         // ASSERTION DRIFT, item 17 (rules v1.31 §17A, AM12): what a person is told when she asks to withdraw.
         'withdrawal_process_hours',
-        'link_channel_window_days']
+        'link_channel_window_days',
+        // ASSERTION DRIFT, follower-app-v2 (mig 197): the shopper feed's nine numbers. They were
+        // never added here, so this check had been red since 29 Sep; corrected 1 Oct 2026.
+        'feed_near_km', 'feed_new_share_pct', 'feed_new_hours', 'feed_repeat_days', 'feed_learning_on',
+        'feed_w_does', 'feed_w_recent', 'feed_w_near', 'feed_w_performs']
     );
     const rounds = r.body.data.settings.find(x => x.key === 'negotiation_rounds');
     expect(rounds).toMatchObject({ value: 2, min: 1, max: 5, unit: 'rounds' });
