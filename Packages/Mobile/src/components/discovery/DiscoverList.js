@@ -11,6 +11,16 @@
  *   defaultOpenOnly     true on Discover, false inside a group picker
  *   selectedIds, disabledIds (Set), capacityLeft, onToggleSelect
  *   onOpen(creator), onAddToGroup(creator)
+ *   onBlockedPress(creator, pickState)   select mode: a "Can't invite" row was tapped (board B, D2)
+ *
+ * ui-walk-fixes board B (locked 2 Oct 2026, founder decisions D1 + D2):
+ *   · ONE control row — the search box with a single Filters button ("Filters · N"). The chip
+ *     row is gone; "Open to invitations only" lives in the Filters sheet. "Clear all" joins the
+ *     count line while a filter is on, and "Nearest first ▾" opens the sheet (U12) — no second
+ *     menu in the pinned area.
+ *   · select mode draws the compact three-line PickRow; browse mode keeps the full CreatorCard.
+ * Everything new is styled from `p` below. The exported `s` is also the creator app's Find
+ * brands list (BrandList imports it) and is not touched.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
@@ -19,9 +29,9 @@ import { Skeleton, LoadError } from '../settings/feedback';
 import { EmptyState, TagRow, PrimaryButton } from '../settings/primitives';
 import { Avatar } from '../../screens/brand/BrandBlockedCreatorsScreen';
 import { StatTriple, StatusChip3 } from './bits';
-import FiltersSheet, { CREATOR_DEFAULTS, changedCount, quickChip } from './FiltersSheet';
+import FiltersSheet, { CREATOR_DEFAULTS, changedCount } from './FiltersSheet';
 import { aimLabel, modeLabel } from '../settings/copy';
-import { C3, fmtCompact, distanceLabel, distanceOf, AIM_ORDER, MODE_ORDER } from './copy3';
+import { C3, fmtCompact, fmtPct, distanceLabel, distanceOf, AIM_ORDER, MODE_ORDER } from './copy3';
 
 /**
  * One creator, as the Creators tab draws her.
@@ -78,14 +88,84 @@ export function CreatorCard({ c, onOpen, onAddToGroup, compact, select }) {
   );
 }
 
-/** Compact row for group members / pickers: avatar · name · "Niche · City · 32 km · 48.2K IG" · status chip. */
-export function MemberRow({ c, right, onOpen, sub }) {
+/** "Fashion · Guntur · 32 km · Telugu, English" — the same facts, in the same order, as the full card's line. */
+export function placeLine(c) {
+  return [c.nicheLabel, c.cityName, distanceLabel(distanceOf(c)), (c.languages || []).join(', ')].filter(Boolean).join(' · ');
+}
+
+/**
+ * PickRow — the row you TICK, on "Add creators" for a set and for a group.
+ * ui-walk-fixes board B, frames B1–B6 · founder decisions D1 and D2 (2 Oct 2026).
+ *
+ * Three lines, so about six creators fit where one full card did:
+ *   her name, with the round tick at the right
+ *   niche · city · distance · languages        (one line, cut with … when long)
+ *   48.2K IG · 12.1K YT · 4.2% eng
+ * No Aim/mode tag line (D1 — "no need to mention this"). The Creators tab keeps the full card.
+ *
+ * A row that can't be ticked (`locked`) dims ONLY her face and her name. With a `note` — why she
+ * is locked — that note takes the second line, stays readable grey and the numbers step aside;
+ * a `chip` ("Can't invite", "Invited") sits beside her name.
+ *
+ * `onWhy` makes a locked row tappable: D2 — tapping a creator who can't be invited says why.
+ * Such a row must NOT be marked disabled: React Native switches a touchable off as soon as
+ * accessibilityState.disabled is true, so it is a button there, not a dead checkbox. A locked
+ * row with nothing to say (already invited, already in the group, the group is full) is dead.
+ */
+export function PickRow({ c, checked, locked, note, chip, tone, onToggle, onWhy }) {
+  const isLocked = !!locked;
+  const isChecked = !!checked;
+  const speaks = isLocked && typeof onWhy === 'function';
+  const dead = isLocked && !speaks;
+  const explained = isLocked && !!note;
+  const second = explained ? note : placeLine(c);
+  const chipTone = tone || T.state.ended;
+  const hasStatus = !!c.status && c.status !== 'OK';
+  return (
+    <TouchableOpacity style={p.row} onPress={isLocked ? onWhy : onToggle} disabled={dead} activeOpacity={0.7}
+      accessibilityRole={speaks ? 'button' : 'checkbox'} accessibilityState={{ checked: !!isChecked, disabled: !!dead }}
+      testID={`select-${c.id}`}>
+      <View style={p.hd}>
+        <View style={isLocked ? p.dim : null}><Avatar name={c.name} url={c.avatarUrl} size={36} /></View>
+        <View style={p.text}>
+          <View style={p.nameRow}>
+            <Text style={[p.name, isLocked && p.dim]} numberOfLines={1} testID={`pick-name-${c.id}`}>{c.name}</Text>
+            {chip ? (
+              <View style={[p.chip, { backgroundColor: chipTone.bg }]}><Text style={[p.chipText, { color: chipTone.fg }]}>{chip}</Text></View>
+            ) : null}
+          </View>
+          {second ? <Text style={p.line} numberOfLines={1} ellipsizeMode="tail" testID={`pick-line-${c.id}`}>{second}</Text> : null}
+          {explained ? null : (
+            <Text style={[p.line, p.num]} numberOfLines={1} ellipsizeMode="tail" testID={`pick-numbers-${c.id}`}>
+              {C3.discover.pickNumbers(fmtCompact(c.instagram), fmtCompact(c.youtube), fmtPct(c.engagement))}
+            </Text>
+          )}
+        </View>
+        <View style={[p.tick, isChecked && !isLocked && p.tickOn, isLocked && p.tickOff]} testID={`tick-${c.id}`}>
+          {isChecked ? <Text style={[p.tickMark, isLocked && p.tickMarkOff]}>✓</Text> : null}
+        </View>
+      </View>
+      {/* What the full card says under her numbers when she is not simply open: "Not taking
+          invitations", "Not open to your brand", "Blocked by you". She can still join a group. */}
+      {hasStatus || c.blockedByYou ? (
+        <View style={p.under}><StatusChip3 status={hasStatus ? c.status : null} blockedByYou={!!c.blockedByYou} /></View>
+      ) : null}
+    </TouchableOpacity>
+  );
+}
+
+/**
+ * Compact row for group members / pickers: avatar · name · "Niche · City · 32 km · 48.2K IG" · status chip.
+ * `dim` (optional, ui-walk-fixes board B): greys her face and her name only — for a creator who
+ * can't be invited, whose `sub` line says why and must stay readable. Off, the row is as before.
+ */
+export function MemberRow({ c, right, onOpen, sub, dim }) {
   const meta = sub || [c.nicheLabel, c.cityName, distanceLabel(distanceOf(c)), c.instagram != null ? `${fmtCompact(c.instagram)} IG` : null].filter(Boolean).join(' · ');
   return (
     <TouchableOpacity style={s.member} onPress={onOpen ? () => onOpen(c) : undefined} activeOpacity={onOpen ? 0.7 : 1} testID={`member-${c.id}`}>
-      <Avatar name={c.name} url={c.avatarUrl} size={40} />
+      {dim ? <View style={p.dim}><Avatar name={c.name} url={c.avatarUrl} size={40} /></View> : <Avatar name={c.name} url={c.avatarUrl} size={40} />}
       <View style={{ flex: 1, marginLeft: 12 }}>
-        <Text style={s.name} numberOfLines={1}>{c.name}</Text>
+        <Text style={dim ? [s.name, p.dim] : s.name} numberOfLines={1}>{c.name}</Text>
         {meta ? <Text style={s.meta} numberOfLines={1}>{meta}</Text> : null}
         {c.status ? <View style={{ marginTop: 4 }}><StatusChip3 status={c.status} blockedByYou={c.blockedByYou} /></View> : null}
       </View>
@@ -99,20 +179,21 @@ export default function DiscoverList({
   selectedIds, disabledIds, disabledLabel, capacityLeft, onToggleSelect, onOpen, onAddToGroup, header, testID = 'discover-list',
   // Item 5 — a per-row pick state for the set picker: (item) → { state: 'ok' | 'invited' | 'ineligible', label, chip }.
   // 'invited' is ticked and locked; 'ineligible' is locked and unticked; both show the label under the name.
-  pickState,
+  // ui-walk-fixes D2: the state may also carry `message`, and a tapped 'ineligible' row is handed
+  // to onBlockedPress(item, state) so the screen can say the sentence in its own toast.
+  pickState, onBlockedPress,
 }) {
   const [search, setSearch] = useState('');
   // creator-distance-and-visit-preference: `sort` (default 'distance' — nearest first) and `within`
-  // (default 'any') ride inside the filters, so the sheet and the count-row menu share one value.
+  // (default 'any') ride inside the filters. ui-walk-fixes U12: the sheet is now the sort's only
+  // home — the count line's "Nearest first ▾" opens it instead of a second menu.
   const [filters, setFilters] = useState({ ...CREATOR_DEFAULTS, openOnly: defaultOpenOnly });
   const sort = filters.sort || CREATOR_DEFAULTS.sort;
-  const setSort = (k) => setFilters(f => ({ ...f, sort: k }));
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('loading');   // loading | error | ready | more
   const [sheet, setSheet] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
   const seq = useRef(0);
   const debounce = useRef(null);
 
@@ -138,22 +219,23 @@ export default function DiscoverList({
 
   const defaults = { ...CREATOR_DEFAULTS, openOnly: defaultOpenOnly };
   const nChanged = changedCount(filters, defaults);
-  const chip = quickChip(filters, defaults, lists);
   const hasMore = rows.length < total;
 
   function clearAll() { setFilters({ ...defaults }); setSearch(''); }
 
+  // Select mode draws the compact PickRow (board B, D1); browse mode keeps the full card.
   const renderItem = ({ item }) => {
     if (mode === 'select' && pickState) {
       const ps = pickState(item) || { state: 'ok' };
       const locked = ps.state !== 'ok';
       const checked = ps.state === 'invited' || !!(selectedIds && selectedIds.has(item.id));
+      // D2: only a creator who can't be invited has something to say when tapped.
+      const why = ps.state === 'ineligible' && onBlockedPress ? () => onBlockedPress(item, ps) : undefined;
       return (
-        <CreatorCard c={locked ? { ...item, status: null } : item} select={{
-          checked, disabled: locked, onToggle: () => onToggleSelect && onToggleSelect(item),
-          note: locked ? ps.label : undefined, chip: ps.chip,
-          tone: ps.state === 'invited' ? T.state.waiting : T.state.ended,
-        }} />
+        <PickRow c={locked ? { ...item, status: null } : item} checked={checked} locked={locked}
+          note={locked ? ps.label : undefined} chip={ps.chip}
+          tone={ps.state === 'invited' ? T.state.waiting : T.state.ended}
+          onToggle={() => onToggleSelect && onToggleSelect(item)} onWhy={why} />
       );
     }
     if (mode === 'select') {
@@ -161,10 +243,9 @@ export default function DiscoverList({
       const checked = disabled || !!(selectedIds && selectedIds.has(item.id));
       const full = !checked && capacityLeft != null && capacityLeft <= 0;
       return (
-        <CreatorCard c={disabled ? { ...item, status: null } : item} select={{
-          checked, disabled: disabled || full, onToggle: () => onToggleSelect && onToggleSelect(item),
-          note: disabled ? (disabledLabel || C3.groups.alreadyIn) : undefined,
-        }} />
+        <PickRow c={disabled ? { ...item, status: null } : item} checked={checked} locked={disabled || full}
+          note={disabled ? (disabledLabel || C3.groups.alreadyIn) : undefined}
+          onToggle={() => onToggleSelect && onToggleSelect(item)} />
       );
     }
     return <CreatorCard c={item} onOpen={onOpen} onAddToGroup={onAddToGroup} />;
@@ -184,29 +265,21 @@ export default function DiscoverList({
         Only the two you actually touch stay pinned now. The hint and the count
         ride at the top of the list and scroll away once you are looking at
         people, which is the moment you stop needing them.
+
+        Founder, 2026-10-01 (ui-walk-fixes board B): "all filters into one button."
+        The chip row under the search box is gone — it wrapped to a second line as
+        soon as a filter was on. What is pinned now is ONE row: the search box and
+        a Filters button that counts what is set. "Open to invitations only" is the
+        first switch inside that sheet, and the sort menu that used to open here,
+        pushing the list down, is the sheet's Sort group.
       */}
-      <View style={s.controls}>
-        <TextInput style={s.search} value={search} onChangeText={setSearch} placeholder={C3.discover.search} placeholderTextColor={T.ink3} autoCorrect={false} autoCapitalize="none" testID="discover-search" />
-        <View style={s.quick}>
-          <TouchableOpacity style={[s.qchip, filters.openOnly && s.qchipOn]} onPress={() => setFilters(f => ({ ...f, openOnly: !f.openOnly }))} testID="quick-open">
-            <Text style={[s.qchipText, filters.openOnly && s.qchipTextOn]}>{C3.discover.openOnly}</Text>
+      <View style={p.ctlWrap}>
+        <View style={p.ctlRow} testID="discover-controls">
+          <TextInput style={[s.search, p.ctlSearch]} value={search} onChangeText={setSearch} placeholder={C3.discover.search} placeholderTextColor={T.ink3} autoCorrect={false} autoCapitalize="none" testID="discover-search" />
+          <TouchableOpacity style={[p.fbtn, nChanged > 0 && p.fbtnOn]} onPress={() => setSheet(true)} activeOpacity={0.7} accessibilityRole="button" testID="open-filters">
+            <Text style={p.fbtnText} numberOfLines={1}>{nChanged > 0 ? C3.discover.filtersN(nChanged) : C3.discover.filters}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.qchip} onPress={() => setSheet(true)} testID="open-filters">
-            <Text style={s.qchipText}>{nChanged > 0 ? C3.discover.filtersN(nChanged) : C3.discover.filters}</Text>
-          </TouchableOpacity>
-          {chip ? (
-            <TouchableOpacity style={s.qchip} onPress={clearAll} testID="quick-chip"><Text style={s.qchipText}>{chip}  ✕</Text></TouchableOpacity>
-          ) : null}
         </View>
-        {sortOpen ? (
-          <View style={s.sortMenu}>
-            {Object.entries(C3.discover.sorts).map(([k, l]) => (
-              <TouchableOpacity key={k} style={s.sortItem} onPress={() => { setSort(k); setSortOpen(false); }} testID={`sort-${k}`}>
-                <Text style={[s.sortItemText, k === sort && { color: T.ink, fontFamily: fonts.sansBold }]}>{l}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : null}
       </View>
 
       {status === 'loading' ? <Skeleton rows={5} /> : status === 'error' ? (
@@ -216,7 +289,10 @@ export default function DiscoverList({
           data={rows}
           keyExtractor={r => r.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 18, paddingTop: 0, paddingBottom: 120 }}
+          // ui-walk-fixes board C: in select mode (the two "Add creators" pickers) the footer is now
+          // a strip under this list, not a bar floating over it, so the 120 that scrolled the last
+          // row clear of that bar is not needed there. Browse mode (the Creators tab) is unchanged.
+          contentContainerStyle={{ padding: 18, paddingTop: 0, paddingBottom: mode === 'select' ? 24 : 120 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           ListHeaderComponent={
@@ -224,8 +300,18 @@ export default function DiscoverList({
               {header || null}
               {status !== 'error' ? (
                 <View style={s.countRow}>
-                  <Text style={s.count}>{C3.discover.count(total)}</Text>
-                  <TouchableOpacity onPress={() => setSortOpen(o => !o)} testID="sort-toggle">
+                  <View style={p.countLeft}>
+                    <Text style={s.count}>{C3.discover.count(total)}</Text>
+                    {/* "Clear all" takes the place of the summary chip ("Fashion +1 ✕") and does
+                        what it did, so it keeps that chip's testID. Shown only while a filter is on. */}
+                    {nChanged > 0 ? (
+                      <TouchableOpacity onPress={clearAll} hitSlop={CLEAR_SLOP} accessibilityRole="button" testID="quick-chip">
+                        <Text style={p.clear}>{C3.discover.clearAll}</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  {/* U12: the sort lives in the Filters sheet; this opens it. */}
+                  <TouchableOpacity onPress={() => setSheet(true)} accessibilityRole="button" testID="sort-toggle">
                     <Text style={s.sort}>{C3.discover.sorts[sort]} ▾</Text>
                   </TouchableOpacity>
                 </View>
@@ -244,7 +330,7 @@ export default function DiscoverList({
         />
       )}
 
-      <FiltersSheet visible={sheet} kind="creators" value={filters} lists={lists}
+      <FiltersSheet visible={sheet} kind="creators" value={filters} lists={lists} defaults={defaults}
         fetchCount={async (f) => { const r = await countFetcher({ ...f, search: search.trim() || undefined, countOnly: 1 }); return r.success ? r.data.total : 0; }}
         onApply={(f) => { setFilters(f); setSheet(false); }} onClose={() => setSheet(false)} />
     </View>
@@ -290,4 +376,43 @@ export const s = StyleSheet.create({
   member: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   pickChip: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999, marginLeft: 8 },
   pickChipText: { fontFamily: fonts.sansBold, fontSize: 11 },
+});
+
+// "Clear all" is a word, not a button-sized target: give the finger room around it.
+const CLEAR_SLOP = { top: 10, bottom: 10, left: 8, right: 8 };
+
+/**
+ * ui-walk-fixes board B — everything the one control row and the PickRow need. Kept apart from
+ * the exported `s` on purpose: BrandList (the creator app's Find brands) draws itself from `s`,
+ * and that list does not change in this round (spec U9).
+ */
+const p = StyleSheet.create({
+  // the one control row: search + Filters
+  ctlWrap: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 4 },
+  ctlRow: { flexDirection: 'row', alignItems: 'stretch' },
+  ctlSearch: { flex: 1, minWidth: 0 },
+  fbtn: { marginLeft: 8, minHeight: 40, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1.5, borderColor: T.border, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center' },
+  fbtnOn: { borderColor: T.ink },
+  fbtnText: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink },
+  // the count line
+  countLeft: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
+  clear: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, textDecorationLine: 'underline', marginLeft: 8 },
+  // the compact pick row
+  row: { paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: T.border },
+  hd: { flexDirection: 'row', alignItems: 'flex-start' },
+  text: { flex: 1, minWidth: 0, marginLeft: 10 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  name: { flexShrink: 1, fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 20, color: T.ink },
+  line: { fontFamily: fonts.sansRegular, fontSize: 12.5, lineHeight: 17, color: T.ink2, marginTop: 1 },
+  num: { fontFamily: fonts.sansSemiBold, color: T.ink, fontVariant: ['tabular-nums'] },
+  // a row that can't be ticked: only her face and her name are dimmed — the line that says why is not
+  dim: { opacity: 0.5 },
+  chip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, marginLeft: 8 },
+  chipText: { fontFamily: fonts.sansBold, fontSize: 11 },
+  tick: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: T.border, alignItems: 'center', justifyContent: 'center', backgroundColor: T.bg, marginLeft: 10, marginTop: 1 },
+  tickOn: { backgroundColor: T.ink, borderColor: T.ink },
+  tickOff: { backgroundColor: T.surface, borderColor: T.surface },
+  tickMark: { fontFamily: fonts.sansBold, fontSize: 13, color: T.bg, marginTop: -1 },
+  tickMarkOff: { color: T.ink3 },
+  under: { marginTop: 6, marginLeft: 46 },
 });

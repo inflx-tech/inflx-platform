@@ -3,7 +3,7 @@
  * brand overview. Contract: features/item2-pitch-invitation-settings
  */
 import React from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act, within } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
   influencerApi: {
@@ -123,6 +123,67 @@ describe('Invitation settings (creator)', () => {
     getByText("Invitations you already have stay open until their set's cutoff. Your active collaborations carry on.");
     fireEvent.press(getByTestId('confirm-primary'));
     expect(getByTestId('open-switch').props.value).toBe(false);
+  });
+});
+
+/**
+ * ui-walk-fixes U22 (business-rule drift, founder decision D2 → U22; drift/K2.md).
+ *
+ * Since D2 a brand that cannot invite her is told WHICH of her rules ruled it out. The screen
+ * promised more privacy than that leaves her — "Only you see this." under Brand categories, and
+ * "Your categories, cities, minimum fee and commission stay private." on the card shown after a
+ * save. Both sentences are reworded; nothing else on the screen moved. No test pinned the old
+ * words, so these are new assertions, not rewritten ones.
+ */
+describe('Invitation settings (creator) — what she is promised about privacy (ui-walk-fixes U22)', () => {
+  const { COPY } = require('../../../components/settings/copy');
+  const OLD_CATEGORIES = 'None picked means any category. Only you see this.';
+  const OLD_PREVIEW = 'Your categories, cities, minimum fee and commission stay private.';
+  const NEW_CATEGORIES = "None picked means any category. Brands never see your list — a brand outside it is told only that you aren't taking its category.";
+  const NEW_PREVIEW = "Brands never see your category or city lists. A brand you've ruled out is told which rule it was, nothing more.";
+
+  // A press starts the button's fade and a save its toast; on jest's timers neither lands between awaits.
+  beforeEach(() => { jest.useFakeTimers(); });
+  afterEach(() => { jest.useRealTimers(); });
+
+  it('the two sentences, word for word', () => {
+    expect(COPY.creator.categoriesHint).toBe(NEW_CATEGORIES);
+    expect(COPY.creator.previewHint).toBe(NEW_PREVIEW);
+  });
+
+  it('under "Brand categories" she reads that a brand outside her list is told so — never "Only you see this."', async () => {
+    influencerApi.getInvitationSettings.mockResolvedValue(ok(DEFAULTS));
+    const r = render(<InvitationSettingsScreen navigation={nav()} />);
+    await waitFor(() => r.getByTestId('cat-WOMEN'));
+    r.getByText('Brand categories');
+    r.getByText(NEW_CATEGORIES);
+    expect(r.queryByText(OLD_CATEGORIES)).toBeNull();
+    expect(JSON.stringify(r.toJSON())).not.toMatch(/Only you see this\./);
+    // U10 — the hint under her minimums is not one of the two sentences and stays as it was.
+    r.getByText('Only you see these. Brands can still invite below them, with a warning.');
+  });
+
+  it('after a save, the "Brands see on your profile" card says what a ruled-out brand is told — never that it all "stays private"', async () => {
+    influencerApi.getInvitationSettings.mockResolvedValue(ok(DEFAULTS));
+    influencerApi.putInvitationSettings.mockResolvedValue(ok({ ...DEFAULTS, saved: true, brandCategoryCodes: ['WOMEN'] }));
+    const r = render(<InvitationSettingsScreen navigation={nav()} />);
+    await waitFor(() => r.getByTestId('cat-WOMEN'));
+    expect(r.queryByTestId('public-preview')).toBeNull();                 // the card belongs to a save
+    fireEvent.press(r.getByTestId('cat-WOMEN'));
+    await act(async () => { fireEvent.press(r.getByTestId('save-button')); });
+    const card = await waitFor(() => r.getByTestId('public-preview'));
+    within(card).getByText('Brands see on your profile');
+    within(card).getByText(NEW_PREVIEW);
+    expect(r.queryByText(OLD_PREVIEW)).toBeNull();
+    expect(JSON.stringify(r.toJSON())).not.toMatch(/stay private/);
+    // The card keeps the two rows under the sentence (U10): her categories and her minimums.
+    within(card).getByText('Brand categories');
+    within(card).getByText('Your minimums');
+  });
+
+  it('the pitch direction did not change: the brand\'s Pitch settings keep their own promise', () => {
+    expect(COPY.brand.whoHint).toBe("Only you see these. Creators who don't match are told they don't meet your criteria.");
+    expect(COPY.brand.blockedHint).toBe("Blocked creators see you as not accepting pitches. They aren't told they're blocked.");
   });
 });
 

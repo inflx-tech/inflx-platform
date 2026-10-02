@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { brandPalette as P, fonts } from '../../theme/tokens';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 
 /**
  * <ScreenHeader title sub back onBack count countLabel />
@@ -29,8 +30,10 @@ import { brandPalette as P, fonts } from '../../theme/tokens';
  */
 
 export default function ScreenHeader({ title, sub, back, onBack, count, countLabel }) {
+  // ui-walk-fixes D4 — no blank strip: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: top }]}>
       {back && onBack && (
         <TouchableOpacity onPress={onBack} style={styles.backLink} activeOpacity={0.7}>
           <Text style={styles.backText}>‹ Back</Text>
@@ -59,7 +62,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: P.white,
     paddingHorizontal: 18,
-    paddingTop: 52,
+    paddingTop: TOP_GAP_TITLE,   // only the gap; the component adds the phone's top inset
     paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: P.border,

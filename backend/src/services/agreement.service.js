@@ -121,10 +121,19 @@ function canOf(ctx, side, today = null) {
   const open = OPEN_STATUSES.includes(ctx.contract_status);
   const live = open && !past && !ctx.withdrawn_at && !ctx.declined_at && !ctx.expired_at;
   if (side === 'brand') {
+    // ui-walk-fixes U6(a), board F6: an agreement the brand took back can go out again. send()
+    // has always accepted it (status IN ('draft','withdrawn') AND sent_at IS NULL, before the
+    // cutoff); the read said the opposite, so the phone had no way to offer it. Nothing else
+    // about a withdrawn agreement changes — it is still not `live`, and its ending is still named.
+    const takenBack = ctx.contract_status === 'withdrawn' && !ctx.sent_at
+      && !past && !ctx.declined_at && !ctx.expired_at;
     return {
-      send: live && ctx.contract_status === 'draft' && ['accepted', 'applied'].includes(ctx.status),
+      send: ((live && ctx.contract_status === 'draft') || takenBack) && ['accepted', 'applied'].includes(ctx.status),
       sign: live && ctx.contract_status === 'pending_brand',
-      withdraw: live && ctx.contract_status === 'pending_influencer' && !ctx.influencer_signed_at,
+      // ui-walk-fixes (board F3): only an agreement the phone's own Send stamped (sent_at) can be
+      // taken back here — withdraw() answers 404 for one the website's "Approve & Send" put out,
+      // so the read must not offer it. The set row's actions.withdrawAgreement says the same.
+      withdraw: live && ctx.contract_status === 'pending_influencer' && !!ctx.sent_at && !ctx.influencer_signed_at,
       download: Boolean(ctx.influencer_signed_at && ctx.brand_signed_at),
     };
   }
@@ -247,7 +256,10 @@ async function preview(ciId, userId) {
   const cutoff = ctx.go_live_date ? campaignState.cutoffFor(calendarDay(ctx.go_live_date)) : null;
   return {
     invitationId: ctx.id,
-    reference: ctx.reference_no || null,   // null until sent — the screen shows DRAFT
+    // null until sent — the screen shows DRAFT. ui-walk-fixes (board F5 / F6): an agreement the
+    // brand took back is not out either. Its number stays on the contract row (send() keeps it,
+    // COALESCE), but the preview of something unsent never prints a number as if it were out.
+    reference: ctx.sent_at ? (ctx.reference_no || null) : null,
     draft: !ctx.sent_at,
     cutoff,
     terms: snapshot,

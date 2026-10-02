@@ -10,24 +10,38 @@
  *       where she'll share it, uploads the version, sends it, posts and links it.
  * Which moment it is comes from the server's `stage` and `can`, never a guess on the phone.
  * Files go straight to storage exactly as item 12's screen sends them.
+ *
+ * ui-walk-fixes board J (J6, J7): a link saves by itself (LinkBox12) in the package rows and in
+ * the rows outside the package, and every save on this screen — links and captions — goes through
+ * one line (useSaves12), so answers land in order. The one thing the phone now decides is when
+ * "I've posted everything" may be PRESSED: every PACKAGE link box has text and every Story has
+ * its screenshot. Links outside the package never count toward it; the server still refuses the
+ * step itself if a link is missing.
+ *
+ * ui-walk-fixes board C: the button and its one line sit in their own strip under the page
+ * (BottomBar), never over it, and the page is a FormScroll — the caption or link box she is in,
+ * with "Saving…" and its red line, stays in view above the strip and the keypad. A stage with
+ * nothing to press has no strip at all.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi, uploadContentFile } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, EmptyState, FieldError } from '../../components/settings/primitives';
 import { Skeleton, useToast } from '../../components/settings/feedback';
-import { ActionSheet } from '../../components/settings/sheets';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { LoadErrorList } from '../../components/discovery/DiscoverList';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FileTile12, AddTile12, NoteLine12, RoundPill12, QuoteBox12, Line12, CountChip12, FeeCard12 } from '../../components/content/bits12';
+import { FileTile12, AddTile12, NoteLine12, RoundPill12, QuoteBox12, Line12, CountChip12, FeeCard12, LinkBox12, useSaves12 } from '../../components/content/bits12';
 import { SendSheet12, ReportSheet12 } from '../../components/content/sheets12';
+import MediaViewer12 from '../../components/content/MediaViewer12';
 import { MSG12, LIMITS12 } from '../../components/content/copy12';
 import { DestinationSheet14 } from '../../components/sale/sheets14';
 import { C14, day10, rupees } from '../../components/sale/copy14';
@@ -39,6 +53,14 @@ const mimeOf = (a) => {
   return n.endsWith('.mp4') ? 'video/mp4' : n.endsWith('.png') ? 'image/png' : /\.jpe?g$/.test(n) ? 'image/jpeg' : '';
 };
 const STATE_TONE = { live: 'active', approved: 'waiting', in_review: 'waiting', sent_back: 'yourMove', removed: 'ended', draft: 'ended' };
+
+/** The keys her unsaved text is kept under in the screen's line of saves. */
+const captionKey = (row) => `caption:${row.key}`;
+const linkKey = (row) => `link:${row.key}`;
+/** The link boxes "I've posted everything" waits for: the PACKAGE rows that are not a Story. Never an outside row. */
+const packageLinks = (content) => ((content && content.rows) || [])
+  .filter((row) => !row.outside && !row.isStory)
+  .map((row) => ({ key: linkKey(row), url: ((row.proofs || [])[0] || {}).url || '' }));
 
 /** A small status chip in the locked palette. */
 function Chip({ tone, text, testID }) {
@@ -86,23 +108,26 @@ export default function SaleLiveScreen({ navigation, route }) {
   const [sheetError, setSheetError] = useState(null);
   const [uploads, setUploads] = useState({});
   const [rowError, setRowError] = useState({});
-  const [captions, setCaptions] = useState({});
-  const [links, setLinks] = useState({});
-  const [menu, setMenu] = useState(null);
+  const [viewer, setViewer] = useState(null);           // the open file: { label, files, index, edit }
   const [urls, setUrls] = useState({});
   const mounted = useRef(true);
-  const { toast, show } = useToast();
+  // Board C: the toast is drawn in the box above the button strip, just above it.
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
   useEffect(() => () => { mounted.current = false; }, []);
+  // J — every caption and link she types is held and sent here, in order (bits12 · useSaves12).
+  const saves = useSaves12({ onContent: setC, failed: COPY.saveFailed });
+  const inLine = saves.run;
 
   const load = useCallback(async () => {
     setStatus((st) => (st === 'ready' ? 'ready' : 'loading'));
-    const r = await influencerApi.myContent(ciId);
+    // In the same line as the saves: a read that left before a save can never land after it.
+    const r = await inLine(() => influencerApi.myContent(ciId));
     if (!mounted.current) return;
     if (!r || !r.success) { setStatus('error'); return; }
     setC(r.data.content);
     setStatus('ready');
-  }, [ciId]);
+  }, [ciId, inLine]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   useEffect(() => {
@@ -126,7 +151,7 @@ export default function SaleLiveScreen({ navigation, route }) {
     setBusy(false);
     if (!r || !r.success) { show(refuse(r)); return; }
     // P1: item 13's flow, opened at the post type with the brand and this collaboration filled in.
-    navigation.navigate('CreateTab', { screen: 'PostType', params: { postId: r.data.post.id } });
+    navigation.navigate('CreateTab', { screen: 'PostType', params: { postId: r.data.post.id }, initial: false });
   }
 
   async function addFiles(row, purpose = 'content') {
@@ -166,40 +191,22 @@ export default function SaleLiveScreen({ navigation, route }) {
     load();
   }
 
+  /** "Remove" in the viewer: it closes back to the row, then the file goes (no extra confirm — U12). */
   async function removeFile(file) {
-    setMenu(null);
+    setViewer(null);
     const r = await influencerApi.contentRemoveFile(ciId, file.id);
     if (!r || !r.success) show(refuse(r));
     load();
   }
-  async function viewFile(file) {
-    setMenu(null);
-    const r = await influencerApi.contentFileUrl(ciId, file.id);
-    if (!r || !r.success) { show(refuse(r)); return; }
-    Linking.openURL(r.data.view.url).catch(() => {});
-  }
-  async function saveCaption(row) {
-    const text = captions[row.key];
-    if (text == null) return;
-    const r = await influencerApi.contentCaption(ciId, row.key, text);
-    if (!r || !r.success) { setRowError((e) => ({ ...e, [row.key]: refuse(r) })); return; }
-    setCaptions((x) => { const n = { ...x }; delete n[row.key]; return n; });
-    setC(r.data.content);
-  }
-  async function saveLink(row) {
-    const url = links[row.key];
-    if (url == null) return;
-    const r = url.trim()
-      ? await influencerApi.contentSetProof(ciId, row.key, 1, { url: url.trim() })
-      : await influencerApi.contentClearProof(ciId, row.key, 1);
-    if (!r || !r.success) { setRowError((e) => ({ ...e, [row.key]: refuse(r) })); return; }
-    setRowError((e) => ({ ...e, [row.key]: null }));
-    setLinks((x) => { const n = { ...x }; delete n[row.key]; return n; });
-    setC(r.data.content);
-  }
+  /** How a row's caption and its link are sent; the line of saves decides when. */
+  const captionCfg = (row) => ({ server: row.caption || '', send: (text) => influencerApi.contentCaption(ciId, row.key, text) });
+  const sendLink = (row) => (url) => (url
+    ? influencerApi.contentSetProof(ciId, row.key, 1, { url })
+    : influencerApi.contentClearProof(ciId, row.key, 1));
   async function act(call, done) {
     setBusy(true); setSheetError(null);
-    const r = await call();
+    const r = await inLine(call);
+    if (!mounted.current) return false;
     setBusy(false);
     if (!r || !r.success) { if (sheet) setSheetError(refuse(r)); else show(refuse(r)); load(); return false; }
     setSheet(null);
@@ -214,15 +221,42 @@ export default function SaleLiveScreen({ navigation, route }) {
     setBusy(true); setSheetError(null);
     for (const type of types) {
       // eslint-disable-next-line no-await-in-loop
-      const r = await influencerApi.saleAddOutside(ciId, post.id, type);
+      const r = await inLine(() => influencerApi.saleAddOutside(ciId, post.id, type));
+      if (!mounted.current) return;
       if (!r || !r.success) { setBusy(false); setSheetError(refuse(r)); load(); return; }
       setC(r.data.content);
     }
     setBusy(false); setSheet(null);
   }
-  const removeRow = (row) => act(() => influencerApi.saleRemoveRow(ciId, row.key));
+  /**
+   * "Remove": the row goes, and with it whatever the phone held for its boxes. INFLX hands the next
+   * row she adds the same key, so nothing typed, saved or refused on this one may be left behind to
+   * be taken for the new row's. Forgotten in the remove's own turn, before any later save can start.
+   */
+  const removeRow = (row) => act(async () => {
+    const r = await influencerApi.saleRemoveRow(ciId, row.key);
+    if (r && r.success) { saves.forget(captionKey(row)); saves.forget(linkKey(row)); }
+    return r;
+  });
   const submit = () => act(() => influencerApi.contentSubmit(ciId, c.round.current), C14.sent);
-  const posted = () => act(() => influencerApi.contentPosted(ciId), C14.postedDone);
+  /** "Send to …": a caption she is still in is saved first; refused, it shows on its row and the sheet stays shut. */
+  async function openSend() {
+    Keyboard.dismiss();
+    setSheetError(null);
+    const done = await saves.flush();
+    if (!mounted.current) return;
+    if ((c.rows || []).some((row) => done.unsaved(captionKey(row)))) return;
+    setSheet('send');
+  }
+  /** "I've posted everything": the keypad closes, the saving finishes, and only then is it marked posted. */
+  async function posted() {
+    Keyboard.dismiss();
+    setBusy(true); setSheetError(null);
+    const done = await saves.flush();
+    if (!mounted.current) return;
+    if (packageLinks(c).some((x) => done.unsaved(x.key))) { setBusy(false); return; }   // the red line is on that row
+    await act(() => influencerApi.contentPosted(ciId), C14.postedDone);
+  }
   // Item 15 (S5): on Hybrid she may ask INFLX to look after the stamped days of silence.
   const askInflx = (note) => act(() => influencerApi.contentReport(ciId, { kind: 'brand_silent', note }), C14.reportedDone);
 
@@ -240,7 +274,21 @@ export default function SaleLiveScreen({ navigation, route }) {
   const sharable = p1 ? p1.posts.filter((p) => p.sharable) : [];
   const takenFor = (postId) => (c.rows || []).filter((r) => r.postId === postId).map((r) => r.type);
   const rowTitle = (row) => C14.rowLabel(row.post ? row.post.title : '', row.label);
-  const left = c.proofsLeft || [];
+  /** Her Story screenshot (one per row here), opened in the viewer with nothing under it. */
+  const openShot = (row, proof) => setViewer({ label: rowTitle(row), files: [{ id: proof.screenshotFileId, kind: 'photo' }], index: 0 });
+  // J · U13 — the button and the one line under it, from the PACKAGE rows only (an outside row
+  // never holds it back). A link box counts as soon as it has text (saved or not); a Story counts
+  // when INFLX has its screenshot. The line, in this order: what is still missing › a link that
+  // needs fixing › a link still being saved.
+  const boxes = stage === 'approved' ? packageLinks(c) : [];
+  const linksLeft = boxes.filter((x) => !String(saves.text[x.key] != null ? saves.text[x.key] : x.url).trim()).length;
+  const shotsLeft = (c.proofsLeft || []).filter((x) => x.isStory).length;
+  const linkRefused = boxes.some((x) => saves.refused(x.key));
+  const linkWrong = boxes.some((x) => saves.errorOf(x.key));
+  const linkSaving = boxes.some((x) => saves.text[x.key] != null || saves.busy[x.key]);
+  const canPost = !linkRefused && linksLeft === 0 && (!!c.can.markPosted || shotsLeft === 0);
+  const postLine = linksLeft || shotsLeft ? C14.toGo(linksLeft, shotsLeft)
+    : linkWrong ? C14.linkNeedsFixing : linkSaving ? C14.savingLink : null;
   const notShared = (c.notShared || []).filter((n) => !n.inPackage);
   const steps = (c.steps || []).map((st) => ({
     ...st,
@@ -251,7 +299,8 @@ export default function SaleLiveScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`sale-live-${stage}${c.frozen ? '-frozen' : ''}${c.delayed ? '-delayed' : ''}`}>
       <Header title={C14.titleHers} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 190 }} keyboardShouldPersistTaps="handled">
+      <FormArea>
+      <FormScroll contentContainerStyle={{ padding: 18 }} testID="sale-scroll">
         <View style={s.crumbRow}>
           <Text style={s.crumb}>{C14.crumb(brand, c.setName)}</Text>
           {c.delayed ? <DelayedChip10 /> : null}
@@ -322,14 +371,18 @@ export default function SaleLiveScreen({ navigation, route }) {
               <View key={row.key} style={s.row} testID={`row-${row.key}`}>
                 <View style={s.rowHead}><Text style={s.rowLabel}>{rowTitle(row)}</Text><CountChip12 have={row.files.length} need={1} /></View>
                 <View style={s.tiles}>
-                  {row.files.map((f) => <FileTile12 key={f.id} file={f} url={urls[f.id]} note={f.pinnedNote} onPress={() => setMenu(f)} />)}
+                  {row.files.map((f, i) => (
+                    <FileTile12 key={f.id} file={f} url={urls[f.id]} note={f.pinnedNote}
+                      onPress={() => setViewer({ label: rowTitle(row), files: row.files, index: i, edit: true })} />
+                  ))}
                   {pendingOf(row.key).map(([id, u]) => <FileTile12 key={id} progress={u.progress} />)}
                   {row.files.length + pendingOf(row.key).length < 10 ? <AddTile12 onPress={() => addFiles(row)} testID={`add-${row.key}`} /> : null}
                 </View>
                 {row.files.filter((f) => f.pinnedNote).map((f) => <NoteLine12 key={f.id} text={f.pinnedNote} />)}
-                <TextInput style={s.caption} value={captions[row.key] != null ? captions[row.key] : row.caption} placeholder={C14.captionPlaceholder}
-                  placeholderTextColor={T.ink3} multiline maxLength={500} onChangeText={(v) => setCaptions((x) => ({ ...x, [row.key]: v }))}
-                  onEndEditing={() => saveCaption(row)} testID={`caption-${row.key}`} />
+                <TextInput style={s.caption} value={saves.text[captionKey(row)] != null ? saves.text[captionKey(row)] : row.caption} placeholder={C14.captionPlaceholder}
+                  placeholderTextColor={T.ink3} multiline maxLength={500} onChangeText={(v) => saves.change(captionKey(row), v, captionCfg(row))}
+                  onEndEditing={() => saves.commit(captionKey(row))} testID={`caption-${row.key}`} />
+                <FieldError text={saves.errorOf(captionKey(row))} />
                 <FieldError text={rowError[row.key]} />
                 {c.can.removeRow ? <TextButton label={C14.removeRow} onPress={() => removeRow(row)} testID={`remove-${row.key}`} /> : null}
               </View>
@@ -349,7 +402,7 @@ export default function SaleLiveScreen({ navigation, route }) {
             {pkg.map((row) => (
               <View key={row.key} style={s.row}>
                 <View style={s.rowHead}><Text style={s.rowLabel}>{rowTitle(row)}</Text><CountChip12 have={row.files.length} need={1} /></View>
-                <View style={s.tiles}>{row.files.map((f) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => viewFile(f)} />)}</View>
+                <View style={s.tiles}>{row.files.map((f, i) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => setViewer({ label: rowTitle(row), files: row.files, index: i })} />)}</View>
               </View>
             ))}
             <Text style={s.small}>{C14.lockedWhile}</Text>
@@ -368,13 +421,13 @@ export default function SaleLiveScreen({ navigation, route }) {
                   <View style={s.rowHead}><Text style={s.rowLabel}>{rowTitle(row)}</Text><CountChip12 have={proof.filled ? 1 : 0} need={1} /></View>
                   {row.isStory ? (
                     <View style={s.tiles}>
-                      {proof.screenshotFileId ? <FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} /> : <AddTile12 onPress={() => addFiles(row, 'story_proof')} testID={`add-shot-${row.key}`} />}
+                      {proof.screenshotFileId ? <FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} onPress={() => openShot(row, proof)} /> : <AddTile12 onPress={() => addFiles(row, 'story_proof')} testID={`add-shot-${row.key}`} />}
                       <Text style={[s.small, { marginLeft: 8, flex: 1 }]}>{C14.storiesGo}</Text>
                     </View>
                   ) : (
-                    <TextInput style={s.link} value={links[row.key] != null ? links[row.key] : (proof.url || '')} placeholder={C14.pasteLink}
-                      placeholderTextColor={T.ink3} autoCapitalize="none" autoCorrect={false} keyboardType="url"
-                      onChangeText={(v) => setLinks((x) => ({ ...x, [row.key]: v }))} onEndEditing={() => saveLink(row)} testID={`link-${row.key}`} />
+                    // J6 — it saves by itself: "Saving…", then the tick, or the red line.
+                    <LinkBox12 saves={saves} id={linkKey(row)} url={proof.url} send={sendLink(row)}
+                      placeholder={C14.pasteLink} testID={`link-${row.key}`} />
                   )}
                   <FieldError text={rowError[row.key]} />
                 </View>
@@ -426,12 +479,12 @@ export default function SaleLiveScreen({ navigation, route }) {
                 <View key={row.key} style={s.row} testID={`outside-${row.key}`}>
                   <View style={s.rowHead}><Text style={s.rowLabel}>{rowTitle(row)}</Text><CountChip12 have={proof.filled ? 1 : 0} need={1} /></View>
                   {row.isStory ? (
-                    proof.screenshotFileId ? <FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} />
+                    proof.screenshotFileId ? <FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} onPress={() => openShot(row, proof)} />
                       : <AddTile12 onPress={() => addFiles(row, 'story_proof')} testID={`add-shot-${row.key}`} />
                   ) : (
-                    <TextInput style={s.link} value={links[row.key] != null ? links[row.key] : (proof.url || '')} placeholder={C14.pasteLink}
-                      placeholderTextColor={T.ink3} autoCapitalize="none" autoCorrect={false} keyboardType="url"
-                      onChangeText={(v) => setLinks((x) => ({ ...x, [row.key]: v }))} onEndEditing={() => saveLink(row)} testID={`link-${row.key}`} />
+                    // J7 — the same self-saving box; no "Save link" button. It never counts toward "I've posted everything".
+                    <LinkBox12 saves={saves} id={linkKey(row)} url={proof.url} send={sendLink(row)}
+                      placeholder={C14.pasteLink} testID={`link-${row.key}`} />
                   )}
                   <FieldError text={rowError[row.key]} />
                 </View>
@@ -452,26 +505,28 @@ export default function SaleLiveScreen({ navigation, route }) {
         ) : null}
 
         {c.steps && c.steps.length && !['complete', 'old_terms', 'shoot_not_done'].includes(stage) ? <StepLine10 steps={steps} /> : null}
-      </ScrollView>
+      </FormScroll>
+      {toast}
+      </FormArea>
 
-      <View style={s.barBottom} testID="sale-actions">
+      <BottomBar testID="sale-actions">
         {editing ? (
           <>
             <PrimaryButton label={stage === 'changes' ? C14.sendChanges : C14.sendTo(brand)} disabled={!c.can.submit || Object.keys(uploads).length > 0}
-              onPress={() => { setSheetError(null); setSheet('send'); }} testID="send" />
+              onPress={openSend} testID="send" />
             <Text style={s.hint}>{!pkg.length ? C14.noRowsBody : stage === 'changes' && c.round ? C14.lastRoundHint(c.round.allowed) : ''}</Text>
           </>
         ) : null}
         {stage === 'approved' && !c.frozen ? (
           <>
-            <PrimaryButton label={C14.postedEverything} disabled={!c.can.markPosted} onPress={posted} busy={busy} busyLabel="Sending" testID="posted" />
-            {left.length ? <Text style={s.hint} testID="to-go">{C14.toGo(left.filter((x) => !x.isStory).length, left.filter((x) => x.isStory).length)}</Text> : null}
+            <PrimaryButton label={C14.postedEverything} disabled={!canPost} onPress={posted} busy={busy} busyLabel="Sending" testID="posted" />
+            {postLine ? <Text style={s.hint} testID="to-go">{postLine}</Text> : null}
           </>
         ) : null}
         {stage === 'posted' && c.can.report ? (
           <SecondaryButton label={C14.askInflx} onPress={() => { setSheetError(null); setSheet('report'); }} testID="ask-inflx" />
         ) : null}
-      </View>
+      </BottomBar>
 
       <ReportSheet12 visible={sheet === 'report'} kind="brand_silent" brandName={brand} busy={busy} serverError={sheetError}
         onReport={askInflx} onClose={() => setSheet(null)} />
@@ -480,11 +535,12 @@ export default function SaleLiveScreen({ navigation, route }) {
       <DestinationSheet14 visible={!!(sheet && sheet.dest)} post={sheet && sheet.dest} destinations={c.destinations}
         taken={sheet && sheet.dest ? takenFor(sheet.dest.id) : []} busy={busy} serverError={sheetError}
         onAdd={addPlaces} onClose={() => setSheet(null)} />
-      <ActionSheet visible={!!menu} onClose={() => setMenu(null)} actions={menu ? [
-        { label: 'View', onPress: () => viewFile(menu) },
-        ...(editing ? [{ label: 'Remove', destructive: true, onPress: () => removeFile(menu) }] : []),
-      ] : []} />
-      {toast}
+      {/* H1–H5, H7 — one tap on a tile opens the file here. "Remove", and the brand's pinned note,
+          only on a file she can still change; a package with the brand and a Story screenshot are
+          the file and nothing else. */}
+      <MediaViewer12 open={viewer} fetchUrl={(id) => influencerApi.contentFileUrl(ciId, id)} onClose={() => setViewer(null)}
+        noteOf={viewer && viewer.edit ? (f) => f.pinnedNote : undefined}
+        onRemove={viewer && viewer.edit && editing ? removeFile : undefined} />
     </View>
   );
 }
@@ -517,7 +573,6 @@ const s = StyleSheet.create({
   rowLabel: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, flex: 1 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   caption: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink, borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 10, minHeight: 56, textAlignVertical: 'top', marginTop: 4 },
-  link: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink, borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9 },
   plus: { width: 32, height: 32, borderRadius: 10, borderWidth: 1, borderColor: T.border, alignItems: 'center', justifyContent: 'center' },
   plusText: { fontFamily: fonts.sansBold, fontSize: 18, color: T.ink },
   when: { borderRadius: 14, padding: 12, backgroundColor: T.surface },
@@ -530,5 +585,4 @@ const s = StyleSheet.create({
   tint: { backgroundColor: T.surface, borderRadius: 14, padding: 12, marginBottom: 12, gap: 4 },
   moneyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   moneyVal: { fontFamily: fonts.sansBold, fontSize: 13.5, color: T.ink },
-  barBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
 });

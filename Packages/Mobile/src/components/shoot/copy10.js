@@ -104,6 +104,9 @@ export const C10 = {
     whoToAskFor: 'Who she should ask for', theirNumber: 'Their number',
     seesOnceSent: 'She sees this once you send the plan.',
     date: 'Date', time: 'Time',
+    // ui-walk-fixes board G: the two boxes read grey until tapped; nothing is chosen for her.
+    chooseDate: 'Choose a date', chooseTime: 'Choose a time',
+    noDay: 'No day works — the posting date has passed.',
     datesHint: (day) => `Dates after ${day10(day)} aren't offered — she can't shoot after her last day to go live.`,
     howLong: 'Roughly how long', howLongPh: 'About 2 hours',
     bring: 'Anything she should bring or know', bringPh: 'Parking, which floor, who to ask at the desk…',

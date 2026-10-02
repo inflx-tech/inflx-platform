@@ -4,7 +4,7 @@
  * Contract: features/item7-agreement
  */
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, within } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
   influencerApi: {
@@ -222,9 +222,17 @@ describe('P4 · P16 — the cards', () => {
     await waitFor(() => getByTestId('invitation-card-ci1'));
     getByText('Agreement ready to sign · by 17 Oct');
     getByTestId('card-chip-toSign');
+    // ui-walk-fixes board F, frame F7: the tag says "Your move", and the card carries a button
+    // that names the step. (The tag keeps its testID; it was a bare pill with no button under it.)
+    within(getByTestId('card-chip-toSign')).getByText('Your move');
+    within(getByTestId('card-action-ci1')).getByText('Review & sign');
     // Tapping it opens the agreement, not the invitation.
     fireEvent.press(getByTestId('invitation-card-ci1'));
     expect(n.navigate).toHaveBeenCalledWith('Agreement', { ciId: 'ci1' });
+    // …and so does its button.
+    fireEvent.press(getByTestId('card-action-ci1'));
+    expect(n.navigate).toHaveBeenCalledTimes(2);
+    expect(n.navigate).toHaveBeenLastCalledWith('Agreement', { ciId: 'ci1' });
   });
 
   it('P16 — the Active tab is real, and says what is in her wallet and what happens next', async () => {
@@ -232,10 +240,17 @@ describe('P4 · P16 — the cards', () => {
       ...CARD, group: 'signed', status: 'contracted', firstPayment: 2250,
       agreement: { ...CARD.agreement, status: 'active', signedAt: `${yr}-09-14T11:00:00Z`, bothSignedAt: `${yr}-09-14T18:18:00Z`, line: null, canSign: false, canDownload: true },
     }] }));
-    const { getByText, getByTestId } = render(<CollabsScreen navigation={nav()} route={{ params: { segment: 'Active' } }} />);
+    const n = nav();
+    const { getByText, getByTestId, queryByTestId } = render(<CollabsScreen navigation={n} route={{ params: { segment: 'Active' } }} />);
     await waitFor(() => getByTestId('invitation-card-ci1'));
     expect(influencerApi.myInvitations).toHaveBeenCalledWith('active');
     getByText('₹2,250 is in your wallet. Signed 14 Sep.');
     getByTestId('card-chip-signed');
+    // ui-walk-fixes board F, frame F7 (check 24): nothing is hers to do yet, so the tag reads
+    // "Active" and there is no button; the "Agreement" link P16 drew — never built — opens it.
+    within(getByTestId('card-chip-signed')).getByText('Active');
+    expect(queryByTestId('card-action-ci1')).toBeNull();
+    fireEvent.press(getByTestId('card-agreement-ci1'));
+    expect(n.navigate).toHaveBeenCalledWith('Agreement', { ciId: 'ci1' });
   });
 });

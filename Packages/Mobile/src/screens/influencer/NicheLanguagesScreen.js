@@ -5,11 +5,12 @@
  * Contract: features/registration-and-profile · features/item3-discovery-profiles-groups
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi, referenceApi } from '../../services/api';
 import { Chip, FieldError, Section, st } from '../../components/settings/primitives';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
@@ -40,7 +41,7 @@ export default function NicheLanguagesScreen({ navigation }) {
   const [serverErr, setServerErr] = useState('');
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -88,7 +89,9 @@ export default function NicheLanguagesScreen({ navigation }) {
   return (
     <View style={base.screen} testID="niche-languages">
       <Header title={N.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[base.body, { paddingBottom: 140 }]} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: the form scrolls in the room above the Save strip; nothing floats over it. */}
+      <FormArea>
+      <FormScroll contentContainerStyle={base.body}>
         <Section title={N.yours} hint={N.hint}>
           <View style={base.chips}>
             {niches.map(o => o.code === OTHER
@@ -111,9 +114,10 @@ export default function NicheLanguagesScreen({ navigation }) {
               onPress={() => setLanguage(prev => prev.includes(o.code) ? prev.filter(c => c !== o.code) : [...prev, o.code])} />)}
           </View>
         </Section>
-      </ScrollView>
-      <SaveBar dirty={dirty} errorCount={errorCount} saving={saving} onSave={save} label="Save" />
+      </FormScroll>
       {toast}
+      </FormArea>
+      <SaveBar dirty={dirty} errorCount={errorCount} saving={saving} onSave={save} label="Save" />
     </View>
   );
 }

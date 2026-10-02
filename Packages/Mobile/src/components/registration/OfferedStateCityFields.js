@@ -53,8 +53,12 @@ export function SinglePickSheet({ visible, title, items, value, onPick, onClose,
     const n = q.trim().toLowerCase();
     return n ? items.filter((i) => String(i.name).toLowerCase().includes(n)) : items;
   }, [items, q]);
+  // ui-walk-fixes (board C, rule 3): searching opens the keypad, and the lower rows of the list
+  // (and the count line) went under it. The list now gives way instead — fit="list", so the list
+  // is never put inside a ScrollView — and the count line stays pinned under it.
   return (
-    <Sheet visible={visible} onClose={onClose} testID={`${testIDPrefix}-sheet`}>
+    <Sheet visible={visible} onClose={onClose} testID={`${testIDPrefix}-sheet`} fit="list"
+      footer={footer ? <Text style={ss.footer}>{footer}</Text> : null}>
       <View style={sh.head}>
         <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Back" style={ss.backBtn}>
           <Text style={ss.backText}>‹</Text>
@@ -77,7 +81,6 @@ export function SinglePickSheet({ visible, title, items, value, onPick, onClose,
           );
         }}
       />
-      {footer ? <Text style={ss.footer}>{footer}</Text> : null}
     </Sheet>
   );
 }
@@ -190,5 +193,6 @@ const ss = StyleSheet.create({
   backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
   backText: { fontSize: 26, color: T.ink, fontFamily: fonts.sansMedium, marginTop: -3 },
   tick: { fontFamily: fonts.sansBold, fontSize: 15, color: T.ink },
-  footer: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, textAlign: 'center', marginTop: 12 },
+  // No top gap of its own: the Sheet's pinned footer already keeps 12 above it.
+  footer: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, textAlign: 'center' },
 });

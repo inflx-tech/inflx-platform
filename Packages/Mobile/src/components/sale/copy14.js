@@ -82,6 +82,9 @@ export const C14 = {
   storiesGo: 'Stories disappear in a day.',
   postedEverything: "I've posted everything",
   toGo: (links, shots) => [links ? plural(links, 'link', 'links') : null, shots ? plural(shots, 'screenshot', 'screenshots') : null].filter(Boolean).join(' and ') + ' to go.',
+  // ui-walk-fixes board J (J4, J6) — the line under "I've posted everything" once nothing is missing.
+  savingLink: 'Saving your link…',
+  linkNeedsFixing: 'One link needs fixing — see above.',
   postedWaiting: (d, brand) => `Posted on ${day10(d)}. ${brand} confirms it's live.`,
   confirmsItselfOn: "If they don't answer, it confirms itself on",
 

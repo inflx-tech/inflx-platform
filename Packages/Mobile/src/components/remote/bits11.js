@@ -62,23 +62,29 @@ export function ReturnGiftSwitch11({ value, onChange, disabled, testID }) {
 
 /* ── the quantity stepper (R5) ──────────────────────────────────────────── */
 
-/** 1–5, and it says why when it stops. */
-export function QtyStepper11({ value, onChange, max = 5, disabled, testID }) {
+/**
+ * 1–5, and it says why when it stops.
+ *
+ * ui-walk-fixes (board D): `tall` is opt-in — the same stepper at the height of a form field
+ * (42), so it sits level with the type box on a deliverable's line. The deliverables chooser
+ * passes it with `max={20}`. Without it the stepper is exactly the R5 one.
+ */
+export function QtyStepper11({ value, onChange, max = 5, disabled, testID, tall }) {
   const step = (d) => {
     const next = Math.min(max, Math.max(1, Number(value || 1) + d));
     if (next !== value) onChange(next);
   };
   return (
-    <View style={s.qty} testID={testID || 'qty'}>
+    <View style={[s.qty, tall && s.qtyTall]} testID={testID || 'qty'}>
       <Pressable onPress={() => !disabled && step(-1)} disabled={disabled || value <= 1}
         accessibilityLabel="One fewer" testID={`${testID || 'qty'}-minus`}
-        style={[s.qtyBtn, (disabled || value <= 1) && { opacity: 0.35 }]}>
+        style={[s.qtyBtn, tall && s.qtyBtnTall, (disabled || value <= 1) && { opacity: 0.35 }]}>
         <Icon name="minus" size={15} color={T.ink} />
       </Pressable>
-      <Text style={s.qtyValue} testID={`${testID || 'qty'}-value`}>{value}</Text>
+      <Text style={[s.qtyValue, tall && s.qtyValueTall]} testID={`${testID || 'qty'}-value`}>{value}</Text>
       <Pressable onPress={() => !disabled && step(1)} disabled={disabled || value >= max}
         accessibilityLabel="One more" testID={`${testID || 'qty'}-plus`}
-        style={[s.qtyBtn, (disabled || value >= max) && { opacity: 0.35 }]}>
+        style={[s.qtyBtn, tall && s.qtyBtnTall, (disabled || value >= max) && { opacity: 0.35 }]}>
         <Icon name="plus" size={15} color={T.ink} />
       </Pressable>
     </View>
@@ -205,8 +211,14 @@ export function TrackingCard11({ parcel, testID }) {
  * Received / Missing / Damaged. The red family appears HERE and nowhere else on the screen
  * (§8) — a parcel with a missing item is not an error state, it is a fact she is recording,
  * and her shoot carries on either way.
+ *
+ * ui-walk-fixes (board C, check 10): `withNote` is opt-out. The note box under Missing / Damaged
+ * is the creator's (R9) — her note is kept and sent. The brand's "What came back?" pop-up (R13
+ * draws three buttons per item and no note) passes `withNote={false}`: the server's confirm step
+ * has nowhere to keep a note, so a box there swallowed every letter typed into it. Every caller
+ * that passes nothing gets the box exactly as before.
  */
-export function ThreeWayCheck11({ value, note, onChange, onNote, disabled, testID }) {
+export function ThreeWayCheck11({ value, note, onChange, onNote, disabled, testID, withNote = true }) {
   const OPTIONS = [
     { k: 'received', label: C11.creator.received, tone: T.state.active },
     // §8: the red family appears on THIS control and nowhere else on the screen.
@@ -228,12 +240,12 @@ export function ThreeWayCheck11({ value, note, onChange, onNote, disabled, testI
           );
         })}
       </View>
-      {value && value !== 'received' ? (
+      {withNote && value && value !== 'received' ? (
         <TextInput
           value={note || ''}
           onChangeText={onNote}
           editable={!disabled}
-          placeholder={C11.creator.notePlaceholder}
+          placeholder={C11.creator.checkNotePlaceholder}
           placeholderTextColor={T.ink3}
           maxLength={300}
           multiline
@@ -320,6 +332,10 @@ const s = StyleSheet.create({
   qty: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 9 },
   qtyBtn: { paddingHorizontal: 10, paddingVertical: 6 },
   qtyValue: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, minWidth: 18, textAlign: 'center' },
+  // ui-walk-fixes (board D) — the opt-in field-height stepper.
+  qtyTall: { height: 42, borderWidth: 1.5, borderRadius: 12, backgroundColor: T.bg },
+  qtyBtnTall: { width: 30, height: '100%', paddingHorizontal: 0, paddingVertical: 0, alignItems: 'center', justifyContent: 'center' },
+  qtyValueTall: { fontSize: 14, minWidth: 22 },
 
   row: { borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 12, marginBottom: 10 },
   rowPicked: { borderColor: T.ink },

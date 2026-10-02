@@ -9,9 +9,13 @@
  * The products come from her SELLING SCOPE, resolved live by the server. A Pay for Sale or
  * Hybrid collaboration whose scope was never set receives nothing, and the screen says so
  * rather than showing an empty list nobody can explain (v1.27, approval Q3).
+ *
+ * ui-walk-fixes (board C): "Continue" is a strip under the list (BottomBar), never floating over
+ * it; the list is a FormScroll because it holds the search box. The 150 of empty space that only
+ * existed to scroll clear of the floating bar is gone.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
@@ -20,6 +24,8 @@ import { Skeleton, LoadError, useToast } from '../../components/settings/feedbac
 import { COPY } from '../../components/settings/copy';
 import { StateBox7 } from '../../components/agreement/bits7';
 import { Header, s as base } from './BrandPitchSettingsScreen';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { AddressCard11, ProductRow11 } from '../../components/remote/bits11';
 import { C11, MSG11 } from '../../components/remote/copy11';
 import { first } from '../../components/invitations/copy5';
@@ -36,7 +42,7 @@ export default function BrandRemoteProductsScreen({ navigation, route }) {
   const [picked, setPicked] = useState({});        // productId → { variantId, quantity, disposition }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus((st) => (st === 'ready' ? 'ready' : 'loading'));
@@ -102,7 +108,8 @@ export default function BrandRemoteProductsScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="brand-remote-products">
       <Header title="Pick products" onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 150 }} keyboardShouldPersistTaps="handled">
+      <FormArea>
+      <FormScroll contentContainerStyle={{ padding: 18 }} keyboardShouldPersistTaps="handled" testID="products-form">
 
         {/* §11.2 — her address, number and sizes appear now, and only here. */}
         <AddressCard11 address={sh.address} />
@@ -144,14 +151,15 @@ export default function BrandRemoteProductsScreen({ navigation, route }) {
             ))}
           </>
         )}
-      </ScrollView>
+      </FormScroll>
+      {toast}
+      </FormArea>
 
-      <View style={s.bar}>
+      <BottomBar testID="products-actions">
         {error ? <Text style={s.error} testID="products-error">{error}</Text> : null}
         <PrimaryButton label={count ? `Continue · ${C11.brand.ofTwenty(count)}` : 'Continue'}
           disabled={!count || !!scopeError} onPress={save} busy={busy} testID="products-continue" />
-      </View>
-      {toast}
+      </BottomBar>
     </View>
   );
 }
@@ -163,6 +171,6 @@ const s = StyleSheet.create({
   search: { borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 11, marginBottom: 10,
     fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, marginBottom: 14 },
-  error: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.state.declined.fg, marginBottom: 8, textAlign: 'center' },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
+  // The strip keeps its children 8 apart, which is the 8 this line used to carry under itself.
+  error: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.state.declined.fg, textAlign: 'center' },
 });

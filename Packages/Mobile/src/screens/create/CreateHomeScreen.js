@@ -16,6 +16,7 @@ import { PrimaryButton } from '../../components/settings/primitives';
 import { CL } from '../../components/create/copyLinks';
 import { CP } from '../../components/create/copyCreate';
 import { StateChip, ChoiceCard, initialsOf, routeFor, s as b } from '../../components/create/bitsCreate';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 
 export function PostRow({ post, onPress, testID }) {
   const line = post.state === 'draft'
@@ -80,6 +81,8 @@ export default function CreateHomeScreen({ navigation }) {
   const [status, setStatus] = useState('loading');
   const [chooser, setChooser] = useState(false);
   const [pick, setPick] = useState('post');
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
 
   const load = useCallback(async () => {
     const r = await influencerApi.createHome();
@@ -100,7 +103,10 @@ export default function CreateHomeScreen({ navigation }) {
   if (status !== 'ready') {
     return (
       <View style={h.screen}>
-        <Text style={h.tabTitle}>{CP.create}</Text>
+        {/* The same title row as the loaded screen, so the title does not move when it loads. */}
+        <View style={[h.titleRow, { paddingTop: top }]}>
+          <Text style={h.tabTitle}>{CP.create}</Text>
+        </View>
         {status === 'error' ? <LoadError onRetry={load} /> : <Skeleton />}
       </View>
     );
@@ -108,7 +114,7 @@ export default function CreateHomeScreen({ navigation }) {
 
   return (
     <View style={h.screen} testID="create-home">
-      <View style={h.titleRow}>
+      <View style={[h.titleRow, { paddingTop: top }]}>
         <Text style={h.tabTitle}>{CP.create}</Text>
         <TouchableOpacity onPress={() => setChooser(true)} style={h.plus} accessibilityLabel="Make something" testID="create-plus"><Text style={h.plusText}>+</Text></TouchableOpacity>
       </View>
@@ -169,7 +175,7 @@ export default function CreateHomeScreen({ navigation }) {
 
 const h = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
-  titleRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 54, paddingHorizontal: 16, paddingBottom: 6 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', paddingTop: TOP_GAP_TITLE, paddingHorizontal: 16, paddingBottom: 6 },
   tabTitle: { fontFamily: fonts.sansBold, fontSize: 24, color: T.ink, flex: 1, paddingTop: 0 },
   plus: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: T.border, alignItems: 'center', justifyContent: 'center' },
   plusText: { fontFamily: fonts.sansBold, fontSize: 22, color: T.ink, marginTop: -2 },

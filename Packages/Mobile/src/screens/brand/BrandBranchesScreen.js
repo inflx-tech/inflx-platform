@@ -3,6 +3,9 @@
  * "City, State · pincode", then Edit · Make main · Remove (the main branch shows Edit alone —
  * it can't be removed, only replaced). Creators only ever see the city.
  * Contract: features/registration-and-profile · features/item3-discovery-profiles-groups
+ *
+ * ui-walk-fixes board C: the "+ Add a branch" strip is part of the column, under the list
+ * (BottomBar) — it no longer floats over the last card; the toast floats just above it.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
@@ -12,6 +15,8 @@ import { brandApi } from '../../services/api';
 import { PrimaryButton, StatusChip, EmptyState } from '../../components/settings/primitives';
 import { ConfirmSheet } from '../../components/settings/sheets';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -29,7 +34,7 @@ export default function BrandBranchesScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [rows, setRows] = useState([]);
   const [confirm, setConfirm] = useState(null);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
@@ -62,11 +67,15 @@ export default function BrandBranchesScreen({ navigation, route }) {
   return (
     <View style={base.screen}>
       <Header title={B.title} onBack={() => navigation.goBack()} />
+      {/* ui-walk-fixes board C: the list (or its loading / couldn't-load state) fills the room above
+          the strip; nothing floats over it. */}
+      <FormArea>
       {status === 'loading' ? <Skeleton rows={4} /> : status === 'error' ? <LoadError onRetry={load} /> : (
         <FlatList
+          style={s.fill}
           data={rows}
           keyExtractor={b => b.id}
-          contentContainerStyle={{ padding: 18, paddingBottom: 120 }}
+          contentContainerStyle={{ padding: 18, paddingBottom: 24 }}
           ListEmptyComponent={<EmptyState title="No branches yet" body="Add your store's address so creators can see your city." />}
           ListFooterComponent={rows.length ? <Text style={[base.hint, { marginTop: 4 }]} testID="branches-hint">{B.hint}</Text> : null}
           renderItem={({ item: b }) => (
@@ -89,10 +98,11 @@ export default function BrandBranchesScreen({ navigation, route }) {
           )}
         />
       )}
-      <View style={s.footer}>
-        <PrimaryButton label={`+ ${B.add}`} onPress={add} testID="add-branch" />
-      </View>
       {toast}
+      </FormArea>
+      <BottomBar testID="branches-bar">
+        <PrimaryButton label={`+ ${B.add}`} onPress={add} testID="add-branch" />
+      </BottomBar>
       <ConfirmSheet visible={!!confirm} danger title={confirm ? B.removeTitle(confirm.name) : ''} body={B.removeBody}
         confirmLabel={B.removeConfirm} cancelLabel={B.keep} onConfirm={remove} onCancel={() => setConfirm(null)} />
     </View>
@@ -106,5 +116,6 @@ const s = StyleSheet.create({
   city: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: T.ink3, marginTop: 4 },
   actions: { flexDirection: 'row', marginTop: 10 },
   action: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.ink, marginRight: 18 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
+  // The list fills the box above the strip.
+  fill: { flex: 1 },
 });

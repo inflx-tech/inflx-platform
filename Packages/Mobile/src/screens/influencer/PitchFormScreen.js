@@ -12,17 +12,22 @@
  *
  * Every rule is still checked again on send. This screen exists to stop her
  * wasting a pitch, not to be the place the rules live.
+ *
+ * ui-walk-fixes (board C, rule 2): the form is a FormScroll — the box she is typing in, with the
+ * counter and the red line under it, stays in view above the keypad. Nothing floats here (each
+ * step's button is the last thing IN the form), so nothing else changes.
  */
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { Chip, PrimaryButton, FieldError, InfoBox, Section } from '../../components/settings/primitives';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
+import { FormScroll } from '../../components/shell/FormScroll';
 import DateField from '../../components/DateField';
-import { DeliverablesEditor5, KV5 } from '../../components/invitations/bits5';
-import { NumberField } from '../brand/BrandPitchSettingsScreen';
+import { DeliverablesEditor5, KV5, deliverableRowsError5 } from '../../components/invitations/bits5';
+import { Header, NumberField } from '../brand/BrandPitchSettingsScreen';
 import { CooldownBox8 } from '../../components/pitch/bits8';
 import { C8, MSG8, aimLabel8, modeLabel8, rupees8, fmtPct8, deliverablesShort, shortDate8 } from '../../components/pitch/copy8';
 
@@ -40,6 +45,8 @@ export default function PitchFormScreen({ navigation, route }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState({});
   const { toast, show } = useToast();
+  // ui-walk-fixes (board D, frame D8): the page that scrolls, so an opened type list can be moved into view.
+  const scrollRef = useRef(null);
 
   const [goal, setGoal] = useState(null);
   const [fee, setFee] = useState('');
@@ -80,7 +87,13 @@ export default function PitchFormScreen({ navigation, route }) {
     if (!goal) e.goal = 'Pick what kind of deal.';
     if (paying && (fee === '' || !(Number(fee) > 0))) e.fee = 'Enter the fee you want.';
     if (selling && (commission === '' || !(Number(commission) > 0) || Number(commission) > 100)) e.commission = 'Enter a commission between 0 and 100.';
-    if (goal === 'engagement' && (!deliverables.length || deliverables.some((d) => !d.count))) e.deliverables = "Say what you'd deliver.";
+    if (goal === 'engagement') {
+      // ui-walk-fixes (board D): after "something to deliver", the same no-repeat / 1-to-20 check
+      // her counter screen makes — this form had neither, so only the server caught them.
+      const rowsError = deliverableRowsError5(deliverables);
+      if (!deliverables.length || deliverables.some((d) => !d.count)) e.deliverables = "Say what you'd deliver.";
+      else if (rowsError) e.deliverables = rowsError;
+    }
     setErr(e);
     return Object.keys(e).length === 0;
   }
@@ -113,13 +126,19 @@ export default function PitchFormScreen({ navigation, route }) {
     navigation.replace('MyPitches', { sent: r.data.pitch.id });
   }
 
-  if (status === 'loading') return <View style={s.page}><Skeleton rows={7} /></View>;
-  if (status === 'error') return <View style={s.page}><LoadError onRetry={load} /></View>;
+  // ui-walk-fixes D3 — a pushed screen has no bottom tabs, so it carries its own way back, in
+  // every state (loading, failed, blocked, the form). The bar names the brand; the page's own
+  // heading under it still says "Pitch {brand}".
+  const bar = <Header title={name} onBack={() => navigation.goBack()} />;
+
+  if (status === 'loading') return <View style={s.page}>{bar}<Skeleton rows={7} /></View>;
+  if (status === 'error') return <View style={s.page}>{bar}<LoadError onRetry={load} /></View>;
 
   // She cannot send at all — say why, and do not show her a form she can't use.
   if (!form.canPitch) {
     return (
       <View style={s.page} testID="pitch-form-blocked">
+        {bar}
         {form.reason === 'COOLDOWN'
           ? <CooldownBox8 text={form.cooldownLine} testID="pitch-form-cooldown" />
           : <InfoBox text={form.reason === 'NOT_ACCEPTING' ? MSG8.NOT_ACCEPTING(name)
@@ -132,7 +151,8 @@ export default function PitchFormScreen({ navigation, route }) {
 
   return (
     <View style={s.page}>
-      <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+      {bar}
+      <FormScroll ref={scrollRef} contentContainerStyle={s.body} testID="pitch-form-scroll">
         <Text style={s.title} testID="pitch-form-title">{C8.form.title(name)}</Text>
 
         {/* ── T2 · what kind of deal, and the money ─────────────────────── */}
@@ -174,7 +194,8 @@ export default function PitchFormScreen({ navigation, route }) {
 
             {goal === 'engagement' ? (
               <Section title={C8.form.deliverables}>
-                <DeliverablesEditor5 rows={deliverables} onChange={setDeliverables} error={err.deliverables} testID="pitch-deliverables" />
+                <DeliverablesEditor5 rows={deliverables} onChange={(rows) => { setDeliverables(rows); setErr((x) => ({ ...x, deliverables: undefined })); }}
+                  error={err.deliverables} testID="pitch-deliverables" scrollRef={scrollRef} />
               </Section>
             ) : null}
 
@@ -233,7 +254,7 @@ export default function PitchFormScreen({ navigation, route }) {
             <PrimaryButton label={C8.form.send} busyLabel={C8.form.sending} busy={busy} onPress={send} testID="pitch-send" />
           </>
         ) : null}
-      </ScrollView>
+      </FormScroll>
       {toast}
     </View>
   );

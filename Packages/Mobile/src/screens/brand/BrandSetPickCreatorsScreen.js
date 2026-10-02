@@ -14,7 +14,24 @@
  * The selection now lives in draft5's basket, which both screens reach, and the footer renders
  * on all four tabs. The group check adds to the basket and comes back.
  *
- * Contract: features/item5-invitations · prompt §6.1 · features/one-basket-add-creators
+ * ── ui-walk-fixes board B (locked 2 Oct 2026) ────────────────────────────────
+ * Founder, 1 Oct: "while selecting creators … most of the things covering, influencers showing
+ * space … use the screen top to bottom judiciously … all filters into one button."
+ *   · the campaign / set line is the title bar's second line, not a band of its own
+ *   · the list is the compact three-line pick row behind one search + Filters row (DiscoverList)
+ *   · the grey "can't be picked … the reason is never shown" sentence is gone (D2): a creator who
+ *     can't be invited says why on her row (the server's short reason), and tapping her shows the
+ *     server's sentence in this screen's toast — on All creators, Worked with and Pool alike
+ *   · the footer steps away while the keypad is open (frame B5) and returns when it closes
+ *
+ * ── ui-walk-fixes board C ────────────────────────────────────────────────────
+ * The footer is a strip in the column, under the list (BottomBar) — it no longer floats over the
+ * last rows, so the lists lost the empty space that scrolled them clear of it. It still steps
+ * away while the keypad is open (B5). The toast floats just above the strip (or just above the
+ * keypad while the strip is away).
+ *
+ * Contract: features/item5-invitations · prompt §6.1 · features/one-basket-add-creators ·
+ * features/ui-walk-fixes (board B, decisions D1, D2)
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
@@ -23,12 +40,15 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton, EmptyState } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import SegmentedControl from '../../components/shell/SegmentedControl';
 import DiscoverList, { MemberRow, LoadErrorList } from '../../components/discovery/DiscoverList';
-import { CheckboxRow } from '../../components/discovery/bits';
+import { CheckboxRow, st as boxStyles } from '../../components/discovery/bits';
 import useReferenceLists from '../../hooks/useReferenceLists';
 import useRouteToast from '../../hooks/useRouteToast';
+import { useKeyboardVisible } from '../../hooks/useKeyboardVisible';
 import { C3 } from '../../components/discovery/copy3';
 import { Chip5 } from '../../components/invitations/bits5';
 import { C5 } from '../../components/invitations/copy5';
@@ -40,11 +60,22 @@ import { C6, aimLabel6 as aimLabel4 } from '../../components/negotiation/copy6';
 // Item 6 (B13): the pool is a fourth source inside any set's picker (rules v1.18 §7B).
 const P = { ...C5.pick, tabs: [...C5.pick.tabs, 'Pool'] };
 
-/** The pick state of a row, as the list needs it. */
+/**
+ * The pick state of a row, as the list needs it.
+ *
+ * ui-walk-fixes D2 — a creator who can't be invited carries the server's own words:
+ * `pick.label` is the short reason for her row ("Not taking Pay for Content") and `pick.message`
+ * the sentence shown when she is tapped ("Asha isn't taking Pay for Content collaborations.").
+ * A server that sends no sentence gets its label said instead; one that sends neither gets the
+ * old line. Nothing about WHY is decided or worded on the phone.
+ */
 export function pickStateOf(item) {
   const p = item.pick || { state: 'ok' };
   if (p.state === 'invited') return { state: 'invited', label: P.alreadyIn, chip: P.invited };
-  if (p.state === 'ineligible') return { state: 'ineligible', label: P.notOpen, chip: P.cantInvite };
+  if (p.state === 'ineligible') {
+    const label = p.label || P.notOpen;
+    return { state: 'ineligible', label, chip: P.cantInvite, message: p.message || label };
+  }
   return { state: 'ok' };
 }
 
@@ -65,8 +96,13 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
   const syncBasket = useCallback(() => setSel(new Map(getBasket(setId).map(c => [c.id, c]))), [setId]);
   useFocusEffect(useCallback(() => { syncBasket(); }, [syncBasket]));
   const lists = useReferenceLists();
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
+  // Frame B5: while the keypad is open the footer steps out of the way, so the creators found
+  // run down to the keypad instead of hiding behind a button that has ridden up over them.
+  const typing = useKeyboardVisible();
+  // D2: tapping a creator who can't be invited says why, in the server's sentence.
+  const sayWhy = useCallback((item, ps) => { if (ps && ps.message) show(ps.message); }, [show]);
 
   // The set summary no longer gates the screen; it only fills the subline and arms "Next".
   const load = useCallback(async () => {
@@ -106,45 +142,73 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
 
   return (
     <View style={base.screen} testID="set-pick-creators">
-      <Header title={P.title} onBack={() => navigation.goBack()} />
+      {/* Board B: the campaign / set line is the title bar's second line (one Text, cut with …). */}
+      <Header title={P.title} subtitle={campaignName || setName ? P.sub(campaignName || '', setName || '') : undefined}
+        subtitleTestID="pick-subline" onBack={() => navigation.goBack()} />
+      {/* ui-walk-fixes board C: the tabs and the list fill the room above the strip; nothing floats over them. */}
+      <FormArea>
       <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
-        <Text style={s.sub} testID="pick-subline">{campaignName || setName ? P.sub(campaignName || '', setName || '') : ' '}</Text>
         <SegmentedControl segments={P.tabs} value={tab} onChange={setTab} testID="pick-tabs" />
       </View>
       {tab === P.tabs[0] ? (
         <DiscoverList key="all" mode="select" defaultOpenOnly fetcher={fetcher} countFetcher={fetcher} lists={lists}
-          selectedIds={new Set(sel.keys())} pickState={pickStateOf} onToggleSelect={toggle}
-          header={<Text style={s.hint}>{P.hint}</Text>} />
+          selectedIds={new Set(sel.keys())} pickState={pickStateOf} onToggleSelect={toggle} onBlockedPress={sayWhy} />
       ) : tab === P.tabs[1] ? (
-        <WorkedPickList campaignId={campaignId} setId={setId} selectedIds={new Set(sel.keys())} onToggle={toggle} />
+        <WorkedPickList campaignId={campaignId} setId={setId} selectedIds={new Set(sel.keys())} onToggle={toggle} onWhy={sayWhy} />
       ) : tab === P.tabs[2] ? (
         <GroupsPickList selectedIds={new Set(sel.keys())}
           onOpen={(g) => navigation.navigate('BrandGroupInviteCheck', { campaignId, setId, groupId: g.id, groupName: g.name })} />
       ) : (
-        <PoolPickList campaignId={campaignId} setId={setId} selectedIds={new Set(sel.keys())} onToggle={toggle} />
+        <PoolPickList campaignId={campaignId} setId={setId} selectedIds={new Set(sel.keys())} onToggle={toggle} onWhy={sayWhy} />
       )}
-      {/* On every tab, including Groups. A basket you cannot see is a basket you do not trust. */}
-      <View style={s.footer} testID="pick-footer">
-        {sel.size ? (
-          <TouchableOpacity style={s.basket} onPress={() => setReviewing(true)} activeOpacity={0.7} testID="pick-basket">
-            <View style={s.faces}>
-              {[...sel.values()].slice(0, 3).map(c => (
-                <View key={c.id} style={{ marginRight: 6 }}><Avatar name={c.name} url={c.avatarUrl} size={24} /></View>
-              ))}
-            </View>
-            <Text style={s.count} testID="pick-count">{P.selected(sel.size)}</Text>
-            <Text style={s.reviewLink}>{P.review}</Text>
-          </TouchableOpacity>
-        ) : null}
-        <PrimaryButton label={P.next(sel.size)} onPress={next} disabled={!sel.size || !data} testID="pick-next" />
-      </View>
-      <BasketSheet visible={reviewing} rows={[...sel.values()]} onRemove={drop} onClose={() => setReviewing(false)} />
       {toast}
+      </FormArea>
+      {/* On every tab, including Groups. A basket you cannot see is a basket you do not trust.
+          Not while typing (B5): the basket is untouched, the strip is back when the keypad closes. */}
+      {typing ? null : (
+        <BottomBar testID="pick-footer">
+          {sel.size ? (
+            <TouchableOpacity style={s.basket} onPress={() => setReviewing(true)} activeOpacity={0.7} testID="pick-basket">
+              <View style={s.faces}>
+                {[...sel.values()].slice(0, 3).map(c => (
+                  <View key={c.id} style={{ marginRight: 6 }}><Avatar name={c.name} url={c.avatarUrl} size={24} /></View>
+                ))}
+              </View>
+              <Text style={s.count} testID="pick-count">{P.selected(sel.size)}</Text>
+              <Text style={s.reviewLink}>{P.review}</Text>
+            </TouchableOpacity>
+          ) : null}
+          <PrimaryButton label={P.next(sel.size)} onPress={next} disabled={!sel.size || !data} testID="pick-next" />
+        </BottomBar>
+      )}
+      <BasketSheet visible={reviewing} rows={[...sel.values()]} onRemove={drop} onClose={() => setReviewing(false)} />
     </View>
   );
 }
 
-function WorkedPickList({ campaignId, setId, selectedIds, onToggle }) {
+/**
+ * A creator who can't be invited, on the Worked with and Pool tabs (ui-walk-fixes D2).
+ *
+ * The same square-box row as its neighbours, so the list does not change shape — but only her
+ * face, her name and the box are greyed: the line under her name is the server's short reason and
+ * has to stay readable. The whole row takes a tap and says the sentence. It is deliberately NOT a
+ * disabled CheckboxRow: React Native switches a touchable off once accessibilityState.disabled
+ * is true, and a dead row cannot say why.
+ */
+function CantInviteRow({ item, ps, onWhy }) {
+  const why = () => { if (onWhy) onWhy(item, ps); };
+  return (
+    <TouchableOpacity style={boxStyles.checkRow} onPress={why} activeOpacity={0.7}
+      accessibilityRole="button" accessibilityState={{ checked: false, disabled: false }} testID={`select-${item.id}`}>
+      <View style={[boxStyles.box, s.boxOff]} />
+      <View style={{ flex: 1 }}>
+        <MemberRow c={{ ...item, status: null }} sub={ps.label} dim onOpen={why} right={<Chip5 label={ps.chip} tone="ended" />} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function WorkedPickList({ campaignId, setId, selectedIds, onToggle, onWhy }) {
   const [search, setSearch] = useState('');
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
@@ -168,12 +232,13 @@ function WorkedPickList({ campaignId, setId, selectedIds, onToggle }) {
         <TextInput style={s.search} value={search} onChangeText={setSearch} placeholder={C3.discover.search} placeholderTextColor={T.ink3} autoCapitalize="none" autoCorrect={false} testID="worked-search" />
       </View>
       {status === 'loading' ? <Skeleton rows={4} /> : status === 'error' ? <LoadErrorList what={P.loadWhat} onRetry={() => load(1)} /> : (
-        <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 140 }}
+        <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 24 }}
           onEndReachedThreshold={0.4} onEndReached={() => { if (rows.length < total && status === 'ready') load(page + 1); }}
           ListFooterComponent={status === 'more' ? <ActivityIndicator color={T.ink3} style={{ marginVertical: 12 }} /> : null}
           ListEmptyComponent={<EmptyState title={C3.worked.emptyTitle} body={C3.worked.emptyBody} />}
           renderItem={({ item }) => {
             const ps = pickStateOf(item);
+            if (ps.state === 'ineligible') return <CantInviteRow item={item} ps={ps} onWhy={onWhy} />;
             const disabled = ps.state !== 'ok';
             const checked = ps.state === 'invited' || selectedIds.has(item.id);
             return (
@@ -188,7 +253,7 @@ function WorkedPickList({ campaignId, setId, selectedIds, onToggle }) {
 }
 
 /** Item 6 (B13) — pool creators inside this set's picker; terms travel only when the Aim matches. */
-function PoolPickList({ campaignId, setId, selectedIds, onToggle }) {
+function PoolPickList({ campaignId, setId, selectedIds, onToggle, onWhy }) {
   const [rows, setRows] = useState([]);
   const [status, setStatus] = useState('loading');
   const load = useCallback(async () => {
@@ -201,10 +266,11 @@ function PoolPickList({ campaignId, setId, selectedIds, onToggle }) {
   if (status === 'loading') return <Skeleton rows={4} />;
   if (status === 'error') return <LoadErrorList what={C6.pool.loadWhat} onRetry={load} />;
   return (
-    <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 140 }} testID="pool-pick"
+    <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 24 }} testID="pool-pick"
       ListEmptyComponent={<EmptyState title={C6.pool.emptyTitle} body={C6.pool.emptyBody} />}
       renderItem={({ item }) => {
         const ps = pickStateOf(item);
+        if (ps.state === 'ineligible') return <CantInviteRow item={item} ps={ps} onWhy={onWhy} />;
         const disabled = ps.state !== 'ok';
         const checked = ps.state === 'invited' || selectedIds.has(item.id);
         const p = item.pool || {};
@@ -294,8 +360,10 @@ function BasketSheet({ visible, rows, onRemove, onClose }) {
 }
 
 const s = StyleSheet.create({
-  sub: { fontFamily: fonts.sansBold, fontSize: 10.5, color: T.ink3, letterSpacing: 0.6, marginBottom: 10 },
-  basket: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  // the square box of a row that can't be ticked: filled grey, like the round tick on All creators
+  boxOff: { backgroundColor: T.surface, borderColor: T.surface },
+  // 2 + the strip's own 8 between its children = the 10 this row always had above the button
+  basket: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
   faces: { flexDirection: 'row', alignItems: 'center' },
   count: { fontFamily: fonts.sansBold, fontSize: 13.5, color: T.ink, marginLeft: 2 },
   reviewLink: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.ink, marginLeft: 'auto', textDecorationLine: 'underline' },
@@ -305,8 +373,6 @@ const s = StyleSheet.create({
   basketRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: T.border },
   basketName: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: T.ink, flex: 1, marginLeft: 10 },
   basketX: { fontFamily: fonts.sansRegular, fontSize: 20, color: T.ink3, paddingHorizontal: 6 },
-  hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, marginBottom: 8 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
   search: { fontFamily: fonts.sansRegular, borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: T.ink, backgroundColor: T.surface },
   groupRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 14, marginBottom: 10 },
   groupName: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: T.ink },

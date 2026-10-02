@@ -5,7 +5,7 @@
  * Contract: features/item6-negotiation
  */
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, within } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
   influencerApi: {
@@ -23,7 +23,8 @@ const CounterScreen = require('../CounterScreen').default;
 const MoveRequestScreen = require('../MoveRequestScreen').default;
 const ThreadScreen = require('../ThreadScreen').default;
 const CollabsScreen = require('../CollabsScreen').default;
-const { MSG6 } = require('../../../components/negotiation/copy6');
+const { MSG6, C6 } = require('../../../components/negotiation/copy6');
+const { CounterChoiceSheet6 } = require('../../../components/negotiation/sheets6');
 const { MSG5 } = require('../../../components/invitations/copy5');
 
 const nav = () => ({ goBack: jest.fn(), navigate: jest.fn(), replace: jest.fn(), setParams: jest.fn(), addListener: jest.fn(() => () => {}), dispatch: jest.fn() });
@@ -79,12 +80,103 @@ describe('N1 — tapping Counter', () => {
     expect(n.navigate).toHaveBeenCalledWith('MoveRequest', { ciId: 'ci1' });
   });
 
-  it('N19 — with countering off there is no Counter and one plain line says why', async () => {
-    influencerApi.myInvitation.mockResolvedValue(ok({ ...ok({}).data, invitation: { ...INV, canCounter: false, counterHiddenReason: 'switch_off', switchOn: false, canMoveRequest: true } }));
-    const { getByText, getByTestId } = render(<InvitationScreen navigation={nav()} route={{ params: { ciId: 'ci1' } }} />);
+  // ASSERTION DRIFT — ui-walk-fixes spec U23 (06-diff/drift/E.md). This fixture is what the server
+  // really answers when the brand has switched countering off and she has not asked for another
+  // date yet (invitationRows.service.js creatorState): canCounter false, 'switch_off', and
+  // canMoveRequest TRUE. The test was called "there is no Counter" and never looked: a button
+  // labelled "Counter" was drawn, and the counter it led to was refused on Send. It now asserts
+  // what is drawn — no "Counter" anywhere, and "Ask for another date" opening the request.
+  const SWITCH_OFF = { ...INV, canCounter: false, counterHiddenReason: 'switch_off', switchOn: false, canMoveRequest: true };
+
+  it('N19 — with countering off there is no "Counter": one plain line says why, and the second button reads "Ask for another date" and opens the request directly', async () => {
+    influencerApi.myInvitation.mockResolvedValue(ok({ invitation: SWITCH_OFF }));
+    const n = nav();
+    const { getByText, getByTestId, queryByText, queryByTestId } = render(<InvitationScreen navigation={n} route={{ params: { ciId: 'ci1' } }} />);
     await waitFor(() => getByTestId('accept'));
     getByText("Urban Threads aren't taking counters on this campaign.");
     getByTestId('decline');
+    // The word "Counter" is nowhere on the screen: not as a button, not greyed.
+    expect(queryByText('Counter')).toBeNull();
+    // The second button keeps its place and its testID, and says what it does.
+    const ask = getByTestId('counter');
+    within(ask).getByText('Ask for another date');
+    expect(C6.invitation.askDate).toBe('Ask for another date');
+    expect(within(ask).queryByText('undo-variant')).toBeNull();           // no undo arrow: this is not a counter
+    expect(ask.props.accessibilityState).toEqual({ disabled: false });
+
+    fireEvent.press(ask);
+    // Straight to "Ask for a change" — no chooser, and never the money counter.
+    expect(n.navigate).toHaveBeenCalledTimes(1);
+    expect(n.navigate).toHaveBeenCalledWith('MoveRequest', { ciId: 'ci1' });
+    expect(queryByText('What would you like to change?')).toBeNull();
+    expect(queryByTestId('choice-money')).toBeNull();
+    expect(queryByText('The money and the work')).toBeNull();
+  });
+
+  it('N19 — once she has asked for another date too (canMoveRequest false) there is no second button at all: Accept, then Decline', async () => {
+    influencerApi.myInvitation.mockResolvedValue(ok({ invitation: { ...SWITCH_OFF, canMoveRequest: false,
+      moveRequest: { goLiveDate: `${yr}-10-27`, shootMode: null, note: null, requestedAt: `${yr}-09-13T10:00:00Z`, answer: 'kept', answeredAt: `${yr}-09-14T10:00:00Z` } } }));
+    const n = nav();
+    const { getByText, getByTestId, queryByTestId, queryByText } = render(<InvitationScreen navigation={n} route={{ params: { ciId: 'ci1' } }} />);
+    await waitFor(() => getByTestId('accept'));
+    getByText("Urban Threads aren't taking counters on this campaign.");
+    expect(queryByTestId('counter')).toBeNull();
+    expect(queryByText('Counter')).toBeNull();
+    expect(queryByText('Ask for another date')).toBeNull();
+    getByTestId('decline');
+    expect(n.navigate).not.toHaveBeenCalled();
+  });
+
+  it('U23 — the same holds whatever switched the counter off: an open-group invitation she may still ask to be moved from', async () => {
+    influencerApi.myInvitation.mockResolvedValue(ok({ invitation: { ...INV, canCounter: false, counterHiddenReason: 'open_group', canMoveRequest: true } }));
+    const n = nav();
+    const { getByTestId, queryByText, queryByTestId } = render(<InvitationScreen navigation={n} route={{ params: { ciId: 'ci1' } }} />);
+    await waitFor(() => getByTestId('accept'));
+    within(getByTestId('counter')).getByText('Ask for another date');
+    expect(queryByText('Counter')).toBeNull();
+    expect(queryByTestId('counter-off')).toBeNull();                      // the switch is not off, so no line about it
+    fireEvent.press(getByTestId('counter'));
+    expect(n.navigate).toHaveBeenCalledWith('MoveRequest', { ciId: 'ci1' });
+  });
+
+  describe('the chooser itself, when it is told a counter is not allowed (U23)', () => {
+    const sheet = (props) => render(<CounterChoiceSheet6 visible roundLimit={2} countersUsed={0} onMoney={() => {}} onMove={() => {}} onClose={() => {}} {...props} />);
+
+    it('canCounter false: "The money and the work" and the counters-left line are not offered; it starts on the date choice, and Continue asks for the move', () => {
+      const onMoney = jest.fn(); const onMove = jest.fn();
+      const r = sheet({ canCounter: false, canMoveRequest: true, onMoney, onMove });
+      r.getByText('What would you like to change?');
+      expect(r.queryByTestId('choice-money')).toBeNull();
+      expect(r.queryByText('The money and the work')).toBeNull();
+      expect(r.queryByTestId('counters-left')).toBeNull();
+      r.getByTestId('choice-move');
+      fireEvent.press(r.getByTestId('choice-continue'));                    // nothing tapped first: the date is already chosen
+      expect(onMove).toHaveBeenCalledTimes(1);
+      expect(onMoney).not.toHaveBeenCalled();
+    });
+
+    it('canCounter missing means true: both choices, the counters-left line, and the money chosen first — exactly as before', () => {
+      const onMoney = jest.fn(); const onMove = jest.fn();
+      const r = sheet({ canMoveRequest: true, onMoney, onMove });
+      r.getByTestId('choice-money'); r.getByTestId('choice-move');
+      r.getByText('You can counter twice in this collaboration. This would be your first.');
+      fireEvent.press(r.getByTestId('choice-continue'));
+      expect(onMoney).toHaveBeenCalledTimes(1);
+      expect(onMove).not.toHaveBeenCalled();
+      const both = sheet({ canCounter: true, canMoveRequest: true, onMoney, onMove });
+      both.getByTestId('choice-money'); both.getByTestId('counters-left');
+    });
+
+    it('neither allowed: nothing to choose, and Continue only closes — it never opens a counter or a request the server would refuse', () => {
+      const onMoney = jest.fn(); const onMove = jest.fn(); const onClose = jest.fn();
+      const r = sheet({ canCounter: false, canMoveRequest: false, onMoney, onMove, onClose });
+      expect(r.queryByTestId('choice-money')).toBeNull();
+      expect(r.queryByTestId('choice-move')).toBeNull();
+      fireEvent.press(r.getByTestId('choice-continue'));
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(onMoney).not.toHaveBeenCalled();
+      expect(onMove).not.toHaveBeenCalled();
+    });
   });
 
   it('N17 — an invitation sent from the pool names the date only when it is the date she asked for', async () => {

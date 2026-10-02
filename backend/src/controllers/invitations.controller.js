@@ -36,6 +36,8 @@ const { resolveAvatars } = require('../utils/avatarResolver');
 const { SIGNED_CONTRACT_SQL } = require('../services/collabState');
 // creator-terms-v2 — the brand's choices for a set, and the creator's read-only views.
 const creatorTerms = require('../services/creatorTerms.service');
+// ui-walk-fixes (D2) — the one place a "can't invite" line and sentence are worded.
+const { cantInvite } = require('../services/invitationCopy');
 
 /* ────────────────────────────────────────────────────────── ownership */
 
@@ -60,7 +62,10 @@ async function ownedCampaignAndSet(req, brandId) {
 
 /* ───────────────────────────────────────────────── pick-state overlay */
 
-const PICK_LABEL = { NOT_ACCEPTING: 'Not taking invitations', NOT_MATCHING: 'Not open to this set', IN_SET: 'Already in this set' };
+// "Can't invite" is no longer worded here: since founder decision D2 (ui-walk-fixes, 2 Oct 2026)
+// the short line and the sentence come from the item 2 service, which knows WHICH rule failed
+// (invitationCopy.cantInvite). Only the label for a creator already in the set is this file's.
+const PICK_LABEL = { IN_SET: 'Already in this set' };
 
 /** Map<influencerId, 'live' | 'dead'> for this set. */
 async function inSetMap(setId, ids) {
@@ -74,25 +79,38 @@ async function inSetMap(setId, ids) {
 }
 
 /**
- * For each creator: { state: 'ok' | 'ineligible' | 'invited', label, reason (coarse), inSet }.
- * The real reason a creator failed is never sent as a sentence — only the coarse code the
- * item 2 service already exposes to brands, and the two short labels the mockups print.
+ * For each creator, one of:
+ *   { state: 'ok',         label: null, reason: 'OK', inSet }
+ *   { state: 'invited',    label: 'Already in this set', reason: null, inSet: 'live' }
+ *   { state: 'ineligible', reason (coarse, unchanged), detail, label, message, inSet }
+ *
+ * ui-walk-fixes, founder decision D2 (2 Oct 2026): a creator who can't be invited now says
+ * WHY — `label` is the short line for her row, `message` the sentence shown when the brand
+ * taps her, `detail` which rule it was (aim | mode | category | visit_city | not_accepting,
+ * or null when it is none of hers). This REVERSES item 5's "the real reason is never sent".
+ * One reason only, the first that fails; paused and blocked read the same; her minimums are
+ * never a reason. All of it is decided and worded in collabEligibility — nothing here.
+ *
+ * `names` (Map or object, influencerId → name) is what the caller's own rows already hold,
+ * so the sentence costs no extra query on a page of creators.
  */
-async function pickStates({ brandId, set, ids }) {
+async function pickStates({ brandId, set, ids, names }) {
+  const known = names instanceof Map ? names : new Map(Object.entries(names || {}));
   const [elig, inSet] = await Promise.all([
-    eligibility.canBrandInviteMany({ brandId, set, creators: ids.map(id => ({ influencerId: id })) }),
+    eligibility.canBrandInviteMany({ brandId, set, creators: ids.map(id => ({ influencerId: id })), names: known }),
     inSetMap(set.id, ids),
   ]);
   const byId = new Map(elig.map(e => [e.influencerId, e]));
   const out = new Map();
   for (const id of ids) {
-    const e = byId.get(id) || { ok: false, reason: 'NOT_MATCHING', warnings: [], minimums: null };
+    // A creator the service returned nothing for is not one of her rules: the old line.
+    const e = byId.get(id) || { ok: false, reason: 'NOT_MATCHING', ...cantInvite({ detail: null, name: known.get(id) }) };
     const live = inSet.get(id) === 'live';
     out.set(id, live
       ? { state: 'invited', label: PICK_LABEL.IN_SET, reason: null, inSet: 'live' }
       : e.ok
         ? { state: 'ok', label: null, reason: 'OK', inSet: inSet.get(id) || 'none' }
-        : { state: 'ineligible', label: PICK_LABEL[e.reason] || PICK_LABEL.NOT_MATCHING, reason: e.reason, inSet: inSet.get(id) || 'none' });
+        : { state: 'ineligible', reason: e.reason, detail: e.detail || null, label: e.label, message: e.message, inSet: inSet.get(id) || 'none' });
   }
   return out;
 }
@@ -120,7 +138,12 @@ const pickable = asyncHandler(async (req, res) => {
     }));
     out = { total: rows.length, page: 1, rows };
   }
-  const states = await pickStates({ brandId: brand.id, set, ids: out.rows.map(r => r.id) });
+  // The Filters pop-up's count ("Show 14 creators", ui-walk-fixes frame B4): with countOnly the
+  // All creators list answers { total } and no rows. This used to map over the missing rows and
+  // answer 500, which the phone printed as "Show 0 creators" for every choice. Only that call
+  // arrives here without rows — Worked with and Pool always carry them.
+  if (!out.rows) return success(res, { tab, total: out.total });
+  const states = await pickStates({ brandId: brand.id, set, ids: out.rows.map(r => r.id), names: new Map(out.rows.map(r => [r.id, r.name])) });
   out.rows = out.rows.map(r => ({ ...r, pick: states.get(r.id) }));
   return success(res, { tab, ...out, set: { id: set.id, name: set.name, goal: set.goal, shootMode: set.shoot_mode, branchCity: set.branch_city || null } });
 });
@@ -134,23 +157,28 @@ async function workedWith(brandId, q = {}) {
     params.push(`%${String(q.search).trim().replace(/^@+/, '').toLowerCase()}%`);
     searchSql = `AND (lower(COALESCE(i.full_name, u.name)) LIKE $2 OR lower(i.instagram_handle) LIKE $2)`;
   }
-  const base = `
+  // The joins and the filter are kept apart because the page query adds two more joins, and a
+  // join cannot follow a WHERE. They were one string until 2 Oct 2026, which put the LEFT JOINs
+  // after the WHERE: the page query was a syntax error and this tab answered 500 on every call
+  // since item 5 shipped (no test asked for tab=worked; found while building ui-walk-fixes D2).
+  const from = `
     FROM contracts con
     JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
     JOIN campaign_sets cs ON cs.id = ci.set_id
     JOIN campaigns c ON c.id = cs.campaign_id
     JOIN influencers i ON i.id = ci.influencer_id
-    JOIN users u ON u.id = i.user_id
-   WHERE c.brand_id = $1 AND ${SIGNED_CONTRACT_SQL} AND u.status = 'approved' ${searchSql}`;
-  const { rows: cnt } = await db.query(`SELECT count(DISTINCT i.id)::int AS n ${base}`, params);
+    JOIN users u ON u.id = i.user_id`;
+  const where = `WHERE c.brand_id = $1 AND ${SIGNED_CONTRACT_SQL} AND u.status = 'approved' ${searchSql}`;
+  const { rows: cnt } = await db.query(`SELECT count(DISTINCT i.id)::int AS n ${from} ${where}`, params);
   params.push(discovery.PAGE, (page - 1) * discovery.PAGE);
   const { rows } = await db.query(
     `SELECT i.id, COALESCE(i.full_name, u.name) AS name, i.instagram_handle, i.profile_image_r2_key, i.followers_count,
             rc.name AS city_name, rn.label AS niche_label,
             count(*)::int AS collaborations, max(GREATEST(con.influencer_signed_at, con.brand_signed_at)) AS last_signed_at
-       ${base}
+       ${from}
        LEFT JOIN ref_cities rc ON rc.id = i.city_id
        LEFT JOIN ref_creator_niches rn ON rn.code = i.niche[1]
+       ${where}
       GROUP BY i.id, u.name, rc.name, rn.label
       ORDER BY last_signed_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -184,11 +212,14 @@ const groupCheck = asyncHandler(async (req, res) => {
   );
   await resolveAvatars(rows, { urlField: 'avatar_url', keyField: 'profile_image_r2_key' });
   const members = rows.map(r => discovery.creatorRow(r));
-  const states = await pickStates({ brandId: brand.id, set, ids: members.map(m => m.id) });
+  const states = await pickStates({ brandId: brand.id, set, ids: members.map(m => m.id), names: new Map(members.map(m => [m.id, m.name])) });
   const can = [], cannot = [];
   for (const m of members) {
     const p = states.get(m.id);
-    if (p.state === 'ok') can.push({ ...m, pick: p }); else cannot.push({ ...m, pick: p, label: p.label });
+    // `label` beside the row is what every bundle already prints under her name; D2 puts the
+    // short reason in it. `message` and `detail` ride beside it (null for "Already in this set").
+    if (p.state === 'ok') can.push({ ...m, pick: p });
+    else cannot.push({ ...m, pick: p, label: p.label, message: p.message || null, detail: p.detail || null });
   }
   return success(res, {
     group: { id: g[0].id, name: g[0].name, memberCount: members.length },
@@ -205,6 +236,8 @@ const checkEligibility = asyncHandler(async (req, res) => {
   const creators = Array.isArray(req.body && req.body.creators) ? req.body.creators : [];
   if (!creators.length) throw new AppError('VALIDATION_ERROR', 'creators is required', 422, 'creators');
   if (creators.length > 100) throw new AppError('VALIDATION_ERROR', 'At most 100 creators per check', 422, 'creators');
+  // D2: a refused creator's result also carries detail / label / message (null when she can be
+  // invited). No names are handed over — the body is the client's, so the service looks them up.
   const results = await eligibility.canBrandInviteMany({ brandId: brand.id, set, creators });
   const inSet = await inSetMap(set.id, results.map(r => r.influencerId));
   return success(res, {

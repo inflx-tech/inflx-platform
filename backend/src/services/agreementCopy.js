@@ -114,6 +114,11 @@ const BRAND = {
     `${name} signed on ${shortDate(signedAt)} and is waiting. If nobody signs by ${shortDate(cutoff)}, this closes on its own.`,
   agreementSent: (date) => `Agreement sent ${shortDate(date)}`,
   signedByBoth: (date) => `Signed by both ${shortDate(date)}`,
+  // ui-walk-fixes (board F, frame F4) — the brand's agreement once it is out and she has not
+  // signed. The same two sentences are in the app's components/agreement/copy7.js (C7.brand),
+  // word for word. `sentDay` and `byDay` arrive already written as days ("13 Oct").
+  waitingForHer: (first, sentDay, byDay) => `Sent to ${first} on ${sentDay}. Waiting for her to sign by ${byDay}.`,
+  youSignAfter: 'You sign after her. Nothing is binding until both signatures are on it.',
 };
 
 /**

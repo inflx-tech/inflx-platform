@@ -19,8 +19,9 @@ import { Skeleton, LoadError } from '../../components/settings/feedback';
 import { GroupHeader5 } from '../../components/invitations/bits5';
 import { PitchCard8 } from '../../components/pitch/bits8';
 import { C8 } from '../../components/pitch/copy8';
+import { Header } from './BrandPitchSettingsScreen';
 
-export default function BrandPitchesScreen({ navigation }) {
+export default function BrandPitchesScreen({ navigation, route }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('loading');
 
@@ -38,15 +39,21 @@ export default function BrandPitchesScreen({ navigation }) {
     else navigation.navigate('BrandPitch', { pitchId: card.id });
   };
 
-  if (status === 'loading') return <View style={s.page}><Skeleton rows={6} /></View>;
-  if (status === 'error') return <View style={s.page}><LoadError onRetry={load} /></View>;
+  // ui-walk-fixes D3 — this list is drawn two ways. Inside the Creators tab it is a segment under
+  // that page's own title (no `route` is passed). Opened as a screen of its own it has no bottom
+  // tabs, so it carries the title bar and the way back, in every state.
+  const bar = route ? <Header title={C8.brand.tab} onBack={() => navigation.goBack()} /> : null;
+
+  if (status === 'loading') return <View style={s.page}>{bar}<Skeleton rows={6} /></View>;
+  if (status === 'error') return <View style={s.page}>{bar}<LoadError onRetry={load} /></View>;
 
   if (!data.total) {
-    return <View style={s.page} testID="pitch-inbox-empty"><EmptyState title={C8.brand.emptyTitle} body={C8.brand.emptyBody} /></View>;
+    return <View style={s.page} testID="pitch-inbox-empty">{bar}<EmptyState title={C8.brand.emptyTitle} body={C8.brand.emptyBody} /></View>;
   }
 
   return (
     <View style={s.page}>
+      {bar}
       <ScrollView contentContainerStyle={s.body}>
         {(data.order || []).map((key) => {
           const g = (data.groups || {})[key];

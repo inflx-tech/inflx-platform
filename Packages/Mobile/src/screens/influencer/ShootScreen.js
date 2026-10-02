@@ -6,6 +6,9 @@
  * because the only thing she can change is the time. On the day the card becomes a thing to act
  * on — "I've been to the store" is hers to tap, so a brand that forgets can never leave her
  * stranded. And the sentence that stops her worrying: nothing about her payment depends on this.
+ *
+ * ui-walk-fixes (board C, rule 1): the buttons sit in a strip IN the column, under the page
+ * (BottomBar) — never floating over it. A stage with nothing to press has no strip at all.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
@@ -14,6 +17,8 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, EmptyState } from '../../components/settings/primitives';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -31,7 +36,8 @@ export default function ShootScreen({ navigation, route }) {
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
   const [sheetError, setSheetError] = useState(null);
-  const { toast, show } = useToast();
+  // Board C: the toast is drawn in the box above the button strip, just above it.
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
@@ -83,7 +89,8 @@ export default function ShootScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`shoot-${stage}${sh.delayed ? '-delayed' : ''}`}>
       <Header title={C10.hers.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 170 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: 18 }} testID="shoot-scroll">
         <View style={s.crumbRow}>
           <Text style={s.crumb}>{`${String(brand).toUpperCase()} · ${String(sh.setName || '').toUpperCase()}`}</Text>
           {sh.delayed ? <DelayedChip10 /> : null}
@@ -139,8 +146,10 @@ export default function ShootScreen({ navigation, route }) {
           </>
         ) : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
-      <View style={s.bar} testID="shoot-actions">
+      <BottomBar testID="shoot-actions">
         {/* Item 12: the visit is done — her content step is open. */}
         {stage === 'complete' && sh.aim === 'engagement' ? (
           <PrimaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
@@ -168,11 +177,10 @@ export default function ShootScreen({ navigation, route }) {
             {sh.can.move ? <TextButton label={C10.hers.askToMove} icon="undo-variant" onPress={() => setSheet('move')} testID="ask-to-move" /> : null}
           </>
         ) : null}
-      </View>
+      </BottomBar>
 
       <MoveTimeSheet10 visible={sheet === 'move'} side="influencer" otherName={brand} currentAt={plan.visitAt} postingDate={sh.postingDate}
         busy={busy} serverError={sheetError} onSend={move} onClose={() => { setSheetError(null); setSheet(null); }} />
-      {toast}
     </View>
   );
 }
@@ -182,5 +190,6 @@ const s = StyleSheet.create({
   crumb: { fontFamily: fonts.sansBold, fontSize: 10.5, color: T.ink3, letterSpacing: 0.6 },
   para: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 20, marginBottom: 12 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, textAlign: 'center' },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
+  // The page fills the room between the title row and the strip (the strip itself is BottomBar's).
+  page: { flex: 1 },
 });

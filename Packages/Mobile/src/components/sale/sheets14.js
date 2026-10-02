@@ -35,17 +35,26 @@ export function DestinationSheet14({ visible, post, destinations, taken, busy, s
   useEffect(() => { if (visible) setPicked([]); }, [visible]);
   const list = (destinations || []).filter((d) => !(taken || []).includes(d.type));
   const toggle = (type) => setPicked((p) => (p.includes(type) ? p.filter((x) => x !== type) : [...p, type]));
+  // ui-walk-fixes (board C, rule 3): no text box, but the first time a post is shared all six
+  // places are offered, and that list with its title, hint and two buttons is as tall as a short
+  // phone has room for — "Back" ended up at, or past, the bottom edge. The places now scroll inside
+  // the sheet and the two buttons are pinned under them, with the server's refusal beside them.
   return (
-    <Sheet visible={visible} onClose={busy ? () => {} : onClose} testID="destination-sheet">
+    <Sheet visible={visible} onClose={busy ? () => {} : onClose} testID="destination-sheet" fit
+      footer={(
+        <>
+          <FieldError text={serverError} />
+          {serverError ? <View style={s.gap} /> : null}
+          <PrimaryButton label={C14.addRows(picked.length)} disabled={!picked.length} onPress={() => onAdd(picked)} busy={busy} busyLabel="Adding" testID="dest-add" />
+          <SecondaryButton label={C14.back} onPress={() => { if (!busy) onClose(); }} testID="dest-back" />
+        </>
+      )}>
       <Text style={s.title}>{C14.whereTitle(post ? post.title : '')}</Text>
       <Text style={s.body}>{C14.whereHint}</Text>
       {list.map((d) => (
         <Option key={d.type} selected={picked.includes(d.type)} label={d.label} sub={d.isStory ? C14.storyProof : null}
           onPress={() => toggle(d.type)} testID={`dest-${d.type}`} />
       ))}
-      <FieldError text={serverError} />
-      <PrimaryButton label={C14.addRows(picked.length)} disabled={!picked.length} onPress={() => onAdd(picked)} busy={busy} busyLabel="Adding" testID="dest-add" />
-      <SecondaryButton label={C14.back} onPress={() => { if (!busy) onClose(); }} testID="dest-back" />
     </Sheet>
   );
 }
@@ -65,17 +74,25 @@ export function ReportSheet14({ visible, kinds, busy, serverError, onReport, onC
     if (n.length > 500) { setErr('Keep it under 500 characters.'); return; }
     setErr(null); onReport(kind, n || null);
   }
+  // ui-walk-fixes (board C, rule 3): the note box sits under the list of reasons. The sheet
+  // shrinks to the room above the keypad, its body scrolls, and the two buttons are pinned under
+  // it with the server's refusal beside them.
   return (
-    <Sheet visible={visible} onClose={busy ? () => {} : onClose} testID="sale-report-sheet">
+    <Sheet visible={visible} onClose={busy ? () => {} : onClose} testID="sale-report-sheet" fit
+      footer={(
+        <>
+          <FieldError text={serverError} />
+          {serverError ? <View style={s.gap} /> : null}
+          <DangerButton label={C14.tellInflx} onPress={go} disabled={!kind} busy={busy} busyLabel="Sending" testID="sale-report-confirm" />
+          <SecondaryButton label={C14.back} onPress={() => { if (!busy) onClose(); }} testID="sale-report-back" />
+        </>
+      )}>
       <Text style={s.title}>{C14.reportTitle}</Text>
       {(kinds || []).map((k) => (
         <Option key={k} radio selected={kind === k} label={k === 'rounds_used' ? C14.roundsUsed : C14.reasons[k]} onPress={() => setKind(k)} testID={`reason-${k}`} />
       ))}
       <TextField4 value={note} onChangeText={setNote} placeholder={C14.reportNote} max={500} multiline error={err} testID="sale-report-note" />
-      <Text style={s.small}>{C14.reportStops}</Text>
-      <FieldError text={serverError} />
-      <DangerButton label={C14.tellInflx} onPress={go} disabled={!kind} busy={busy} busyLabel="Sending" testID="sale-report-confirm" />
-      <SecondaryButton label={C14.back} onPress={() => { if (!busy) onClose(); }} testID="sale-report-back" />
+      <Text style={[s.small, s.smallLast]}>{C14.reportStops}</Text>
     </Sheet>
   );
 }
@@ -84,6 +101,9 @@ const s = StyleSheet.create({
   title: { fontFamily: fonts.sansBold, fontSize: 17, color: T.ink, marginBottom: 6 },
   body: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 19, marginBottom: 10 },
   small: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, marginVertical: 8 },
+  // The last line of a scrolling body: the pinned footer already keeps 12 above its button.
+  smallLast: { marginBottom: 0 },
+  gap: { height: 8 },
   opt: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1.5, borderColor: T.border, borderRadius: 12, padding: 11, marginBottom: 8, backgroundColor: '#FFFFFF' },
   optOn: { borderColor: T.ink, backgroundColor: T.surface },
   optLabel: { fontFamily: fonts.sansSemiBold, fontSize: 13.5, color: T.ink },

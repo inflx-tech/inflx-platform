@@ -3,12 +3,18 @@
  * live posts, any brand. Products: grouped by collaboration, because the collaboration decides the
  * offer and her commission on each product (M6). Also adds items to an existing collection (P20).
  * Contract: features/shoppable-posts-v2 · rules §4.11 · founder Q5
+ *
+ * ui-walk-fixes (board C): the page is a FormScroll — the name or search box being typed in stays
+ * in view above the button strip, and with the keypad open the first tap on a post or product
+ * picks it (a plain scroller spent that tap closing the keypad). The strip was already part of
+ * the column here (the Create tab's Footer never floated), so nothing else changes.
  */
 import React, { useCallback, useState } from 'react';
-import { View, ScrollView, Text, TextInput } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { influencerApi } from '../../services/api';
 import { Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll } from '../../components/shell/FormScroll';
 import { Chip } from '../../components/settings/primitives';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
@@ -55,7 +61,7 @@ export default function NewCollectionScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="new-collection">
       <Header title={adding ? (kind === 'posts' ? CP.addPosts : CP.addProducts) : CP.newCollectionTitle} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <FormScroll contentContainerStyle={{ padding: 16 }} testID="new-collection-scroll">
         {!adding ? (
           <>
             <Text style={b.label}>{CP.name} *</Text>
@@ -90,7 +96,7 @@ export default function NewCollectionScreen({ navigation, route }) {
           </>
         )}
         <ErrorLine text={err} />
-      </ScrollView>
+      </FormScroll>
       <Footer label={CP.createN(picked.length, kind)} disabled={busy || !picked.length || (!adding && !name.trim())} busy={busy} onPress={create} testID="create" />
     </View>
   );

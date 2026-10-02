@@ -186,7 +186,10 @@ export const C11 = {
     received: 'Received',
     missing: 'Missing',
     damaged: 'Damaged',
-    notePlaceholder: 'What was wrong?',
+    // ui-walk-fixes (closing pass): this was a second `notePlaceholder` in this same block. The
+    // later one silently won, so the Delivery note box on her address screen (R3, above) asked
+    // "What was wrong?". It has its own key now; its one reader is ThreeWayCheck11 (bits11.js).
+    checkNotePlaceholder: 'What was wrong?',
     save: 'Save',
 
     /* R11 · shoot done */

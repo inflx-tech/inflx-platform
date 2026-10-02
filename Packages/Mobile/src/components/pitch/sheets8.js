@@ -10,12 +10,16 @@
  *   reject   — the exact date she may pitch again, plus the fact that a block
  *              is a different answer and lives somewhere else.
  *   withdraw — that there is no cooldown, so she isn't afraid to take it back.
+ *
+ * ui-walk-fixes (board E): each sheet ends in the shared level pair (ButtonRow)
+ * — two equal halves, level top and bottom, the quiet choice a clear dark
+ * outline, Reject and Withdraw a red outline (item 8's own T7 / T8 draw them so).
  */
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { Sheet } from '../settings/sheets';
-import { PrimaryButton, SecondaryButton, DangerButton, FieldError, InfoBox } from '../settings/primitives';
+import { PrimaryButton, SecondaryButton, DangerButton, FieldError, InfoBox, ButtonRow } from '../settings/primitives';
 import { KV5 } from '../invitations/bits5';
 import { CooldownBox8 } from './bits8';
 import { C8, MSG8 } from './copy8';
@@ -39,10 +43,10 @@ export function AcceptPitchSheet8({ visible, pitch, busy, onAccept, onClose }) {
         <KV5 k={C8.brand.acceptCollabLabel} v={C8.brand.acceptNotYet} />
       </View>
       <InfoBox text={pitch.acceptBody} />
-      <View style={s.row}>
-        <View style={{ flex: 1 }}><SecondaryButton label={C8.brand.acceptCancel} onPress={onClose} testID="accept-not-now" /></View>
-        <View style={{ flex: 1 }}><PrimaryButton label={C8.brand.acceptGo} onPress={onAccept} busy={busy} testID="accept-confirm" /></View>
-      </View>
+      <ButtonRow style={s.pair}>
+        <SecondaryButton strong label={C8.brand.acceptCancel} onPress={onClose} testID="accept-not-now" />
+        <PrimaryButton label={C8.brand.acceptGo} onPress={onAccept} busy={busy} testID="accept-confirm" />
+      </ButtonRow>
     </Sheet>
   );
 }
@@ -62,8 +66,17 @@ export function RejectPitchSheet8({ visible, pitch, busy, onReject, onClose }) {
     onReject(text || null);
   }
 
+  // ui-walk-fixes (board C, rule 3): the sheet shrinks to the room above the keypad, its body
+  // scrolls (the reason box stays in view while he types; the cooldown line is a swipe away), and
+  // the level pair is pinned under it.
   return (
-    <Sheet visible={visible} onClose={onClose} testID="reject-pitch-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="reject-pitch-sheet" fit
+      footer={(
+        <ButtonRow>
+          <SecondaryButton strong label={C8.brand.rejectKeep} onPress={onClose} testID="reject-keep" />
+          <DangerButton outline label={C8.brand.rejectGo} onPress={go} busy={busy} testID="reject-confirm" />
+        </ButtonRow>
+      )}>
       <Text style={s.title}>{C8.brand.rejectTitle}</Text>
       <Text style={s.label}>{C8.brand.rejectWhy}</Text>
       <TextInput
@@ -80,10 +93,6 @@ export function RejectPitchSheet8({ visible, pitch, busy, onReject, onClose }) {
       <FieldError text={err} />
       <CooldownBox8 text={pitch.rejectCooldownLine} testID="reject-cooldown" />
       <Text style={s.hint}>{C8.brand.rejectBlockHint}</Text>
-      <View style={s.row}>
-        <View style={{ flex: 1 }}><SecondaryButton label={C8.brand.rejectKeep} onPress={onClose} testID="reject-keep" /></View>
-        <View style={{ flex: 1 }}><DangerButton label={C8.brand.rejectGo} onPress={go} busy={busy} testID="reject-confirm" /></View>
-      </View>
     </Sheet>
   );
 }
@@ -96,10 +105,10 @@ export function WithdrawPitchSheet8({ visible, busy, onWithdraw, onClose }) {
     <Sheet visible={visible} onClose={onClose} testID="withdraw-pitch-sheet">
       <Text style={s.title}>{C8.mine.withdrawConfirm}</Text>
       <Text style={s.body}>{C8.mine.withdrawBody}</Text>
-      <View style={s.row}>
-        <View style={{ flex: 1 }}><SecondaryButton label={C8.mine.withdrawKeep} onPress={onClose} testID="withdraw-keep" /></View>
-        <View style={{ flex: 1 }}><DangerButton label={C8.mine.withdrawGo} onPress={onWithdraw} busy={busy} testID="withdraw-confirm" /></View>
-      </View>
+      <ButtonRow style={s.pair}>
+        <SecondaryButton strong label={C8.mine.withdrawKeep} onPress={onClose} testID="withdraw-keep" />
+        <DangerButton outline label={C8.mine.withdrawGo} onPress={onWithdraw} busy={busy} testID="withdraw-confirm" />
+      </ButtonRow>
     </Sheet>
   );
 }
@@ -112,5 +121,6 @@ const s = StyleSheet.create({
   label: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.ink, marginBottom: 6 },
   textarea: { borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 12, minHeight: 80, textAlignVertical: 'top', fontFamily: fonts.sansRegular, fontSize: 14, color: T.ink, backgroundColor: '#FFFFFF' },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, marginTop: 6, marginBottom: 6, lineHeight: 17 },
-  row: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  // The space above the level pair; the row itself (two equal halves, 8 apart) is ButtonRow's.
+  pair: { marginTop: 14 },
 });

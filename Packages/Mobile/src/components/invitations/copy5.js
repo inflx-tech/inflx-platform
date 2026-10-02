@@ -68,8 +68,11 @@ export const C5 = {
     title: 'Add creators',
     tabs: ['All creators', 'Worked with', 'Groups'],
     sub: (campaign, set) => `${campaign} · ${set}`.toUpperCase(),
+    // ui-walk-fixes D2 (2 Oct 2026): the short reason on a "Can't invite" row and the sentence
+    // shown when she is tapped are composed on the server (pick.label / pick.message). `notOpen`
+    // is only what the row falls back to when a server sends neither. The grey sentence that sat
+    // above the list ("…the reason is never shown to them") is gone with that decision.
     cantInvite: "Can't invite", notOpen: 'Not open to this set', invited: 'Invited', alreadyIn: 'Already in this set',
-    hint: "Creators whose own settings rule this set out can't be picked, and the reason is never shown to them.",
     next: (n) => `Next: terms for ${plural(n, 'creator', 'creators')}`,
     groupsEmptyTitle: 'No groups yet', groupsEmptyBody: 'Groups are made on the Creators tab. Invite one here in a single step.',
     groupRow: (n) => plural(n, 'creator', 'creators'),
@@ -120,6 +123,8 @@ export const C5 = {
     shoppable: 'Shoppable posts', shoppableValue: (n) => `${plural(n, 'post', 'posts')} · set by INFLX`,
     fee: 'Fee', feeHint: 'Paid 25% on signing, 25% when the content is live, 50% after it stays live.',
     delivers: 'What she delivers', addAnother: 'Add another', deliverHint: 'Reels, posts, stories, YouTube videos and shorts.',
+    // ui-walk-fixes (board D, frames D2 / D3): the one new word — beside a type that already has a line.
+    added: 'Added',
     note: 'Anything else she should know', notePlaceholder: 'Optional note for this creator',
     reuse: 'Brand can reuse the content', reuseHint: 'Usage rights. Off unless you need it.',
     fixedFee: 'Fixed fee', fixedFeeHint: "Paid whatever the sales are, in the same three parts. Can't be ₹0.",
@@ -202,13 +207,29 @@ export const C5 = {
     sent: (n) => `${plural(n, 'invitation', 'invitations')} sent.`,
     failedTitle: (n) => `${n === 1 ? '1 creator' : `${n} creators`} can't be invited`,
     failedBody: 'Nothing was sent. Fix them, or remove them and send the rest.',
+    // ui-walk-fixes (D2, wave-2 review): a creator refused by one of her OWN invitation rules
+    // cannot be fixed by changing her terms, so "Fix them" would be untrue. `failedBodyRemove` is
+    // said when every refusal is of that kind; `failedBodySome` when only some are.
+    failedBodyRemove: "Nothing was sent. Changing their terms won't help — remove them and send the rest.",
+    failedBodySome: 'Nothing was sent. Fix the ones you can, or remove them all and send the rest.',
     removeAndSend: (n) => `Remove ${n} and send the rest`,
   },
   set: {
     groups: {
       waiting: 'Waiting to answer', negotiating: 'Negotiating', accepted: 'Accepted, waiting for the agreement', signed: 'Signed',
       deferred: 'Asked for another date', declined: 'Declined', expired: 'Expired', withdrawn: 'Withdrawn and closed',
+      // ui-walk-fixes (board F, frame F1): the server files an agreement that is out for her
+      // signature under its "waiting" group, beside invitations nobody has answered. The phone
+      // gives it a heading of its own, straight after "Your move".
+      waitingCreator: 'Waiting for the creator',
     },
+    // ui-walk-fixes (board F, frames F1 / F2): what a row's button or tag says. A button names the
+    // step the brand owes; a tag says who is being waited for. "Reply" is item 6's (C6.set.reply).
+    planVisit: 'Plan the visit', confirmShoot: 'Confirm shoot', reviewIt: 'Review it', confirmLive: 'Confirm live', openStep: 'Open',
+    waitingToSign: 'Waiting to sign', herMove: 'Her move', activeTag: 'Active', completedSelling: 'Completed · selling',
+    // A finished collaboration that is not selling (Pay for Content, paid in full): the purple tag,
+    // in the word the server's own sentence uses ("Completed."). The selling one is the line above.
+    completedTag: 'Completed',
     sent: (d) => `sent ${stampDate4(d)}`, accepted: (d) => `Accepted ${stampDate4(d)}`, signed: (d) => `Signed ${stampDate4(d)}`,
     wants: (d) => `Wants ${shortDate4(d)}`, anotherSet: 'Another set', sendAgreement: 'Send agreement',
     // Item 7 (P1). Contract: features/item7-agreement
@@ -218,7 +239,9 @@ export const C5 = {
     signedByBoth: (d) => `Signed by both ${stampDate4(d)}`,
     withdrawnMeta: (d) => `Withdrawn ${stampDate4(d)}`, removedMeta: (d) => `Removed ${stampDate4(d)}`, expiredMeta: 'Expired',
     more: (n) => `+${n} more`,
-    menu: { viewTerms: 'View terms sent', profile: 'Open profile', withdraw: 'Withdraw invitation', withdrawHint: "Only while she hasn't answered", remove: 'Remove from set', removeHint: 'Until the agreement is signed' },
+    menu: { viewTerms: 'View terms sent', profile: 'Open profile', withdraw: 'Withdraw invitation', withdrawHint: "Only while she hasn't answered", remove: 'Remove from set', removeHint: 'Until the agreement is signed',
+      // ui-walk-fixes (board F, frame F3): the two lines an agreement adds to a creator's ⋯ menu.
+      openAgreement: 'Open the agreement', withdrawAgreement: 'Withdraw agreement' },
     withdrawTitle: (f) => `Withdraw ${f}'s invitation?`,
     withdrawBody: 'She sees it as withdrawn. You can invite her again with new terms while there is still time.',
     keep: 'Keep', withdraw: 'Withdraw', withdrawn: 'Invitation withdrawn.',
@@ -236,6 +259,8 @@ export const C5 = {
     chips: { accepted: 'Accepted', expired: 'Expired', withdrawn: 'Withdrawn', closed: 'Closed', declined: 'Declined', negotiating: 'Waiting', yourMove: 'Your move', pooled: 'Agreed', deferred: 'Another date asked',
       // Item 7 (P4, P7, P16). Contract: features/item7-agreement
       toSign: 'Your move', signedWaiting: 'Waiting', signed: 'Active' },
+    // ui-walk-fixes (board F, frame F7): the button on a card when she has something to do.
+    reviewSign: 'Review & sign', open: 'Open',
     waitingFor: (b) => `Waiting for the agreement from ${b}.`,
     expiredBody: (d) => `You didn't reply by ${shortDate4(d)}, so this invitation closed.`,
     withdrawnBody: (b, d) => `${b} withdrew this invitation on ${stampDate4(d)}.`,
@@ -269,7 +294,9 @@ export const C5 = {
 
 /** Chip tone per group, on the item 2 palette (prompt §8). */
 export const GROUP_TONE = {
-  waiting: 'waiting', invited: 'waiting', negotiating: 'waiting', yourMove: 'yourMove', accepted: 'active', signed: 'completed',
+  // ui-walk-fixes (board F, frame F7): "Active" is green, as P16 / V4 / R2 always drew it. It was
+  // the purple of "completed".
+  waiting: 'waiting', invited: 'waiting', negotiating: 'waiting', yourMove: 'yourMove', accepted: 'active', signed: 'active',
   // Item 7: the agreement is hers to sign (amber), or she has signed and waits (blue).
   toSign: 'yourMove', signedWaiting: 'waiting',
   pooled: 'active', deferred: 'waiting',

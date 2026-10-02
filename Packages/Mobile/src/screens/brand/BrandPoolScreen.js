@@ -3,6 +3,9 @@
  * for a different date or mode, grouped by what they asked for. Pick the ones that go together and
  * build a set; a set has one Aim, so only one Aim can be selected at a time.
  * Contract: features/item6-negotiation · rules v1.18 §7B · prompt §6.8
+ *
+ * ui-walk-fixes board C: the "Create a set" strip is part of the column, under the list
+ * (BottomBar) — it no longer floats over the last rows; the toast floats just above it.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
@@ -12,6 +15,8 @@ import { brandApi } from '../../services/api';
 import { PrimaryButton, EmptyState } from '../../components/settings/primitives';
 import { ActionSheet, ConfirmSheet } from '../../components/settings/sheets';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -28,7 +33,7 @@ export default function BrandPoolScreen({ navigation, route }) {
   const [pickCampaign, setPickCampaign] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
   const [defaults, setDefaults] = useState(null);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
@@ -67,14 +72,18 @@ export default function BrandPoolScreen({ navigation, route }) {
     show(C6.pool.removed); load();
   }
 
-  if (status === 'loading') return <View style={base.screen}><Header title={C6.pool.title} onBack={() => navigation.goBack()} /><Skeleton /></View>;
-  if (status === 'error') return <View style={base.screen}><Header title={C6.pool.title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} /></View>;
+  // ui-walk-fixes (board F, frame F8): "{First} is in your pool." arrives with the route after a
+  // pitch is accepted, while the pool is still loading — so the message is drawn in every state.
+  if (status === 'loading') return <View style={base.screen}><Header title={C6.pool.title} onBack={() => navigation.goBack()} /><Skeleton />{toast}</View>;
+  if (status === 'error') return <View style={base.screen}><Header title={C6.pool.title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} />{toast}</View>;
 
   const groups = data.groups || [];
   return (
     <View style={base.screen} testID="brand-pool">
       <Header title={C6.pool.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 140 }}>
+      {/* ui-walk-fixes board C: the list scrolls in the room above the strip; nothing floats over it. */}
+      <FormArea>
+      <ScrollView style={s.fill} contentContainerStyle={{ padding: 18, paddingBottom: 24 }}>
         <Text style={s.intro}>{C6.pool.intro}</Text>
         {!groups.length ? <EmptyState title={C6.pool.emptyTitle} body={C6.pool.emptyBody} /> : null}
         {groups.map(g => (
@@ -89,14 +98,15 @@ export default function BrandPoolScreen({ navigation, route }) {
         ))}
         {groups.length ? <Text style={s.hint} testID="aim-hint">{C6.pool.aimHint}</Text> : null}
       </ScrollView>
-      {groups.length ? (
-        <View style={s.bar}>
-          <PrimaryButton label={C6.pool.create(sel.size)} onPress={createSet} disabled={!sel.size} testID="pool-create-set" />
-        </View>
-      ) : null}
       {toast}
+      </FormArea>
+      {groups.length ? (
+        <BottomBar testID="pool-bar">
+          <PrimaryButton label={C6.pool.create(sel.size)} onPress={createSet} disabled={!sel.size} testID="pool-create-set" />
+        </BottomBar>
+      ) : null}
       <ActionSheet visible={!!menu} onClose={() => setMenu(null)} actions={menu ? [
-        { label: C6.pool.menuProfile, onPress: () => navigation.navigate('CreatorsTab', { screen: 'BrandCreatorProfile', params: { influencerId: menu.creator.id } }) },
+        { label: C6.pool.menuProfile, onPress: () => navigation.navigate('CreatorsTab', { screen: 'BrandCreatorProfile', params: { influencerId: menu.creator.id }, initial: false }) },
         { label: C6.pool.remove, destructive: true, onPress: () => setConfirmRemove(menu) },
       ] : []} />
       <ConfirmSheet visible={!!confirmRemove} danger title={confirmRemove ? `Remove ${confirmRemove.creator.name} from your pool?` : ''}
@@ -113,5 +123,6 @@ export default function BrandPoolScreen({ navigation, route }) {
 const s = StyleSheet.create({
   intro: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 18, marginBottom: 6 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, marginTop: 14 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
+  // The list fills the box above the strip.
+  fill: { flex: 1 },
 });

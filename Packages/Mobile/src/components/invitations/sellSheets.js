@@ -10,6 +10,10 @@
  *                        products not in any offer on or after the posting date
  *
  * The server is the judge: it re-checks every offer's dates and freezes the product list at sending.
+ *
+ * ui-walk-fixes (board C): ChooseProductsModal is a full-screen pop-up built like a screen, so it
+ * follows the screens' rule — "Use N products" is a strip under the list (BottomBar), never
+ * floating over it, and the list is a FormScroll because it holds the search and price boxes.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet, Modal, Linking } from 'react-native';
@@ -18,6 +22,8 @@ import { brandApi } from '../../services/api';
 import { Sheet } from '../settings/sheets';
 import { PrimaryButton, SecondaryButton, Chip } from '../settings/primitives';
 import { CheckboxRow } from '../discovery/bits';
+import { BottomBar } from '../shell/BottomBar';
+import { FormScroll, FormArea } from '../shell/FormScroll';
 import { Header } from '../../screens/brand/BrandPitchSettingsScreen';
 import { C5, first, rupees5 } from './copy5';
 
@@ -215,7 +221,8 @@ export function ChooseProductsModal({ visible, campaignId, setId, value, onUse, 
             </TouchableOpacity>
           ))}
         </View>
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
+        <FormArea>
+        <FormScroll contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" testID="choose-list">
           {tab === 1 ? (
             <TextInput style={s.search} value={q} onChangeText={setQ} placeholder={S.searchPlaceholder} placeholderTextColor={T.ink3} autoFocus testID="choose-search" />
           ) : (
@@ -258,10 +265,11 @@ export function ChooseProductsModal({ visible, campaignId, setId, value, onUse, 
           ))}
           {rows && !rows.length ? <Text style={s.hint}>Nothing here without an offer.</Text> : null}
           <Text style={s.hint}>{S.notHere}</Text>
-        </ScrollView>
-        <View style={s.footer}>
+        </FormScroll>
+        </FormArea>
+        <BottomBar testID="choose-actions">
           <PrimaryButton label={S.use(pickedIds.length)} onPress={() => onUse(pickedIds, Object.values(picked))} testID="choose-use" />
-        </View>
+        </BottomBar>
       </View>
     </Modal>
   );
@@ -300,5 +308,4 @@ const s = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginVertical: 8 },
   filter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   priceIn: { width: 80, height: 36, borderRadius: 9, borderWidth: 1.5, borderColor: T.border, paddingHorizontal: 8, fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
 });

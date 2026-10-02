@@ -10,7 +10,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi, referenceApi } from '../../services/api';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
@@ -18,6 +18,7 @@ import { Chip, SettingRow, SwitchRow, Section, FieldError, InfoBox, TagRow } fro
 import { ConfirmSheet } from '../../components/settings/sheets';
 import StateCityPicker from '../../components/settings/StateCityPicker';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { validateCreatorSettings, visibleCommissionKeys, minimumsSummary } from '../../components/settings/validation';
 import { AIMS, MODES, aimLabel, modeLabel, COPY, groupIndian } from '../../components/settings/copy';
 import { Header, NumberField, s as base, countCities } from '../brand/BrandPitchSettingsScreen';
@@ -72,7 +73,7 @@ export default function InvitationSettingsScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [sheet, setSheet] = useState(null);           // 'cities' | 'pause'
   const [justSaved, setJustSaved] = useState(false);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -172,7 +173,9 @@ export default function InvitationSettingsScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={base.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Header title={C.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={base.body} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: the form scrolls in the room above the Save strip; nothing floats over it. */}
+      <FormArea>
+      <FormScroll contentContainerStyle={base.body}>
         <SwitchRow testID="open-switch" label={C.openLabel} hint={C.openHint} value={form.open}
           onValueChange={(v) => (v ? set({ open: true }) : setSheet('pause'))} />
 
@@ -242,11 +245,11 @@ export default function InvitationSettingsScreen({ navigation }) {
         <Section>
           <SettingRow testID="row-blocked" label={C.blockedRow} value={meta.blockedCount ? String(meta.blockedCount) : COPY.picker.none} onPress={() => navigation.navigate('BlockedBrands')} />
         </Section>
-        <View style={{ height: 120 }} />
-      </ScrollView>
+      </FormScroll>
+      {toast}
+      </FormArea>
 
       <SaveBar dirty={dirty} errorCount={errorCount} saving={saving} onSave={save} />
-      {toast}
 
       <StateCityPicker
         visible={sheet === 'cities'} title={C.visitCities} states={lists.states} value={form.visitCityIds}

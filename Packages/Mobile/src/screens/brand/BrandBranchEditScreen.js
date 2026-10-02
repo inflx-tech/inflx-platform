@@ -11,12 +11,13 @@
  * Contract: features/registration-and-profile
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { FieldError, PrimaryButton, StatusChip } from '../../components/settings/primitives';
 import { Sheet, sh } from '../../components/settings/sheets';
 import { SaveBar, useToast } from '../../components/settings/feedback';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { applyServerError } from '../../utils/serverError';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
@@ -71,7 +72,7 @@ export default function BrandBranchEditScreen({ navigation, route }) {
   const [mainBranch, setMainBranch] = useState(route?.params?.mainBranch || null);
   const [sheet, setSheet] = useState(false);
   const [choice, setChoice] = useState(null);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   useEffect(() => {
     if (editing || branchCount != null) return;
@@ -129,7 +130,9 @@ export default function BrandBranchEditScreen({ navigation, route }) {
   return (
     <View style={base.screen}>
       <Header title={editing ? B.editTitle : B.addTitle} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[base.body, { paddingBottom: 140 }]} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: the form scrolls in the room above the Save strip; nothing floats over it. */}
+      <FormArea>
+      <FormScroll contentContainerStyle={base.body}>
         <Text style={base.label}>{B.name}</Text>
         <TextInput style={s.input} value={name} onChangeText={setName} placeholder="e.g. Jubilee Hills" placeholderTextColor={T.ink3} testID="branch-name" />
         <FieldError text={errors.name || (dirty ? clientErrors.name : '')} />
@@ -167,9 +170,10 @@ export default function BrandBranchEditScreen({ navigation, route }) {
             <StatusChip on label={B.main} /><Text style={[base.hint, { marginLeft: 8, marginBottom: 0 }]}>This is your main branch.</Text>
           </View>
         ) : null}
-      </ScrollView>
-      <SaveBar dirty={dirty} errorCount={errorCount} saving={saving && !sheet} onSave={save} label={B.save} />
+      </FormScroll>
       {toast}
+      </FormArea>
+      <SaveBar dirty={dirty} errorCount={errorCount} saving={saving && !sheet} onSave={save} label={B.save} />
       <MainBranchSheet
         visible={sheet}
         existing={mainBranch}

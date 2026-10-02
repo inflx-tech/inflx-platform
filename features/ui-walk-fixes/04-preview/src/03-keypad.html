@@ -1,0 +1,225 @@
+<style>
+/* board C — screens and pop-ups drawn with the keypad open */
+.bC-head{flex:none;position:relative;padding:4px 14px 6px;border-bottom:1px solid var(--border);background:#fff}   /* the title row, staying put while the form moves under it */
+.bC-tall{padding-top:38px}                                                                                         /* today's title bar: an empty band above the title */
+.bC-band{position:absolute;left:14px;top:11px}
+.bC-view{flex:1 1 auto;overflow:hidden;position:relative;justify-content:flex-end}                                 /* a form moved up so the box being typed in sits at its bottom edge (used with .scr) */
+.bC-float{position:absolute;left:0;right:0;bottom:0;box-shadow:0 -8px 16px rgba(26,26,23,.16)}                     /* today's button bar riding on top of the form */
+.bC-focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}                                        /* the ring on a note box being typed in */
+.bC-caret{display:inline-block;width:1.5px;height:14px;background:var(--ink);margin-left:1px;vertical-align:-2px}  /* the typing cursor */
+/* the one-line deliverable row, as board D draws it */
+.bC-row .field{padding-inline:9px;gap:4px;font-size:12.5px;min-width:0}
+.bC-row .field span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bC-row .field .ico{width:14px;height:14px;color:var(--ink3)}
+.bC-row .stp span{width:26px}
+.bC-row .stp b{min-width:20px}
+/* the pasted link and the small grey word at the box's right end, as board J draws them */
+.bC-box{min-width:0}
+.bC-url{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bC-saving{flex:none;font-family:var(--sans);font-size:11.5px;font-weight:600;color:var(--ink3)}
+/* a pop-up whose body scrolls and whose main button stays pinned at its bottom */
+.bC-sheet{position:relative}
+.bC-sbody{overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;margin-inline:-6px;padding:0 6px 2px}
+.bC-sbody > .rnd,.bC-sbody > .rounds{align-self:flex-start}
+.bC-pin{border-top:1px solid var(--border);margin-inline:-14px;padding:10px 14px 0}
+.bC-mark{position:absolute;right:4px;width:3px;border-radius:3px;background:#C9C8C1;display:block}                 /* the scroll mark on the pop-up's right edge */
+.bC-over{position:absolute;left:0;right:0;bottom:0}                                                                /* today: the keypad lying over the pop-up's lower part */
+</style>
+<section id="board-C">
+  <header>
+    <div class="eyebrow">Brand and creator apps · point 3 of 11</div>
+    <h2>Typing: the box you type in stays visible</h2>
+    <p class="prose">You reported that the keypad covers the box being typed in. That is true, but the keypad is not what hides it: the phone does lift the form, and then our own button bar rides up with the keypad and sits on top of the box, with the bottom tabs taking more room under it. Pop-ups cannot get shorter, so when one is longer than the room left above the keypad, its note box and Send button slide under the keypad. This was read from the code, not seen on a phone: before you lock this board, open Plan the visit on a phone, tap "Their number" and check that C0 is what you see. The keypad is drawn shorter here than a real one, so a real phone shows a little less above it than these frames do.</p>
+    <p class="prose"><b>The rule this board locks</b>, for every place someone types in the brand and creator apps: (1) the main button sits in its own strip under the form, never floating over it — as 34 of your locked frames already draw it; (2) the bottom tabs hide while the keypad is open; (3) the box being typed in, with its counter, hint and error line, is always visible above the button strip; (4) pop-ups stop below the status bar, their body scrolls, and their main button stays above the keypad; (5) with the keypad closed every screen looks exactly as its locked board. The frames below draw the title row tight under the status bar: the empty band the app has there today goes on every screen (frame B9), and the bottom tabs show only on the five main pages.</p>
+  </header>
+  <div class="flow">
+
+    <!-- C0 · TODAY · Plan the visit, typing "Their number" -->
+    <div class="shot">
+      <div class="phone today">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="bC-head bC-tall">
+          <div class="ruler bC-band">↕ empty space above the title</div>
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div>
+        </div>
+        <div class="scr bC-view" style="height:271px;padding-bottom:46px">
+          <div class="crumbs">TANVI SURESH · SET A</div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> From the set</div><div class="tline"><span>Mode</span><b>Store Visit</b></div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>She goes live by</span><b>24 Oct 2026</b></div></div>
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field focus"><span>+91 98490 11223<i class="bC-caret"></i></span></div></div>
+          <div class="savebar bC-float"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+        </div>
+        <div class="tabbar"><span class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</span><span class="tab on"><span class="p"><svg class="ico"><use href="#i-layers"/></svg></span>Campaigns</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-users"/></svg></span>Creators</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</span></div>
+        <div class="kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>C0</i><span class="tagtoday">TODAY</span></div><b>Brand · typing "Their number" today</b><span>From the top: a tall title bar with empty space above the title, a little of the form, the yellow "Send to Tanvi" bar riding on top of the form, the bottom tabs, then the keypad. The box being typed in is under the yellow bar. It is drawn half showing so you can see where it is; on a phone the bar can cover it completely, hint line and all.</span></div>
+    </div>
+
+    <!-- C1 · AFTER · the same moment -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="bC-head">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div>
+        </div>
+        <div class="scr bC-view" style="height:297px;padding-bottom:20px">
+          <div class="crumbs">TANVI SURESH · SET A</div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> From the set</div><div class="tline"><span>Mode</span><b>Store Visit</b></div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>She goes live by</span><b>24 Oct 2026</b></div></div>
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field focus"><span>+91 98490 11223<i class="bC-caret"></i></span></div><div class="hint">She sees this once you send the plan.</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+        <div class="kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>C1</i><span class="tagafter">AFTER</span></div><b>Brand · the same moment, fixed</b><span>The title row is compact, with no empty band above it. "Their number" is in view with its ring and the hint line under it, and "Who she should ask for" is still readable above. "Send to Tanvi" has its own strip directly above the keypad, and no bottom tabs sit between the strip and the keypad.</span></div>
+    </div>
+
+    <!-- C2 · AFTER · the same on a small phone. The crumb line and the "From the set" card are above the top edge here. -->
+    <div class="shot">
+      <div class="phone small">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="bC-head">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div>
+        </div>
+        <div class="scr bC-view" style="height:197px;padding-bottom:10px">
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field focus"><span>+91 98490 11223<i class="bC-caret"></i></span></div><div class="hint">She sees this once you send the plan.</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+        <div class="kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>C2</i><span class="tagafter">AFTER</span></div><b>Brand · the same on a small phone</b><span>On a short phone the box, its hint and the button strip still fit above the keypad. What gives way is the top of the form: the grey "From the set" card has moved up out of view. It is one swipe away, and back in place when the keypad closes.</span></div>
+    </div>
+
+    <!-- C3 · AFTER · Terms, Pay for Content, typing the note -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="bC-head">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div>
+        </div>
+        <div class="scr bC-view" style="height:297px;padding-bottom:35px">
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="grp">
+            <div class="lbl">What she delivers <span class="req">*</span></div>
+            <div class="delrow bC-row"><div class="field"><span>Instagram reel</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bC-row"><div class="field"><span>Instagram story</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span>−</span><b>2</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico"><use href="#i-plus"/></svg>Add another</button>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+          </div>
+          <div class="grp"><div class="lbl">Anything else she should know</div><div class="textarea bC-focus">Please wear the kurta with the dupatta on.<i class="bC-caret"></i></div><div class="counter">42 / 300</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div>
+        <div class="kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>C3</i><span class="tagafter">AFTER</span></div><b>Brand · typing the note on Terms</b><span>Pay for Content terms for Priya, typing in "Anything else she should know". The note box and its "42 / 300" counter stay in view, and "Next creator" sits in its strip above the keypad. The row at the top is one of the one-line deliverable rows from board D; the rest of the form has moved up and is a swipe away.</span></div>
+    </div>
+
+    <!-- C4 · AFTER · creator, Your content, a link just pasted (the same moment as J2) -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Your content</h3></div>
+          <div class="crumbs">URBAN THREADS · SET A</div>
+          <div class="okbox"><svg class="ico"><use href="#i-check"/></svg><span>Approved on 22 Oct. Post it now — this is the version they approved.</span></div>
+          <div class="sechd">Add a link for each one</div>
+          <div class="card">
+            <div class="row between"><b>Instagram reel</b><span class="count">0 of 1</span></div>
+            <div class="linkrow bC-box"><div class="field focus bC-box"><span class="bC-url">https://www.instagram.com/reel/C8xK2…</span><span class="bC-saving">Saving…</span></div></div>
+          </div>
+        </div>
+        <div class="savebar">
+          <button class="btn block b-pri" type="button">I've posted everything</button>
+          <span class="hint" style="text-align:center">Saving your link…</span>
+        </div>
+        <div class="kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>C4</i><span class="tagafter">AFTER</span></div><b>Creator · a link just pasted</b><span>On "Your content" she has just pasted her reel link. The box stays in view with "Saving…" at its right end. The yellow "I've posted everything" and the line "Saving your link…" sit in their strip directly above the keypad, so she can press it without closing the keypad first. No bottom tabs sit between the strip and the keypad here either. Same moment as J2 on board J.</span></div>
+    </div>
+
+    <!-- C5 · TODAY · brand "Send counter" pop-up, short phone: the pop-up has gone up as far as it can and its lower part is under the keypad -->
+    <div class="shot">
+      <div class="phone today small">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Counter back</h3></div><div class="crumbs">PRIYA SHARMA · SET A</div><div style="height:300px"></div></div>
+        <div class="dim" style="align-items:flex-start">
+          <div class="sheet" style="margin-top:30px"><span class="grab"></span>
+            <span class="rnd">ROUND 1 OF 2</span>
+            <div class="grp"><div class="lbl">Commission <span class="req">*</span></div><div class="money"><div class="field">11.5<span class="unit">%</span></div></div><div class="chg"><span>Priya asked for</span><span class="v"><b class="old">13%</b><span class="ar">→</span><b class="new">11.5%</b></span></div><div class="warn"><svg class="ico"><use href="#i-alert"/></svg><span>Below Priya's minimum of 12%. She can still accept.</span></div></div>
+            <div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea bC-focus"><i class="bC-caret"></i></div><div class="counter">0 / 200</div></div>
+            <button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send counter</button>
+          </div>
+          <div class="kbd bC-over"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>C5</i><span class="tagtoday">TODAY</span></div><b>Brand · the counter pop-up today</b><span>The brand taps "Say why (optional)" and the keypad opens. The pop-up goes up as far as it can but keeps its full length, so its lower part ends up under the keypad: the note box is cut off at the bottom, and its counter and the "Send counter" button cannot be seen at all. The brand has to close the keypad to send. Drawn on a short phone; the shorter the phone, the more is hidden.</span></div>
+    </div>
+
+    <!-- C6 · AFTER · the same pop-up on the same short phone -->
+    <div class="shot">
+      <div class="phone small">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Counter back</h3></div><div class="crumbs">PRIYA SHARMA · SET A</div><div style="height:300px"></div></div>
+        <div class="dim" style="flex-direction:column;justify-content:flex-end;align-items:stretch">
+          <div class="sheet bC-sheet"><span class="grab"></span>
+            <div class="bC-sbody" style="height:206px;padding-bottom:10px">
+              <span class="rnd">ROUND 1 OF 2</span>
+              <div class="grp"><div class="lbl">Commission <span class="req">*</span></div><div class="money"><div class="field">11.5<span class="unit">%</span></div></div><div class="chg"><span>Priya asked for</span><span class="v"><b class="old">13%</b><span class="ar">→</span><b class="new">11.5%</b></span></div><div class="warn"><svg class="ico"><use href="#i-alert"/></svg><span>Below Priya's minimum of 12%. She can still accept.</span></div></div>
+              <div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea bC-focus">We can do 11.5% for the first collaboration.<i class="bC-caret"></i></div><div class="counter">44 / 200</div></div>
+            </div>
+            <i class="bC-mark" style="top:34%;height:40%"></i>
+            <div class="bC-pin"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send counter</button></div>
+          </div>
+          <div class="kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>C6</i><span class="tagafter">AFTER</span></div><b>Brand · the same pop-up, fixed</b><span>The same short phone as C5. The pop-up stops just below the status bar and from there its body scrolls: the round tag and the Commission box have moved up out of view to make room, one swipe away. "Say why (optional)" and its counter are in view, and "Send counter" stays pinned at the bottom of the pop-up, directly above the keypad.</span></div>
+    </div>
+
+    <!-- C7 · AFTER · brand "Ask for changes" pop-up on a small phone. The blue line about rounds is below the note, a swipe away. -->
+    <div class="shot">
+      <div class="phone small">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026</div><div class="skel" style="height:120px"></div></div>
+        <div class="dim" style="flex-direction:column;justify-content:flex-end;align-items:stretch">
+          <div class="sheet bC-sheet"><span class="grab"></span>
+            <div class="bC-sbody" style="height:206px">
+              <b style="font-size:16px">Ask for changes</b>
+              <span class="rounds">ROUND 1 OF 2</span>
+              <div class="grp"><span class="lbl">What should change? <span class="req">*</span></span><div class="textarea bC-focus">The second reel is too dark at the end. Can we have the kurta shown full length in the post?<i class="bC-caret"></i></div><span class="counter">96 / 500</span></div>
+            </div>
+            <i class="bC-mark" style="top:14%;height:34%"></i>
+            <div class="bC-pin"><div class="btnrow"><button class="btn b-sec" type="button">Back</button><button class="btn b-pri" type="button">Send</button></div></div>
+          </div>
+          <div class="kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>C7</i><span class="tagafter">AFTER</span></div><b>Brand · "Ask for changes" on a small phone</b><span>A second pop-up on a short phone with the keypad open, this one with two buttons. The note box and its counter are in view, and "Back" and "Send" stay pinned above the keypad. The blue line about how many rounds are left sits just below the note, one swipe away.</span></div>
+    </div>
+
+    <!-- C8 · UNCHANGED AT REST · Plan the visit, keypad closed -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div>
+          <div class="crumbs">TANVI SURESH · SET A</div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> From the set</div><div class="tline"><span>Mode</span><b>Store Visit</b></div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>She goes live by</span><b>24 Oct 2026</b></div></div>
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field"><svg class="ico"><use href="#i-cal2"/></svg>18 Oct</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field"><svg class="ico"><use href="#i-clock2"/></svg>11:00 am</div></div>
+          </div>
+          <div class="hint">Dates after 24 Oct aren't offered — she can't shoot after her last day to go live.</div>
+          <div class="grp"><div class="lbl">Roughly how long</div><div class="field">About 2 hours</div></div>
+          <div class="grp"><div class="lbl">Anything she should bring or know</div><div class="textarea" style="color:var(--ink3)">Parking is behind the building. Come to the first floor and ask at the desk.</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>C8</i><span class="tagbuilt">UNCHANGED AT REST</span></div><b>Brand · Plan the visit, keypad closed</b><span>With the keypad closed the screen is your locked item 10 board: the form, then "Send to Tanvi" in its own strip under it, with Date and Time as the two boxes side by side from board G. Two things here differ from the app as it runs today, both decided: the bottom tabs do not show on this screen (they stay on the five main pages only), and the empty band above the title is gone (frame B9).</span></div>
+    </div>
+
+  </div>
+</section>

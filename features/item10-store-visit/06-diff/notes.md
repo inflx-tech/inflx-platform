@@ -42,6 +42,15 @@ Loading, empty and couldn't-load states on every new screen (`Skeleton`, `EmptyS
 No new native module; `NATIVE_RUNTIME` stays `'3'`. The Stage-4 guard test that refuses a native
 date picker import in shoot files is kept and now enforces Q8.
 
+> **Corrected 2 Oct 2026 (features/ui-walk-fixes, board G).** Two things above were not so.
+> (1) No such guard test existed in the repo; one was written with this correction —
+> `shoot10.test.js`, "no file in the app imports the Android date or time picker". (2) The V2 row's
+> "one picker (a day strip, hour chips, minute chips)" and the V6 / V12 rows' "none" were departures
+> from the locked board, which draws two side-by-side boxes, "Date *" and "Time *", on V2, V6 and
+> V12, and draws V6 as a sheet. The founder's walk of 1 Oct replaced the chips with those two boxes
+> (Q8's "chip" half is superseded; its "built in the app, not the Android clock" half is kept). V6
+> stays a full screen — the one deliberate departure, recorded on ui-walk-fixes frame G6.
+
 Evidence: `Packages/Mobile/src/components/shoot/__tests__/shoot10.test.js` (imports, the Indian
 clock without Intl, the gate card per Aim, the step line, the time card, the address card, the
 picker's cap and steps, the copy); full mobile suite 575 / 575.

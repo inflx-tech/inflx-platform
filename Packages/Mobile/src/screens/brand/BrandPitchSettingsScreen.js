@@ -10,16 +10,18 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi, referenceApi } from '../../services/api';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
+import useTopInset, { TOP_GAP } from '../../hooks/useTopInset';
 import {
   Chip, SettingRow, SwitchRow, Section, FieldError, Banner, StatusChip,
 } from '../../components/settings/primitives';
 import { PickerSheet, ConfirmSheet } from '../../components/settings/sheets';
 import StateCityPicker from '../../components/settings/StateCityPicker';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { validateBrandSettings } from '../../components/settings/validation';
 import { AIMS, MODES, aimLabel, modeLabel, COPY, shortDate } from '../../components/settings/copy';
 
@@ -64,7 +66,7 @@ export default function BrandPitchSettingsScreen({ navigation }) {
   const [serverErrors, setServerErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [sheet, setSheet] = useState(null);   // 'niches' | 'languages' | 'cities' | 'pause'
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -128,7 +130,9 @@ export default function BrandPitchSettingsScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Header title={C.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: the form scrolls in the room above the Save strip; nothing floats over it. */}
+      <FormArea>
+      <FormScroll contentContainerStyle={s.body}>
         {savedPaused ? (
           <Banner testID="paused-banner" title={C.pausedBannerTitle} body={C.pausedBannerBody(meta.openPitches)} />
         ) : null}
@@ -186,11 +190,11 @@ export default function BrandPitchSettingsScreen({ navigation }) {
             <SettingRow testID="row-open-pitches" label={C.openPitchesRow} value={C.openPitchesValue(meta.openPitches)} onPress={() => navigation.navigate('CreatorsTab', { screen: 'BrandCreators', params: { segment: 'Pitches' } })} />
           ) : null}
         </Section>
-        <View style={{ height: 120 }} />
-      </ScrollView>
+      </FormScroll>
+      {toast}
+      </FormArea>
 
       <SaveBar dirty={dirty} errorCount={errorCount} saving={saving} onSave={save} />
-      {toast}
 
       <PickerSheet
         visible={sheet === 'niches'} title={C.niches} hint={C.nicheHint} items={lists.niches}
@@ -225,13 +229,30 @@ export function countCities(ids, states) {
   return { cities, states: st.size };
 }
 
-export function Header({ title, onBack, right }) {
+/**
+ * The title bar of every pushed screen in both apps.
+ *
+ * ui-walk-fixes D4 (frame B9) — no blank strip: the bar starts at the phone's real top inset
+ * (0 under an opaque status bar) plus a small gap, not at a hard-coded 50.
+ * ui-walk-fixes B1 — `subtitle` (optional): one small mono-caps grey line under the title, cut
+ * with … when long. The title block flexes, so the bar never grows by more than that one line.
+ * Without `subtitle` the bar is drawn exactly as before. `subtitleTestID` names that line.
+ */
+export function Header({ title, onBack, right, subtitle, subtitleTestID }) {
+  const top = useTopInset();
   return (
-    <View style={s.header}>
+    <View style={[s.header, { paddingTop: top }]}>
       <TouchableOpacity onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" style={s.backBtn}>
         <Text style={s.backText}>‹</Text>
       </TouchableOpacity>
-      <Text style={s.headerTitle} numberOfLines={1}>{title}</Text>
+      {subtitle ? (
+        <View style={s.headerTitles}>
+          <Text style={s.headerTitleStacked} numberOfLines={1}>{title}</Text>
+          <Text style={s.headerSubtitle} numberOfLines={1} ellipsizeMode="tail" testID={subtitleTestID || 'header-subtitle'}>{subtitle}</Text>
+        </View>
+      ) : (
+        <Text style={s.headerTitle} numberOfLines={1}>{title}</Text>
+      )}
       <View style={s.headerRight}>{right || null}</View>
     </View>
   );
@@ -260,10 +281,15 @@ export function NumberField({ value, onChangeText, placeholder, prefix, suffix, 
 
 export const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 50, paddingBottom: 10, paddingHorizontal: 8, backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: T.border },
+  // paddingTop here is only the gap; Header adds the phone's top inset to it (useTopInset).
+  header: { flexDirection: 'row', alignItems: 'center', paddingTop: TOP_GAP, paddingBottom: 10, paddingHorizontal: 8, backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: T.border },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   backText: { fontSize: 28, color: T.ink, fontFamily: fonts.sansMedium, marginTop: -4 },
   headerTitle: { flex: 1, fontFamily: fonts.sansBold, fontSize: 17, color: T.ink },
+  // With a second line: the block flexes (and may shrink), the two lines stack inside it.
+  headerTitles: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  headerTitleStacked: { fontFamily: fonts.sansBold, fontSize: 17, lineHeight: 22, color: T.ink },
+  headerSubtitle: { fontFamily: fonts.monoMedium, fontSize: 10, lineHeight: 14, letterSpacing: 0.4, color: T.ink3, textTransform: 'uppercase' },
   headerRight: { minWidth: 40, alignItems: 'flex-end' },
   body: { padding: 18 },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },

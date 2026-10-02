@@ -399,7 +399,9 @@ describe('P14 — her posts', () => {
     expect(routeFor(POST({ draft_step: 5, kind: 'price' }))).toEqual({ name: 'PostPrice', params: { postId: 'p1' } });
     expect(routeFor(POST({ draft_step: 8 }))).toEqual({ name: 'PostReview', params: { postId: 'p1' } });
     expect(routeFor(POST({ state: 'live' }))).toEqual({ name: 'PostStatus', params: { postId: 'p1' } });
-    expect(targetOf({ data_json: { screen: 'post', post_id: 'p1' } })).toEqual({ name: 'CreateTab', params: { screen: 'PostStatus', params: { postId: 'p1' } } });
+    // ASSERTION DRIFT — ui-walk-fixes D3 (drift/S0b.md): the jump now asks for the Create page to
+    // sit under the post (`initial: false`), so the post has no bottom tabs and Back reaches it.
+    expect(targetOf({ data_json: { screen: 'post', post_id: 'p1' } })).toEqual({ name: 'CreateTab', params: { screen: 'PostStatus', params: { postId: 'p1' }, initial: false } });
   });
 });
 

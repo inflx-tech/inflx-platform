@@ -11,28 +11,17 @@
  * 'sound_on' / 'sound_off', and 'buffer' for every pause to load (the Cloudflare Stream signal).
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, UIManager, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { track } from '../../services/events';
 import { CS } from './copyShop';
 import { fonts } from '../../theme/tokens';
+import { hasPlayer, getPlayer } from '../../utils/videoPlayer';
 
-let VideoModule;
-/** Whether this phone's app build has the video player (checked once). */
-export function hasPlayer() {
-  if (VideoModule !== undefined) return !!VideoModule;
-  VideoModule = null;
-  try {
-    const cfg = UIManager.getViewManagerConfig ? UIManager.getViewManagerConfig('RCTVideo') : null;
-    if (cfg) {
-      const m = require('react-native-video');
-      VideoModule = m.default || m.Video || null;
-    }
-  } catch (_) { VideoModule = null; }
-  return !!VideoModule;
-}
-/** Tests only. */
-export function _setPlayerForTests(v) { VideoModule = v; }
+// The runtime check lives in utils/videoPlayer.js since ui-walk-fixes (board H), so the brand and
+// creator file viewer can ask the same question without importing shopper code. It is ONE check
+// with ONE answer; this file still hands out `hasPlayer` and the test seam, as it always did.
+export { hasPlayer, _setPlayerForTests } from '../../utils/videoPlayer';
 
 function Placeholder({ poster, height, compact }) {
   return (
@@ -77,7 +66,7 @@ export default function ShopVideo({ post, height, active = false, muted: mutedIn
   useEffect(() => { if (!active) setPaused(false); }, [active]);
 
   if (!media || !hasPlayer()) return <Placeholder poster={poster} height={height} compact={compact} />;
-  const Video = VideoModule;
+  const Video = getPlayer();
 
   function tapPause() {
     const next = !paused;

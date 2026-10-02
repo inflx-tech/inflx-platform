@@ -502,7 +502,7 @@ async function remind({ now = new Date() } = {}) {
     const body = toConfirm
       ? `${first(r.creator_name)} says she visited on ${shortDay(row.influencer_completed_at)}. Confirm the shoot is done, or send a new time if she didn't come. Her next step stays closed until you do.`
       : side === 'brand'
-        ? `${first(r.creator_name)} is waiting for your answer on the store visit time. Nothing happens until you reply.`
+        ? `${waitingOnBrandFor(r.creator_name)} Nothing happens until you reply.`
         : `${r.brand_name} is waiting for your answer on the store visit time. Accept it or ask for another.`;
     if (side === 'brand') await notifyBrand(r, NOTIFY.REMINDER, body); else await notifyCreator(r, NOTIFY.REMINDER, body);
     if (onThread) await db.query(`UPDATE negotiations SET reminder_48h_sent_at = $2 WHERE id = $1`, [row.neg_id, now]);
@@ -531,16 +531,35 @@ function notifyBrand(r, key, body, extra = {}) {
 }
 
 /**
+ * The time is being agreed and the answer is the BRAND's — she asked for another time, or asked
+ * to move an agreed one. One sentence, said twice: it opens the 48-hour reminder (remind, above)
+ * and, since ui-walk-fixes, it is the line on his set row at that moment (brandLineFor, below).
+ */
+const waitingOnBrandFor = (creatorName) => `${first(creatorName)} is waiting for your answer on the store visit time.`;
+
+/**
  * The same line on the BRAND's side — the set-detail row, so he can see where the visit has got
  * to without opening it. Says whose move it is, because that is the question the row answers.
  * Item 10 walk fix (20 Sep). The cross-campaign list of what is waiting is Needs You's (§24).
+ *
+ * ui-walk-fixes (board F2): `turn` is whose answer the visit's own conversation is waiting on
+ * ('brand' | 'influencer' | null — negotiations.current_turn while it is open). A plan that is
+ * out reads stage 'sent' on both sides of that conversation, so without the turn the row said
+ * "waiting for {name} to answer" above a Reply button once she had asked for another time. With
+ * the turn on the brand it says the reminder's own sentence instead. Only that moment changes:
+ * a caller that passes no turn, and every other stage, gets the line it always got.
+ *
+ * ui-walk-fixes final review (frame F1, spec U11): an agreed time reads "Store visit agreed for
+ * …" — the words the locked board draws and her card already uses (lineFor, below). It read
+ * "Store visit {when}", which left only the green tag to say the time was agreed.
  */
-function brandLineFor(pe, creatorName) {
+function brandLineFor(pe, creatorName, turn = null) {
   const who = first(creatorName);
   const stage = stageOf(pe);
   if (stage === 'complete') return `Shoot done ${shortDay(pe.brand_completed_at || pe.auto_confirmed_at || pe.visit_scheduled_at)}`;
   if (stage === 'attended') return `${who} says she visited — confirm the shoot is done`;
-  if (stage === 'agreed') return passedOf(pe) ? `The ${shortDay(pe.visit_scheduled_at)} visit passed with nothing marked — send a new time` : `Store visit ${whenLine(pe.visit_scheduled_at)}`;
+  if (stage === 'agreed') return passedOf(pe) ? `The ${shortDay(pe.visit_scheduled_at)} visit passed with nothing marked — send a new time` : `Store visit agreed for ${whenLine(pe.visit_scheduled_at)}`;
+  if (stage === 'sent' && turn === 'brand') return waitingOnBrandFor(creatorName);
   if (stage === 'sent') return `Plan sent for ${whenLine(pe.visit_scheduled_at)} — waiting for ${who} to answer`;
   // Walk fix (1 Oct): signed, nothing sent yet — the plan is the brand's move, and the row is his
   // way to it. It used to say nothing here, which left the agreement screen as the only door.

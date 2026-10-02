@@ -1,0 +1,86 @@
+
+/* ───── ui-walk-fixes additions (on top of the item 14 v2 locked board styles) ───── */
+.tagtoday{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:5px;background:var(--no-bg);color:var(--no-fg)}
+.tagafter{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:5px;background:var(--active-bg);color:var(--active-fg)}
+.tagpick{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:5px;background:var(--primary-soft);color:var(--ink)}
+.phone.today{border-color:#8E8D86}
+.phone.small{min-height:500px}
+.phone .scr.tight{gap:8px}
+.phone .scr.nopad{padding:0}
+
+/* the phone keypad, drawn as a block at the bottom of a frame */
+.kbd{background:#D5D7DB;padding:7px 4px 10px;display:grid;gap:6px;flex:none}
+.kbd .kr{display:flex;gap:4px;justify-content:center}
+.kbd .kr i{flex:1;max-width:25px;height:28px;border-radius:5px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.25);display:block}
+.kbd .kr i.w{max-width:40px;background:#AEB3BC}
+.kbd .kr i.sp{max-width:none;flex:5}
+
+/* a labelled action button that sits on a list row (never yellow: yellow is the one main button) */
+.rowbtn{display:inline-flex;align-items:center;gap:3px;height:34px;padding-inline:10px;border-radius:10px;border:1.5px solid var(--ink);background:#fff;color:var(--ink);font-weight:700;font-size:12.5px;white-space:nowrap;flex:none}
+.rowbtn .ico{width:13px;height:13px}
+.rowbtn.fill{background:var(--ink);color:#fff}
+/* a status tag with a small icon: status only, never button-shaped. Combine with s-wait / s-active / s-move / s-done / s-ended */
+.stag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap;flex:none}
+.stag .ico{width:11px;height:11px}
+
+/* minus / number / plus */
+.stp{display:inline-flex;align-items:center;height:42px;border:1.5px solid var(--border);border-radius:12px;flex:none;background:#fff}
+.stp span{width:32px;display:grid;place-items:center;font-weight:800;font-size:16px;color:var(--ink)}
+.stp span.off{color:#C9C8C1}
+.stp b{min-width:24px;text-align:center;font-size:14px;font-variant-numeric:tabular-nums}
+.xbtn{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink2)}
+.xbtn .ico{width:14px;height:14px}
+
+/* a list that opens in place and pushes what is below it down */
+.ddl{border:1.5px solid var(--ink);border-radius:12px;overflow:hidden;display:grid;background:#fff}
+.ddl > div{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 11px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border)}
+.ddl > div:last-child{border-bottom:0}
+.ddl > div.used{color:#A3A29B;font-weight:500}
+.ddl > div.used em{font-style:normal;font-size:11px}
+.ddl > div.sel{background:var(--surface)}
+.ddl > div.off{color:#C9C8C1;font-weight:500}
+.ddl .ico{width:14px;height:14px}
+
+/* two buttons side by side, level and equal */
+.pairrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:stretch}
+.pairrow .btn{height:44px;padding-inline:6px}
+.btn.tall{height:46px}
+.btn.b-ghost{background:#fff;color:var(--ink);border:1px solid var(--border);font-weight:600}  /* today's pale outline button */
+.btn.b-red{background:var(--no-fg);color:#fff}                                             /* today's solid red button */
+.t-ink{background:var(--ink);color:#fff}
+
+.callout{border:1.5px dashed var(--move-fg);border-radius:12px;padding:8px 10px;font-size:12px;color:var(--move-fg);background:#fff;font-weight:600;line-height:1.4}
+.callout.ok{border-color:var(--active-fg);color:var(--active-fg)}
+.ruler{font-family:var(--mono);font-size:10px;color:var(--no-fg);letter-spacing:.04em}
+
+/* calendar + time list (inside a .sheet) */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px}
+.cal span{height:30px;display:grid;place-items:center;border-radius:8px;font-weight:600}
+.cal span.dow{font-size:10px;color:var(--ink3);font-family:var(--mono);height:20px}
+.cal span.off{color:#C9C8C1;font-weight:500}
+.cal span.sel{background:var(--ink);color:#fff;font-weight:800}
+.tlist{display:grid}
+.tlist > div{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;font-size:14px;font-weight:600;border-bottom:1px solid var(--border)}
+.tlist > div.off{color:#C9C8C1;font-weight:500}
+.tlist > div.sel{font-weight:800}
+.tlist .ico{width:15px;height:15px}
+
+/* the full-screen file viewer */
+.phone.dark{background:#0B0B0A;color:#fff}
+.phone.dark .sb{color:#fff}
+.vtop{display:flex;align-items:center;gap:10px;padding:6px 12px;font-size:12.5px;font-weight:700;color:#fff}
+.vtop .ib{border-color:rgba(255,255,255,.3);color:#fff}
+.vmedia{flex:1;display:grid;place-items:center;position:relative;padding:8px 12px;text-align:center}
+.vmedia .pic{width:100%;aspect-ratio:3/4;border-radius:6px;display:grid;place-items:center;position:relative}
+.vctl{display:grid;gap:6px;padding:8px 14px 6px;color:#fff;font-size:11.5px}
+.vctl .track{height:4px;border-radius:99px;background:rgba(255,255,255,.3);position:relative}
+.vctl .track i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:#fff;display:block}
+.vact{padding:8px 14px 14px;display:grid;gap:6px}
+.btn.b-onblack{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55)}
+
+/* summary table at the top of the board */
+.sum{background:var(--bg);border-radius:16px;overflow:hidden}
+.sum table td:first-child{min-width:34px;font-family:var(--mono);color:var(--ink3)}
+.sum .v{display:inline-flex;font-size:11px;font-weight:700;padding:3px 7px;border-radius:999px;white-space:nowrap}
+.sum .v.yes{background:var(--no-bg);color:var(--no-fg)}
+.sum .v.part{background:var(--move-bg);color:var(--move-fg)}

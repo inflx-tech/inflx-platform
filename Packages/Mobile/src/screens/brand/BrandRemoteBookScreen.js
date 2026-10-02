@@ -12,9 +12,14 @@
  * THE BRANCH RADIOS: a branch with no street address CANNOT BE SELECTED, and says why
  * (approval Q9). The server refuses it too — but a refusal the brand could have been spared is
  * a refusal that should have been prevented.
+ *
+ * ui-walk-fixes (board C): the price / book strip is part of the column, under the form
+ * (BottomBar), never floating over it; the form is a FormScroll, so the box sizes and the packed
+ * weight stay in view, with the hint under them, while they are typed. The 190 of empty space
+ * that only existed to scroll clear of the floating bar is gone.
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet } from 'react-native';
+import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
@@ -23,6 +28,8 @@ import { Skeleton, LoadError, useToast } from '../../components/settings/feedbac
 import { COPY } from '../../components/settings/copy';
 import { Card7, StateBox7 } from '../../components/agreement/bits7';
 import { Header, s as base } from './BrandPitchSettingsScreen';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { MoneyCard11, BoxPicker11, DispositionTag11 } from '../../components/remote/bits11';
 import { C11, MSG11, rupees5 } from '../../components/remote/copy11';
 
@@ -38,7 +45,7 @@ export default function BrandRemoteBookScreen({ navigation, route }) {
   const [quote, setQuote] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus((st) => (st === 'ready' ? 'ready' : 'loading'));
@@ -100,7 +107,8 @@ export default function BrandRemoteBookScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="brand-remote-book">
       <Header title={rebook ? C11.brand.bookAgain : 'Book the parcel'} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 190 }} keyboardShouldPersistTaps="handled">
+      <FormArea>
+      <FormScroll contentContainerStyle={{ padding: 18 }} keyboardShouldPersistTaps="handled" testID="book-form">
 
         {rebook ? <StateBox7 tone="move" text="The same products go. You can't change the list on a second booking." testID="rebook-note" /> : null}
 
@@ -150,9 +158,11 @@ export default function BrandRemoteBookScreen({ navigation, route }) {
             ) : null}
           </View>
         ) : null}
-      </ScrollView>
+      </FormScroll>
+      {toast}
+      </FormArea>
 
-      <View style={s.bar}>
+      <BottomBar testID="book-actions">
         {error ? <Text style={s.error} testID="book-error">{error}</Text> : null}
         {!quote ? (
           <PrimaryButton label="See the price" onPress={getQuote} testID="see-price" />
@@ -166,8 +176,7 @@ export default function BrandRemoteBookScreen({ navigation, route }) {
           <PrimaryButton label={C11.brand.bookAndPay(quote.total)} icon="truck-outline"
             onPress={book} busy={busy} busyLabel="Booking" testID="book-and-pay" />
         )}
-      </View>
-      {toast}
+      </BottomBar>
     </View>
   );
 }
@@ -190,5 +199,4 @@ const s = StyleSheet.create({
   shortTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: T.state.declined.fg },
   shortBody: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.state.declined.fg, marginTop: 4 },
   error: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.state.declined.fg, marginBottom: 8, textAlign: 'center' },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
 });

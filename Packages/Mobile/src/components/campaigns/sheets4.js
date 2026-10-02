@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
-import { Sheet } from '../settings/sheets';
+import { Sheet, useSheetReveal } from '../settings/sheets';
 import { PrimaryButton, SecondaryButton, FieldError } from '../settings/primitives';
 import DateField from '../DateField';
 import { TextField4 } from './bits4';
@@ -17,30 +17,46 @@ export function TextSheet4({ visible, title, label, initial = '', max, multiline
   const [value, setValue] = useState(initial);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const reveal = useSheetReveal();
   useEffect(() => { if (visible) { setValue(initial || ''); setErr(''); } }, [visible, initial]);
+  // The red line is the LAST thing under the box (counter, hint, then the line). With Save pinned
+  // above the keypad the body can be shorter than the field, so a refusal is scrolled into view.
+  const refuse = (message) => { setErr(message); reveal.show('field'); };
   async function submit() {
     const v = (value || '').trim();
-    if (required && !v) { setErr(emptyMessage || ''); return; }
-    if (max && v.length > max) { setErr(emptyMessage || ''); return; }
+    if (required && !v) { refuse(emptyMessage || ''); return; }
+    if (max && v.length > max) { refuse(emptyMessage || ''); return; }
     setBusy(true);
     const e = await onSubmit(v);
     setBusy(false);
-    if (e) setErr(e);
+    if (e) refuse(e);
   }
+  // ui-walk-fixes (board C, rule 3): the box opens with the keypad already up. The sheet shrinks
+  // to the room above the keypad, its body scrolls, and Save / Cancel are pinned under the box.
   return (
-    <Sheet visible={visible} onClose={onClose} testID={testID}>
+    <Sheet visible={visible} onClose={onClose} testID={testID} fit bodyRef={reveal.bodyRef}
+      footer={(
+        <>
+          <PrimaryButton label={submitLabel || C4.detail.save} onPress={submit} busy={busy} testID={`${testID}-submit`} />
+          <SecondaryButton label={C4.detail.cancel} onPress={onClose} />
+        </>
+      )}>
       <Text style={s.title}>{title}</Text>
-      <TextField4 label={label} value={value} onChangeText={(v) => { setValue(v); setErr(''); }} max={max} multiline={multiline} placeholder={placeholder} hint={hint} error={err} autoFocus testID={`${testID}-input`} />
-      <PrimaryButton label={submitLabel || C4.detail.save} onPress={submit} busy={busy} testID={`${testID}-submit`} />
-      <SecondaryButton label={C4.detail.cancel} onPress={onClose} />
+      <View ref={reveal.mark('field')} collapsable={false} testID={`${testID}-field`}>
+        <TextField4 label={label} value={value} onChangeText={(v) => { setValue(v); setErr(''); }} max={max} multiline={multiline} placeholder={placeholder} hint={hint} error={err} autoFocus testID={`${testID}-input`} />
+      </View>
     </Sheet>
   );
 }
 
 /** C4 — the brand's branches, main first (the server already orders them so). */
 export function BranchSheet4({ visible, branches, value, onPick, onClose }) {
+  // ui-walk-fixes (board C, rule 3): one row per branch with no limit, so a brand with many
+  // branches got a sheet taller than the phone and could not reach the rows that fell off it. The
+  // rows now scroll inside the sheet and Cancel is pinned under them.
   return (
-    <Sheet visible={visible} onClose={onClose} testID="branch-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="branch-sheet" fit
+      footer={<SecondaryButton inline label={C4.detail.cancel} onPress={onClose} />}>
       <Text style={s.title}>{C4.set.branchSheetTitle}</Text>
       {(branches || []).map(b => {
         const on = b.id === value;
@@ -54,8 +70,6 @@ export function BranchSheet4({ visible, branches, value, onPick, onClose }) {
           </TouchableOpacity>
         );
       })}
-      <View style={{ height: 8 }} />
-      <SecondaryButton label={C4.detail.cancel} onPress={onClose} />
     </Sheet>
   );
 }
@@ -70,39 +84,59 @@ export function DuplicateSheet4({ set, earliest, cutoffFor, onCreate, onClose })
   const [day, setDay] = useState(null);
   const [errs, setErrs] = useState({});
   const [busy, setBusy] = useState(false);
+  const reveal = useSheetReveal();
   useEffect(() => { if (visible) { setName(C4.duplicate.copyName(set.name)); setDay(null); setErrs({}); } }, [visible]); // eslint-disable-line
   async function create() {
     const e = {};
     if (!name.trim() || name.trim().length > 60) e.name = MSG4.SET_NAME;
     if (!day) e.go_live_date = MSG4.DATE;
     setErrs(e);
-    if (Object.keys(e).length) return;
+    // Create is pinned above the keypad, and with the keypad open the body shows little more than
+    // the box being typed in — the Date box is below the fold. The first box that was refused is
+    // scrolled into view, or the tap would seem to do nothing.
+    if (Object.keys(e).length) { reveal.show(e.name ? 'name' : 'go_live_date'); return; }
     setBusy(true);
     const r = await onCreate({ name: name.trim(), go_live_date: day });
     setBusy(false);
-    if (r && r.error) setErrs({ [r.field || 'name']: r.error });
+    if (r && r.error) {
+      // The server names the box (name / go_live_date); a refusal with no box is said under the
+      // name, as it always was. One that names anything else has no box here to sit under and used
+      // to be drawn nowhere at all — it goes in the footer, with the buttons.
+      const field = !r.field || r.field === 'name' ? 'name' : r.field === 'go_live_date' ? 'go_live_date' : 'form';
+      setErrs({ [field]: r.error });
+      reveal.show(field);
+    }
   }
   if (!visible) return null;
+  // ui-walk-fixes (board C, rule 3): a name box at the top of a long sheet. The sheet shrinks to
+  // the room above the keypad, its body scrolls, and Create / Cancel are pinned under it.
   return (
-    <Sheet visible={visible} onClose={onClose} testID="duplicate-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="duplicate-sheet" fit bodyRef={reveal.bodyRef}
+      footer={(
+        <>
+          <PrimaryButton label={C4.duplicate.create} onPress={create} busy={busy} testID="duplicate-create" />
+          <SecondaryButton label={C4.duplicate.cancel} onPress={onClose} />
+          <FieldError text={errs.form} />
+        </>
+      )}>
       <Text style={s.title}>{C4.duplicate.title(set.name)}</Text>
-      <TextField4 label={C4.duplicate.nameLabel} required value={name} onChangeText={setName} max={60} error={errs.name} testID="duplicate-name" />
-      <DateField label={C4.duplicate.dateLabel} value={day} onChange={setDay} minDate={earliest} confirmLabel={C4.set.useDate} error={errs.go_live_date} testID="duplicate-date"
-        renderFooter={(pending) => (
-          <View>
-            <Text style={s.hint}>{C4.set.pickerHint(earliest)}</Text>
-            {pending ? <View style={s.cut}><Text style={s.cutText}>{C4.set.pickerCutoff(cutoffFor(pending))}</Text></View> : null}
-          </View>
-        )} />
+      <View ref={reveal.mark('name')} collapsable={false} testID="duplicate-name-field">
+        <TextField4 label={C4.duplicate.nameLabel} required value={name} onChangeText={setName} max={60} error={errs.name} testID="duplicate-name" />
+      </View>
+      <View ref={reveal.mark('go_live_date')} collapsable={false} testID="duplicate-date-field">
+        <DateField label={C4.duplicate.dateLabel} value={day} onChange={setDay} minDate={earliest} confirmLabel={C4.set.useDate} error={errs.go_live_date} testID="duplicate-date"
+          renderFooter={(pending) => (
+            <View>
+              <Text style={s.hint}>{C4.set.pickerHint(earliest)}</Text>
+              {pending ? <View style={s.cut}><Text style={s.cutText}>{C4.set.pickerCutoff(cutoffFor(pending))}</Text></View> : null}
+            </View>
+          )} />
+      </View>
       <View style={s.tint}>
         <Text style={s.tintSub}>{C4.duplicate.copiedFrom(set.name)}</Text>
         <Text style={s.tintMain}>{[aimLabel4(set.goal), modeLabel4(set.shootMode), set.branch && set.branch.name].filter(Boolean).join(' · ')}</Text>
       </View>
       <Text style={s.hint}>{C4.duplicate.hint}</Text>
-      <View style={{ height: 12 }} />
-      <PrimaryButton label={C4.duplicate.create} onPress={create} busy={busy} testID="duplicate-create" />
-      <SecondaryButton label={C4.duplicate.cancel} onPress={onClose} />
-      <FieldError text={errs.form} />
     </Sheet>
   );
 }

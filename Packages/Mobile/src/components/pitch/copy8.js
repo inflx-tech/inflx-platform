@@ -134,6 +134,10 @@ export const C8 = {
     rejectKeep: 'Keep',
     rejectGo: 'Reject',
     rejectBlockHint: "If you'd rather never hear from her, block her in Pitch settings instead.",
+    // ui-walk-fixes (board F, frame F8): what the brand reads after each answer. Accepting jumped
+    // to the pool and rejecting went back, both without a word.
+    inPool: (name) => `${first(name)} is in your pool.`,
+    rejected: 'Pitch rejected.',
   },
 
   // T11 — the pool's provenance tag.

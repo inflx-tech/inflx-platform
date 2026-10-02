@@ -19,11 +19,12 @@
  * never "money added", which we cannot promise.
  */
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
 import { PrimaryButton, SecondaryButton, FieldError } from '../../components/settings/primitives';
+import { FormScroll } from '../../components/shell/FormScroll';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { WALLET, rupeesW } from '../../components/wallet/copyW';
 
@@ -132,7 +133,9 @@ export default function BrandAddMoneyScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="add-money">
       <Header title={A.title} onBack={goBack} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: a FormScroll, so the red line under the amount box stays in view
+          while she types. Nothing floats here — the button was always part of the page. */}
+      <FormScroll contentContainerStyle={{ padding: 18, paddingBottom: 60 }}>
 
         {phase === 'failed' ? (
           <View style={[s.box, { backgroundColor: T.state.yourMove.bg }]} testID="add-money-failed">
@@ -189,7 +192,7 @@ export default function BrandAddMoneyScreen({ navigation, route }) {
             <SecondaryButton label={returnTo ? A.backToAgreement : A.stay} onPress={goBack} testID="failed-back" />
           </View>
         ) : null}
-      </ScrollView>
+      </FormScroll>
     </View>
   );
 }

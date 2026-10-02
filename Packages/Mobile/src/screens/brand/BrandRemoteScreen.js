@@ -10,6 +10,10 @@
  * THE SENTENCE THIS SCREEN MUST NEVER LET THE BRAND MISUNDERSTAND:
  * shipping is the brand's cost alone, and the money locked for her fee is never touched by it
  * (§11.2). It is on R6 at the moment of paying, and on R14 in the record.
+ *
+ * ui-walk-fixes (board C, rule 1): the button strip is part of the column, under the page
+ * (BottomBar) — it used to float over the page's last lines. The page lost the 190 of empty
+ * space that only existed to scroll clear of it, and the toast sits just above the strip.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
@@ -26,6 +30,8 @@ import useRouteToast from '../../hooks/useRouteToast';
 import { Card7, StateBox7 } from '../../components/agreement/bits7';
 import { GateCard10, StepLine10, Row10, DelayedChip10, AmberBox10, GreenBox10, WaitBox10 } from '../../components/shoot/bits10';
 import { Header, s as base } from './BrandPitchSettingsScreen';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { AddressCard11, DispositionTag11, TrackingSteps11, TrackingCard11 } from '../../components/remote/bits11';
 import { CancelBookingSheet11, ReturnToGiftSheet11, ReportSheet11, ConfirmReturnSheet11 } from '../../components/remote/sheets11';
 import { C11, day10, longDay10, rupees5 } from '../../components/remote/copy11';
@@ -40,7 +46,7 @@ export default function BrandRemoteScreen({ navigation, route }) {
   const [sheetError, setSheetError] = useState(null);
   const [giftLine, setGiftLine] = useState(null);
   const [reportKind, setReportKind] = useState('difference');
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
@@ -89,7 +95,8 @@ export default function BrandRemoteScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`brand-remote-${stage}${sh.delayed ? '-delayed' : ''}`}>
       <Header title={who} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 190 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: 18 }} testID="brand-remote-scroll">
         <View style={s.crumbRow}>
           <Text style={s.crumb}>{`${String(sh.campaignName || '').toUpperCase()} · ${String(sh.setName || '').toUpperCase()}`}</Text>
           {sh.delayed ? <DelayedChip10 /> : null}
@@ -185,8 +192,11 @@ export default function BrandRemoteScreen({ navigation, route }) {
           </Card7>
         ) : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
-      <View style={s.bar} testID="brand-remote-actions">
+      {/* With nothing the stage offers, the strip is not drawn at all. */}
+      <BottomBar testID="brand-remote-actions">
         {/* Item 12: the shoot is done — the content step is where the brand goes next. */}
         {stage === 'shot' && sh.aim === 'engagement' ? (
           <SecondaryButton label={C12.openContentBrand} onPress={() => navigation.navigate('BrandContent', { campaignId, setId, ciId })} testID="open-content" />
@@ -238,7 +248,7 @@ export default function BrandRemoteScreen({ navigation, route }) {
           <TextButton label={C11.brand.reportOverdue} icon="flag-outline"
             onPress={() => { setReportKind('overdue'); setSheet('report'); }} testID="report-overdue" />
         ) : null}
-      </View>
+      </BottomBar>
 
       <CancelBookingSheet11 visible={sheet === 'cancel'}
         amount={parcel ? (parcel.charged || 0) + (parcel.returnHold || 0) : 0}
@@ -255,7 +265,6 @@ export default function BrandRemoteScreen({ navigation, route }) {
         autoConfirmDueAt={ret.shipment && ret.shipment.autoConfirmDueAt}
         busy={busy} serverError={sheetError} onConfirm={confirmReturn}
         onClose={() => { setSheetError(null); setSheet(null); }} />
-      {toast}
     </View>
   );
 }
@@ -332,5 +341,5 @@ const s = StyleSheet.create({
   lineName: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink },
   variant: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink3, marginTop: 1 },
   qty: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
+  page: { flex: 1 },
 });

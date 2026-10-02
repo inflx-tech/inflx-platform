@@ -7,25 +7,33 @@
  * the confirmation that pays her — the money named on the screen before the tap — and the record.
  * Which of those it is comes from the server's `stage` and `can`.
  *
- * The brand sees only what she has SENT. Videos open in the phone's own player through a
- * 300-second signed URL (approval Q11 — an in-app player is the next APK's).
+ * The brand sees only what she has SENT. One tap on a tile opens the file INSIDE the app
+ * (MediaViewer12 — ui-walk-fixes board H): a fresh 300-second signed URL each time, photos on
+ * every app build, videos on builds from 30 Sep 2026. "Add a note" lives in the viewer, and only
+ * while this review can still ask for changes.
+ *
+ * ui-walk-fixes (board C, rule 1): the button strip is part of the column, under the page
+ * (BottomBar) — it used to float over the page's last lines. The page lost the 190 of empty
+ * space that only existed to scroll clear of it, and the toast sits just above the strip.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, EmptyState } from '../../components/settings/primitives';
 import { Skeleton, useToast } from '../../components/settings/feedback';
-import { ActionSheet } from '../../components/settings/sheets';
 import { COPY } from '../../components/settings/copy';
 import { LoadErrorList } from '../../components/discovery/DiscoverList';
 import { Header, s as base } from './BrandPitchSettingsScreen';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, MoveBox10, DelayedChip10 } from '../../components/shoot/bits10';
 import { FeeCard12, FileTile12, RowHead12, NoteLine12, RoundPill12, History12, LinkLine12, Record12, Line12 } from '../../components/content/bits12';
 import { ChangesSheet12, NoteSheet12, ReportSheet12 } from '../../components/content/sheets12';
+import MediaViewer12 from '../../components/content/MediaViewer12';
 import { C12, day10 } from '../../components/content/copy12';
 
 export default function BrandContentScreen({ navigation, route }) {
@@ -35,12 +43,12 @@ export default function BrandContentScreen({ navigation, route }) {
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
   const [sheetError, setSheetError] = useState(null);
-  const [menu, setMenu] = useState(null);
+  const [viewer, setViewer] = useState(null);          // the open file: { label, files, index, review }
   const [noteFor, setNoteFor] = useState(null);
   const [notes, setNotes] = useState({});              // fileId → the note she will see (C8)
   const [urls, setUrls] = useState({});
   const mounted = useRef(true);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
   useEffect(() => () => { mounted.current = false; }, []);
 
@@ -68,12 +76,6 @@ export default function BrandContentScreen({ navigation, route }) {
   }, [c]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refuse = (r) => (r && r.error && r.error.message) || COPY.saveFailed;
-  async function viewFile(id) {
-    setMenu(null);
-    const r = await brandApi.contentFileUrl(campaignId, setId, ciId, id);
-    if (!r || !r.success) { show(refuse(r)); return; }
-    Linking.openURL(r.data.view.url).catch(() => {});
-  }
   async function act(call, done) {
     setBusy(true); setSheetError(null);
     const r = await call();
@@ -109,7 +111,8 @@ export default function BrandContentScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`brand-content-${stage}${c.frozen ? '-frozen' : ''}${c.delayed ? '-delayed' : ''}`}>
       <Header title={name} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 190 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: 18 }} testID="brand-content-scroll">
         <Text style={s.crumb}>{C12.crumb(c.campaignName, c.setName)}</Text>
         <View style={s.aimRow}>
           <Text style={s.aimLine}>{C12.aimLine(c.mode)}</Text>
@@ -159,7 +162,10 @@ export default function BrandContentScreen({ navigation, route }) {
               <View key={row.key} style={s.row} testID={`review-row-${row.key}`}>
                 <RowHead12 row={row} have={row.files.length} />
                 <View style={s.tiles}>
-                  {row.files.map((f) => <FileTile12 key={f.id} file={f} url={urls[f.id]} note={notes[f.id]} onPress={() => setMenu(f)} />)}
+                  {row.files.map((f, i) => (
+                    <FileTile12 key={f.id} file={f} url={urls[f.id]} note={notes[f.id]}
+                      onPress={() => setViewer({ label: row.label, files: row.files, index: i, review: true })} />
+                  ))}
                 </View>
                 {row.files.filter((f) => notes[f.id]).map((f) => <NoteLine12 key={f.id} text={notes[f.id]} />)}
                 {row.caption ? <Text style={s.para}>{row.caption}</Text> : null}
@@ -181,8 +187,9 @@ export default function BrandContentScreen({ navigation, route }) {
                 <RowHead12 row={row} have={row.proofs.filter((p) => p.filled).length} />
                 {row.isStory ? (
                   <View style={s.tiles}>
-                    {row.proofs.filter((p) => p.screenshotFileId).map((p) => (
-                      <FileTile12 key={p.slot} file={{ id: p.screenshotFileId, kind: 'photo' }} url={urls[p.screenshotFileId]} onPress={() => viewFile(p.screenshotFileId)} />
+                    {row.proofs.filter((p) => p.screenshotFileId).map((p, i, shots) => (
+                      <FileTile12 key={p.slot} file={{ id: p.screenshotFileId, kind: 'photo' }} url={urls[p.screenshotFileId]}
+                        onPress={() => setViewer({ label: row.label, files: shots.map((x) => ({ id: x.screenshotFileId, kind: 'photo' })), index: i })} />
                     ))}
                   </View>
                 ) : row.proofs.map((p) => <LinkLine12 key={p.slot} url={p.url} testID={`link-${row.key}-${p.slot}`} />)}
@@ -219,8 +226,11 @@ export default function BrandContentScreen({ navigation, route }) {
           </>
         ) : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
-      <View style={s.bar} testID="brand-content-actions">
+      {/* With nothing the stage offers, the strip is not drawn at all. */}
+      <BottomBar testID="brand-content-actions">
         {stage === 'in_review' && !c.frozen ? (
           <>
             <PrimaryButton label={C12.approve} icon="check" onPress={approve} busy={busy} busyLabel="Approving" testID="approve" />
@@ -234,7 +244,7 @@ export default function BrandContentScreen({ navigation, route }) {
             {c.can.reportPostedWrong ? <TextButton label={C12.somethingWrong} onPress={() => { if (!busy) { setSheetError(null); setSheet('report_posted'); } }} testID="something-wrong" /> : null}
           </>
         ) : null}
-      </View>
+      </BottomBar>
 
       <ChangesSheet12 visible={sheet === 'changes'} round={c.round} noteCount={noteCount} busy={busy} serverError={sheetError}
         onSend={askChanges} onClose={() => setSheet(null)} />
@@ -242,11 +252,12 @@ export default function BrandContentScreen({ navigation, route }) {
         busy={busy} serverError={sheetError} onReport={report(sheet === 'report_rounds' ? 'rounds_used' : 'posted_wrong')} onClose={() => setSheet(null)} />
       <NoteSheet12 visible={!!noteFor} initial={noteFor ? notes[noteFor] : ''} onClose={() => setNoteFor(null)}
         onSave={(n) => { setNotes((x) => ({ ...x, [noteFor]: n })); setNoteFor(null); }} />
-      <ActionSheet visible={!!menu} onClose={() => setMenu(null)} actions={menu ? [
-        { label: C12.view, onPress: () => viewFile(menu.id) },
-        ...(c.can.askChanges ? [{ label: C12.addNote, onPress: () => { const id = menu.id; setMenu(null); setNoteFor(id); } }] : []),
-      ] : []} />
-      {toast}
+      {/* H1–H6 — one tap on a tile opens the file here. "Add a note" only on a file under review,
+          and only while this review can still ask for changes; the note box opens over the viewer. */}
+      <MediaViewer12 open={viewer} fetchUrl={(id) => brandApi.contentFileUrl(campaignId, setId, ciId, id)} onClose={() => setViewer(null)}
+        noteOf={viewer && viewer.review ? (f) => notes[f.id] : undefined}
+        onAddNote={viewer && viewer.review && stage === 'in_review' && !c.frozen && c.can.askChanges ? (f) => setNoteFor(f.id) : undefined}
+        held={!!noteFor} />
     </View>
   );
 }
@@ -264,5 +275,5 @@ const s = StyleSheet.create({
   preview: { borderRadius: 12, padding: 12, marginBottom: 12 },
   previewTitle: { fontFamily: fonts.sansBold, fontSize: 14.5 },
   previewSub: { fontFamily: fonts.sansRegular, fontSize: 12.5, marginTop: 3, lineHeight: 18 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
+  page: { flex: 1 },
 });

@@ -94,7 +94,7 @@ export default function BrandGroupDetailScreen({ navigation, route }) {
             <View style={s.btnRow}>
               <View style={{ flex: 1 }}><SecondaryButton label={G.invite} onPress={() => show(C3.toasts.inviteGroupSoon)} testID="group-invite" /></View>
               <View style={{ width: 8 }} />
-              <View style={{ flex: 1 }}><SecondaryButton label={G.newCampaign} onPress={() => navigation.navigate('CampaignsTab', { screen: 'BrandCampaignNew', params: { groupId, groupName: group.name, groupCount: group.memberCount } })} testID="group-campaign" /></View>
+              <View style={{ flex: 1 }}><SecondaryButton label={G.newCampaign} onPress={() => navigation.navigate('CampaignsTab', { screen: 'BrandCampaignNew', params: { groupId, groupName: group.name, groupCount: group.memberCount }, initial: false })} testID="group-campaign" /></View>
             </View>
             <SecondaryButton label={G.addCreators} onPress={goAdd} testID="group-add" />
             <View style={{ height: 8 }} />

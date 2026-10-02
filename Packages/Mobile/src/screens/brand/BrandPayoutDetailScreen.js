@@ -6,11 +6,12 @@
  * Contract: features/registration-and-profile
  */
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { FieldError, PrimaryButton } from '../../components/settings/primitives';
 import { useToast } from '../../components/settings/feedback';
+import { FormScroll } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { HAND_CHECK } from '../../components/wallet/DetailSection';
@@ -63,7 +64,9 @@ export default function BrandPayoutDetailScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`brand-payout-${kind}`}>
       <Header title={spec.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[base.body, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: a FormScroll, so the red line under the box being typed in stays in
+          view. Nothing floats here — Save was always part of the page. */}
+      <FormScroll contentContainerStyle={[base.body, { paddingBottom: 40 }]}>
         {spec.fields.map((x, i) => (
           <View key={x.key} style={{ marginTop: i ? 14 : 0 }}>
             <Text style={base.label}>{x.label}</Text>
@@ -76,7 +79,7 @@ export default function BrandPayoutDetailScreen({ navigation, route }) {
         <View style={{ height: 20 }} />
         <PrimaryButton label="Save" onPress={save} busy={saving} testID="payout-save" />
         <Text style={s.footer}>{HAND_CHECK}</Text>
-      </ScrollView>
+      </FormScroll>
       {toast}
     </View>
   );

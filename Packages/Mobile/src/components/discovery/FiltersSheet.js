@@ -56,8 +56,15 @@ function Buckets({ options, value, onChange, testID }) {
   );
 }
 
-export default function FiltersSheet({ visible, kind, value, lists, fetchCount, onApply, onClose }) {
-  const defaults = kind === 'brands' ? BRAND_DEFAULTS : CREATOR_DEFAULTS;
+/**
+ * `defaults` (optional, ui-walk-fixes board B): what "Clear all" returns to. Left out, it is the
+ * kind's own defaults, exactly as before. The creator list passes its own, because "Open to
+ * invitations only" starts ON on Discover and in the set picker but OFF when adding to a group —
+ * and with the chip row gone this sheet is the only place that switch lives, so "Clear all" here
+ * must put it back where that screen starts, not turn it on.
+ */
+export default function FiltersSheet({ visible, kind, value, lists, fetchCount, onApply, onClose, defaults: defaultsProp }) {
+  const defaults = defaultsProp || (kind === 'brands' ? BRAND_DEFAULTS : CREATOR_DEFAULTS);
   const [f, setF] = useState({ ...defaults, ...value });
   const [count, setCount] = useState(null);
   const [cityPicker, setCityPicker] = useState(false);
@@ -81,8 +88,13 @@ export default function FiltersSheet({ visible, kind, value, lists, fetchCount, 
   const cityValue = (f.cityIds || []).length ? (f.cityIds.map(id => lists.cityName ? lists.cityName(id) : id).join(', ')) : 'Any';
   const noun = kind === 'brands' ? C3.findBrands.showN : C3.discover.showN;
 
+  // ui-walk-fixes (board C, rule 3): the sheet is as tall as a small phone, so its "Show N" button
+  // could end up off the screen. It now takes the Sheet's shrinking shape: the title row keeps its
+  // place, the scrolling list of filters gives way, and the button is pinned under it. `fit="list"`
+  // because the scrolling part is this sheet's own (it must not be put inside a second scroller).
   return (
-    <Sheet visible={visible} onClose={onClose} testID="filters-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="filters-sheet" fit="list"
+      footer={<PrimaryButton label={count == null ? '…' : noun(count)} onPress={() => onApply(f)} disabled={count == null} testID="filters-apply" />}>
       <View style={s.head}>
         <Text style={s.title}>{C3.discover.filters}</Text>
         <TouchableOpacity onPress={() => setF({ ...defaults })} testID="filters-clear"><Text style={s.clear}>{C3.discover.clearAll}</Text></TouchableOpacity>
@@ -142,9 +154,6 @@ export default function FiltersSheet({ visible, kind, value, lists, fetchCount, 
           </>
         )}
       </ScrollView>
-      <View style={{ marginTop: 12 }}>
-        <PrimaryButton label={count == null ? '…' : noun(count)} onPress={() => onApply(f)} disabled={count == null} testID="filters-apply" />
-      </View>
       <StateCityPicker visible={cityPicker} title={C3.discover.filterTitles.city} states={lists.states || []} value={f.cityIds || []}
         onApply={(ids) => { set({ cityIds: ids }); setCityPicker(false); }} onClose={() => setCityPicker(false)} />
     </Sheet>

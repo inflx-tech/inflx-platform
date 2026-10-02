@@ -5,7 +5,7 @@
  * Contract: features/item7-agreement
  */
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, within } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
   brandApi: {
@@ -78,14 +78,28 @@ describe('P2 · P3 — the preview and sending', () => {
         can: { send: true, sign: false, withdraw: false, download: false } }),
       draft: true,
     } }));
-    brandApi.sendAgreement.mockResolvedValue(ok({ agreement: AG({ status: 'pending_influencer' }) }));
+    // ASSERTION DRIFT — ui-walk-fixes board F, frame F4 (drift/F.md). The stand-in for "sent"
+    // used to be AG({ status: 'pending_influencer' }), which still carried HER signature and
+    // can.sign — an agreement that cannot exist (out for her signature and already signed by her).
+    // It is the true sent-and-unsigned shape now: no signature, nothing to sign, Withdraw allowed.
+    brandApi.sendAgreement.mockResolvedValue(ok({ agreement: AG({
+      status: 'pending_influencer', signatures: { creator: null, brand: null },
+      can: { send: false, sign: false, withdraw: true, download: false },
+    }) }));
     const n = nav();
-    const { getByText, getByTestId } = render(
+    const { getByText, getByTestId, queryByText, queryByTestId } = render(
       <BrandAgreementScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', ciId: 'ci1', preview: true } }} />
     );
     await waitFor(() => getByTestId('brand-agreement-body'));
 
-    getByText('DRAFT · DRAFT');
+    // ASSERTION DRIFT — board F (frames F4 / F5; drift/F.md). This asserted 'DRAFT · DRAFT': the
+    // word was printed twice (the missing reference fell back to DRAFT and the suffix said DRAFT
+    // again). The preview prints a single DRAFT.
+    expect(getByTestId('agreement-reference').props.children).toBe('DRAFT');
+    expect(queryByText('DRAFT · DRAFT')).toBeNull();
+    // The preview still shows no signature boxes and no waiting sentence (F4 is the SENT state).
+    expect(queryByTestId('signature-creator')).toBeNull();
+    expect(queryByTestId('waiting-for-her')).toBeNull();
     getByText('The two of you');
     getByText('Urban Threads, Hyderabad'); getByText('Tanvi Suresh, Hyderabad');
     getByText('What was agreed');
@@ -101,6 +115,10 @@ describe('P2 · P3 — the preview and sending', () => {
 
     fireEvent.press(getByTestId('send-confirm'));
     await waitFor(() => expect(brandApi.sendAgreement).toHaveBeenCalledWith('c1', 'sA', 'ci1'));
+    // Board F, frame F4 (check 21): the brand STAYS on the agreement. The route is replaced by the
+    // same screen out of preview, carrying "Agreement sent." — it is no longer sent back to the set.
+    await waitFor(() => expect(n.replace).toHaveBeenCalledWith('BrandAgreement', { campaignId: 'c1', setId: 'sA', ciId: 'ci1', preview: false, toast: 'Agreement sent.' }));
+    expect(n.goBack).not.toHaveBeenCalled();
   });
 });
 
@@ -226,6 +244,58 @@ describe('P14 — withdrawing', () => {
     getByText("The terms can't be changed. To offer something different, remove Tanvi from the set and invite her again while there is still time.");
     fireEvent.press(getByTestId('withdraw-confirm'));
     await waitFor(() => expect(brandApi.withdrawAgreement).toHaveBeenCalledWith('c1', 'sA', 'ci1'));
+    // Board F, frame F6: back on the set, which is handed "Agreement withdrawn." to show. (It used
+    // to raise the message on this screen and close it in the same instant.)
+    await waitFor(() => expect(n.navigate).toHaveBeenCalledWith('BrandSetDetail', { campaignId: 'c1', setId: 'sA', toast: 'Agreement withdrawn.' }));
+    expect(n.goBack).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ui-walk-fixes — final review, finding F-4 (frame F4, the waiting sentence).
+ *
+ * The blue box reads "Sent to {name} on {day}. Waiting for her to sign by {day}." An agreement put
+ * out through the website's "Approve & Send" is out for her signature (`pending_influencer`) but
+ * carries no sent date, no reference and no Withdraw (drift/CSRV.md). Its row on the set reads
+ * "Waiting to sign"; tapping it opened this screen with "Sent to Tanvi on . Waiting for her to
+ * sign by 17 Oct." — a sentence with a hole where the date belongs. The box is now drawn only
+ * when there is a date to put in it.
+ */
+describe('F4 — the waiting sentence is drawn only when there is a sent date to put in it', () => {
+  const OUT = (over = {}) => AG({
+    status: 'pending_influencer', signatures: { creator: null, brand: null },
+    can: { send: false, sign: false, withdraw: true, download: false }, ...over,
+  });
+  const open = async (agreement) => {
+    brandApi.getAgreement.mockResolvedValue(ok({ agreement }));
+    const r = render(<BrandAgreementScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sA', ciId: 'ci1' } }} />);
+    await waitFor(() => r.getByTestId('brand-agreement-body'));
+    return r;
+  };
+
+  it('put out through the website (no sent date): no sentence with a hole in it; the two "Not signed yet" boxes and who signs first still say whose turn it is', async () => {
+    const r = await open(OUT({ sentAt: null, reference: null, can: { send: false, sign: false, withdraw: false, download: false } }));
+    expect(r.queryByTestId('waiting-for-her')).toBeNull();
+    expect(r.queryByText(/Sent to/)).toBeNull();
+    expect(r.queryByText(/ on \./)).toBeNull();
+    // Whose turn it is, without a date: both boxes outlined and empty, and the line under them.
+    r.getByText('SIGNATURES');
+    for (const who of ['creator', 'brand']) within(r.getByTestId(`signature-${who}`)).getByText('Not signed yet');
+    within(r.getByTestId('signature-creator')).getByText('Tanvi Suresh');
+    expect(r.getByTestId('you-sign-after').props.children).toBe('You sign after her. Nothing is binding until both signatures are on it.');
+    // The terms are all there, and nothing is offered that the server would refuse (drift/CSRV.md).
+    r.getByTestId('two-of-you'); r.getByTestId('what-agreed');
+    expect(r.queryByTestId('brand-withdraw')).toBeNull();
+    expect(r.queryByTestId('send-for-signature')).toBeNull();
+    expect(r.queryByTestId('brand-sign')).toBeNull();
+  });
+
+  it('sent from the phone (a sent date): the dated sentence, as frame F4 draws it, with the quiet Withdraw', async () => {
+    const r = await open(OUT({ sentAt: `${yr}-10-13T10:00:00Z` }));
+    within(r.getByTestId('waiting-for-her')).getByText('Sent to Tanvi on 13 Oct. Waiting for her to sign by 17 Oct.');
+    for (const who of ['creator', 'brand']) within(r.getByTestId(`signature-${who}`)).getByText('Not signed yet');
+    r.getByTestId('you-sign-after');
+    r.getByTestId('brand-withdraw');
   });
 });
 
@@ -263,13 +333,20 @@ describe('P1 — where the agreement starts', () => {
       },
     }));
     const n = nav();
-    const { getByText, getByTestId } = render(
+    const { getByText, getByTestId, queryByTestId } = render(
       <BrandSetDetailScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />
     );
     await waitFor(() => getByTestId('creators-block'));
 
+    // ASSERTION DRIFT — ui-walk-fixes board F, frame F1 (drift/F.md). "Send agreement" and "Sign"
+    // were green pills that looked like the "Live" tag. They are labelled buttons now: the label
+    // is still its own text (found exactly, below) with an arrow beside it, and the testID is kept.
     getByText('Send agreement');
     getByText('Sign');
+    within(getByTestId('chip-r1')).getByText('Send agreement');
+    within(getByTestId('chip-r1')).getByText('chevron-right');
+    expect(getByTestId('chip-r1').props.accessibilityRole).toBe('button');
+    within(getByTestId('chip-r2')).getByText('Sign');
     getByText('Signed 14 Sep · waiting for you');
     getByText('Agreement sent 14 Sep');
     getByText('Signed by both 13 Sep');
@@ -279,6 +356,15 @@ describe('P1 — where the agreement starts', () => {
     expect(n.navigate).toHaveBeenCalledWith('BrandAgreement', { campaignId: 'c1', setId: 'sA', ciId: 'r1', preview: true });
     fireEvent.press(getByTestId('chip-r2'));
     expect(n.navigate).toHaveBeenCalledWith('BrandAgreement', { campaignId: 'c1', setId: 'sA', ciId: 'r2', preview: false });
+
+    // Board F (check 20): the agreement that is out sits in its own group, "Waiting for the
+    // creator", with a "Waiting to sign" tag — no longer under "Waiting to answer" with no tag —
+    // and a signed row with nothing owed is "Active".
+    within(getByTestId('group-waitingCreator')).getByText('Waiting for the creator');
+    within(getByTestId('group-waitingCreator')).getByText('Priya Sharma');
+    within(getByTestId('tag-r3')).getByText('Waiting to sign');
+    expect(queryByTestId('group-waiting')).toBeNull();
+    within(getByTestId('tag-r4')).getByText('Active');
   });
 });
 

@@ -1,0 +1,244 @@
+<style>
+/* board F — only what the two shared stylesheets do not already have */
+/* one creator on the set screen: avatar, name and status sentence, the ⋯; then the row's one button or tag on its own line under the words */
+.bF-row{display:grid;grid-template-columns:34px minmax(0,1fr) 32px;column-gap:9px;row-gap:7px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.bF-row:last-child{border-bottom:0}
+.bF-row .t{display:grid;gap:2px;min-width:0}
+.bF-row .t b{font-size:13px}
+.bF-row > .ib{grid-column:3;grid-row:1}
+.bF-row > .rowbtn,.bF-row > .stag{grid-column:2 / 4;grid-row:2;justify-self:start}
+/* the ⋯ menu: one line per choice */
+.bF-menu{display:grid}
+.bF-menu > div{padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;font-weight:700}
+.bF-menu > div.bF-red{color:var(--no-fg)}
+/* a Collabs card heading: brand name and its tag on one line */
+.bF-hd{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.bF-hd b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* a message that sits at the foot of the screen */
+.toast.bF-foot{margin-top:auto}
+/* the table's short "Who" column gives its room to the two long columns */
+td.bF-who{min-width:64px}
+</style>
+<section id="board-F">
+  <header><div class="eyebrow">Brand and creator apps · points 6 and 8 of 11</div><h2>What to do next, and what you are waiting for</h2><p class="prose">You reported that "Send agreement", waiting and the other statuses are hard to recognise, and that nothing tells you what happened after you send an agreement. Both are true: today an action and a status are the same tiny pill — "Send agreement" looks exactly like the "Live" tag and is the only way to send — and after Send the screen closes before its message can be read. The rule this board locks: anything a person can tap to move the work forward is a labelled button that names the action and ends in a small arrow, at least 44 high to touch, with a dark outline and never yellow (yellow stays the one main button of a screen); a status is a small pale tag with an icon and never looks like a button. There is one action per row, tapping the row does the same thing as its button, and after every action the person who acted is told, in a sentence, what happens next.</p></header>
+  <div class="flow">
+
+    <!-- F0 · TODAY · brand set screen, pills for everything -->
+    <div class="shot">
+      <div class="phone today">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Set A · Ethnic wear</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="row between"><span class="crumbs">DIWALI EDIT 2026</span><span class="chip s-active">Live</span></div>
+          <div class="cut"><span>Invitations close in 4 days · 17 Oct</span></div>
+          <div class="sechd2">Your move · 2</div>
+          <div>
+            <div class="mrow2"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b><span class="xs mut">Accepted 13 Sep · 12%</span></div><span class="chip s-active">Send agreement</span><svg class="ico" style="color:var(--ink3)"><use href="#i-more"/></svg></div>
+            <div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">TS</span><div class="t"><b>Tanvi Suresh</b><span class="xs mut">Signed 14 Sep · waiting for you</span></div><span class="chip s-active">Sign</span><svg class="ico" style="color:var(--ink3)"><use href="#i-more"/></svg></div>
+          </div>
+          <div class="sechd2">Signed · 1</div>
+          <div>
+            <div class="mrow2"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="t"><b>Divya R.</b><span class="xs mut">Signed by both 13 Sep</span></div><svg class="ico" style="color:var(--ink3)"><use href="#i-more"/></svg></div>
+          </div>
+          <div class="sechd2">Waiting to answer · 2</div>
+          <div>
+            <div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">Agreement sent 14 Sep</span></div><svg class="ico" style="color:var(--ink3)"><use href="#i-more"/></svg></div>
+            <div class="mrow2"><span class="avatar av-s" style="background:#BFD4E2">MR</span><div class="t"><b>Meera Rao</b><span class="xs mut">10% · sent 12 Sep</span></div><svg class="ico" style="color:var(--ink3)"><use href="#i-more"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>F0</i><span class="tagtoday">TODAY</span></div><b>Brand · the set as it is now</b><span>"Send agreement" and "Sign" are tiny green pills that look exactly like the "Live" tag, yet each is the only way to do that step, and "Sign" sits right beside the ⋯. Priya's agreement is out, but her row is one small grey line with no tag, under "Waiting to answer", below "Signed", next to Meera who has not answered at all. The set's details card and the counts that sit above the list do not change and are left out of these drawings.</span></div>
+    </div>
+
+    <!-- F1 · AFTER · the same set, buttons and tags (replaces the rows of P1 / N20 / I9) -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Set A · Ethnic wear</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="row between"><span class="crumbs">DIWALI EDIT 2026</span><span class="chip s-active">Live</span></div>
+          <div class="cut"><svg class="ico"><use href="#i-clock2"/></svg><span>Both signatures needed by 17 Oct · 4 days</span></div>
+          <div class="sechd2">Your move · 3</div>
+          <div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b><span class="xs mut">Accepted 13 Sep · 12%</span></div><span class="rowbtn">Send agreement<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FFE7A3">TS</span><div class="t"><b>Tanvi Suresh</b><span class="xs mut">Signed 14 Sep · waiting for you</span></div><span class="rowbtn">Sign<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#D6C7E3">AK</span><div class="t"><b>Asha K.</b><span class="xs mut">Countered 13% · 13 Sep</span></div><span class="rowbtn">Reply<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          </div>
+          <div class="sechd2">Waiting for the creator · 1</div>
+          <div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">Agreement sent 14 Sep</span></div><span class="stag s-wait"><svg class="ico"><use href="#i-clock2"/></svg>Waiting to sign</span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          </div>
+          <div class="sechd2">Signed · 1</div>
+          <div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="t"><b>Divya R.</b><span class="xs mut">Store visit agreed for Sun 18 Oct, 11:00 am</span></div><span class="stag s-active"><svg class="ico"><use href="#i-check"/></svg>Active</span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          </div>
+          <div class="sechd2">Waiting to answer · 1</div>
+          <div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#BFD4E2">MR</span><div class="t"><b>Meera Rao</b><span class="xs mut">10% · sent 12 Sep</span></div><span class="stag s-wait"><svg class="ico"><use href="#i-clock2"/></svg>Waiting</span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>F1</i><span class="tagafter">AFTER</span></div><b>Brand · the same set, buttons and tags</b><span>What you can do is a labelled button with an arrow; what you are waiting for is a pale tag with an icon, like the "Live" tag at the top, which stays as it is. Each sits on its own line under the name and the status sentence, so no name or sentence is cut short and the button is well away from the ⋯. Tapping a row does what its button says, tapping Priya's row opens her agreement, and an agreement that is out gets its own group straight under "Your move".</span></div>
+    </div>
+
+    <!-- F2 · AFTER · the same list once creators have signed (replaces the rows of S2) -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Set A · Ethnic wear</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="row between"><span class="crumbs">DIWALI EDIT 2026</span><span class="chip s-active">Live</span></div>
+          <div class="sechd2">Signed · 7</div>
+          <div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b><span class="xs mut">Signed — plan the store visit</span></div><span class="rowbtn">Plan the visit<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">Priya says she visited — confirm the shoot is done</span></div><span class="rowbtn">Confirm shoot<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#E8D2B8">TS</span><div class="t"><b>Tanvi Suresh</b><span class="xs mut">Social version sent 20 Oct</span></div><span class="rowbtn">Review it<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#BFD4E2">MR</span><div class="t"><b>Meera Rao</b><span class="xs mut">Posted 23 Oct · confirms itself 30 Oct</span></div><span class="rowbtn">Confirm live<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#D6C7E3">AK</span><div class="t"><b>Asha K.</b><span class="xs mut">Posts 1 of 2 approved</span></div><span class="stag s-wait"><svg class="ico"><use href="#i-clock2"/></svg>Her move</span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#E6C3C3">NS</span><div class="t"><b>Nisha S.</b><span class="xs mut">Waiting for her delivery address</span></div><span class="stag s-wait"><svg class="ico"><use href="#i-clock2"/></svg>Waiting</span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="t"><b>Divya R.</b><span class="xs mut">14 orders · ₹21,300 sales</span></div><span class="stag s-done"><svg class="ico"><use href="#i-check"/></svg>Completed · selling</span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>F2</i><span class="tagafter">AFTER</span></div><b>Brand · later in the work, one row per situation</b><span>After signing, the button names the step you owe: plan the visit, confirm the shoot, review, confirm live. When it is her turn the row carries a blue tag and no button; a Remote row says where the shoot has got to; a finished row carries a purple tag. Today all four buttons read "Your move" and her-turn rows carry nothing.</span></div>
+    </div>
+
+    <!-- F3 · AFTER · the ⋯ menu on a row whose agreement is out -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Set A · Ethnic wear</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="row between"><span class="crumbs">DIWALI EDIT 2026</span><span class="chip s-active">Live</span></div>
+          <div class="cut"><svg class="ico"><use href="#i-clock2"/></svg><span>Both signatures needed by 17 Oct · 4 days</span></div>
+          <div class="sechd2">Waiting for the creator · 1</div>
+          <div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">Agreement sent 14 Sep</span></div><span class="stag s-wait"><svg class="ico"><use href="#i-clock2"/></svg>Waiting to sign</span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          </div>
+        </div>
+        <div class="dim"><div class="sheet"><span class="grab"></span>
+          <div class="row" style="align-items:baseline"><b style="font-size:15px">Priya Sharma</b><span class="crumbs">· SET A</span></div>
+          <div class="bF-menu">
+            <div>Open the agreement</div>
+            <div class="bF-red">Withdraw agreement</div>
+            <div>View terms sent</div>
+            <div>Open profile</div>
+            <div class="bF-red">Remove from set</div>
+          </div>
+          <button class="btn block b-sec" type="button">Cancel</button>
+        </div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>F3</i><span class="tagafter">AFTER</span></div><b>Brand · the ⋯ menu when an agreement is out</b><span>Two lines are added at the top: "Open the agreement" and "Withdraw agreement". Today the menu has only the last three, so a sent agreement cannot be reopened from the phone at all and Withdraw cannot be reached.</span></div>
+    </div>
+
+    <!-- F4 · NEW · brand agreement right after Send: the screen stays -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Agreement · Sneha</h3></div>
+          <div class="ref">INFLX-2026-00123 · PAY FOR SALE</div>
+          <div class="waitbox"><svg class="ico"><use href="#i-clock2"/></svg><span>Sent to Sneha on 13 Oct. Waiting for her to sign by 17 Oct.</span></div>
+          <div class="tcard"><div class="sechd2">The two of you</div><div class="tline"><span>Brand</span><b>Urban Threads, Hyderabad</b></div><div class="tline"><span>Creator</span><b>Sneha Narayan, Hyderabad</b></div></div>
+          <div class="tcard"><div class="sechd2">What was agreed</div><div class="tline"><span>Aim</span><b>Pay for Sale</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Commission</span><b>12% on what she sells</b></div></div>
+          <div class="listrow"><div class="t"><b>INFLX standard terms</b><span class="xs mut">Version 1.0 · what the platform does, disputes, cancellation</span></div><svg class="ico" style="color:var(--ink3)"><use href="#i-chev"/></svg></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">SIGNATURES</div>
+          <div class="sig"><div class="who">CREATOR</div><div class="nm">Sneha Narayan</div><div class="mt">Not signed yet</div></div>
+          <div class="sig"><div class="who">BRAND</div><div class="nm">Urban Threads</div><div class="mt">Not signed yet</div></div>
+          <div class="hint">You sign after her. Nothing is binding until both signatures are on it.</div>
+          <div class="toast t-ink bF-foot">Agreement sent.</div>
+        </div>
+        <div class="savebar"><button class="btn block b-dan" type="button">Withdraw</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>F4</i><span class="tagnew">NEW</span></div><b>Brand · the agreement right after Send</b><span>The screen stays instead of closing. A blue box says who it went to and what you are waiting for, both signature boxes read "Not signed yet", and the message "Agreement sent." can be read. The only button is a quiet "Withdraw"; there is no yellow button, because nothing is owed by you. The terms cards are unchanged and are shortened here.</span></div>
+    </div>
+
+    <!-- F5 · NEW · Send refused: the reason inside the sheet -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Agreement · Sneha</h3></div><div class="ref">DRAFT</div><div style="height:260px"></div></div>
+        <div class="dim"><div class="sheet"><span class="grab"></span>
+          <b style="font-size:15px">Send this agreement to Sneha?</b>
+          <div class="tcard"><div class="sechd2">What happens</div><div class="tline"><span>Sneha signs</span><b>First</b></div><div class="tline"><span>You sign</span><b>After her</b></div><div class="tline"><span>Both by</span><b>17 Oct 2026</b></div></div>
+          <div class="greybox">Nothing can be changed once it is sent. If you need different terms, remove Sneha from the set and invite her again while there is still time.</div>
+          <div class="toast t-err"><svg class="ico"><use href="#i-alert"/></svg><span>Signatures for this set closed on 17 Oct.</span></div>
+          <div class="pairrow"><button class="btn b-sec" type="button">Not yet</button><button class="btn b-pri" type="button">Send</button></div>
+        </div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>F5</i><span class="tagnew">NEW</span></div><b>Brand · when Send is refused</b><span>If the agreement cannot be sent, the reason shows in red inside the sheet, just above the two buttons. Today nothing is shown: the reason appears behind the sheet, where it cannot be seen. A refused Withdraw is told the same way.</span></div>
+    </div>
+
+    <!-- F6 · AFTER · the set right after a Withdraw -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Set A · Ethnic wear</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="row between"><span class="crumbs">DIWALI EDIT 2026</span><span class="chip s-active">Live</span></div>
+          <div class="cut"><svg class="ico"><use href="#i-clock2"/></svg><span>Both signatures needed by 17 Oct · 4 days</span></div>
+          <div class="sechd2">Your move · 4</div>
+          <div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">Accepted 13 Sep · 10%</span></div><span class="rowbtn">Send agreement<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b><span class="xs mut">Accepted 13 Sep · 12%</span></div><span class="rowbtn">Send agreement<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#FFE7A3">TS</span><div class="t"><b>Tanvi Suresh</b><span class="xs mut">Signed 14 Sep · waiting for you</span></div><span class="rowbtn">Sign<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+            <div class="bF-row"><span class="avatar av-s" style="background:#D6C7E3">AK</span><div class="t"><b>Asha K.</b><span class="xs mut">Countered 13% · 13 Sep</span></div><span class="rowbtn">Reply<svg class="ico"><use href="#i-chev"/></svg></span><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          </div>
+          <div class="toast t-ink bF-foot">Agreement withdrawn.</div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>F6</i><span class="tagafter">AFTER</span></div><b>Brand · the set right after Withdraw</b><span>A message confirms it, and Priya is back under "Your move" with "Send agreement", so the same agreement can go out again. The groups below "Your move" are unchanged and are not drawn. This needs one small change on the server as well as the app: today she would land in a group with no button and no way to send again.</span></div>
+    </div>
+
+    <!-- F7 · AFTER · creator Collabs cards (P4 / P7 / V4 / P16) -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><h3>Collabs</h3></div>
+          <div class="segc"><span class="on">Invites</span><span>Active</span><span>Pitches</span><span>Done</span></div>
+          <div class="invcard">
+            <div class="top"><span class="logo" style="background:#FFE7A3;width:36px;height:36px;border-radius:10px;font-size:12px">UT</span><div style="flex:1;min-width:0"><div class="bF-hd"><b>Urban Threads</b><span class="stag s-move"><svg class="ico"><use href="#i-alert"/></svg>Your move</span></div><div class="xs mut">Diwali Edit 2026 · Set A</div></div></div>
+            <div class="chips"><span class="tag">Pay for Sale</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span><span class="tag">Posts 24 Oct</span></div>
+            <div class="tline"><span>You earn</span><b>12% commission</b></div>
+            <div class="last"><svg class="ico"><use href="#i-doc"/></svg><span>Agreement ready to sign · by 17 Oct</span></div>
+            <div class="row"><span class="rowbtn">Review &amp; sign<svg class="ico"><use href="#i-chev"/></svg></span></div>
+          </div>
+          <div class="invcard">
+            <div class="top"><span class="logo" style="background:#FFE7A3;width:36px;height:36px;border-radius:10px;font-size:12px">UT</span><div style="flex:1;min-width:0"><div class="bF-hd"><b>Urban Threads</b><span class="stag s-wait"><svg class="ico"><use href="#i-clock2"/></svg>Waiting</span></div><div class="xs mut">Diwali Edit 2026 · Set A</div></div></div>
+            <div class="waitbox"><svg class="ico"><use href="#i-clock2"/></svg><span>Signed. Waiting for Urban Threads to sign by 17 Oct.</span></div>
+          </div>
+          <div class="segc"><span>Invites</span><span class="on">Active</span><span>Pitches</span><span>Done</span></div>
+          <div class="invcard">
+            <div class="top"><span class="logo" style="background:#FFE7A3;width:36px;height:36px;border-radius:10px;font-size:12px">UT</span><div style="flex:1;min-width:0"><div class="bF-hd"><b>Urban Threads</b><span class="stag s-move"><svg class="ico"><use href="#i-alert"/></svg>Your move</span></div><div class="xs mut">Diwali Edit 2026 · Set A</div></div></div>
+            <div class="chips"><span class="tag">Pay for Sale</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span><span class="tag">Posts 24 Oct</span></div>
+            <div class="last"><svg class="ico"><use href="#i-pin"/></svg><span>Store visit planned for 18 Oct, 11:00 am</span></div>
+            <div class="row"><span class="rowbtn">Open<svg class="ico"><use href="#i-chev"/></svg></span></div>
+          </div>
+          <div class="invcard">
+            <div class="top"><span class="logo" style="background:#DDE9FB;width:36px;height:36px;border-radius:10px;font-size:12px">SK</span><div style="flex:1;min-width:0"><div class="bF-hd"><b>Stride Kicks</b><span class="stag s-active"><svg class="ico"><use href="#i-check"/></svg>Active</span></div><div class="xs mut">Winter Run · Set B</div></div></div>
+            <div class="tline"><span>Next</span><b>They ship your products</b></div>
+            <div class="row"><button class="btn b-txt sm2" type="button"><svg class="ico"><use href="#i-dl"/></svg>Agreement</button></div>
+          </div>
+        </div>
+        <div class="tabbar"><span class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</span><span class="tab on"><span class="p"><svg class="ico"><use href="#i-send"/></svg></span>Collabs</span><span class="tab"><span class="plus"><svg class="ico"><use href="#i-plus"/></svg></span></span><span class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</span></div>
+      </div>
+      <div class="cap"><div class="tg"><i>F7</i><span class="tagafter">AFTER</span></div><b>Creator · the Collabs cards</b><span>Four cards drawn together, one per situation: the first two sit under Invites, the last two under Active. When it is her move the card has an amber tag and a button that names the step; when she is waiting it has a clock tag and a sentence; an Active card waiting on the brand is green, with its "Next" line and the "Agreement" link your board drew. Today the tag stays "Active" even when it is her turn, no card has a button, and the "Agreement" link was never built.</span></div>
+    </div>
+
+    <!-- F8 · AFTER · table: what the person who acted sees -->
+    <div class="shot wide">
+      <div class="tscroll"><table>
+        <tr><th>Action</th><th>Who</th><th>Today</th><th>After</th></tr>
+        <tr><td>Send agreement</td><td class="bF-who">Brand</td><td>The screen closes and the message is lost. Her row shows one small grey line under "Waiting to answer".</td><td>Stays on the agreement with "Sent to Sneha on 13 Oct. Waiting for her to sign by 17 Oct." Her row moves under "Waiting for the creator".</td></tr>
+        <tr><td>Withdraw agreement</td><td class="bF-who">Brand</td><td>Cannot be reached from the phone.</td><td>Message "Agreement withdrawn." on the set, and she returns under "Your move".</td></tr>
+        <tr><td>Send or Withdraw refused</td><td class="bF-who">Brand</td><td>Nothing is shown.</td><td>The reason, in red, inside the sheet.</td></tr>
+        <tr><td>Accept a pitch</td><td class="bF-who">Brand</td><td>Jumps to the pool with no message.</td><td>Message "Tanvi is in your pool." on the pool.</td></tr>
+        <tr><td>Reject a pitch</td><td class="bF-who">Brand</td><td>Goes back silently.</td><td>Message "Pitch rejected."</td></tr>
+        <tr><td>Already clear</td><td class="bF-who">Brand and creator</td><td>Counter sent, shoot plan sent, parcel booked, content sent back, content approved, and every action on the creator's side already stay on the screen and say what happens next.</td><td>No change.</td></tr>
+      </table></div>
+      <div class="cap"><div class="tg"><i>F8</i><span class="tagafter">AFTER</span></div><b>After each action: what the person who acted sees</b><span>Only the five rows at the top change. Everything in the last row already tells the person what happens next and is left alone.</span></div>
+    </div>
+
+  </div>
+</section>

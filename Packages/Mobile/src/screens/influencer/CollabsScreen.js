@@ -15,6 +15,7 @@ import { s as base } from '../brand/BrandPitchSettingsScreen';
 import SegmentedControl from '../../components/shell/SegmentedControl';
 import MyPitchesScreen from './MyPitchesScreen';
 import useRouteToast from '../../hooks/useRouteToast';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { C3 } from '../../components/discovery/copy3';
 import { LoadErrorList } from '../../components/discovery/DiscoverList';
 import { InvitationCard5 } from '../../components/invitations/bits5';
@@ -34,6 +35,8 @@ export default function CollabsScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
 
   const load = useCallback(async () => {
     const tab = TAB_PARAM[segment];
@@ -50,7 +53,7 @@ export default function CollabsScreen({ navigation, route }) {
 
   return (
     <View style={base.screen} testID="collabs">
-      <View style={{ paddingTop: 54, paddingHorizontal: 18 }}>
+      <View style={{ paddingTop: top, paddingHorizontal: 18 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={s.title}>Collabs</Text>
           {/* creator-terms-v2 (C5): the notices about her collaborations — offers ending, products leaving. */}
@@ -93,7 +96,11 @@ export default function CollabsScreen({ navigation, route }) {
                   : item.agreement ? 'Agreement'
                     : (item.negotiation || (item.moveRequest && !item.moveRequest.answer)) ? 'Thread'
                       : 'Invitation',
-              { ciId: item.id })} />
+              { ciId: item.id })}
+              // ui-walk-fixes (board F, frame F7): once a shoot exists the card opens the shoot, so
+              // the signed agreement had no door from here. The "Agreement" link on an Active card
+              // is that door (board P16 drew it; it was never built).
+              onAgreement={item.group === 'signed' && item.agreement ? () => navigation.navigate('Agreement', { ciId: item.id }) : undefined} />
           )}
           ListEmptyComponent={<View testID={`collabs-empty-${segment.toLowerCase()}`}><EmptyState title={title} body={body} /></View>} />
       )}

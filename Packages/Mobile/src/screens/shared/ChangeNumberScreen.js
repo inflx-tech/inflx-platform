@@ -17,13 +17,19 @@
  * Params: role ('brand' | 'influencer'), returnTo (the detail screen's route name), phone
  * (the current login number, E.164; falls back to the stored user).
  * Contract: features/change-login-number
+ *
+ * ui-walk-fixes (board C, rule 2): the form is a FormScroll — the number or code box being typed
+ * in, with the "Resend" line, the red line or the red note under it, stays in view above the
+ * button strip. The strip was already part of the column here (it never floated), so nothing
+ * else changes.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { authApi } from '../../services/api';
 import { PrimaryButton, FieldError } from '../../components/settings/primitives';
+import { FormScroll } from '../../components/shell/FormScroll';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 
 const MONO = Platform.OS === 'android' ? 'monospace' : 'Menlo';
@@ -329,14 +335,15 @@ export default function ChangeNumberScreen({ navigation, route }) {
   return (
     <KeyboardAvoidingView style={base.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="change-number">
       <Header title={CN.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={base.body} keyboardShouldPersistTaps="handled">
+      {/* 88 under the box: the red "this number already has an account" note is a two-line box, taller than a plain error line. */}
+      <FormScroll revealBelow={88} contentContainerStyle={base.body} testID="change-number-scroll">
         <StepBar step={step} />
         <View style={{ height: 14 }} />
         {body}
         <FieldError text={error} />
         {fatal ? <Note tone="no" title={fatalTitle} body={fatalBody} testID="note-fatal" /> : null}
-      </ScrollView>
-      <View style={s.footer}>
+      </FormScroll>
+      <View style={s.footer} testID="change-number-actions">
         {fatal ? <PrimaryButton label={CN.startAgain} onPress={reset} testID="start-again" /> : cta}
       </View>
     </KeyboardAvoidingView>

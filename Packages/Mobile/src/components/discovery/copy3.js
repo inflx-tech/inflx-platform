@@ -49,10 +49,15 @@ export const C3 = {
   discover: {
     segments: ['Discover', 'Groups', 'Pitches', 'Worked with'],
     search: 'Search by name or @handle',
-    openOnly: 'Open to invitations', openOnlyLong: 'Open to invitations only',
+    // ui-walk-fixes board B: the one-tap "Open to invitations" chip is gone with the chips row;
+    // the switch inside the Filters sheet is the only place this choice lives.
+    openOnlyLong: 'Open to invitations only',
     filters: 'Filters', filtersN: (n) => `Filters · ${n}`, clearAll: 'Clear all',
     showN: (n) => `Show ${n} ${n === 1 ? 'creator' : 'creators'}`,
     count: (n) => `${n} ${n === 1 ? 'creator' : 'creators'}`,
+    // ui-walk-fixes board B (D1): the third line of the row you tick — "48.2K IG · 12.1K YT · 4.2% eng".
+    // The three values arrive already formatted (fmtCompact / fmtPct), so a missing one reads "—".
+    pickNumbers: (ig, yt, er) => `${ig} IG · ${yt} YT · ${er} eng`,
     // creator-distance-and-visit-preference (D1/D2): nearest first is the default sort; the
     // distance chips narrow to 50 km, 100 km, the brand's state, or anywhere (the default).
     sorts: { distance: 'Nearest first', followers: 'Most followers', engagement: 'Highest engagement', newest: 'Newest' },

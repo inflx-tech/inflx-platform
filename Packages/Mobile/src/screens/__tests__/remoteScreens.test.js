@@ -130,6 +130,32 @@ describe('her Remote screen', () => {
     await waitFor(() => expect(r.getByTestId('save-check').props.accessibilityState.disabled).toBe(false));
   });
 
+  // ui-walk-fixes, final review: the note box became opt-out on the shared check control (the
+  // brand's "What came back?" pop-up draws none). HER note is unchanged: it shows what she typed
+  // and it is what is sent.
+  it('R9 · her note on a damaged item is kept as she types and is sent with her check', async () => {
+    api.influencerApi.myRemote.mockResolvedValue(ok(shoot({
+      stage: 'delivered', address: ADDRESS, parcel: { ...PARCEL, deliveredAt: 'x' }, lines: [LINE],
+      can: { check: true },
+    })));
+    api.influencerApi.myRemoteCheck.mockResolvedValue(ok(shoot({
+      stage: 'checked', address: ADDRESS, parcel: { ...PARCEL, deliveredAt: 'x' },
+      lines: [{ ...LINE, check: 'damaged', checkNote: 'Torn at the hem' }],
+    })));
+    const r = render(<RemoteShootScreen navigation={nav} route={HER_ROUTE} />);
+    await waitFor(() => expect(r.getByTestId('remote-delivered')).toBeTruthy());
+    expect(r.queryByTestId('check-control-l1-note')).toBeNull();
+    fireEvent.press(r.getByTestId('check-control-l1-damaged'));
+    // ui-walk-fixes (closing pass): this box keeps "What was wrong?" under its own copy key.
+    expect(r.getByTestId('check-control-l1-note').props.placeholder).toBe('What was wrong?');
+    fireEvent.changeText(r.getByTestId('check-control-l1-note'), 'Torn at the hem');
+    expect(r.getByTestId('check-control-l1-note').props.value).toBe('Torn at the hem');   // nothing she types vanishes
+    fireEvent.press(r.getByTestId('save-check'));
+    await waitFor(() => expect(api.influencerApi.myRemoteCheck).toHaveBeenCalledWith('ci1', {
+      answers: [{ lineId: 'l1', status: 'damaged', note: 'Torn at the hem' }],
+    }));
+  });
+
   it('R11 · checked — she can mark the shoot done, and the sheet says the brand does not confirm it', async () => {
     api.influencerApi.myRemote.mockResolvedValue(ok(shoot({
       stage: 'checked', address: ADDRESS, parcel: { ...PARCEL, deliveredAt: 'x' },
@@ -194,6 +220,19 @@ describe('her address screen', () => {
     await waitFor(() => expect(r.getByTestId('remote-address')).toBeTruthy());
     expect(r.getByTestId('f-name').props.value).toBe('Tanvi Suresh');
     expect(r.getByTestId('f-phone').props.value).toBe('9876511111');
+  });
+
+  // ui-walk-fixes (closing pass, drift/K2.md): this box showed "What was wrong?" — the grey words
+  // of the damaged-item note on her Remote screen, written under the same key further down the
+  // copy file. Each box has its own words again.
+  it('R3 · the empty Delivery note box suggests a landmark or a good time — not "What was wrong?"', async () => {
+    api.influencerApi.myRemote.mockResolvedValue(ok(shoot()));
+    const r = render(<RemoteAddressScreen navigation={nav} route={HER_ROUTE} />);
+    await waitFor(() => expect(r.getByTestId('remote-address')).toBeTruthy());
+    expect(r.getByTestId('f-note').props.value).toBe('');
+    expect(r.getByTestId('f-note').props.placeholder).toBe('A landmark, or a good time to deliver');
+    expect(r.getByTestId('f-sizes').props.placeholder).toBe('Top M, bottom 28, shoe 6');
+    expect(JSON.stringify(r.toJSON())).not.toMatch(/What was wrong\?/);
   });
 
   it('R4b · a pincode couriers cannot reach blocks the send, with the server’s words', async () => {
@@ -307,6 +346,31 @@ describe('the brand’s Remote screen', () => {
     await waitFor(() => expect(r.getByTestId('confirm-return-sheet')).toBeTruthy());
     // It waits until every line has an answer.
     expect(r.getByTestId('confirm-return-confirm').props.accessibilityState.disabled).toBe(true);
+  });
+
+  // ui-walk-fixes, final review (board C, check 10). Marking an item Damaged here used to open a
+  // note box that swallowed every letter (the pop-up kept no value for it and the server's confirm
+  // step takes no note). R13 draws three buttons per item and no note: none is drawn, and what
+  // goes to the server is each item's answer and nothing else.
+  it('R13 · marking an item Damaged opens no note box, and the answer alone is what is sent', async () => {
+    api.brandApi.remote.mockResolvedValue(ok(shoot({
+      stage: 'shot', address: ADDRESS, parcel: { ...PARCEL, deliveredAt: 'x' },
+      lines: [{ ...LINE, check: 'received' }],
+      can: { confirmReturn: true },
+      return: { shipment: { id: 'r1', deliveredAt: '2026-11-01T00:00:00Z', autoConfirmDueAt: '2026-11-08T00:00:00Z' }, stage: 'delivered', dueDate: '2026-11-27', overdue: false, count: 1, canPickup: true },
+    })));
+    api.brandApi.remoteConfirmReturn.mockResolvedValue(ok(shoot({ stage: 'shot', address: ADDRESS, lines: [{ ...LINE, check: 'received', returnStatus: 'damaged' }] })));
+    const r = render(<BrandRemoteScreen navigation={nav} route={BRAND_ROUTE} />);
+    await waitFor(() => expect(r.getByTestId('return-arrived')).toBeTruthy());
+    fireEvent.press(r.getByTestId('confirm-return'));
+    await waitFor(() => expect(r.getByTestId('confirm-return-sheet')).toBeTruthy());
+    fireEvent.press(r.getByTestId('confirm-check-l1-damaged'));
+    expect(r.getByTestId('confirm-check-l1-damaged').props.accessibilityState.selected).toBe(true);
+    expect(r.queryByTestId('confirm-check-l1-note')).toBeNull();
+    fireEvent.press(r.getByTestId('confirm-return-confirm'));
+    await waitFor(() => expect(api.brandApi.remoteConfirmReturn).toHaveBeenCalledWith('c1', 's1', 'ci1', {
+      answers: [{ lineId: 'l1', status: 'damaged' }],
+    }));
   });
 
   it('R15b · back to the store — the brand may book it once more', async () => {

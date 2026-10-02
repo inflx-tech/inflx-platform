@@ -25,9 +25,53 @@ import { cutoffFor } from './BrandSetEditScreen';
 import { GroupHeader5, SetCreatorRow5 } from '../../components/invitations/bits5';
 import { TermsSentSheet5 } from '../../components/invitations/sheets5';
 import { C5, first } from '../../components/invitations/copy5';
+// ui-walk-fixes (board F, frames F1–F3, F6): each row's one button or tag, the "Waiting for the
+// creator" group, the both-signatures strip and the two agreement lines in a creator's ⋯ menu.
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { setRowStep, agreementOut5 } from '../../components/invitations/steps5';
+import { C6 } from '../../components/negotiation/copy6';
+import { C7 } from '../../components/agreement/copy7';
 
 const SD = C4.setDetail;
 const S5 = C5.set;
+
+/**
+ * ui-walk-fixes (board F, frame F1) — the groups as the phone lists them.
+ *
+ * The server files an agreement that is out for her signature under "waiting", beside invitations
+ * nobody has answered, and lists that group after "Signed". The phone lifts those rows into a
+ * group of their own, "Waiting for the creator", placed directly after "Your move". Which rows:
+ * the server's own `actions.withdrawAgreement` / `agreement.status`, never the sent date alone.
+ *
+ * A group holds at most 50 rows and the rest are a number (`more`); the phone cannot tell which of
+ * the uncounted ones are agreements, so they stay under "Waiting to answer", whose count is the
+ * server's total less the agreements it can see.
+ */
+export function groupsForPhone(creators) {
+  const c = creators || { order: [], groups: {} };
+  const list = (c.order || []).map(k => (c.groups || {})[k]).filter(Boolean);
+  const out = [];
+  let lifted = null;
+  for (const g of list) {
+    if (g.key !== 'waiting') { out.push(g); continue; }
+    const sent = (g.rows || []).filter(agreementOut5);
+    if (!sent.length) { out.push(g); continue; }
+    lifted = { key: 'waitingCreator', title: S5.groups.waitingCreator, count: sent.length, more: 0, rows: sent };
+    out.push({ ...g, count: Math.max(0, (g.count || 0) - sent.length), rows: g.rows.filter(r => !agreementOut5(r)) });
+  }
+  if (lifted) {
+    const at = out.findIndex(g => g.key === 'yourMove');
+    out.splice(at + 1, 0, lifted);        // straight after "Your move"; first when there is none
+  }
+  return out.filter(g => g.count > 0);
+}
+
+/** Any agreement in this set still short of a signature: out with her, or signed by her and waiting on the brand. */
+export function anyAgreementOut(creators) {
+  const groups = (creators && creators.groups) || {};
+  return Object.keys(groups).some(k => ((groups[k] && groups[k].rows) || []).some(r =>
+    agreementOut5(r) || !!(r.actions && r.actions.signAgreement) || !!(r.agreement && r.agreement.status === 'pending_brand')));
+}
 
 export default function BrandSetDetailScreen({ navigation, route }) {
   const { campaignId, setId } = route?.params || {};
@@ -102,7 +146,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
     if (!r.success) { show(r.error?.message || COPY.loadErrorTitle); return; }
     setTermsSent(r.data.invitation);
   }
-  const openProfile = (row) => navigation.navigate('CreatorsTab', { screen: 'BrandCreatorProfile', params: { influencerId: row.influencerId } });
+  const openProfile = (row) => navigation.navigate('CreatorsTab', { screen: 'BrandCreatorProfile', params: { influencerId: row.influencerId }, initial: false });
   // Item 6 (N7, N10) — the conversation: her counter, or her request to move.
   const openThread = (row) => navigation.navigate('BrandThread', { campaignId, setId, ciId: row.id });
   // Item 7 — the preview before it is sent, the agreement itself afterwards.
@@ -119,6 +163,30 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   // Item 14: a Pay for Sale row after the shoot opens Going live.
   const openGoingLive = (row) => navigation.navigate('BrandSaleLive', { campaignId, setId, ciId: row.id });
   const isRemote = (row) => !!row.remote || (set && set.shootMode && set.shootMode !== 'visit' && !!row.contract);
+  /**
+   * ui-walk-fixes (board F): tapping a row does what its button says, and the button does what a
+   * tap on the row does — one rule, here. Send / sign / agreement-out rows open the agreement (a
+   * row tap used to open the ⋯ menu, which had no agreement in it, or an old conversation); counter
+   * rows keep opening the conversation; Remote rows open the Remote shoot. A row with nothing of
+   * its own to open keeps what it did before: the conversation if it has one, her profile for
+   * "asked for another date", else the ⋯ menu.
+   */
+  function openRow(row) {
+    const step = setRowStep(row);
+    const open = step && step.open;
+    // New with board F: the agreement comes first on the rows that are about it.
+    if (open === 'agreementPreview') return openAgreement(row, true);
+    if (open === 'agreement') return openAgreement(row, false);
+    // As before (items 12, 14, 10): the content, going live, the store visit.
+    if (row.content) return openContent(row);
+    if (row.goingLive) return openGoingLive(row);
+    if (row.shoot) return openShoot(row);
+    // New with board F: a Remote row opens the Remote shoot.
+    if (open === 'remote') return openRemote(row);
+    // As before (items 6, 5): the conversation, her profile, the ⋯ menu.
+    if (row.actions && row.actions.thread) return openThread(row);
+    return row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row);
+  }
   async function doConfirm() {
     const { kind, row } = confirm;
     setConfirm(null);
@@ -129,6 +197,13 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   }
   function creatorActions(row) {
     const a = [
+      // ui-walk-fixes (F3): a sent or signed agreement can be reopened, and one that is still out
+      // can be taken back — the server has always said when (`actions.viewAgreement`,
+      // `actions.withdrawAgreement`); the phone never offered either. Withdraw opens the agreement
+      // with its own "Withdraw this agreement?" sheet up, so the brand reads what it is pulling back.
+      ...(row.actions && row.actions.viewAgreement ? [{ label: S5.menu.openAgreement, onPress: () => openAgreement(row, false) }] : []),
+      ...(row.actions && row.actions.withdrawAgreement ? [{ label: S5.menu.withdrawAgreement, destructive: true,
+        onPress: () => navigation.navigate('BrandAgreement', { campaignId, setId, ciId: row.id, preview: false, ask: 'withdraw' }) }] : []),
       ...(row.content ? [{ label: 'Open the content', onPress: () => openContent(row) }] : []),
       ...(row.goingLive ? [{ label: 'Open going live', onPress: () => openGoingLive(row) }] : []),
       ...(row.shoot ? [{ label: 'Open the store visit', onPress: () => openShoot(row) }] : []),
@@ -163,8 +238,9 @@ export default function BrandSetDetailScreen({ navigation, route }) {
     [SD.rows.date, longDate4(set.postingDate)],
     [SD.rows.close, longDate4(set.cutoff)],
   ];
-  const creators = data.creators || { order: [], groups: {} };
-  const groups = (creators.order || []).map(k => creators.groups[k]).filter(g => g && g.count > 0);
+  const groups = groupsForPhone(data.creators);
+  // P1 / F1: once any agreement is out, the strip counts down to the signatures, not the invitations.
+  const signaturesDue = anyAgreementOut(data.creators);
 
   return (
     <View style={base.screen} testID={`set-detail-${set.state}${set.datePassed ? '-datepassed' : ''}`}>
@@ -172,7 +248,14 @@ export default function BrandSetDetailScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }}>
         <View style={s.row}><Text style={s.muted}>{data.campaign.name}</Text><StateChip4 state={set.state} datePassed={set.datePassed} testID="set-chip" /></View>
 
-        {live && !set.cutoffPassed && set.daysToCutoff != null ? <View style={s.cut} testID="cutoff-strip"><Text style={s.cutText}>{SD.cutoffIn(set.daysToCutoff, set.cutoff)}</Text></View> : null}
+        {live && !set.cutoffPassed && set.daysToCutoff != null ? (
+          signaturesDue ? (
+            <View style={[s.cut, s.cutRow]} testID="cutoff-strip">
+              <Icon name="clock-outline" size={14} color={T.state.waiting.fg} style={s.cutIcon} />
+              <Text style={[s.cutText, s.cutTextFlex]}>{C7.brand.bothNeededBy(set.cutoff, set.daysToCutoff)}</Text>
+            </View>
+          ) : <View style={s.cut} testID="cutoff-strip"><Text style={s.cutText}>{SD.cutoffIn(set.daysToCutoff, set.cutoff)}</Text></View>
+        ) : null}
         {draft && set.datePassed ? <View style={s.warn} testID="date-passed"><Text style={s.warnText}>{SD.datePassedWarn}</Text></View> : null}
         {set.state === 'expired' ? <View testID="expired-banner"><Banner title={SD.expiredTitle(set.cutoff)} body={SD.expiredBody(set.counts.declined)} /></View> : null}
 
@@ -203,30 +286,15 @@ export default function BrandSetDetailScreen({ navigation, route }) {
             <CountsLine4 counts={set.counts} detail />
             {groups.map(g => (
               <View key={g.key} testID={`group-${g.key}`}>
-                <GroupHeader5 title={S5.groups[g.key] || g.title} count={g.count} />
+                <GroupHeader5 title={S5.groups[g.key] || g.title || (g.key === 'yourMove' ? C6.set.yourMove : undefined)} count={g.count} />
                 {g.rows.map(row => (
                   <SetCreatorRow5 key={row.id} row={row}
-                    // Item 6: a row with a thread or an unanswered move request opens the
-                    // conversation; the rest open the ⋯ menu.
-                    // Item 10: a signed Store Visit opens the visit — that is the live thing on
-                    // that row. Item 6: a thread or an unanswered move request opens the
-                    // conversation; the rest open the ⋯ menu.
-                    onPress={() => (row.content ? openContent(row) : row.goingLive ? openGoingLive(row) : row.shoot ? openShoot(row)
-                      : row.actions && row.actions.thread ? openThread(row)
-                        : row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row))}
-                    onMore={() => setCreatorMenu(row)}
-                    // Item 7: the chip is the brand's actual next move on that row —
-                    // send the agreement, or sign the one she has already signed.
-                    // Item 10: or confirm the shoot she says she has been to.
-                    onChip={
-                      row.content && row.content.yourMove ? () => openContent(row)
-                        : row.goingLive && row.goingLive.yourMove ? () => openGoingLive(row)
-                        : row.shoot && (row.shoot.stage === 'attended' || row.shoot.stage === 'not_sent') ? () => openShoot(row)
-                        : row.actions && row.actions.sendAgreement ? () => openAgreement(row, true)
-                        : row.actions && row.actions.signAgreement ? () => openAgreement(row, false)
-                        : row.actions && row.actions.thread ? () => openThread(row)
-                        : undefined
-                    } />
+                    // ui-walk-fixes (board F): the row and its button are one door (openRow) —
+                    // the agreement for send / sign / agreement-out rows, the conversation for a
+                    // counter, the visit, the Remote shoot, the content or going live once signed.
+                    onPress={() => openRow(row)}
+                    onChip={() => openRow(row)}
+                    onMore={() => setCreatorMenu(row)} />
                 ))}
                 {g.more ? <Text style={s.more}>{S5.more(g.more)}</Text> : null}
               </View>
@@ -264,6 +332,9 @@ const s = StyleSheet.create({
   muted: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2 },
   cut: { marginTop: 12, borderRadius: 12, padding: 10, backgroundColor: T.state.waiting.bg },
   cutText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.waiting.fg },
+  cutRow: { flexDirection: 'row', alignItems: 'center' },
+  cutIcon: { marginRight: 7 },
+  cutTextFlex: { flex: 1 },
   warn: { marginTop: 12, borderRadius: 12, padding: 10, backgroundColor: T.state.yourMove.bg },
   warnText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.yourMove.fg },
   card: { borderWidth: 1, borderColor: T.border, borderRadius: 14, paddingHorizontal: 12, marginTop: 12 },

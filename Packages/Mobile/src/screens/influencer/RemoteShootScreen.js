@@ -11,9 +11,13 @@
  *   · something missing or damaged does NOT stop her shoot (§26);
  *   · the return costs her nothing (§11.2).
  * Both are on the screen at the moment they matter, not buried in a help page.
+ *
+ * ui-walk-fixes (board C): the one action sits in its own strip under the page (BottomBar), never
+ * over it; the page is a FormScroll, so the note she types about a missing or damaged item stays
+ * in view above the strip. A stage with nothing to press has no strip at all.
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
@@ -22,6 +26,8 @@ import { PrimaryButton, SecondaryButton, TextButton, EmptyState } from '../../co
 import { C12 } from '../../components/content/copy12';
 import { C14 } from '../../components/sale/copy14';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7, StateBox7 } from '../../components/agreement/bits7';
@@ -41,7 +47,8 @@ export default function RemoteShootScreen({ navigation, route }) {
   const [sheet, setSheet] = useState(null);
   const [sheetError, setSheetError] = useState(null);
   const [answers, setAnswers] = useState({});      // lineId → { status, note }
-  const { toast, show } = useToast();
+  // Board C: the toast is drawn in the box above the button strip, just above it.
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
@@ -99,7 +106,8 @@ export default function RemoteShootScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`remote-${stage}${sh.delayed ? '-delayed' : ''}`}>
       <Header title="Your products" onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 190 }}>
+      <FormArea>
+      <FormScroll contentContainerStyle={{ padding: 18 }} testID="remote-scroll">
         <View style={s.crumbRow}>
           <Text style={s.crumb}>{`${String(brand).toUpperCase()} · ${String(sh.setName || '').toUpperCase()}`}</Text>
           {sh.delayed ? <DelayedChip10 /> : null}
@@ -212,10 +220,12 @@ export default function RemoteShootScreen({ navigation, route }) {
             <StepLine10 steps={sh.steps} />
           </>
         ) : null}
-      </ScrollView>
+      </FormScroll>
+      {toast}
+      </FormArea>
 
       {/* ── the one action, at the bottom, whatever it is ─────────────────── */}
-      <View style={s.bar} testID="remote-actions">
+      <BottomBar testID="remote-actions">
         {/* Item 12: the shoot is done — her content step is open. The return keeps its own main
             button when it has one (its own lane), so the content door steps aside then. */}
         {stage === 'shot' && sh.aim === 'engagement' ? (
@@ -254,7 +264,7 @@ export default function RemoteShootScreen({ navigation, route }) {
           <PrimaryButton label={C11.creator.selfSent} icon="check"
             onPress={() => setSheet('selfsent')} testID="self-sent" />
         ) : null}
-      </View>
+      </BottomBar>
 
       <ShootDoneSheet11 visible={sheet === 'done'} brandName={brand} count={ret.count || 0} dueDate={ret.dueDate}
         busy={busy} onConfirm={markDone} onClose={() => setSheet(null)} />
@@ -264,7 +274,6 @@ export default function RemoteShootScreen({ navigation, route }) {
       <SelfSentSheet11 visible={sheet === 'selfsent'} brandName={brand} pincode={address && address.pincode}
         busy={busy} serverError={sheetError} onSend={markSelfSent}
         onClose={() => { setSheetError(null); setSheet(null); }} />
-      {toast}
     </View>
   );
 }
@@ -349,5 +358,4 @@ const s = StyleSheet.create({
   variant: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink3 },
   qty: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2 },
   answered: { fontFamily: fonts.sansBold, fontSize: 12.5, color: T.ink2 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
 });

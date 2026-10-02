@@ -62,11 +62,18 @@ async function forBrand(brandId) {
        -- accepted and nothing has gone out — and "Sign" — she signed and the
        -- brand has not. Neither was counted anywhere before; a draft sitting
        -- unsent was invisible in every Needs You number.
+       -- ui-walk-fixes U6(a): an agreement the brand sent and took back is the same move — her
+       -- set row is under "Your move" with "Send agreement" again (invitationRows.agreementOwedOn),
+       -- so it is counted again. One condition with that row and with agreement.send's own
+       -- UPDATE: 'draft', or 'withdrawn' with nothing out, on an invitation she has accepted. A
+       -- contract marked 'withdrawn' because she was removed or moved is not counted: her
+       -- invitation is no longer 'accepted'.
        (SELECT count(*)::int FROM contracts con
           JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
           JOIN campaign_sets cs ON cs.id = ci.set_id
           JOIN campaigns c ON c.id = cs.campaign_id
-         WHERE c.brand_id = $1 AND con.status = 'draft'
+         WHERE c.brand_id = $1
+           AND (con.status = 'draft' OR (con.status = 'withdrawn' AND con.sent_at IS NULL))
            AND ci.status IN ('accepted', 'applied'))                                      AS agreements_to_send,
        (SELECT count(*)::int FROM contracts con
           JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id

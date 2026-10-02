@@ -18,6 +18,7 @@ import { s as base } from '../brand/BrandPitchSettingsScreen';
 import { Avatar } from '../brand/BrandBlockedCreatorsScreen';
 import { ProfileRow } from '../brand/BrandProfileScreen';
 import useRouteToast from '../../hooks/useRouteToast';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { C3, fmtCompact } from '../../components/discovery/copy3';
 // Item 3b — the "Your numbers" row between Profile info and Niche (R3). Contract: features/item3b-social-numbers
 import { C3B } from '../../components/social/copy3b';
@@ -57,6 +58,8 @@ export default function ProfileScreen({ navigation, route }) {
   const [probe, setProbe] = useState(false);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
 
   const load = useCallback(async () => {
     const [r, i, so] = await Promise.all([influencerApi.getMe(), influencerApi.getInvitationSettings(), influencerApi.getMySocial ? influencerApi.getMySocial() : Promise.resolve({ success: false })]);
@@ -87,7 +90,7 @@ export default function ProfileScreen({ navigation, route }) {
     load();
   }
 
-  if (status === 'loading') return <View style={base.screen}><Text style={s.title}>Profile</Text><Skeleton /></View>;
+  if (status === 'loading') return <View style={base.screen}><Text style={[s.title, { paddingTop: top }]}>Profile</Text><Skeleton /></View>;
   if (status === 'error') {
     return (
       <View style={[base.screen, s.center]}>
@@ -109,7 +112,7 @@ export default function ProfileScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="creator-profile-main">
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <Text style={s.title}>Profile</Text>
+        <Text style={[s.title, { paddingTop: top }]}>Profile</Text>
         <View style={s.hero}>
           <Avatar name={name} url={me.profile_image_url} size={56} />
           <View style={{ flex: 1, marginLeft: 14 }}>
@@ -136,7 +139,7 @@ export default function ProfileScreen({ navigation, route }) {
 }
 
 const s = StyleSheet.create({
-  title: { fontFamily: fonts.sansBold, fontSize: 22, color: T.ink, paddingTop: 54, paddingHorizontal: 18 },
+  title: { fontFamily: fonts.sansBold, fontSize: 22, color: T.ink, paddingTop: TOP_GAP_TITLE, paddingHorizontal: 18 },
   hero: { flexDirection: 'row', alignItems: 'center', padding: 18, paddingBottom: 6 },
   name: { fontFamily: fonts.sansBold, fontSize: 18, color: T.ink },
   line: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, marginTop: 2 },

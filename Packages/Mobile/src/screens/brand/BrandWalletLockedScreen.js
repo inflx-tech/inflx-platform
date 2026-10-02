@@ -8,6 +8,9 @@
  * campaign fee was charged once at signing and is never part of what is locked for her.
  * Nothing here can be cancelled: after both have signed, locked money moves only by the agreed
  * payments (or by INFLX settling a dispute).
+ *
+ * ui-walk-fixes board C: on BW4 the "Open the collaboration" strip is part of the column, under
+ * the page (BottomBar) — it no longer floats over it.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
@@ -17,6 +20,7 @@ import { settingsTokens as T } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { EmptyState, SecondaryButton } from '../../components/settings/primitives';
 import { Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { W17, inr } from '../../components/wallet/copy17';
 import { Chip17, TLine17, Payments17, GreyBox17, s as b } from '../../components/wallet/bits17';
@@ -93,7 +97,7 @@ export function BrandWalletCollabScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="wallet-collab">
       <Header title={c.creatorName} onBack={back} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 110 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 24 }}>
         <Text style={b.crumbs}>{[c.campaignName, c.setName, c.aimLabel].filter(Boolean).join(' · ')}</Text>
         <View style={b.card}>
           <View style={b.cardHead}>
@@ -108,10 +112,11 @@ export function BrandWalletCollabScreen({ navigation, route }) {
         </View>
         {c.campaignFee > 0 ? <GreyBox17 text={W17.campaignFee(c.campaignFee)} testID="collab-campaign-fee" /> : null}
       </ScrollView>
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 18, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border }}>
+      {/* In the strip the outline button drops its own top gap (the strip pads it all round). */}
+      <BottomBar testID="collab-bar">
         <SecondaryButton label={W17.openCollab} testID="collab-open"
-          onPress={() => navigation.navigate('CampaignsTab', { screen: 'BrandSetDetail', params: { campaignId: c.campaignId, setId: c.setId, name: c.setName } })} />
-      </View>
+          onPress={() => navigation.navigate('CampaignsTab', { screen: 'BrandSetDetail', params: { campaignId: c.campaignId, setId: c.setId, name: c.setName }, initial: false })} />
+      </BottomBar>
     </View>
   );
 }

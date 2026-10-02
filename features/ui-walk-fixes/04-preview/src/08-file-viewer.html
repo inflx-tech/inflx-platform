@@ -1,0 +1,174 @@
+<style>
+/* board H — the file viewer. Only what the two shared stylesheets do not already have. */
+.bH-brow{display:flex;align-items:center;gap:8px;padding:6px 10px 8px;background:#F1F1EE;border-bottom:1px solid var(--border);color:var(--ink2)}
+.bH-url{flex:1;min-width:0;height:28px;border-radius:999px;background:#DFDED8;display:flex;align-items:center;gap:4px;padding-inline:10px;font-size:10px;color:var(--ink);white-space:nowrap;overflow:hidden}
+.bH-url .ico{width:10px;height:10px}
+.bH-web{flex:1;display:flex;flex-direction:column;background:#000}
+.bH-pause{display:inline-flex;gap:3px;flex:none}
+.bH-pause i{display:block;width:4px;height:13px;border-radius:1px;background:#fff}
+.bH-time{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.bH-vol{width:17px;height:14px;flex:none;position:relative;display:block}
+.bH-vol::before{content:"";position:absolute;left:0;top:0;width:10px;height:14px;background:#fff;clip-path:polygon(0 32%,38% 32%,100% 0,100% 100%,38% 68%,0 68%)}
+.bH-vol::after{content:"";position:absolute;left:11px;top:3px;width:5px;height:8px;border:2px solid #fff;border-left:0;border-radius:0 8px 8px 0;box-sizing:border-box}
+.bH-nav{position:absolute;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:rgba(11,11,10,.62);color:#fff;display:grid;place-items:center}
+.bH-nav .ico{width:14px;height:14px}
+.bH-prev{left:18px}
+.bH-next{right:18px}
+.bH-off{opacity:.35}
+.bH-ph{width:26px;height:26px;color:rgba(26,26,23,.35)}
+.bH-spin{width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:spin .9s linear infinite}
+@media (prefers-reduced-motion: reduce){.bH-spin{animation:none}}
+.bH-msg{display:grid;gap:12px;justify-items:center;color:#fff;font-size:13.5px;font-weight:700}
+.bH-msg .ico{width:22px;height:22px;opacity:.8}
+.bH-panel{width:100%;background:#1F1F1C;border-radius:14px;padding:24px 16px;display:grid;gap:12px;justify-items:center;color:#fff;font-size:13.5px;font-weight:700}
+.bH-panel .ico{width:22px;height:22px;opacity:.8}
+.bH-note{display:flex;gap:6px;align-items:flex-start;border-radius:8px;padding:6px 9px;background:var(--move-bg);color:var(--move-fg);font-size:12px;font-weight:600;line-height:1.4;text-align:left}
+.bH-note .ico{width:13px;height:13px;margin-top:2px}
+</style>
+<section id="board-H">
+  <header><div class="eyebrow">Brand and creator apps · point 10 of 11</div><h2>Content opens inside the app</h2><p class="prose">You reported that opening a content file takes you to a Cloudflare web page. That is true today: on most screens a file tile opens a small menu and "View" hands the photo or video to the phone's browser (on a few screens the tile goes straight there), and that link dies after 5 minutes. After the fix, one tap on a tile opens the file on a black screen inside INFLX, on both apps; photos open this way on every phone, and videos play inside the app on phones with the app build of 30 Sep or later. The signed Agreement PDF, the shipping label and Instagram / YouTube links keep opening outside the app, as they do now.</p></header>
+  <div class="flow">
+
+    <div class="shot">
+      <div class="phone today">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="bH-brow">
+          <div class="bH-url"><svg class="ico"><use href="#i-lock"/></svg><span>…r2.cloudflarestorage.com/content/…</span></div>
+          <svg class="ico"><use href="#i-more"/></svg>
+        </div>
+        <div class="bH-web">
+          <div class="vmedia"><div class="pic" style="width:76%;aspect-ratio:9/16;background:#C9D3B4"></div></div>
+          <div class="vctl"><div class="row"><span class="bH-pause"><i></i><i></i></span><span class="bH-time">0:12 / 0:28</span><div class="track" style="flex:1"><i style="width:43%"></i></div><span class="bH-vol"></span></div></div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>H0</i><span class="tagtoday">TODAY</span></div><b>Both apps · the file opens in the phone's browser</b><span>Tapping a tile opens a small menu; "View" then leaves INFLX and shows the photo or plays the video in the phone's browser, on a Cloudflare address. On a few screens there is no menu and one tap goes straight to the browser: the creator's files while the brand is reviewing them, the Story screenshots the brand sees, and every file on the brand's Pay for Sale / Hybrid review. The link dies after 5 minutes, so coming back to that browser tab later shows an error page.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone dark">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="vtop"><span class="ib"><svg class="ico"><use href="#i-x"/></svg></span><span>Instagram post · 1 of 2</span></div>
+        <div class="vmedia">
+          <div class="pic" style="aspect-ratio:4/5;background:#C9D3B4"><svg class="ico bH-ph"><use href="#i-image"/></svg></div>
+          <span class="bH-nav bH-prev bH-off"><svg class="ico"><use href="#i-back"/></svg></span>
+          <span class="bH-nav bH-next"><svg class="ico"><use href="#i-chev"/></svg></span>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>H1</i><span class="tagnew">NEW</span></div><b>Both apps · a photo</b><span>The photo is shown whole on a black screen, inside INFLX. The ✕ closes it. The title says which deliverable it belongs to and which file this is; the small arrows step to the previous or next file in that row, and an arrow is faded when there is nothing that way (here, nothing before file 1). A row with one file shows no arrows. No pinch-to-zoom this round.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone dark">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="vtop"><span class="ib"><svg class="ico"><use href="#i-x"/></svg></span><span>Instagram reel · 1 of 1</span></div>
+        <div class="vmedia"><div class="pic" style="width:76%;aspect-ratio:9/16;background:#C9D3B4"></div></div>
+        <div class="vctl"><div class="row"><span class="bH-pause"><i></i><i></i></span><span class="bH-time">0:12 / 0:28</span><div class="track" style="flex:1"><i style="width:43%"></i></div><span class="bH-vol"></span></div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>H2</i><span class="tagnew">NEW</span></div><b>Both apps · a video playing</b><span>The video plays inside INFLX, shown whole. Underneath is a standard player bar: pause, time played and total, progress, sound. Its exact look comes from the player and may differ slightly from this drawing. A long video keeps playing; the app quietly renews its private link. Nothing is stored on the phone.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone dark">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="vtop"><span class="ib"><svg class="ico"><use href="#i-x"/></svg></span><span>Instagram reel · 1 of 1</span></div>
+        <div class="vmedia"><span class="bH-spin"></span></div>
+      </div>
+      <div class="cap"><div class="tg"><i>H3</i><span class="tagnew">NEW</span></div><b>Both apps · loading</b><span>While the file is being fetched there is a spinner on black. The top bar is already there, so the ✕ works straight away.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone dark">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="vtop"><span class="ib"><svg class="ico"><use href="#i-x"/></svg></span><span>Instagram reel · 1 of 1</span></div>
+        <div class="vmedia">
+          <div class="bH-msg">
+            <svg class="ico"><use href="#i-alert"/></svg>
+            <span>Couldn't load this file</span>
+            <button class="btn b-pri" type="button">Try again</button>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>H4</i><span class="tagnew">NEW</span></div><b>Both apps · couldn't load</b><span>If the file does not arrive (no signal, for example) the screen says so in one line. "Try again" fetches it afresh; the ✕ goes back to the content screen.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone dark">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="vtop"><span class="ib"><svg class="ico"><use href="#i-x"/></svg></span><span>Instagram reel · 1 of 1</span></div>
+        <div class="vmedia">
+          <div class="bH-panel">
+            <svg class="ico"><use href="#i-play"/></svg>
+            <span>Update INFLX to play videos</span>
+            <button class="btn b-onblack" type="button"><svg class="ico"><use href="#i-ext"/></svg>Open in browser</button>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>H5</i><span class="tagnew">NEW</span></div><b>Both apps · older app build, videos only</b><span>A phone still on an app installed before the 30 Sep build cannot play video inside INFLX. It sees this panel instead; "Open in browser" plays the video the way it does today. Photos are not affected and open inside the app on every phone.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone dark">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="vtop"><span class="ib"><svg class="ico"><use href="#i-x"/></svg></span><span>Instagram reel · 1 of 1</span></div>
+        <div class="vmedia"><div class="pic" style="width:64%;aspect-ratio:9/16;background:#C9D3B4"></div></div>
+        <div class="vctl"><div class="row"><span class="bH-pause"><i></i><i></i></span><span class="bH-time">0:12 / 0:28</span><div class="track" style="flex:1"><i style="width:43%"></i></div><span class="bH-vol"></span></div></div>
+        <div class="vact">
+          <div class="bH-note"><svg class="ico"><use href="#i-alert"/></svg><span>Brighten the first 3 seconds</span></div>
+          <button class="btn block b-onblack" type="button">Add a note</button>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>H6</i><span class="tagnew">NEW</span></div><b>Brand · reviewing a Pay for Content file</b><span>While the brand is reviewing and can still ask for changes, "Add a note" sits under the video; it opens the same note box as today. A note already written on this file shows in amber just above the button. This button appears only on the Pay for Content review. The brand's Pay for Sale / Hybrid review has no notes on files, so there the viewer shows the file and nothing else.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone dark">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="vtop"><span class="ib"><svg class="ico"><use href="#i-x"/></svg></span><span>Instagram post · 1 of 2</span></div>
+        <div class="vmedia">
+          <div class="pic" style="aspect-ratio:4/5;background:#C9D3B4"><svg class="ico bH-ph"><use href="#i-image"/></svg></div>
+          <span class="bH-nav bH-prev bH-off"><svg class="ico"><use href="#i-back"/></svg></span>
+          <span class="bH-nav bH-next"><svg class="ico"><use href="#i-chev"/></svg></span>
+        </div>
+        <div class="vact">
+          <div class="bH-note"><svg class="ico"><use href="#i-alert"/></svg><span>Full length, please.</span></div>
+          <button class="btn block b-dan" type="button">Remove</button>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>H7</i><span class="tagnew">NEW</span></div><b>Creator · while she is still editing</b><span>She sees her own file with "Remove" underneath, and the brand's pinned note in amber above it when changes were asked for. Once the package is with the brand, "Remove" is gone and she can only look.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="crumbs">DIWALI EDIT 2026 · SET A</div>
+          <div class="last"><svg class="ico"><use href="#i-doc"/></svg><span>Your move. Tanvi sent her content on 20 Oct.</span></div>
+          <span class="rounds" style="align-self:flex-start">ROUND 1 OF 2</span>
+          <div class="drow2">
+            <div class="hd"><b>Instagram reel</b><span class="count ok">2 of 2</span></div>
+            <div class="dgrid"><div class="f" style="background:#C9D3B4"><span class="pl">0:28</span></div><div class="f" style="background:#E8D2B8"><span class="pl">0:35</span></div></div>
+            <div class="callout ok">One tap on a tile opens it inside INFLX. No menu in between.</div>
+            <div class="field ph" style="height:auto;padding:8px 11px;font-size:12px">Diwali in the new linen co-ord. Swipe for the fit 🪔</div>
+          </div>
+          <div class="drow2">
+            <div class="hd"><b>Instagram post</b><span class="count ok">1 of 1</span></div>
+            <div class="dgrid"><div class="f" style="background:#C9D3B4"></div></div>
+            <div class="field ph" style="height:auto;padding:8px 11px;font-size:12px">Festive, but make it breathable.</div>
+          </div>
+          <div class="drow2">
+            <div class="hd"><b>Instagram story</b><span class="count ok">2 of 2</span></div>
+            <div class="dgrid"><div class="f" style="background:#C9D3B4"></div><div class="f" style="background:#E8D2B8"></div></div>
+          </div>
+          <div class="greybox">Approving locks this as the version she posts. Asking for changes sends it back with your reason.</div>
+        </div>
+        <div class="savebar">
+          <button class="btn block b-pri" type="button">Approve the content</button>
+          <button class="btn block b-sec" type="button">Ask for changes</button>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>H8</i><span class="tagafter">AFTER</span></div><b>Both apps · one tap on a tile opens the file</b><span>Drawn on the brand's review as the locked board has it; the creator's content screen works the same way. Nothing on this screen moves: the same rows, counts, captions and buttons. What changes is the tap: one tap on any tile opens that file inside the app, with no "View" menu in between. The creator's own Story screenshot tiles, which cannot be opened at all today, open the same way, showing just the photo with no button under it. The look of the tiles is not part of this change: the board draws them tall, three across, but on the phone today they are small squares and a video tile is black with a play mark and its length badge; that stays as it is. The dashed green box is a pointer on this drawing, not part of the app.</span></div>
+    </div>
+
+  </div>
+</section>

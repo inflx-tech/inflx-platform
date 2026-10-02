@@ -7,13 +7,14 @@
  * features/item3b-social-numbers
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi, uploadFile } from '../../services/api';
 import { FieldError, Section } from '../../components/settings/primitives';
 import { ConfirmSheet } from '../../components/settings/sheets';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY, shortDate } from '../../components/settings/copy';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -63,7 +64,7 @@ export default function ProfileInfoScreen({ navigation, route }) {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [confirmQueue, setConfirmQueue] = useState([]);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   const igRef = useRef(null), ytRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -185,7 +186,9 @@ export default function ProfileInfoScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="profile-info">
       <Header title={I.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[base.body, { paddingBottom: 140 }]} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: the form scrolls in the room above the Save strip; nothing floats over it. */}
+      <FormArea>
+      <FormScroll contentContainerStyle={base.body}>
         <ImagePickerField label={inf.profile_image_url ? 'Profile photo' : I.photo} hint={I.photoHint} name={name} url={inf.profile_image_url} onPick={pickPhoto} busy={photoBusy} changeLabel={I.change} testID="photo" />
         <View style={{ height: 16 }} />
         <Text style={base.label}>{I.name}</Text>
@@ -248,9 +251,10 @@ export default function ProfileInfoScreen({ navigation, route }) {
           <StatTriple instagram={inf.followers_count} youtube={inf.youtube_subscribers} engagement={inf.engagement_rate} />
           <Text style={[base.hint, { marginTop: 8 }]} testID="numbers-hint">{inf.measured_at ? I.numbersHint(shortDate(inf.measured_at)) : I.numbersHintNoDate}</Text>
         </Section>
-      </ScrollView>
-      <SaveBar dirty={dirty} errorCount={dirty ? errorCount : 0} saving={saving} onSave={startSave} label={I.save} />
+      </FormScroll>
       {toast}
+      </FormArea>
+      <SaveBar dirty={dirty} errorCount={dirty ? errorCount : 0} saving={saving} onSave={startSave} label={I.save} />
       <SinglePickSheet visible={genderOpen} title="Gender" items={GENDERS} value={f.gender || null} onPick={(id) => { set('gender')(id); setGenderOpen(false); }} onClose={() => setGenderOpen(false)} searchPlaceholder="Search" testIDPrefix="gender" />
       <ConfirmSheet visible={!!ask} danger={!!(sheet && sheet.danger)} title={sheet ? sheet.title : ''} body={sheet ? sheet.body : ''}
         confirmLabel={sheet ? sheet.confirm : ''} cancelLabel={C3B.r6.cancel} onConfirm={confirmNext} onCancel={() => setConfirmQueue([])} />

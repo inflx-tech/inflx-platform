@@ -2,8 +2,10 @@ import React from 'react';
 import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../theme/tokens';
+import { TopInsetProvider } from '../hooks/useTopInset';
 
 import BrandProfileScreen from '../screens/brand/BrandProfileScreen';
 import LegalListScreen from '../screens/legal/LegalListScreen';
@@ -206,29 +208,103 @@ const ICONS = {
   CollabsTab: 'handshake-outline', CreateTab: 'plus-box-outline', WalletTab: 'wallet-outline', ProfileTab: 'account-outline',
 };
 
+// ui-walk-fixes D3 — the bottom tabs show on the five main pages and on no pushed screen.
+// The bar as it is drawn on a main page, and the bar on every screen pushed over one.
+export const TAB_BAR_STYLE = { backgroundColor: T.bg, borderTopColor: T.border, borderTopWidth: 1, height: 62, paddingBottom: 8, paddingTop: 6 };
+export const TAB_BAR_HIDDEN = { display: 'none' };
+
 export const tabScreenOptions = ({ route }) => ({
   headerShown: false,
   tabBarActiveTintColor: T.ink,
   tabBarInactiveTintColor: T.ink3,
-  tabBarStyle: { backgroundColor: T.bg, borderTopColor: T.border, borderTopWidth: 1, height: 62, paddingBottom: 8, paddingTop: 6 },
+  tabBarStyle: TAB_BAR_STYLE,
+  // While the keypad is open the bar steps out of the way on the pages that keep it (board B5),
+  // so a search box on a main page is not squeezed between the bar and the keypad. Both apps.
+  tabBarHideOnKeyboard: true,
   tabBarLabelStyle: { fontFamily: fonts.sansSemiBold, fontSize: 11 },
   tabBarIcon: ({ color, size }) => <Icon name={ICONS[route.name] || 'circle-outline'} size={size} color={color} />,
 });
+
+// The nested stack's state for one tab. Production builds keep it on the route; development
+// builds hide it there, so it is read from the tab navigator's own state as well.
+function stackStateOf(route, navigation) {
+  if (!route) return undefined;
+  if (route.state) return route.state;
+  try {
+    const tabs = navigation && typeof navigation.getState === 'function' ? navigation.getState() : null;
+    const mine = tabs && Array.isArray(tabs.routes) ? tabs.routes.find((r) => r.key === route.key) : null;
+    return mine ? mine.state : undefined;
+  } catch (_) {
+    return undefined;
+  }
+}
+
+/**
+ * Is this tab showing a page that keeps the bottom tabs?
+ *
+ * `rootName` is the tab's main page — the first screen of its stack. A tab that is one plain
+ * screen (Home) has nothing pushed over it: pass no rootName and it always keeps the bar.
+ *
+ *   · the main page is on top (or the stack has not rendered yet)      → the bar shows
+ *   · any other screen is on top of at least one screen beneath it     → pushed: the bar is hidden
+ *   · any other screen is the stack's ONLY screen                      → the bar shows
+ *
+ * The last line is a safety net, not a second rule. When a tab that has never been opened is
+ * opened straight onto one of its inner screens, React Navigation makes that screen the stack's
+ * first and only one: there is no main page beneath it. Every jump a screen makes into another
+ * tab's inner screen therefore asks for the main page underneath — it passes `initial: false`
+ * beside `screen` (the Wallet's collaboration row into the set, an accepted pitch into the pool,
+ * Sale live into the post …) — so the inner screen is pushed, has no bar, and Back reaches the
+ * main page. navigation/__tests__/tabBarRealNavigator.test.js fails on a jump that forgets it.
+ *
+ * One jump must NOT build the main page underneath: the pending account's Home card that opens
+ * "Find brands" inside the Collabs tab, which is locked until approval. That screen is the only
+ * one in its stack and keeps the bar, exactly as before; Back from it returns to Home.
+ */
+export function isTabRoot(route, rootName, navigation) {
+  if (!rootName) return true;
+  const focused = getFocusedRouteNameFromRoute(route || {});
+  if (!focused || focused === rootName) return true;
+  const st = stackStateOf(route, navigation);
+  if (!st || !Array.isArray(st.routes)) return true;
+  const index = typeof st.index === 'number' ? st.index : st.routes.length - 1;
+  return index <= 0;
+}
+
+/**
+ * The per-tab options, for both apps: the title, and the bar on the tab's main page only.
+ * A per-screen tabBarStyle REPLACES the navigator's — so the whole 62-high style is given back
+ * on the main page rather than left to merge. Usage: options = tabRootOptions(title, rootName).
+ * (No JSX example here on purpose: duplicateScreens.test.js reads this file's screen tags.)
+ */
+export const tabRootOptions = (title, rootName) => ({ route, navigation } = {}) => ({
+  title,
+  tabBarStyle: isTabRoot(route, rootName, navigation) ? TAB_BAR_STYLE : TAB_BAR_HIDDEN,
+});
+
+// Each tab's main page — the first screen of its stack; null where the tab is one plain screen.
+export const BRAND_TAB_ROOTS = {
+  HomeTab: null, CampaignsTab: 'BrandCampaigns', CreatorsTab: 'BrandCreators', WalletTab: 'BrandWallet', ProfileTab: 'BrandProfile',
+};
 
 export default function BrandNavigator() {
   // Read once, at mount: initialRouteName only matters the first time the navigator renders.
   // The lock itself reads the live status on every press (lockedTab.js).
   const initialRouteName = initialTabFor(getAccountStatus(), 'CreatorsTab');
+  // ui-walk-fixes D4 — TopInsetProvider is the one safe-area provider above every title of this
+  // app: titles start at the phone's real top inset (useTopInset), from the first frame.
   return (
-    <View style={{ flex: 1 }}>
-      <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
-        <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
-        <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={{ title: 'Campaigns' }} listeners={lockedTabListeners()} />
-        <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={{ title: 'Creators' }} listeners={lockedTabListeners()} />
-        <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
-        <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
-      </Tab.Navigator>
-      <PendingSheetHost />
-    </View>
+    <TopInsetProvider>
+      <View style={{ flex: 1 }}>
+        <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
+          <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} options={tabRootOptions('Home', BRAND_TAB_ROOTS.HomeTab)} />
+          <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={tabRootOptions('Campaigns', BRAND_TAB_ROOTS.CampaignsTab)} listeners={lockedTabListeners()} />
+          <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={tabRootOptions('Creators', BRAND_TAB_ROOTS.CreatorsTab)} listeners={lockedTabListeners()} />
+          <Tab.Screen name="WalletTab" component={WalletStackScreen} options={tabRootOptions('Wallet', BRAND_TAB_ROOTS.WalletTab)} />
+          <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={tabRootOptions('Profile', BRAND_TAB_ROOTS.ProfileTab)} />
+        </Tab.Navigator>
+        <PendingSheetHost />
+      </View>
+    </TopInsetProvider>
   );
 }

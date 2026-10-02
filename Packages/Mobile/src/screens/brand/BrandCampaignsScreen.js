@@ -13,6 +13,7 @@ import { useToast, Skeleton } from '../../components/settings/feedback';
 import { LoadErrorList } from '../../components/discovery/DiscoverList';
 import SegmentedControl from '../../components/shell/SegmentedControl';
 import useRouteToast from '../../hooks/useRouteToast';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { s as base } from './BrandPitchSettingsScreen';
 import { CampaignCard4 } from '../../components/campaigns/bits4';
 import { C4 } from '../../components/campaigns/copy4';
@@ -27,6 +28,8 @@ export default function BrandCampaignsScreen({ navigation, route }) {
   const [poolCount, setPoolCount] = useState(0);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
 
   const load = useCallback(async (seg) => {
     setStatus(st => (st === 'ready' ? 'ready' : 'loading'));
@@ -46,7 +49,7 @@ export default function BrandCampaignsScreen({ navigation, route }) {
 
   return (
     <View style={base.screen} testID="brand-campaigns">
-      <View style={{ paddingTop: 54, paddingHorizontal: 18, paddingBottom: 8 }}>
+      <View style={{ paddingTop: top, paddingHorizontal: 18, paddingBottom: 8 }}>
         <Text style={s.title}>{C4.list.title}</Text>
         {poolCount > 0 ? (
           <TouchableOpacity style={s.pool} onPress={() => navigation.navigate('BrandPool')} testID="pool-entry" accessibilityRole="button">

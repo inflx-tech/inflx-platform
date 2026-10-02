@@ -512,6 +512,8 @@ export const settingsTokens = {
   primary: '#FFC700', primaryPressed: '#F0B400', primarySoft: '#FFF3C4', onPrimary: '#1A1A17',
   disabledBg: '#EFEFEA', disabledText: '#A3A29B',
   danger: '#C42B2B', dangerSoft: '#FDE8E8',
+  // ui-walk-fixes (board E): the pale red outline of an outline decline / withdraw button.
+  dangerLine: '#F2B8B8',
   state: {
     yourMove:  { fg: '#B04600', bg: '#FFEBDD' },
     waiting:   { fg: '#1D5FBF', bg: '#E6EFFC' },

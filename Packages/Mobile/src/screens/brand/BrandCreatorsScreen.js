@@ -2,6 +2,9 @@
  * BrandCreatorsScreen — D1: the Creators tab. Four segments: Discover (D1/D2), Groups
  * (G1/G2), Pitches (item 8, T5) and Worked with (W1).
  * Contract: features/item3-discovery-profiles-groups · prompt §6.2–§6.5
+ *
+ * ui-walk-fixes board C: on the Groups segment the "New group" strip is part of the column, under
+ * the list (BottomBar) — it no longer floats over the last group.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
@@ -10,6 +13,7 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { EmptyState, PrimaryButton } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
 import { shortDate, COPY } from '../../components/settings/copy';
 import { s as base } from './BrandPitchSettingsScreen';
 import { Avatar } from './BrandBlockedCreatorsScreen';
@@ -19,6 +23,7 @@ import { AvatarStack } from '../../components/discovery/bits';
 import { GroupNameSheet, AddToGroupSheet } from '../../components/discovery/GroupSheets';
 import useReferenceLists from '../../hooks/useReferenceLists';
 import useRouteToast from '../../hooks/useRouteToast';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { C3, whenLabel } from '../../components/discovery/copy3';
 // Item 8 — the Pitches segment is no longer "coming soon"; it is the real list.
 // Contract: features/item8-pitch
@@ -33,6 +38,8 @@ export default function BrandCreatorsScreen({ navigation, route }) {
   const { toast, show } = useToast();
   const [addTo, setAddTo] = useState(null);
   useRouteToast(navigation, route, show);
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
   useEffect(() => {
     if (route?.params?.segment) { setSegment(route.params.segment); navigation.setParams({ segment: undefined }); }
   }, [route?.params?.segment]); // eslint-disable-line
@@ -41,7 +48,7 @@ export default function BrandCreatorsScreen({ navigation, route }) {
 
   return (
     <View style={base.screen} testID="brand-creators">
-      <View style={{ paddingTop: 54, paddingHorizontal: 18, paddingBottom: 8 }}>
+      <View style={{ paddingTop: top, paddingHorizontal: 18, paddingBottom: 8 }}>
         <Text style={s.title}>Creators</Text>
         <SegmentedControl segments={C3.discover.segments} value={segment} onChange={setSegment} testID="creators-segments" />
       </View>
@@ -83,9 +90,10 @@ export function GroupsPane({ navigation }) {
   return (
     <View style={{ flex: 1 }} testID="groups-pane">
       <FlatList
+        style={s.fill}
         data={groups}
         keyExtractor={g => g.id}
-        contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 120 }}
+        contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 24 }}
         ListHeaderComponent={groups.length ? (
           <View style={s.countRow}><Text style={s.count}>{G.countN(groups.length)}</Text><Text style={s.sort}>{G.sort}</Text></View>
         ) : null}
@@ -104,7 +112,7 @@ export function GroupsPane({ navigation }) {
           );
         }}
       />
-      <View style={s.footer}><PrimaryButton label={G.newGroup} onPress={() => setNaming(true)} testID="new-group" /></View>
+      <BottomBar testID="groups-bar"><PrimaryButton label={G.newGroup} onPress={() => setNaming(true)} testID="new-group" /></BottomBar>
       <GroupNameSheet visible={naming} onSubmit={create} onClose={() => setNaming(false)} />
     </View>
   );
@@ -164,7 +172,8 @@ const s = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 14, marginBottom: 12 },
   gName: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: T.ink },
   gMeta: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink3, marginTop: 2 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
+  // The Groups list fills the room above its strip.
+  fill: { flex: 1 },
   search: { fontFamily: fonts.sansRegular, borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: T.ink, backgroundColor: T.surface, marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: T.border },
   chev: { fontFamily: fonts.sansBold, fontSize: 18, color: T.ink3 },

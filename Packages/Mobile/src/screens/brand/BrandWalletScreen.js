@@ -16,9 +16,10 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
-import { PrimaryButton, SecondaryButton } from '../../components/settings/primitives';
+import { PrimaryButton, SecondaryButton, ButtonRow } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
 import useRouteToast from '../../hooks/useRouteToast';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { W17, inr, dayMon } from '../../components/wallet/copy17';
 import { Balance17, Figs17, Fig17, HoldBox17, s as b } from '../../components/wallet/bits17';
 
@@ -39,6 +40,8 @@ export default function BrandWalletScreen({ navigation, route }) {
   const [brand, setBrand] = useState(null);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
 
   const load = useCallback(async () => {
     setStatus((st) => (st === 'ready' ? 'ready' : 'loading'));
@@ -57,16 +60,16 @@ export default function BrandWalletScreen({ navigation, route }) {
   if (status === 'error') return <View style={s.screen} testID="wallet-error"><Head /><LoadError onRetry={load} /></View>;
 
   const go = (name, params) => () => navigation.navigate(name, params || {});
+  // ui-walk-fixes (board E): the shared level pair. The outline Withdraw used to sit 10 lower than
+  // Add money and come out a little taller; in the row the two are equal halves, level top and
+  // bottom, and Withdraw has the clear dark outline board BW1 draws.
   const buttons = (
-    <View style={s.btnrow}>
-      <View style={{ flex: 1 }}><PrimaryButton label={W17.addMoney} icon="plus" onPress={go('BrandAddMoney')} testID="wallet-add-money" /></View>
-      <View style={{ width: 9 }} />
-      <View style={{ flex: 1 }}>
-        {waiting
-          ? <PrimaryButton label={W17.withdraw} disabled onPress={() => {}} testID="wallet-withdraw" />
-          : <SecondaryButton label={W17.withdraw} onPress={go('BrandWithdraw')} testID="wallet-withdraw" />}
-      </View>
-    </View>
+    <ButtonRow style={s.btnrow}>
+      <PrimaryButton label={W17.addMoney} icon="plus" onPress={go('BrandAddMoney')} testID="wallet-add-money" />
+      {waiting
+        ? <PrimaryButton label={W17.withdraw} disabled onPress={() => {}} testID="wallet-withdraw" />
+        : <SecondaryButton strong label={W17.withdraw} onPress={go('BrandWithdraw')} testID="wallet-withdraw" />}
+    </ButtonRow>
   );
   const money = (
     <Figs17>
@@ -81,7 +84,7 @@ export default function BrandWalletScreen({ navigation, route }) {
 
   return (
     <View style={s.screen} testID="brand-wallet">
-      <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 54, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 18, paddingTop: top, paddingBottom: 40 }}>
         <Text style={[b.title, { marginBottom: 12 }]}>{W17.title}</Text>
         <Balance17 label={W17.available} amount={fig.available} testID="wallet-available" />
         <HoldBox17 w={waiting} />
@@ -102,11 +105,12 @@ export default function BrandWalletScreen({ navigation, route }) {
 }
 
 function Head() {
-  return <View style={{ paddingTop: 54, paddingHorizontal: 18, paddingBottom: 8 }}><Text style={b.title}>{W17.title}</Text></View>;
+  const top = useTopInset(TOP_GAP_TITLE);
+  return <View style={{ paddingTop: top, paddingHorizontal: 18, paddingBottom: 8 }}><Text style={b.title}>{W17.title}</Text></View>;
 }
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
-  btnrow: { flexDirection: 'row', marginTop: 12 },
+  btnrow: { marginTop: 12 },
   one: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, textAlign: 'center', marginTop: 8 },
 });

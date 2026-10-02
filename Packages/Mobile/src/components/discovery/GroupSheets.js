@@ -29,17 +29,22 @@ export function GroupNameSheet({ visible, mode = 'create', initial = '', onSubmi
     setBusy(false);
     if (e) setErr(e);
   }
+  // ui-walk-fixes (board C, rule 3): the name box opens with the keypad already up. The sheet now
+  // shrinks to the room above the keypad and its two buttons are pinned under the box.
   return (
-    <Sheet visible={visible} onClose={onClose} testID="group-name-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="group-name-sheet" fit
+      footer={(
+        <>
+          <PrimaryButton label={mode === 'rename' ? G.save : G.create} onPress={submit} busy={busy} disabled={!!clientErr && !!name} testID="group-name-submit" />
+          <SecondaryButton label={G.cancel} onPress={onClose} />
+        </>
+      )}>
       <Text style={s.title}>{mode === 'rename' ? G.renameTitle : G.sheetTitle}</Text>
       <Text style={s.label}>{G.nameLabel}</Text>
       <TextInput style={s.input} value={name} onChangeText={(v) => { setName(v); setErr(''); }} placeholder={G.namePlaceholder} placeholderTextColor={T.ink3} autoFocus maxLength={60} testID="group-name-input" />
       <Text style={s.counter}>{name.trim().length} / 40</Text>
       <FieldError text={err} />
       <Text style={s.hint}>{G.nameHint}</Text>
-      <View style={{ height: 12 }} />
-      <PrimaryButton label={mode === 'rename' ? G.save : G.create} onPress={submit} busy={busy} disabled={!!clientErr && !!name} testID="group-name-submit" />
-      <SecondaryButton label={G.cancel} onPress={onClose} />
     </Sheet>
   );
 }
@@ -99,8 +104,19 @@ export function AddToGroupSheet({ creator, onClose, onDone }) {
     onDone && onDone(msg);
   }
 
+  // ui-walk-fixes (board C, rule 3): with a long list of groups the sheet was as tall as a small
+  // phone. It now shrinks to the room it has — the list (this sheet's own scroller, so
+  // fit="list") gives way — and Save / Cancel are pinned under it.
   return (
-    <Sheet visible={visible} onClose={onClose} testID="add-to-group-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="add-to-group-sheet" fit="list"
+      footer={(
+        <>
+          <FieldError text={err} />
+          {err ? <View style={{ height: 8 }} /> : null}
+          <PrimaryButton label={G.save} onPress={save} busy={busy} disabled={status !== 'ready'} testID="add-to-group-save" />
+          <SecondaryButton label={G.cancel} onPress={onClose} />
+        </>
+      )}>
       <Text style={s.title}>{creator ? G.toTitle(creator.name) : ''}</Text>
       {status === 'loading' ? <Skeleton rows={3} /> : status === 'error' ? <Text style={s.hint}>{COPY.loadErrorBody}</Text> : (
         <ScrollView style={{ maxHeight: 360 }}>
@@ -120,10 +136,6 @@ export function AddToGroupSheet({ creator, onClose, onDone }) {
           {!groups.length ? <Text style={s.hint}>{G.emptyBody}</Text> : null}
         </ScrollView>
       )}
-      <FieldError text={err} />
-      <View style={{ height: 12 }} />
-      <PrimaryButton label={G.save} onPress={save} busy={busy} disabled={status !== 'ready'} testID="add-to-group-save" />
-      <SecondaryButton label={G.cancel} onPress={onClose} />
       <GroupNameSheet visible={naming} onSubmit={createGroup} onClose={() => setNaming(false)} />
     </Sheet>
   );

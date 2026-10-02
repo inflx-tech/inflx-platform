@@ -5,13 +5,18 @@
  * ever shown back — the server never returns the numbers.
  * PATCH /influencers/me with { upi_id } | { bank_account_no, bank_ifsc } | { pan_number }.
  * Contract: features/registration-and-profile
+ *
+ * ui-walk-fixes (board C, rule 2): the form is a FormScroll — the box being typed in, with the
+ * red line under it, stays in view above the keypad. Nothing floats here (Save is the last thing
+ * IN the form), so nothing else changes.
  */
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { FieldError, PrimaryButton } from '../../components/settings/primitives';
 import { useToast } from '../../components/settings/feedback';
+import { FormScroll } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { HAND_CHECK } from '../../components/wallet/DetailSection';
@@ -65,7 +70,7 @@ export default function PayoutDetailScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`payout-${kind}`}>
       <Header title={spec.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[base.body, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
+      <FormScroll contentContainerStyle={[base.body, { paddingBottom: 40 }]} testID="payout-scroll">
         {spec.fields.map((x, i) => (
           <View key={x.key} style={{ marginTop: i ? 14 : 0 }}>
             <Text style={base.label}>{x.label}</Text>
@@ -78,7 +83,7 @@ export default function PayoutDetailScreen({ navigation, route }) {
         <View style={{ height: 20 }} />
         <PrimaryButton label="Save" onPress={save} busy={saving} testID="payout-save" />
         <Text style={s.footer}>{HAND_CHECK}</Text>
-      </ScrollView>
+      </FormScroll>
       {toast}
     </View>
   );

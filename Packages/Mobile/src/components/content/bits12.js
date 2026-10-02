@@ -11,12 +11,22 @@
  *   RoundPill12 "ROUND 1 OF 2", "· LAST", "ROUNDS USED" (Q8), item 6's pill look.
  *   QuoteBox12, History12, LinkLine12, Record12, Line12.
  *
- * No native module: images are core <Image>, links and videos open with Linking (item 11's way).
+ * No native module here: images are core <Image>, and a posted link opens with Linking (item 11's
+ * way). A FILE no longer does: one tap on a FileTile12 opens it inside the app, in MediaViewer12
+ * (ui-walk-fixes board H) — the tile only reports the press, the screen opens the viewer.
+ *
+ * ui-walk-fixes board J (frames J1–J7) adds the link she pastes after posting:
+ *   LinkBox12   the one self-saving link box, used by her content screen and by both link
+ *               places on Going live. "Saving…" at its right end, the tick beside it when INFLX
+ *               has the link, the red line under it when the link is refused.
+ *   useSaves12  the screen's one line of saves: every link and caption is sent through it, one
+ *               at a time and in order, so an older answer can never undo a newer one.
  */
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
+import { FieldError } from '../settings/primitives';
 import { Row10 } from '../shoot/bits10';
 import { C12, rupees5, duration12, day10 } from './copy12';
 
@@ -151,14 +161,278 @@ export function History12({ rounds, testID }) {
 
 /* ── posting ──────────────────────────────────────────────────────────────── */
 
+/** A link as the boards draw it: "instagram.com/reel/C8xK2…". */
+export function shortLink12(url) {
+  const shown = String(url || '').replace(/^https?:\/\/(www\.|m\.)?/, '').replace(/\/$/, '');
+  return shown.length > 28 ? `${shown.slice(0, 26)}…` : shown;
+}
+
 /** A link that opens (C11): "instagram.com/reel/C8xK2…". */
 export function LinkLine12({ url, testID }) {
   if (!url) return null;
-  const shown = String(url).replace(/^https?:\/\/(www\.|m\.)?/, '').replace(/\/$/, '');
   return (
     <TouchableOpacity onPress={() => Linking.openURL(url).catch(() => {})} accessibilityRole="link" testID={testID || 'proof-link'}>
-      <Text style={t.link} numberOfLines={1}>{shown.length > 28 ? `${shown.slice(0, 26)}…` : shown}</Text>
+      <Text style={t.link} numberOfLines={1}>{shortLink12(url)}</Text>
     </TouchableOpacity>
+  );
+}
+
+/* ── the link she pastes (ui-walk-fixes board J) ──────────────────────────── */
+
+/**
+ * D5 — a link typed or pasted without "https://" in front gets it before it is sent. Nothing
+ * else is touched: whether it is a link to the right place stays the server's call (its list of
+ * hosts is not copied here), so anything that already names how it opens ("http://…") goes as is.
+ */
+export function withHttps12(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return '';
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`;
+}
+
+/** How long she has to stop typing before a link saves itself (frame J2: "about 0.7 s"). */
+export const SAVE_PAUSE_12 = 700;
+
+/** Answers that say nothing about the link itself — the same text may be sent again. */
+const NO_VERDICT = ['NETWORK_ERROR', 'PARSE_ERROR', 'INTERNAL_ERROR', 'RATE_LIMITED', 'UNAUTHORIZED'];
+
+/**
+ * The screen's one line of saves (research C11, FIX FINAL 2).
+ *
+ * Every save on the screen, and every other call that answers with the whole content (`run`),
+ * goes out one at a time and in the order it was asked for. So answers arrive in order, the one
+ * applied last is always the newest, and a late answer can never blank a box saved after it.
+ *
+ *   change(key, text, cfg)  she typed or pasted. cfg = { server, send, clean, auto }:
+ *                             server  what INFLX has for this box now ('' when nothing)
+ *                             send    (value) => the call that saves it
+ *                             clean   (text) => the value to send (the link box adds https://)
+ *                             auto    saves by itself: at once on a paste (the text jumps in one
+ *                                     change), otherwise SAVE_PAUSE_12 after she stops typing
+ *   commit(key)             save it now — the keypad's Done key, leaving the box. Android reports
+ *                           one leaving twice (end-editing, then blur) and a Done as all three:
+ *                           while the save one of them started is on its way with the very text
+ *                           the box still holds, the others send nothing more
+ *   flush()                 save everything still only on her phone and wait for every answer;
+ *                           resolves to { unsaved(key) } — true while INFLX does not have it
+ *   run(call)               put any other call in the same line; resolves to its answer
+ *   forget(key)             the box is gone (its row was taken out): her unsaved text, its red
+ *                           line and everything remembered about it go, so nothing leaks into a
+ *                           row that is later handed the same key. Call it INSIDE the `run` call
+ *                           that takes the row out, so no save of that key can be on its way
+ *   text / busy             key → her unsaved text / true while its save waits or is on its way
+ *   errorOf(key)            the red line for that box, or null. It is held back while she is
+ *                           still typing: an answer about text she has since changed says nothing
+ *   refused(key)            true when INFLX itself refused what is in the box (not a lost signal)
+ *
+ * The box's text is let go only when the answer is about exactly what it still holds, the same
+ * value is never sent twice running, and whatever is unsaved when she leaves the screen is sent.
+ * "INFLX already has this" is believed only while the content on the screen and the last save
+ * from that box agree; when the content changed by another road, her text is sent again.
+ */
+export function useSaves12({ onContent, failed }) {
+  const [text, setText] = useState({});
+  const [errors, setErrors] = useState({});
+  const [busy, setBusy] = useState({});
+  const live = useRef(null);
+  if (!live.current) {
+    live.current = { text: {}, errors: {}, cfg: {}, timers: {}, queued: {}, waiting: {}, have: {}, refusal: {}, leaving: {}, chain: Promise.resolve(), ahead: 0, alive: true, onContent, failed, api: null };
+  }
+  const L = live.current;
+  L.onContent = onContent;
+  L.failed = failed;
+
+  if (!L.api) {
+    const put = (key, value) => {
+      const next = { ...L.text };
+      if (value == null) delete next[key]; else next[key] = value;
+      L.text = next;
+      if (L.alive) setText(next);
+    };
+    const say = (key, message, judged) => {
+      const now = L.errors[key];
+      if (!message && !now) return;
+      if (message && now && now.message === message && now.judged === !!judged) return;
+      const next = { ...L.errors };
+      if (message) next[key] = { message, judged: !!judged }; else delete next[key];
+      L.errors = next;
+      if (L.alive) setErrors(next);
+    };
+    const mark = (key, by) => {
+      const n = Math.max(0, (L.waiting[key] || 0) + by);
+      L.waiting[key] = n;
+      if (L.alive) setBusy((b) => (!!b[key] === n > 0 ? b : { ...b, [key]: n > 0 }));
+    };
+    const stopTimer = (key) => { if (L.timers[key]) { clearTimeout(L.timers[key]); delete L.timers[key]; } };
+
+    /**
+     * What INFLX has for this box — only when the phone can be sure of it. Two things say: the
+     * content the screen is showing (cfg.server, read afresh every time she types) and the last
+     * save INFLX accepted from this box (L.have). They part when the content changed by another
+     * road — on Going live a row she takes out is deleted with its caption and the next row is
+     * handed the SAME key — and for the instant between an answer and the screen drawing it.
+     * When they part neither is believed (`undefined`), so her text is sent, never wiped.
+     */
+    const held = (key) => {
+      const shown = (L.cfg[key] && L.cfg[key].server) || '';
+      return key in L.have && L.have[key] !== shown ? undefined : shown;
+    };
+    /** What INFLX has already answered needs no call. True when there is nothing to send. */
+    const settled = (key) => {
+      const raw = L.text[key];
+      const cfg = L.cfg[key];
+      if (raw == null || !cfg) return true;
+      const value = cfg.clean ? cfg.clean(raw) : raw;
+      if (value === held(key)) { put(key, null); say(key, null); return true; }         // INFLX has exactly this
+      const no = L.refusal[key];                // the same as the last one sent, against the same content
+      if (no && no.value === value && no.shown === (cfg.server || '')) { say(key, no.message, true); return true; }
+      return false;
+    };
+    const save = async (key, left) => {
+      L.queued[key] = false;
+      if (settled(key)) return;
+      const raw = L.text[key];
+      const cfg = L.cfg[key];
+      const value = cfg.clean ? cfg.clean(raw) : raw;
+      let r = null;
+      // A save started by her leaving the box says so while it is on its way (see commit).
+      if (left) L.leaving[key] = raw;
+      try { r = await cfg.send(value); } catch (e) { r = null; }
+      if (left && L.leaving[key] === raw) delete L.leaving[key];
+      const same = L.text[key] === raw;                                                 // has she typed since it went?
+      if (r && r.success) {
+        L.have[key] = value;
+        delete L.refusal[key];
+        if (same) { put(key, null); say(key, null); }
+        if (L.alive && r.data && r.data.content) L.onContent(r.data.content);
+        return;
+      }
+      const message = (r && r.error && r.error.message) || L.failed;
+      const judged = !!(r && r.error && r.error.code && !NO_VERDICT.includes(r.error.code));
+      if (judged) L.refusal[key] = { value, message, shown: cfg.server || '' };
+      if (same) say(key, message, judged);
+    };
+    /** The line itself: with nothing ahead of it the work starts now, otherwise when everything asked before it has answered. */
+    const inTurn = (work) => {
+      let answer;
+      if (L.ahead === 0) {
+        try { answer = Promise.resolve(work()); } catch (e) { answer = Promise.reject(e); }
+      } else answer = L.chain.then(work);
+      L.ahead += 1;
+      const over = () => { L.ahead -= 1; };
+      L.chain = answer.then(over, over);
+      return answer;
+    };
+    const enqueue = (key, left) => {
+      if (L.queued[key]) return;                // one already waiting reads her text when its turn comes
+      if (!L.waiting[key] && settled(key)) return;   // nothing of this box is on its way: answer it here
+      L.queued[key] = true;
+      mark(key, 1);
+      inTurn(() => save(key, left)).then(() => mark(key, -1), () => mark(key, -1));
+    };
+
+    L.api = {
+      change(key, value, cfg) {
+        L.cfg[key] = cfg;
+        const server = cfg.server || '';
+        const before = L.text[key] != null ? L.text[key] : server;
+        put(key, value);
+        say(key, null);                         // the red line waits while she is still typing
+        stopTimer(key);
+        if (!cfg.auto) return;
+        if (value.length - before.length > 1) enqueue(key);
+        else L.timers[key] = setTimeout(() => { delete L.timers[key]; enqueue(key); }, SAVE_PAUSE_12);
+      },
+      commit(key) {
+        stopTimer(key);
+        if (L.text[key] == null) return;
+        // One leaving of the box reaches here two or three times on Android (Done, end-editing,
+        // blur). The first has this very text on its way; queueing another behind it would send
+        // the same link a second time whenever the first got no answer. Send it once.
+        if (L.leaving[key] != null && L.leaving[key] === L.text[key]) return;
+        enqueue(key, true);
+      },
+      async flush() {
+        for (const key of Object.keys(L.text)) { stopTimer(key); enqueue(key); }
+        let seen;
+        do { seen = L.chain; await seen; } while (seen !== L.chain);       // eslint-disable-line no-await-in-loop
+        const left = L.text; const wrong = L.errors;
+        return { unsaved: (key) => left[key] != null || !!wrong[key] };
+      },
+      forget(key) {
+        stopTimer(key);
+        if (L.text[key] != null) put(key, null);
+        say(key, null);
+        delete L.cfg[key];
+        delete L.have[key];
+        delete L.refusal[key];
+        delete L.leaving[key];
+      },
+      run: inTurn,
+    };
+  }
+
+  // Leaving the screen: whatever is still only on her phone is sent; the answers are not waited for.
+  useEffect(() => {
+    L.alive = true;
+    return () => {
+      L.alive = false;
+      L.api.flush();
+    };
+  }, [L]);
+
+  return {
+    ...L.api, text, busy,
+    errorOf: (key) => (errors[key] ? errors[key].message : null),
+    refused: (key) => !!(errors[key] && errors[key].judged),
+  };
+}
+
+/**
+ * The link box (J1–J7). One line: she pastes, it saves — no "Save" button anywhere. The box
+ * shows the full link while she is in it and the short form once INFLX has it.
+ *
+ * The short form is only ever DRAWN — it is never the box's text. What the box holds is always
+ * the real link (or what she has typed); while she is not in it, that text is made invisible and
+ * the short form is laid over it. A keystroke that lands before the box has swapped back to the
+ * full link therefore edits the real link, and can never save "instagram.com/reel/C8xK2ab…" —
+ * dots and all — as the link.
+ *
+ *   saves   the screen's useSaves12()        id     this box's key in it
+ *   url     the link INFLX has, or null      send   (value) => the call that saves ('' clears it)
+ */
+export function LinkBox12({ saves, id, url, send, placeholder, style, testID }) {
+  const [inside, setInside] = useState(false);
+  const mine = saves.text[id];
+  const server = url || '';
+  const error = saves.errorOf(id);
+  const saving = !!saves.busy[id];
+  const saved = !!server && mine == null && !saving && !error;
+  // The short form is on show: she is not in the box and it holds exactly what INFLX has. (Never
+  // beside "Saving…": the short form is laid over the whole box, the word sits at its right end.)
+  const short = !inside && mine == null && !!server && !saving;
+  const cfg = { server, send, clean: withHttps12, auto: true };
+  return (
+    <View style={style} testID={`${testID}-box`}>
+      <View style={k.row}>
+        <View style={[k.field, error ? k.fieldError : null]}>
+          <TextInput style={[k.input, short ? k.inputUnder : null]} value={mine != null ? mine : server} placeholder={placeholder}
+            placeholderTextColor={T.ink3} autoCapitalize="none" autoCorrect={false} keyboardType="url" returnKeyType="done"
+            onFocus={() => setInside(true)} onChangeText={(v) => saves.change(id, v, cfg)}
+            onSubmitEditing={() => saves.commit(id)} onEndEditing={() => saves.commit(id)}
+            onBlur={() => { setInside(false); saves.commit(id); }} testID={testID} />
+          {short ? (
+            <View style={k.shortWrap} pointerEvents="none">
+              {/* A screen reader reads the box itself (the whole link); this drawing of it is skipped. */}
+              <Text style={k.short} numberOfLines={1} importantForAccessibility="no" testID={`${testID}-short`}>{shortLink12(server)}</Text>
+            </View>
+          ) : null}
+          {saving ? <Text style={k.saving} testID={`${testID}-saving`}>{C12.saving}</Text> : null}
+        </View>
+        {saved ? <View testID={`${testID}-saved`}><Icon name="check" size={18} color={T.ink} /></View> : null}
+      </View>
+      <FieldError text={error} />
+    </View>
   );
 }
 
@@ -222,4 +496,17 @@ export const t = StyleSheet.create({
   historyLine: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 18 },
   link: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.state.waiting.fg, textDecorationLine: 'underline', paddingVertical: 4 },
   line: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 20, marginBottom: 12 },
+});
+
+/* The link box (board J): the box as the two screens drew it, with room at its right end. */
+const k = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  field: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 10 },
+  fieldError: { borderColor: T.danger },
+  input: { flex: 1, minWidth: 0, fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink, paddingHorizontal: 0, paddingVertical: 9 },
+  // Not in the box: the real link stays the box's text, unseen, under the short form drawn over it.
+  inputUnder: { color: 'transparent' },
+  shortWrap: { position: 'absolute', left: 10, right: 10, top: 0, bottom: 0, justifyContent: 'center' },
+  short: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink },
+  saving: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: T.ink3 },
 });

@@ -64,7 +64,10 @@ const GROUPS = {
 const SUMMARY = { set: SET, campaign: { id: 'c1', name: 'Diwali Edit 2026' }, creators: GROUPS, dateRules: RULES };
 const CREATORS = [
   { id: 'p', name: 'Priya Sharma', nicheLabel: 'Fashion', cityName: 'Hyderabad', instagram: 48200, pick: { state: 'ok' } },
-  { id: 'k', name: 'Kavya D.', nicheLabel: 'Fashion', cityName: 'Hyderabad', instagram: 12000, pick: { state: 'ineligible', label: 'Not open to this set' } },
+  // ui-walk-fixes D2: a creator who can't be invited arrives with the server's short reason and
+  // its sentence (the set in these tests is Pay for Sale, so that is the Aim she has switched off).
+  { id: 'k', name: 'Kavya D.', nicheLabel: 'Fashion', cityName: 'Hyderabad', instagram: 12000,
+    pick: { state: 'ineligible', reason: 'NOT_MATCHING', detail: 'aim', label: 'Not taking Pay for Sale', message: "Kavya isn't taking Pay for Sale collaborations.", inSet: 'none' } },
   { id: 'a', name: 'Arjun Kumar', nicheLabel: 'Fashion', cityName: 'Hyderabad', instagram: 30000, pick: { state: 'invited', label: 'Already in this set' } },
 ];
 
@@ -139,13 +142,26 @@ describe('I9 · I10 — the set after invitations go out', () => {
 describe('I1 — Add creators', () => {
   it('rows carry Invited / Can\'t invite and cannot be picked; Next counts the picked and opens the terms (checks 1–3)', async () => {
     const n = nav();
-    const { getByText, getByTestId, getAllByText } = render(<BrandSetPickCreatorsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
+    const { getByText, getByTestId, getAllByText, queryByText } = render(<BrandSetPickCreatorsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
     await waitFor(() => getByTestId('select-p'));
     getByText('DIWALI EDIT 2026 · SET A · ETHNIC WEAR');
-    getByText("Creators whose own settings rule this set out can't be picked, and the reason is never shown to them.");
-    getByText('Not open to this set'); getByText("Can't invite"); getByText('Already in this set'); getByText('Invited');
-    expect(getByTestId('select-k').props.accessibilityState.disabled).toBe(true);
+    // ui-walk-fixes D2 (2 Oct 2026): the grey sentence above the list is gone …
+    expect(queryByText(/can't be picked/)).toBeNull();
+    expect(queryByText(/never shown to them/)).toBeNull();
+    // … and her row says why, in the server's short reason, instead of "Not open to this set".
+    getByText('Not taking Pay for Sale'); expect(queryByText('Not open to this set')).toBeNull();
+    getByText("Can't invite"); getByText('Already in this set'); getByText('Invited');
+    // She still cannot be picked. Her row is no longer switched off — it has to take the tap that
+    // says why (the board B tests below) — so "cannot be picked" is proved by tapping her: no
+    // tick, nobody in the basket, Next still counts nobody.
+    expect(getByTestId('select-k').props.accessibilityState).toMatchObject({ checked: false, disabled: false });
+    fireEvent.press(getByTestId('select-k'));
+    expect(getByTestId('select-k').props.accessibilityState.checked).toBe(false);
+    expect(draft.getBasket('sA')).toEqual([]);
+    // One already in the set is ticked and locked, and a tap on her changes nothing.
     expect(getByTestId('select-a').props.accessibilityState).toMatchObject({ checked: true, disabled: true });
+    fireEvent.press(getByTestId('select-a'));
+    expect(draft.getBasket('sA')).toEqual([]);
     expect(brandApi.pickable).toHaveBeenCalledWith('c1', 'sA', expect.objectContaining({ tab: 'all' }));
     getByText('Next: terms for 0 creators');
     fireEvent.press(getByTestId('select-p'));
@@ -339,7 +355,14 @@ describe('I3 · I4 · I5 — terms, creator by creator (creator-terms-v2: offers
     expect(draft.getDraft('sA').over50Confirmed).toBe(true);
   });
 
-  it('Pay for Content: fee, deliverables (empty / duplicate / count), usage rights need a place; "Use these terms for everyone" copies (checks 7, 9, 11)', async () => {
+  // ui-walk-fixes (board D, frames D1–D5 · check 12). The deliverables part of this walk used to
+  // reach "You've already added that" by tapping a second line's type pill and "Choose between 1
+  // and 20" by typing 21. The locked board removes both controls: a type that has a line cannot be
+  // chosen again and the number stops at 20, so neither sentence can be reached from the screen any
+  // more. The walk now proves exactly that; the two sentences are asserted directly on the rule in
+  // components/invitations/__tests__/draft5.test.js (check 13). Recorded in 06-diff/drift/D.md.
+  it('Pay for Content: fee, deliverables (empty, one line each from the list that opens in place, minus / plus), usage rights need a place; "Use these terms for everyone" copies (checks 7, 9, 11 · board D)', async () => {
+    const { within } = require('@testing-library/react-native');
     start('engagement');
     const n = nav();
     const { getByText, getByTestId, queryByText, queryByTestId } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
@@ -348,19 +371,44 @@ describe('I3 · I4 · I5 — terms, creator by creator (creator-terms-v2: offers
     fireEvent.press(getByTestId('terms-next'));
     getByText(MSG5.FEE_REQUIRED);
     fireEvent.changeText(getByTestId('fee'), '8000');
+    // D1: a new invitation still starts with one line — Instagram reel, 1 — and the hint under it.
+    within(getByTestId('deliverables-row-0-type')).getByText('Instagram reel');
+    within(getByTestId('deliverables-row-0-count-value')).getByText('1');
+    getByText(C5.terms.deliverHint);
+    // D5: every line removed, then Next — only the button and the hint are left, with the red line.
     fireEvent.press(getByTestId('deliverables-row-0-remove'));
     fireEvent.press(getByTestId('terms-next'));
     getByText(MSG5.DELIVERABLES_EMPTY);
+    expect(queryByTestId('deliverables-row-0')).toBeNull();
+    getByText(C5.terms.deliverHint);
+    expect(n.push).not.toHaveBeenCalled();
+    // D2: "+ Add another" asks which type — the five open in place — and no line is added until one is chosen.
     fireEvent.press(getByTestId('deliverables-add'));
+    getByTestId('deliverables-list');
+    expect(queryByTestId('deliverables-row-0')).toBeNull();
+    fireEvent.press(getByTestId('deliverables-add-reel'));
+    within(getByTestId('deliverables-row-0-type')).getByText('Instagram reel');
+    expect(queryByTestId('deliverables-list')).toBeNull();          // choosing closes it
+    expect(queryByText(MSG5.DELIVERABLES_EMPTY)).toBeNull();        // the red line goes as soon as one is added
+    // The old walk's duplicate: a second Instagram reel. It is grey with "Added" and takes no tap.
     fireEvent.press(getByTestId('deliverables-add'));
+    within(getByTestId('deliverables-add-reel')).getByText('Added');
+    expect(getByTestId('deliverables-add-reel').props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(getByTestId('deliverables-add-reel'));
+    expect(queryByTestId('deliverables-row-1')).toBeNull();
+    fireEvent.press(getByTestId('deliverables-add-story'));
+    within(getByTestId('deliverables-row-1-type')).getByText('Instagram story');
+    // D3: nor can line 2 be turned into a second reel from its own type box.
+    fireEvent.press(getByTestId('deliverables-row-1-type'));
+    within(getByTestId('deliverables-row-1-reel')).getByText('Added');
     fireEvent.press(getByTestId('deliverables-row-1-reel'));
-    fireEvent.press(getByTestId('terms-next'));
-    getByText(MSG5.DELIVERABLE_DUP);
-    fireEvent.press(getByTestId('deliverables-row-1-story'));
-    fireEvent.changeText(getByTestId('deliverables-row-1-count'), '21');
-    fireEvent.press(getByTestId('terms-next'));
-    getByText(MSG5.DELIVERABLE_COUNT);
-    fireEvent.changeText(getByTestId('deliverables-row-1-count'), '2');
+    within(getByTestId('deliverables-row-1-type')).getByText('Instagram story');
+    fireEvent.press(getByTestId('deliverables-row-1-type'));       // a second tap on the box closes the list (U12)
+    expect(queryByTestId('deliverables-list')).toBeNull();
+    // The old walk's count: the number is minus / plus now, with no box to type 21 into.
+    expect(getByTestId('deliverables-row-1-count').type).not.toBe('TextInput');
+    fireEvent.press(getByTestId('deliverables-row-1-count-plus'));
+    within(getByTestId('deliverables-row-1-count-value')).getByText('2');
     fireEvent(getByTestId('usage-switch'), 'valueChange', true);
     fireEvent.press(getByTestId('terms-next'));
     getByText(MSG5.USAGE_PLACE);
@@ -539,19 +587,36 @@ describe('I8 — Review and send (creator-terms-v2)', () => {
  */
 describe('Add creators — the founder\'s notes of 16 Sep', () => {
   const RICH = [
-    { id: 'p', name: 'Priya Sharma', nicheLabel: 'Fashion', cityName: 'Hyderabad', instagram: 193200, youtube: 52000, engagement: 5.1,
+    { id: 'p', name: 'Priya Sharma', nicheLabel: 'Fashion', cityName: 'Hyderabad', distance_km: 32, languages: ['Telugu', 'English'],
+      instagram: 193200, youtube: 52000, engagement: 5.1,
       acceptedAims: ['conversion', 'engagement', 'hybrid'], acceptedModes: ['visit', 'shipment'], status: 'OK', pick: { state: 'ok' } },
   ];
 
-  it('shows the same card as the Creators tab — followers, engagement and the Aim/mode tags', async () => {
+  /**
+   * REWRITTEN 2 Oct 2026 — ui-walk-fixes board B (frame B1), founder decisions D1 and D2.
+   * On 16 Sep the founder asked for "the same card as the Creators tab" here, and this test
+   * pinned that card: three labelled numbers and the five Aim/mode tags. On 2 Oct he replaced
+   * it for the pickers: "remove this [Pay for Sale / Pay for Content / Hybrid / +] no need to
+   * mention this" — a compact row of three lines. Every number he picks ON is still asserted;
+   * what is asserted ABSENT is exactly what he asked to be removed. Recorded as drift (B.md).
+   */
+  it('shows the compact pick row — her name, niche · city · distance · languages and all three numbers; no tag line, no hint sentence (board B1, D1, D2)', async () => {
     brandApi.pickable.mockResolvedValue(ok({ total: 1, page: 1, rows: RICH }));
-    const { getByText, getByTestId } = render(<BrandSetPickCreatorsScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
+    const { getByText, getByTestId, queryByText } = render(<BrandSetPickCreatorsScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
     await waitFor(() => getByTestId('select-p'));
-    // The numbers she picks ON. The old compact row showed none of them.
-    getByText('193.2K'); getByText('Instagram');
-    getByText('52.0K'); getByText('YouTube');
-    getByText('5.1%'); getByText('Engagement');
-    getByText('Pay for Sale'); getByText('Pay for Content'); getByText('Hybrid'); getByText('📍 Store Visit'); getByText('Remote');
+    // Line 1: her name. Line 2: where and what. Line 3: the numbers she picks ON — all three.
+    expect(getByTestId('pick-name-p').props.children).toBe('Priya Sharma');
+    getByText('Fashion · Hyderabad · 32 km · Telugu, English');
+    getByText('193.2K IG · 52.0K YT · 5.1% eng');
+    // Each is ONE line, cut with … when it runs long — that is what keeps the row three lines tall.
+    for (const id of ['pick-name-p', 'pick-line-p', 'pick-numbers-p']) expect(getByTestId(id).props.numberOfLines).toBe(1);
+    // D1: no tag line …
+    for (const t of ['Pay for Sale', 'Pay for Content', 'Hybrid', '📍 Store Visit', 'Store Visit', 'Remote']) expect(queryByText(t)).toBeNull();
+    // … and not the full card's three labelled numbers either: this is a row, not the card.
+    for (const t of ['Instagram', 'YouTube', 'Engagement', '193.2K', '52.0K', '5.1%']) expect(queryByText(t)).toBeNull();
+    // D2: the grey sentence is gone from the screen.
+    expect(queryByText(/can't be picked/)).toBeNull();
+    expect(queryByText(/never shown to them/)).toBeNull();
     // and the tick that makes it a pick rather than a browse
     getByTestId('tick-p');
     expect(getByTestId('select-p').props.accessibilityState).toMatchObject({ checked: false, disabled: false });
@@ -594,5 +659,365 @@ describe('Add creators — the founder\'s notes of 16 Sep', () => {
     render(<BrandSetDetailScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', addCreators: true } }} />);
     await waitFor(() => expect(n.setParams).toHaveBeenCalled());
     expect(n.navigate.mock.calls.filter(c => c[0] === 'BrandSetPickCreators').length).toBe(0);
+  });
+});
+
+/**
+ * ui-walk-fixes board B — "Add creators: give the list the screen" (locked 2 Oct 2026).
+ * Frames B1–B5 and B10, founder decisions D1 (the compact row) and D2 (say why she can't be
+ * invited). Expected-outputs checks 5, 6, 6a and the Jest half of 7.
+ * Contract: features/ui-walk-fixes
+ */
+describe('ui-walk-fixes board B — Add creators for a set', () => {
+  const { Keyboard, StyleSheet } = require('react-native');
+  const { settingsTokens: T } = require('../../../theme/tokens');
+  const { pickStateOf } = require('../BrandSetPickCreatorsScreen');
+  const SENTENCE = "Kavya isn't taking Pay for Sale collaborations.";
+  const flat = (el) => StyleSheet.flatten(el.props.style) || {};
+  // "this element reads exactly that" — throws when the text is not inside it.
+  const says = (el, text) => require('@testing-library/react-native').within(el).getByText(text);
+  const open = (n = nav(), params = {}) => render(<BrandSetPickCreatorsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', ...params } }} />);
+  const lastAll = () => brandApi.pickable.mock.calls.filter(c => c[2].tab === 'all' && !c[2].countOnly).pop()[2];
+
+  // jest has no keypad: the two events React Native sends are fired by hand.
+  let pad, errorSpy;
+  beforeEach(() => {
+    const handlers = { keyboardDidShow: [], keyboardDidHide: [] };
+    const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, fn) => {
+      (handlers[event] = handlers[event] || []).push(fn);
+      return { remove: () => { handlers[event] = handlers[event].filter(f => f !== fn); } };
+    });
+    pad = {
+      show: () => act(() => { handlers.keyboardDidShow.forEach(f => f({ endCoordinates: { height: 280 } })); }),
+      hide: () => act(() => { handlers.keyboardDidHide.forEach(f => f()); }),
+      restore: () => spy.mockRestore(),
+    };
+    // React reports a clash of keys and similar tree mistakes only here.
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    const said = errorSpy.mock.calls.map(c => String(c[0]));
+    errorSpy.mockRestore();
+    pad.restore();
+    expect(said).toEqual([]);
+  });
+
+  it('B1: the campaign / set line is the title bar\'s second line, and ONE control row holds the search box and a single Filters button', async () => {
+    const { getByTestId, getByText, queryByTestId, queryByText } = open();
+    await waitFor(() => getByTestId('select-p'));
+    // One Text node, exactly as before — now inside the shared title bar.
+    expect(getByTestId('pick-subline').props.children).toBe('DIWALI EDIT 2026 · SET A · ETHNIC WEAR');
+    expect(getByTestId('pick-subline').props.numberOfLines).toBe(1);
+    // The row: search + Filters, side by side.
+    expect(flat(getByTestId('discover-controls')).flexDirection).toBe('row');
+    getByTestId('discover-search');
+    says(getByTestId('open-filters'), 'Filters');
+    // The chips row is gone: no "Open to invitations" chip, no summary chip, no "Clear all" yet.
+    expect(queryByTestId('quick-open')).toBeNull();
+    expect(queryByText('Open to invitations')).toBeNull();
+    expect(queryByText('Clear all')).toBeNull();
+    // The count leads the list, with the sort beside it.
+    getByText('3 creators'); getByText('Nearest first ▾');
+    // "Open to invitations only" is still ON when you arrive from a set — it just lives in the sheet.
+    expect(lastAll()).toMatchObject({ openOnly: true, sort: 'distance', within: 'any', page: 1 });
+    fireEvent.press(getByTestId('open-filters'));
+    await waitFor(() => getByTestId('filters-sheet'));
+    getByText('Open to invitations only');
+    expect(getByTestId('filter-openonly').props.value).toBe(true);
+    await waitFor(() => expect(getByTestId('filters-apply').props.accessibilityState.disabled).toBe(false));
+  });
+
+  it('B3: the button reads "Filters · N" while filters are on, the count line gains "Clear all", and Clear all puts everything back', async () => {
+    const { getByTestId, getByText, queryByText } = open();
+    await waitFor(() => getByTestId('select-p'));
+    fireEvent.press(getByTestId('open-filters'));
+    await waitFor(() => getByTestId('filters-sheet'));
+    // Two changes: "Open to invitations only" off, and a distance.
+    fireEvent(getByTestId('filter-openonly'), 'valueChange', false);
+    fireEvent.press(getByTestId('filter-within-50'));
+    await waitFor(() => expect(getByTestId('filters-apply').props.accessibilityState.disabled).toBe(false));
+    await act(async () => { fireEvent.press(getByTestId('filters-apply')); });
+    await waitFor(() => expect(lastAll()).toMatchObject({ openOnly: false, within: '50', page: 1 }));
+    await waitFor(() => getByTestId('select-p'));
+    says(getByTestId('open-filters'), 'Filters · 2');
+    // The button's outline turns ink while a filter is on.
+    expect(flat(getByTestId('open-filters')).borderColor).toBe(T.ink);
+    // "Clear all" sits on the count line, underlined; the old summary chip is not drawn.
+    expect(flat(getByText('Clear all')).textDecorationLine).toBe('underline');
+    expect(queryByText(/✕/)).toBeNull();
+    await act(async () => { fireEvent.press(getByText('Clear all')); });
+    await waitFor(() => expect(lastAll()).toMatchObject({ openOnly: true, within: 'any', page: 1 }));
+    await waitFor(() => getByTestId('select-p'));
+    says(getByTestId('open-filters'), 'Filters');
+    expect(flat(getByTestId('open-filters')).borderColor).toBe(T.border);
+    expect(queryByText('Clear all')).toBeNull();
+  });
+
+  it('U12: "Nearest first ▾" opens the Filters sheet — there is no second menu in the pinned area', async () => {
+    const { getByTestId, getByText, queryByTestId } = open();
+    await waitFor(() => getByTestId('select-p'));
+    expect(queryByTestId('filters-sheet')).toBeNull();
+    fireEvent.press(getByTestId('sort-toggle'));
+    await waitFor(() => getByTestId('filters-sheet'));
+    // The old drop-down's rows are not drawn anywhere; the sheet's Sort group is the one home.
+    for (const k of ['distance', 'followers', 'engagement', 'newest']) expect(queryByTestId(`sort-${k}`)).toBeNull();
+    expect(getByTestId('filter-sort-distance').props.accessibilityState.selected).toBe(true);
+    fireEvent.press(getByTestId('filter-sort-followers'));
+    await waitFor(() => expect(getByTestId('filters-apply').props.accessibilityState.disabled).toBe(false));
+    await act(async () => { fireEvent.press(getByTestId('filters-apply')); });
+    await waitFor(() => expect(lastAll()).toMatchObject({ sort: 'followers', page: 1 }));
+    await waitFor(() => getByText('Most followers ▾'));
+    // A sort orders, it never narrows: the button does not count it and there is nothing to clear.
+    says(getByTestId('open-filters'), 'Filters');
+  });
+
+  it('B1: a creator who can\'t be invited is greyed on her face and name only — the chip and the line that says why stay readable, and she has no numbers line', async () => {
+    const { getByTestId, getByText, queryByTestId } = open();
+    await waitFor(() => getByTestId('select-k'));
+    expect(flat(getByTestId('pick-name-k')).opacity).toBe(0.5);
+    // The reason line: the server's short reason, not dimmed, in the readable grey.
+    expect(getByTestId('pick-line-k').props.children).toBe('Not taking Pay for Sale');
+    expect(flat(getByTestId('pick-line-k')).opacity).toBeUndefined();
+    expect(flat(getByTestId('pick-line-k')).color).toBe(T.ink2);
+    // The row as a whole is NOT faded (that is what made the old line unreadable).
+    expect(flat(getByTestId('select-k')).opacity).toBe(1);
+    expect(queryByTestId('pick-numbers-k')).toBeNull();
+    getByText("Can't invite");
+    // Her tick is the unusable one: grey fill, nothing in it.
+    expect(flat(getByTestId('tick-k')).backgroundColor).toBe(T.surface);
+    // "Already in this set" + "Invited" is unchanged in words; ticked, locked, greyed the same way.
+    expect(getByTestId('pick-line-a').props.children).toBe('Already in this set');
+    expect(flat(getByTestId('pick-name-a')).opacity).toBe(0.5);
+    expect(flat(getByTestId('tick-a')).backgroundColor).toBe(T.surface);
+    getByText('Invited');
+    // A creator who can be picked is not dimmed and keeps all three lines.
+    expect(flat(getByTestId('pick-name-p')).opacity).toBeUndefined();
+    getByTestId('pick-line-p'); getByTestId('pick-numbers-p');
+  });
+
+  it('B2: tapping a creator who can\'t be invited shows the server\'s sentence in the screen\'s toast, and picks nobody', async () => {
+    const { getByTestId, getByText, queryByTestId, queryByText } = open();
+    await waitFor(() => getByTestId('select-k'));
+    expect(queryByTestId('toast')).toBeNull();
+    expect(queryByText(SENTENCE)).toBeNull();
+    fireEvent.press(getByTestId('select-k'));
+    says(getByTestId('toast'), SENTENCE);
+    // She stays unticked and the button does not change.
+    expect(getByTestId('select-k').props.accessibilityState.checked).toBe(false);
+    expect(draft.getBasket('sA')).toEqual([]);
+    getByText('Next: terms for 0 creators');
+    expect(getByTestId('pick-next').props.accessibilityState.disabled).toBe(true);
+    // A creator already in this set has nothing more to say: her row is dead, as before.
+    fireEvent.press(getByTestId('select-a'));
+    says(getByTestId('toast'), SENTENCE);
+  });
+
+  it('B10: the row and the toast are whatever the server composed — each of the five reasons is printed as sent, none is worded on the phone', async () => {
+    const REASONS = [
+      ['aim', 'Not taking Pay for Content', "Asha isn't taking Pay for Content collaborations."],
+      ['mode', 'Not taking Store Visit', "Asha isn't taking Store Visit collaborations."],
+      ['category', 'Not taking your category', "Asha isn't taking invitations from brands in your category."],
+      ['visit_city', 'No store visits in Hyderabad', "Asha doesn't do store visits in Hyderabad."],
+      ['not_accepting', 'Not taking invitations', "Asha isn't taking invitations right now."],
+    ];
+    brandApi.pickable.mockResolvedValue(ok({ total: REASONS.length, page: 1, rows: REASONS.map(([detail, label, message]) => (
+      { id: detail, name: 'Asha K.', nicheLabel: 'Fashion', cityName: 'Guntur', instagram: 9000,
+        pick: { state: 'ineligible', reason: detail === 'not_accepting' ? 'NOT_ACCEPTING' : 'NOT_MATCHING', detail, label, message, inSet: 'none' } }
+    )) }));
+    const { getByTestId } = open();
+    await waitFor(() => getByTestId('select-aim'));
+    for (const [detail, label, message] of REASONS) {
+      expect(getByTestId(`pick-line-${detail}`).props.children).toBe(label);
+      fireEvent.press(getByTestId(`select-${detail}`));
+      says(getByTestId('toast'), message);
+    }
+    expect(draft.getBasket('sA')).toEqual([]);
+  });
+
+  it('an older server: no sentence falls back to its short reason; neither falls back to "Not open to this set"', async () => {
+    expect(pickStateOf({ pick: { state: 'ineligible', label: 'Not taking Hybrid', message: 'Asha isn\'t taking Hybrid collaborations.' } }))
+      .toEqual({ state: 'ineligible', label: 'Not taking Hybrid', chip: "Can't invite", message: 'Asha isn\'t taking Hybrid collaborations.' });
+    expect(pickStateOf({ pick: { state: 'ineligible', label: 'Not open to this set' } }))
+      .toEqual({ state: 'ineligible', label: 'Not open to this set', chip: "Can't invite", message: 'Not open to this set' });
+    expect(pickStateOf({ pick: { state: 'ineligible' } }))
+      .toEqual({ state: 'ineligible', label: 'Not open to this set', chip: "Can't invite", message: 'Not open to this set' });
+    expect(pickStateOf({ pick: { state: 'invited', label: 'Already in this set' } })).toEqual({ state: 'invited', label: 'Already in this set', chip: 'Invited' });
+    expect(pickStateOf({ pick: { state: 'ok' } })).toEqual({ state: 'ok' });
+    expect(pickStateOf({})).toEqual({ state: 'ok' });
+
+    brandApi.pickable.mockResolvedValue(ok({ total: 2, page: 1, rows: [
+      { id: 'o1', name: 'Old One', pick: { state: 'ineligible', label: 'Not taking invitations' } },
+      { id: 'o2', name: 'Older Two', pick: { state: 'ineligible' } },
+    ] }));
+    const { getByTestId } = open();
+    await waitFor(() => getByTestId('select-o1'));
+    expect(getByTestId('pick-line-o1').props.children).toBe('Not taking invitations');
+    fireEvent.press(getByTestId('select-o1'));
+    says(getByTestId('toast'), 'Not taking invitations');
+    expect(getByTestId('pick-line-o2').props.children).toBe('Not open to this set');
+    fireEvent.press(getByTestId('select-o2'));
+    says(getByTestId('toast'), 'Not open to this set');
+  });
+
+  it('B5: the footer steps away while the keypad is open and comes back, with the selection intact, when it closes', async () => {
+    const { getByTestId, getByText, queryByTestId, queryByText } = open();
+    await waitFor(() => getByTestId('select-p'));
+    fireEvent.press(getByTestId('select-p'));
+    getByTestId('pick-footer'); getByText('1 selected'); getByText('Next: terms for 1 creator');
+    pad.show();
+    expect(queryByTestId('pick-footer')).toBeNull();
+    expect(queryByTestId('pick-next')).toBeNull();
+    expect(queryByText('1 selected')).toBeNull();
+    // The title, the tabs, the control row and the list are all still there, and still usable.
+    getByTestId('pick-subline'); getByTestId('pick-tabs'); getByTestId('discover-search'); getByTestId('open-filters');
+    expect(getByTestId('select-p').props.accessibilityState.checked).toBe(true);
+    pad.hide();
+    getByTestId('pick-footer'); getByText('1 selected'); getByText('Next: terms for 1 creator');
+    expect(draft.getBasket('sA').map(c => c.id)).toEqual(['p']);
+  });
+
+  it('D2 on the Worked with and Pool tabs: the row prints the short reason, only her face and name are greyed, and a tap says the sentence', async () => {
+    brandApi.pickable.mockImplementation((cid, sid, params) => Promise.resolve(ok(
+      params.tab === 'worked' ? { total: 2, page: 1, rows: [
+        { id: 'p', name: 'Priya Sharma', collaborations: 2, pick: { state: 'ok' } },
+        { ...CREATORS[1], collaborations: 1 },
+      ] } : params.tab === 'pool' ? { total: 1, page: 1, rows: [
+        { ...CREATORS[1], pool: { entryId: 'e1', goal: 'conversion', sameAim: true, termsLine: '10% commission', daysLeft: 9, closingSoon: false } },
+      ] } : { total: 3, page: 1, rows: CREATORS }
+    )));
+    const { getByTestId, getByText, queryByTestId, getAllByText } = open();
+    await waitFor(() => getByTestId('select-p'));
+    for (const tab of ['Worked with', 'Pool']) {
+      fireEvent.press(getByText(tab));
+      await waitFor(() => getByTestId(tab === 'Pool' ? 'pool-pick' : 'worked-pick'));
+      await waitFor(() => getByTestId('select-k'));
+      getByText('Not taking Pay for Sale'); getByText("Can't invite");
+      // Her name is greyed; the row as a whole is not, so the reason stays readable.
+      expect(flat(getAllByText('Kavya D.')[0]).opacity).toBe(0.5);
+      expect(flat(getByTestId('select-k')).opacity).toBe(1);
+      expect(flat(getByText('Not taking Pay for Sale')).opacity).toBeUndefined();
+      // Tapping the row — or her name inside it — says why, and picks nobody.
+      fireEvent.press(getByTestId('select-k'));
+      says(getByTestId('toast'), SENTENCE);
+      fireEvent.press(getByTestId('member-k'));
+      says(getByTestId('toast'), SENTENCE);
+      expect(draft.getBasket('sA')).toEqual([]);
+    }
+    expect(queryByTestId('pick-footer')).not.toBeNull();
+  });
+
+  // Final review, finding F1 (frame B4 "Show 14 creators", check 5). Since board B the Filters
+  // pop-up is the only way to the picker's filters, and its yellow button asks the SET'S OWN list
+  // for a bare count. The server answered that question with an error since item 5 and the phone
+  // printed "Show 0 creators" for every choice (fixed on the server: drift/FINAL-server.md, B-1).
+  // Every other test here answers the count with a whole list. This one answers as the server now
+  // does — { tab, total }, no rows, no set — so the phone is proved to ask the right question and
+  // to print the number it is given.
+  it('B4: the Filters button asks the set\'s own list for a count and prints the number it is given, for each choice', async () => {
+    const asked = [];
+    brandApi.pickable.mockImplementation((cid, sid, params) => {
+      if (params.countOnly) { asked.push([cid, sid, params]); return Promise.resolve(ok({ tab: 'all', total: params.openOnly ? 14 : 1 })); }
+      return Promise.resolve(ok({ total: 3, page: 1, rows: CREATORS }));
+    });
+    const { getByTestId } = open();
+    await waitFor(() => getByTestId('select-p'));
+    expect(asked).toEqual([]);                                             // no count is asked for until the pop-up opens
+    fireEvent.press(getByTestId('open-filters'));
+    await waitFor(() => getByTestId('filters-sheet'));
+    await waitFor(() => says(getByTestId('filters-apply'), 'Show 14 creators'));
+    expect(asked[asked.length - 1]).toEqual(['c1', 'sA', expect.objectContaining({ tab: 'all', countOnly: 1, openOnly: true })]);
+    // A different choice asks again and the button follows — one creator, in the singular.
+    fireEvent(getByTestId('filter-openonly'), 'valueChange', false);
+    await waitFor(() => says(getByTestId('filters-apply'), 'Show 1 creator'));
+    expect(asked[asked.length - 1]).toEqual(['c1', 'sA', expect.objectContaining({ tab: 'all', countOnly: 1, openOnly: false })]);
+    expect(getByTestId('filters-apply').props.accessibilityState).toEqual({ disabled: false });
+    // A count never stands in for the list: pressing the button loads the list for that choice.
+    await act(async () => { fireEvent.press(getByTestId('filters-apply')); });
+    await waitFor(() => expect(lastAll()).toMatchObject({ openOnly: false, page: 1 }));
+    await waitFor(() => getByTestId('select-p'));
+  });
+});
+
+describe('ui-walk-fixes board B — the same reason on "Invite a group" and after Review and send (D2)', () => {
+  const SENTENCE = "Kavya isn't taking Pay for Sale collaborations.";
+  const says = (el, text) => require('@testing-library/react-native').within(el).getByText(text);
+  const CHECK = {
+    group: { id: 'g1', name: 'Diwali shortlist', memberCount: 3 },
+    set: { id: 'sA', name: 'Set A · Ethnic wear', goal: 'conversion', shootMode: 'visit', postingDate: `${yr}-10-20` },
+    counts: { can: 1, cannot: 2, total: 3 },
+    can: [{ id: 'p', name: 'Priya Sharma' }],
+    cannot: [
+      { id: 'k', name: 'Kavya D.', label: 'Not taking Pay for Sale', message: SENTENCE, detail: 'aim',
+        pick: { state: 'ineligible', reason: 'NOT_MATCHING', detail: 'aim', label: 'Not taking Pay for Sale', message: SENTENCE, inSet: 'none' } },
+      { id: 'a', name: 'Arjun Kumar', label: 'Already in this set', message: null, detail: null,
+        pick: { state: 'invited', label: 'Already in this set', reason: null, inSet: 'live' } },
+    ],
+  };
+  const route = { params: { campaignId: 'c1', setId: 'sA', groupId: 'g1', groupName: 'Diwali shortlist' } };
+
+  let errorSpy;
+  beforeEach(() => { errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => {
+    const said = errorSpy.mock.calls.map(c => String(c[0]));
+    errorSpy.mockRestore();
+    expect(said).toEqual([]);
+  });
+
+  it('the group check prints the short reason under her name and says the sentence when she is tapped', async () => {
+    brandApi.groupCheck.mockResolvedValue(ok(CHECK));
+    const n = nav();
+    const { getByTestId, getByText, queryByTestId } = render(<BrandGroupInviteCheckScreen navigation={n} route={route} />);
+    await waitFor(() => getByTestId('group-summary'));
+    getByText("Can't be invited · 2");
+    getByText('Not taking Pay for Sale'); getByText("Can't invite");
+    getByText('Already in this set'); getByText('Invited');
+    // "Already in this set" has nothing more to say.
+    fireEvent.press(getByTestId('member-a'));
+    expect(queryByTestId('toast')).toBeNull();
+    fireEvent.press(getByTestId('member-k'));
+    says(getByTestId('toast'), SENTENCE);
+    // Saying why adds nobody and goes nowhere.
+    expect(draft.getBasket('sA')).toEqual([]);
+    expect(n.navigate).not.toHaveBeenCalled();
+  });
+
+  it('the group check on an older server (a label, no sentence) says the label', async () => {
+    brandApi.groupCheck.mockResolvedValue(ok({ ...CHECK, counts: { can: 1, cannot: 1, total: 2 },
+      cannot: [{ id: 'k', name: 'Kavya D.', label: 'Not open to this set', pick: { state: 'ineligible' } }] }));
+    const { getByTestId } = render(<BrandGroupInviteCheckScreen navigation={nav()} route={route} />);
+    await waitFor(() => getByTestId('group-summary'));
+    fireEvent.press(getByTestId('member-k'));
+    says(getByTestId('toast'), 'Not open to this set');
+  });
+
+  it('after Review and send: a creator refused by her own rule shows the short reason, a tap says the sentence; any other refusal still opens her terms', async () => {
+    const ALL = { sellMode: 'all', sellAllCount: 40 };
+    draft.startDraft('sA', { set: SET, campaignName: 'Diwali Edit 2026', creators: [{ id: 'p', name: 'Priya Sharma' }, { id: 'k', name: 'Kavya D.' }, { id: 'd', name: 'Divya R.' }], sourceGroupId: null });
+    for (const id of ['p', 'k', 'd']) draft.setTerms('sA', id, { ...draft.defaultTerms('conversion'), commissionPct: '10', ...ALL });
+    brandApi.checkEligibility.mockResolvedValue(ok({ results: [] }));
+    brandApi.sendInvitations.mockResolvedValueOnce({ success: false, error: { code: 'VALIDATION_ERROR', message: SENTENCE, details: { sent: 0, failures: [
+      { influencerId: 'k', name: 'Kavya D.', code: 'NOT_MATCHING', field: 'influencer_id', message: SENTENCE, detail: 'aim', label: 'Not taking Pay for Sale' },
+      { influencerId: 'd', name: null, code: 'CONFLICT', field: 'influencer_id', message: 'That creator is listed twice.', detail: null, label: null },
+    ] } } });
+    const n = nav();
+    const { getByTestId, getByText, queryByText, queryByTestId, getAllByText } = render(<BrandReviewSendScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
+    fireEvent.press(getByTestId('send-invitations'));
+    await waitFor(() => getByTestId('failed-banner'));
+    getByText("2 creators can't be invited");
+    expect(getAllByText("Can't invite")).toHaveLength(2);
+    // Her row: the same short reason the picker printed; the sentence only when tapped.
+    getByText('Not taking Pay for Sale');
+    expect(queryByText(SENTENCE)).toBeNull();
+    expect(queryByTestId('toast')).toBeNull();
+    fireEvent.press(getByTestId('review-row-k'));
+    says(getByTestId('toast'), SENTENCE);
+    expect(n.navigate).not.toHaveBeenCalled();
+    // A refusal that is not one of her rules prints its own message and opens her terms, as before.
+    getByText('That creator is listed twice.');
+    fireEvent.press(getByTestId('review-row-d'));
+    expect(n.navigate).toHaveBeenCalledWith('BrandCreatorTerms', { campaignId: 'c1', setId: 'sA', index: 2 });
+    // And a creator who was not refused opens her terms too.
+    fireEvent.press(getByTestId('review-row-p'));
+    expect(n.navigate).toHaveBeenCalledWith('BrandCreatorTerms', { campaignId: 'c1', setId: 'sA', index: 0 });
   });
 });

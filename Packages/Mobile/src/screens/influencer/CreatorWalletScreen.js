@@ -18,6 +18,7 @@ import { influencerApi } from '../../services/api';
 import { PrimaryButton } from '../../components/settings/primitives';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import useRouteToast from '../../hooks/useRouteToast';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { W17, inr, dayMon } from '../../components/wallet/copy17';
 import { Balance17, Figs17, Fig17, HoldBox17, s as b } from '../../components/wallet/bits17';
 
@@ -36,6 +37,8 @@ export default function CreatorWalletScreen({ navigation, route }) {
   const [d, setD] = useState(null);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
 
   const load = useCallback(async () => {
     setStatus((st) => (st === 'ready' ? 'ready' : 'loading'));
@@ -62,7 +65,7 @@ export default function CreatorWalletScreen({ navigation, route }) {
 
   return (
     <View style={s.screen} testID="creator-wallet">
-      <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 54, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 18, paddingTop: top, paddingBottom: 40 }}>
         <Text style={[b.title, { marginBottom: 12 }]}>{W17.title}</Text>
         <Balance17 label={W17.available} amount={f.available} testID="wallet-balance" />
         <HoldBox17 w={waiting} />
@@ -92,7 +95,8 @@ export default function CreatorWalletScreen({ navigation, route }) {
 }
 
 function Head() {
-  return <View style={{ paddingTop: 54, paddingHorizontal: 18, paddingBottom: 8 }}><Text style={b.title}>{W17.title}</Text></View>;
+  const top = useTopInset(TOP_GAP_TITLE);
+  return <View style={{ paddingTop: top, paddingHorizontal: 18, paddingBottom: 8 }}><Text style={b.title}>{W17.title}</Text></View>;
 }
 
 const s = StyleSheet.create({

@@ -27,16 +27,25 @@ export function DeclineSheet5({ visible, onDecline, onClose, busy }) {
     if (note.length > 200) { setErr(MSG5.DECLINE_NOTE_LONG); return; }
     onDecline({ reason, note: note.trim() || undefined });
   }
+  // ui-walk-fixes (board C, rule 3): the note box sits low in a tall sheet, so the keypad covered
+  // it and both buttons. The sheet now shrinks to the room above the keypad, its body scrolls, and
+  // the two buttons are pinned under it. The refusal ("Choose a reason.") sits with the buttons,
+  // where it is seen however far the body has scrolled. While the decline is running the red
+  // button shows its spinner (it used to swap its label for "…").
   return (
-    <Sheet visible={visible} onClose={onClose} testID="decline-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="decline-sheet" fit
+      footer={(
+        <>
+          <FieldError text={err} />
+          {err ? <View style={s.gap} /> : null}
+          <DangerButton label={C5.creator.detail.declineButton} onPress={go} busy={!!busy} busyLabel="Declining" testID="decline-confirm" />
+          <SecondaryButton label={C5.creator.detail.notYet} onPress={onClose} />
+        </>
+      )}>
       <Text style={s.eyebrow}>{C5.creator.detail.decline.toUpperCase()}</Text>
       <Text style={s.title}>{C5.creator.detail.declineTitle}</Text>
       <View style={s.chips}>{DECLINE_REASONS.map(([code, label]) => <Chip key={code} label={label} selected={reason === code} onPress={() => { setReason(code); setErr(''); }} testID={`reason-${code}`} />)}</View>
       <TextField4 label={C5.creator.detail.anythingElse} value={note} onChangeText={setNote} max={200} multiline hint={C5.creator.detail.declineHint} testID="decline-note" />
-      <FieldError text={err} />
-      <View style={{ height: 8 }} />
-      <DangerButton label={busy ? '…' : C5.creator.detail.declineButton} onPress={busy ? () => {} : go} testID="decline-confirm" />
-      <SecondaryButton label={C5.creator.detail.notYet} onPress={onClose} />
     </Sheet>
   );
 }
@@ -46,8 +55,13 @@ export function DeclineSheet5({ visible, onDecline, onClose, busy }) {
 /** The terms exactly as sent, read-only (server shape: invitation.terms). */
 export function TermsSentSheet5({ visible, invitation, onClose }) {
   const t = invitation && invitation.terms;
+  // ui-walk-fixes (board C, rule 3): no text box, but Hybrid terms are seven lines — several of
+  // them two lines long — and the note under them can run to 300 characters. Together that is
+  // taller than a short phone has room for, and "Close" fell off the bottom. The terms now scroll
+  // inside the sheet and "Close" is pinned under them.
   return (
-    <Sheet visible={visible} onClose={onClose} testID="terms-sent-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="terms-sent-sheet" fit
+      footer={<SecondaryButton inline label="Close" onPress={onClose} />}>
       <Text style={s.title}>{C5.set.termsTitle}</Text>
       {t ? (
         <View>
@@ -63,8 +77,6 @@ export function TermsSentSheet5({ visible, invitation, onClose }) {
           <Text style={s.hint}>{C5.set.termsHint}</Text>
         </View>
       ) : <Text style={s.hint}>…</Text>}
-      <View style={{ height: 10 }} />
-      <SecondaryButton label="Close" onPress={onClose} />
     </Sheet>
   );
 }
@@ -91,6 +103,7 @@ const s = StyleSheet.create({
   field: { height: 44, borderWidth: 1.5, borderColor: T.border, borderRadius: 12, paddingHorizontal: 12, justifyContent: 'center', marginBottom: 6 },
   fieldText: { fontFamily: fonts.sansRegular, fontSize: 14, color: T.ink },
   quote: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, fontStyle: 'italic', marginTop: 10, lineHeight: 18 },
+  gap: { height: 8 },
 });
 
 export { aimLabel5, modeLabel5, longDate5 };

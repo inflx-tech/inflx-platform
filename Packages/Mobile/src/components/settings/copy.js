@@ -153,7 +153,9 @@ export const COPY = {
     visitAnywhere: 'Anywhere',
     visitAnywhereHint: 'Anywhere — any brand can invite you for a store visit. Pick cities to limit it.',
     categoriesTitle: 'Brand categories',
-    categoriesHint: 'None picked means any category. Only you see this.',
+    // ui-walk-fixes U22 (after founder decision D2): a brand she has ruled out is now told which of
+    // her rules it was, so "Only you see this." was no longer true. Her LIST is still never shown.
+    categoriesHint: "None picked means any category. Brands never see your list — a brand outside it is told only that you aren't taking its category.",
     minimumsTitle: 'Your minimums, by Aim',
     minimumsHint: 'Only you see these. Brands can still invite below them, with a warning.',
     contentCard: 'Pay for Content',
@@ -178,7 +180,11 @@ export const COPY = {
     pauseCancel: 'Stay open',
     // C6
     previewTitle: 'Brands see on your profile',
-    previewHint: 'Your categories, cities, minimum fee and commission stay private.',
+    // ui-walk-fixes U22: was "Your categories, cities, minimum fee and commission stay private." —
+    // untrue after D2 (the failed rule is named to the brand), and the minimums half was untrue
+    // since item 5 (the brand's terms screen shows them as a warning). The pitch direction
+    // (COPY.brand.whoHint) did not change and keeps its own promise.
+    previewHint: "Brands never see your category or city lists. A brand you've ruled out is told which rule it was, nothing more.",
     yourMinimums: 'Your minimums',
     blockedEmptyTitle: 'No blocked brands',
     blockedEmptyBody: 'Block a brand from its brand overview if you never want invitations from it.',

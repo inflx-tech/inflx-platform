@@ -237,13 +237,24 @@ describe('N18 · N20 — the switch and the set', () => {
     getByText('Countered 13% · 13 Sep');
     getByText('Asked for 27 Oct · 13 Sep');
     getByText('You countered ₹9,000 · 14 Sep');
-    expect(getAllByText('Your move').length).toBeGreaterThanOrEqual(2);   // the heading and the chips
-    getByText('Waiting');
+    // ASSERTION DRIFT — ui-walk-fixes board F, frame F1 (drift/F.md). This used to expect "Your
+    // move" at least twice (the two rows' pills) and exactly one "Waiting" pill. The locked board
+    // makes the brand's move a labelled BUTTON that names the step — "Reply" on a counter and on a
+    // request to move — so "Your move" is the group's heading alone; and an invitation nobody has
+    // answered now carries a "Waiting" tag too, beside the one on the brand's own counter.
+    expect(getAllByText('Your move')).toHaveLength(1);                     // the heading
+    expect(getAllByText('Reply')).toHaveLength(2);                         // she countered · she asked to move
+    getByTestId('chip-r1'); getByTestId('chip-r2');                        // both are buttons
+    expect(getAllByText('Waiting')).toHaveLength(2);                       // his counter is with her · no answer yet
+    getByTestId('tag-r3'); getByTestId('tag-r4');                          // both are tags, not buttons
     const flat = JSON.stringify(toJSON());
     expect(flat.indexOf('Your move')).toBeLessThan(flat.indexOf('Negotiating'));
     // a row with a conversation opens the thread
     fireEvent.press(getByTestId('set-creator-r1'));
     expect(n.navigate).toHaveBeenCalledWith('BrandThread', { campaignId: 'c1', setId: 'sA', ciId: 'r1' });
+    // …and its "Reply" button does exactly what the row does (board F: one door per row).
+    fireEvent.press(getByTestId('chip-r2'));
+    expect(n.navigate).toHaveBeenLastCalledWith('BrandThread', { campaignId: 'c1', setId: 'sA', ciId: 'r2' });
   });
 });
 

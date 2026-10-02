@@ -18,6 +18,7 @@ import { aimsPhrase, modesPhrase } from '../../components/settings/copy';
 import { s as base } from './BrandPitchSettingsScreen';
 import { Avatar } from './BrandBlockedCreatorsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { C3, subCategoryLabel } from '../../components/discovery/copy3';
 import { CompletenessNote, SubmitForReviewBlock, Dot } from '../../components/registration/ReviewBlock';
 import { BRAND_ROW_KEYS, rowNeeds, REVIEW_COPY } from '../../components/registration/completeness';
@@ -50,6 +51,8 @@ export default function BrandProfileScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
 
   useEffect(() => { referenceApi.brandCategories().then(r => { if (r.success) setCats(r.data.items || []); }).catch(() => {}); }, []);
   const load = useCallback(async () => {
@@ -77,7 +80,7 @@ export default function BrandProfileScreen({ navigation, route }) {
     load();
   }
 
-  if (status === 'loading') return <View style={base.screen}><Text style={s.title}>Profile</Text><Skeleton /></View>;
+  if (status === 'loading') return <View style={base.screen}><Text style={[s.title, { paddingTop: top }]}>Profile</Text><Skeleton /></View>;
   if (status === 'error') {
     const noProfile = loadError === 'no_profile';
     return (
@@ -106,7 +109,7 @@ export default function BrandProfileScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="brand-profile">
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <Text style={s.title}>Profile</Text>
+        <Text style={[s.title, { paddingTop: top }]}>Profile</Text>
         <View style={s.hero}>
           <Avatar name={b.business_name} url={b.logo_url} size={56} />
           <View style={{ flex: 1, marginLeft: 14 }}>
@@ -134,7 +137,7 @@ export default function BrandProfileScreen({ navigation, route }) {
 }
 
 const s = StyleSheet.create({
-  title: { fontFamily: fonts.sansBold, fontSize: 22, color: T.ink, paddingTop: 54, paddingHorizontal: 18 },
+  title: { fontFamily: fonts.sansBold, fontSize: 22, color: T.ink, paddingTop: TOP_GAP_TITLE, paddingHorizontal: 18 },
   hero: { flexDirection: 'row', alignItems: 'center', padding: 18, paddingBottom: 6 },
   name: { fontFamily: fonts.sansBold, fontSize: 18, color: T.ink },
   line: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, marginTop: 2 },

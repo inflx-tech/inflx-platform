@@ -9,14 +9,19 @@
  * her profile, the brand's branches and every distance rule already read. The pincode is checked
  * against the courier network as she leaves the field, and again, authoritatively, on the server
  * when she sends.
+ *
+ * ui-walk-fixes (board C, rule 2): the form is a FormScroll — the box she is typing in, with the
+ * hint or the red line under it, stays in view above the keypad. Nothing floats here ("Review and
+ * send" is the last thing IN the form), so nothing else changes.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton } from '../../components/settings/primitives';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
+import { FormScroll } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 // §2B's own two fields — the SAME component registration, the profile and the branch editor
 // use. StateCityPicker (components/settings) is item 8A's multi-select "cities I can travel
@@ -117,7 +122,7 @@ export default function RemoteAddressScreen({ navigation, route }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={base.screen} testID="remote-address">
         <Header title={C11.creator.formTitle} onBack={() => navigation.goBack()} />
-        <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <FormScroll contentContainerStyle={{ padding: 18, paddingBottom: 40 }} testID="remote-address-scroll">
 
           <Field label={C11.creator.nameLabel} value={form.name} onChange={(v) => set('name', v)} error={errors.name} testID="f-name" />
 
@@ -166,7 +171,7 @@ export default function RemoteAddressScreen({ navigation, route }) {
             <PrimaryButton label={C11.creator.reviewAndSend} disabled={blocked}
               onPress={() => { if (validate()) setSheet(true); }} testID="review-send" />
           </View>
-        </ScrollView>
+        </FormScroll>
 
         {/* R4a — the confirm sheet IS the review. There is no server-side draft. */}
         <ConfirmSheet

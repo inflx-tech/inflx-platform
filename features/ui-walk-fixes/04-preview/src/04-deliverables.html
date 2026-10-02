@@ -1,0 +1,272 @@
+<style>
+/* board D: the one-line deliverable row, sized to fit the 300-wide drawing of a phone */
+.bD-row .field{padding-inline:9px;gap:4px;font-size:12.5px;min-width:0}
+.bD-row .field span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bD-row .field .ico{width:14px;height:14px;color:var(--ink3)}
+.bD-row .stp span{width:26px}
+.bD-row .stp b{min-width:20px}
+/* board D: today's pile of type pills, the typing box and the bare cross */
+.bD-pile{flex:1;min-width:0}
+.bD-pile .opt{font-size:11.5px;padding:6px 9px;border-width:1px;color:var(--ink)}
+.bD-pile .opt.sel{color:#fff}
+.bD-num{width:84px;flex:none}
+.bD-x{width:32px;flex:none;text-align:center;font-weight:700;font-size:14px;color:var(--ink2)}
+/* board D: the part of a pop-up that scrolls, with its scroll mark on the right edge */
+.bD-scroll{display:grid;gap:10px;position:relative}
+.bD-scroll::after{content:"";position:absolute;right:-9px;top:34%;width:3px;height:30%;border-radius:3px;background:#C9C8C1}
+</style>
+<section id="board-D">
+  <header>
+    <div class="eyebrow">Brand and creator apps · point 4 of 11</div>
+    <h2>Pay for Content: choosing what she delivers</h2>
+    <p class="prose">You reported that choosing what a creator delivers on a Pay for Content set is messy. Today every deliverable shows all five type buttons in a pile with a typing box beside it, although the board you locked drew one tidy line each. After the fix each deliverable is one line: a type box that opens its list in place, a minus / number / plus count from 1 to 20, and a remove button. The same block sits on five screens; four are drawn here and the fifth, countering a pitch, gets the identical rows.</p>
+  </header>
+  <div class="flow">
+
+    <!-- D0 TODAY -->
+    <div class="shot">
+      <div class="phone today">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div>
+          <div class="steps"><i class="on"></i><i></i><i></i><span>Creator 1 of 3</span></div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div>
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="grp">
+            <div class="lbl">What she delivers <span class="req">*</span></div>
+            <div class="row">
+              <div class="chips bD-pile"><span class="opt sel">Instagram reel</span><span class="opt">Instagram post</span><span class="opt">Instagram story</span><span class="opt">YouTube video</span><span class="opt">YouTube short</span></div>
+              <div class="field bD-num">1</div>
+              <span class="bD-x">✕</span>
+            </div>
+            <div class="row">
+              <div class="chips bD-pile"><span class="opt">Instagram reel</span><span class="opt">Instagram post</span><span class="opt sel">Instagram story</span><span class="opt">YouTube video</span><span class="opt">YouTube short</span></div>
+              <div class="field bD-num">2</div>
+              <span class="bD-x">✕</span>
+            </div>
+            <div class="lbl">+ Add another</div>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+          </div>
+          <div class="grp"><div class="lbl">Anything else she should know</div><div class="textarea" style="color:var(--ink3)">Optional note for this creator</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D0</i><span class="tagtoday">TODAY</span></div><b>Brand · two deliverables, as the app draws them now</b><span>Each deliverable shows all five types as buttons, with the chosen one black, a box to type the number in, and a bare grey cross. On a narrow phone, as drawn, that is five lines for each deliverable, so two of them fill most of the screen; on a wider phone the buttons sit two to a line and it is three lines each. "+ Add another" is plain text: it adds the next type without asking, and the brand then hunts for the right button in the new pile.</span></div>
+    </div>
+
+    <!-- D1 AFTER: filled -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div>
+          <div class="steps"><i class="on"></i><i></i><i></i><span>Creator 1 of 3</span></div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div>
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="grp">
+            <div class="lbl">What she delivers <span class="req">*</span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram reel</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram story</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span>−</span><b>2</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico"><use href="#i-plus"/></svg>Add another</button>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+          </div>
+          <div class="grp"><div class="lbl">Anything else she should know</div><div class="textarea" style="color:var(--ink3)">Optional note for this creator</div></div>
+          <div class="row between"><div><div class="lbl">Brand can reuse the content</div><div class="hint">Usage rights. Off unless you need it.</div></div><span class="sw on"></span></div>
+          <div class="grp"><div class="chips"><span class="opt">30 days</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>60 days</span><span class="opt">90 days</span><span class="opt">Forever</span></div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Brand's social</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Ads</span><span class="opt">Website</span></div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D1</i><span class="tagafter">AFTER</span></div><b>Brand · the same two deliverables, one line each</b><span>Each line is the type with a down-arrow, minus / number / plus, and a remove button. The number goes from 1 to 20 with no keypad; minus is faded at 1. "Add another" is the outlined button with a plus. A new invitation still starts with Instagram reel, 1. The rest of the screen is unchanged.</span></div>
+    </div>
+
+    <!-- D2 AFTER: Add another tapped -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div>
+          <div class="steps"><i class="on"></i><i></i><i></i><span>Creator 1 of 3</span></div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div>
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="grp">
+            <div class="lbl">What she delivers <span class="req">*</span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram reel</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram story</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span>−</span><b>2</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico"><use href="#i-plus"/></svg>Add another</button>
+            <div class="ddl">
+              <div class="used">Instagram reel<em>Added</em></div>
+              <div>Instagram post</div>
+              <div class="used">Instagram story<em>Added</em></div>
+              <div>YouTube video</div>
+              <div>YouTube short</div>
+            </div>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+          </div>
+          <div class="grp"><div class="lbl">Anything else she should know</div><div class="textarea" style="color:var(--ink3)">Optional note for this creator</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D2</i><span class="tagafter">AFTER</span></div><b>Brand · "Add another" tapped</b><span>The five types open as a list right under the button and push the hint, the note and everything below further down; the screen moves so the whole list is in view. Reel and story are grey with "Added" and cannot be picked twice. Tapping one of the other three adds it as a new line with 1.</span></div>
+    </div>
+
+    <!-- D3 AFTER: a row's own type box tapped -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div>
+          <div class="steps"><i class="on"></i><i></i><i></i><span>Creator 1 of 3</span></div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div>
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="grp">
+            <div class="lbl">What she delivers <span class="req">*</span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram reel</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field focus"><span>Instagram story</span><svg class="ico" style="transform:rotate(180deg)"><use href="#i-down"/></svg></div><div class="stp"><span>−</span><b>2</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="ddl">
+              <div class="used">Instagram reel<em>Added</em></div>
+              <div>Instagram post</div>
+              <div class="sel">Instagram story<svg class="ico"><use href="#i-check"/></svg></div>
+              <div>YouTube video</div>
+              <div>YouTube short</div>
+            </div>
+            <button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico"><use href="#i-plus"/></svg>Add another</button>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+          </div>
+          <div class="grp"><div class="lbl">Anything else she should know</div><div class="textarea" style="color:var(--ink3)">Optional note for this creator</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D3</i><span class="tagafter">AFTER</span></div><b>Brand · the type box on line 2 tapped</b><span>The same list opens under that line, and "Add another" and everything after it move down. This line's own type, Instagram story, is ticked. Reel is grey with "Added". Tapping one of the other three changes this line to that type and keeps its number.</span></div>
+    </div>
+
+    <!-- D4 AFTER: all five added -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div>
+          <div class="steps"><i class="on"></i><i></i><i></i><span>Creator 1 of 3</span></div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div>
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="grp">
+            <div class="lbl">What she delivers <span class="req">*</span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram reel</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram story</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span>−</span><b>20</b><span class="off">+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram post</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field"><span>YouTube video</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field"><span>YouTube short</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span>−</span><b>3</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+          </div>
+          <div class="grp"><div class="lbl">Anything else she should know</div><div class="textarea" style="color:var(--ink3)">Optional note for this creator</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D4</i><span class="tagafter">AFTER</span></div><b>Brand · all five types added</b><span>Five lines, one for each type, in the order they were added. "Add another" is gone because there is nothing left to add; it comes back when a line is removed. The hint stays. The story line is at 20, the most allowed, so its plus is faded.</span></div>
+    </div>
+
+    <!-- D5 AFTER: none, after pressing Next -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div>
+          <div class="steps"><i class="on"></i><i></i><i></i><span>Creator 1 of 3</span></div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div>
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="grp">
+            <div class="lbl">What she delivers <span class="req">*</span></div>
+            <button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico"><use href="#i-plus"/></svg>Add another</button>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+            <div class="err">Add at least one thing she delivers.</div>
+          </div>
+          <div class="grp"><div class="lbl">Anything else she should know</div><div class="textarea" style="color:var(--ink3)">Optional note for this creator</div></div>
+          <div class="row between"><div><div class="lbl">Brand can reuse the content</div><div class="hint">Usage rights. Off unless you need it.</div></div><span class="sw on"></span></div>
+          <div class="grp"><div class="chips"><span class="opt">30 days</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>60 days</span><span class="opt">90 days</span><span class="opt">Forever</span></div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Brand's social</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Ads</span><span class="opt">Website</span></div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D5</i><span class="tagafter">AFTER</span></div><b>Brand · every line removed, then Next pressed</b><span>Only the "Add another" button and the hint are left, with the red line under them. The screen stays here until at least one deliverable is added. The red line goes as soon as one is.</span></div>
+    </div>
+
+    <!-- D6 AFTER: creator, Your counter -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Your counter</h3></div>
+          <span class="rnd" style="align-self:flex-start">ROUND 1 OF 2</span>
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>12,000</div></div><div class="chg"><span>Their offer</span><span class="v"><b class="old">₹8,000</b><span class="ar">→</span><b class="new">₹12,000</b></span></div></div>
+          <div class="grp">
+            <div class="lbl">What you'll deliver <span class="req">*</span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram reel</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram story</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico"><use href="#i-plus"/></svg>Add another</button>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+            <div class="chg"><span>They asked for</span><span class="v"><b class="old">1 reel, 2 stories</b><span class="ar">→</span><b class="new">1 reel, 1 story</b></span></div>
+          </div>
+          <div class="row between"><div><div class="lbl">Brand can reuse the content</div><div class="hint">They asked for 60 days on social and ads.</div></div><span class="sw"></span></div>
+          <div class="chg"><span>Usage rights</span><span class="v"><b class="old">60 days</b><span class="ar">→</span><b class="new">Off</b></span></div>
+          <div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea" style="color:var(--ink3)">Happy to do this at ₹12,000 with one story.</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send counter</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D6</i><span class="tagafter">AFTER</span></div><b>Creator · her counter, same rows</b><span>She sees the same one-line rows under "What you'll deliver". She took the stories from 2 to 1 with the minus. The hint line shows here too, as in the app today. The line showing what the brand asked for beside what she now proposes stays directly under the rows and the hint.</span></div>
+    </div>
+
+    <!-- D7 NEW: brand counter-back pop-up, Pay for Content -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Counter back</h3></div><div class="crumbs">PRIYA SHARMA · SET A</div><div style="height:840px"></div></div>
+        <div class="dim"><div class="sheet"><span class="grab"></span>
+          <div class="bD-scroll">
+            <span class="rnd">ROUND 2 OF 2 · YOUR LAST</span>
+            <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>10,000</div></div><div class="chg"><span>Priya asked for</span><span class="v"><b class="old">₹12,000</b><span class="ar">→</span><b class="new">₹10,000</b></span></div></div>
+            <div class="grp">
+              <div class="lbl">What she delivers <span class="req">*</span></div>
+              <div class="delrow bD-row"><div class="field"><span>Instagram reel</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+              <div class="delrow bD-row"><div class="field"><span>Instagram story</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+              <button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico"><use href="#i-plus"/></svg>Add another</button>
+              <div class="ddl">
+                <div class="used">Instagram reel<em>Added</em></div>
+                <div>Instagram post</div>
+                <div class="used">Instagram story<em>Added</em></div>
+                <div>YouTube video</div>
+                <div>YouTube short</div>
+              </div>
+              <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+            </div>
+            <div class="row between"><div class="lbl">Brand can reuse the content</div><span class="sw"></span></div>
+            <div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea" style="color:var(--ink3)">We can do ₹10,000 for one reel and one story.</div></div>
+            <div class="last"><svg class="ico"><use href="#i-alert"/></svg><span>After this, Priya can only accept or decline.</span></div>
+          </div>
+          <button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send last counter</button>
+        </div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D7</i><span class="tagnew">NEW</span></div><b>Brand · countering back on Pay for Content</b><span>The brand's counter pop-up was only ever drawn for Pay for Sale. For Pay for Content it shows the fee beside what she asked for, then the same deliverable rows under "What she delivers" (today this pop-up says "What you'll deliver", which is the creator's wording). The type list opens inside the pop-up and pushes the reuse switch and the note down; no second pop-up appears. The pop-up is drawn at its full length so you can see everything in it: on a phone it keeps its usual height, its middle part scrolls so the open list is in view, and "Send last counter" stays at the bottom.</span></div>
+    </div>
+
+    <!-- D8 AFTER: creator pitch form -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pitch Urban Threads</h3></div>
+          <div class="grp"><div class="lbl">Fee you want <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>12,000</div></div><div class="hint">Your minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="grp">
+            <div class="lbl">What you'd deliver <span class="req">*</span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram reel</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span class="off">−</span><b>1</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <div class="delrow bD-row"><div class="field"><span>Instagram story</span><svg class="ico"><use href="#i-down"/></svg></div><div class="stp"><span>−</span><b>2</b><span>+</span></div><span class="xbtn"><svg class="ico"><use href="#i-x"/></svg></span></div>
+            <button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico"><use href="#i-plus"/></svg>Add another</button>
+            <div class="hint">Reels, posts, stories, YouTube videos and shorts.</div>
+          </div>
+          <div class="grp"><div class="lbl">When you could post <span class="req">*</span></div><div class="field"><svg class="ico"><use href="#i-cal2"/></svg>24 Oct 2026</div><div class="hint">They'll build a set around this. It can move when you talk.</div></div>
+          <div class="grp"><div class="lbl">How you'd work <span class="req">*</span></div><div class="chips"><span class="opt">Store Visit</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Remote</span></div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next: your message</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>D8</i><span class="tagafter">AFTER</span></div><b>Creator · her pitch, same rows</b><span>When she pitches a brand, "What you'd deliver" uses the same one-line rows, the same "Add another" button and the same list. The hint line stays here too, as the app shows it today. Nothing else on the pitch changes.</span></div>
+    </div>
+
+  </div>
+</section>

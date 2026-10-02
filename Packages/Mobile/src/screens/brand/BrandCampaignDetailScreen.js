@@ -45,8 +45,8 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
 
   const c = data && data.campaign;
   const title = c ? c.name : (route?.params?.name || '');
-  const nextLetter = () => String.fromCharCode(65 + Math.min(25, (c ? c.setCount : 0)));
-  const goNewSet = () => navigation.navigate('BrandSetEdit', { campaignId, campaignName: c.name, dateRules: data.dateRules, suggestedName: C4.set.suggestedName(nextLetter()) });
+  // ui-walk-fixes board A: no name is sent along — the new set's name box opens empty.
+  const goNewSet = () => navigation.navigate('BrandSetEdit', { campaignId, campaignName: c.name, dateRules: data.dateRules });
   const openSet = (set) => navigation.navigate('BrandSetDetail', { campaignId, setId: set.id, name: set.name });
 
   async function patch(body, okToast) {

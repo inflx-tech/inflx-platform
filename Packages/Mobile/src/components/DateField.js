@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../theme/tokens';
 
 /**
@@ -11,6 +12,19 @@ import { settingsTokens as T, fonts } from '../theme/tokens';
  * (the C5 mockup shows "Dates before X are greyed out…" and "Invitations would close Y.").
  *
  * The value in and out is always 'YYYY-MM-DD' — a calendar day, never an instant.
+ *
+ * ui-walk-fixes (board G, the shoot plan's Date box) adds four OPT-IN props. A caller that passes
+ * none of them gets exactly the field it always had:
+ *   icon       a MaterialCommunityIcons name drawn before the value (the board's calendar mark)
+ *   hideCaret  no ▾ at the right-hand end
+ *   display    (iso) => string — what the box reads for a chosen day ("18 Oct" instead of
+ *              "18 Oct 2026"). The value on the wire is still 'YYYY-MM-DD'.
+ *   invalid    a red outline with no sentence of its own, for a box that shares one error line
+ *              with the box beside it
+ * and (board C) a fifth, opt-in like the others:
+ *   closeKeypad  the keypad is put away before the calendar opens, as the Time box beside it on
+ *              the shoot plan already does. For a Date box that shares a form or a pop-up with a
+ *              text box: the calendar needs the room the keypad is standing in.
  */
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -52,8 +66,14 @@ export default function DateField({
   renderFooter,            // (pendingISO | null) => node, rendered under the grid (C5 hints)
   style,
   testID,
+  icon,                    // opt-in (board G): a leading icon
+  hideCaret,               // opt-in (board G): no ▾
+  display,                 // opt-in (board G): (iso) => the words the box shows
+  invalid,                 // opt-in (board G): red outline, no message
+  closeKeypad,             // opt-in (board C): put the keypad away before the calendar opens
 }) {
   const [open, setOpen] = useState(false);
+  const show = () => { if (closeKeypad) Keyboard.dismiss(); setOpen(true); };
   const [pending, setPending] = useState(value || null);
 
   const min = useMemo(() => {
@@ -124,14 +144,21 @@ export default function DateField({
     setOpen(false);
   }
 
-  const shown = prettyDate(value);
+  const shown = (display && prettyDate(value) ? display(value) : null) || prettyDate(value);
 
   return (
     <View style={[{ marginBottom: 10 }, style]}>
       {!!label && <Text style={s.label}>{label}</Text>}
-      <TouchableOpacity style={[s.field, error && s.fieldError]} activeOpacity={0.7} onPress={() => setOpen(true)} testID={testID || 'date-field'} accessibilityRole="button">
-        <Text style={[s.value, !shown && s.placeholder]}>{shown || placeholder}</Text>
-        <Text style={s.caret}>▾</Text>
+      <TouchableOpacity style={[s.field, (error || invalid) && s.fieldError]} activeOpacity={0.7} onPress={show} testID={testID || 'date-field'} accessibilityRole="button">
+        {icon ? (
+          <View style={s.lead}>
+            <Icon name={icon} size={16} color={T.ink3} />
+            <Text numberOfLines={1} style={[s.value, s.leadValue, !shown && s.placeholder]}>{shown || placeholder}</Text>
+          </View>
+        ) : (
+          <Text style={[s.value, !shown && s.placeholder]}>{shown || placeholder}</Text>
+        )}
+        {hideCaret ? null : <Text style={s.caret}>▾</Text>}
       </TouchableOpacity>
       {!!hint && <Text style={s.hint}>{hint}</Text>}
       {!!error && <Text style={s.error} accessibilityRole="alert">{error}</Text>}
@@ -197,6 +224,8 @@ const s = StyleSheet.create({
   value: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: T.ink },
   placeholder: { color: T.ink3, fontFamily: fonts.sansRegular },
   caret: { fontSize: 13, color: T.ink3 },
+  lead: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
+  leadValue: { flex: 1, marginLeft: 6 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, marginTop: 6 },
   error: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.danger, marginTop: 6 },
 

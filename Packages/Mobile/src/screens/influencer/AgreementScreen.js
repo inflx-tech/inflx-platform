@@ -23,6 +23,7 @@ import {
   StandardTermsRow7, StateBox7,
 } from '../../components/agreement/bits7';
 import { CreatorSignSheet7, DeclineAgreementSheet7 } from '../../components/agreement/sheets7';
+import useTopInset from '../../hooks/useTopInset';
 
 export default function AgreementScreen({ navigation, route }) {
   const { ciId } = route.params || {};
@@ -219,10 +220,16 @@ export default function AgreementScreen({ navigation, route }) {
   );
 }
 
+/**
+ * The screen and its own title row. ui-walk-fixes D4 (wave-2 review): the row starts at the
+ * phone's real top inset plus the same small gap as every other pushed screen's title row
+ * (useTopInset), and its back control is the same 40 high — so this title sits on the same line.
+ */
 function Frame({ nav, title, children }) {
+  const top = useTopInset();
   return (
     <View style={s.screen}>
-      <View style={s.bar}>
+      <View style={[s.bar, { paddingTop: top }]} testID="agreement-bar">
         <TouchableOpacity onPress={() => nav.goBack()} style={s.back} testID="back"><Text style={s.backText}>‹</Text></TouchableOpacity>
         <Text style={s.barTitle}>{title || C7.creator.title}</Text>
         <View style={s.back} />
@@ -234,8 +241,9 @@ function Frame({ nav, title, children }) {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#FFFFFF' },
-  bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.border },
-  back: { width: 40, alignItems: 'center' },
+  // paddingTop here is only a floor; Frame sets it to the phone's top inset + the gap (useTopInset).
+  bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 4, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: T.border },
+  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   backText: { fontFamily: fonts.sansRegular, fontSize: 26, color: T.ink },
   barTitle: { flex: 1, fontFamily: fonts.sansBold, fontSize: 16, color: T.ink, textAlign: 'center' },
   para: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 20 },

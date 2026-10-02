@@ -20,8 +20,9 @@ import { EmptyState } from '../../components/settings/primitives';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { PitchCard8 } from '../../components/pitch/bits8';
 import { C8 } from '../../components/pitch/copy8';
+import { Header } from '../brand/BrandPitchSettingsScreen';
 
-export default function MyPitchesScreen({ navigation }) {
+export default function MyPitchesScreen({ navigation, route }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('loading');
   const { toast } = useToast();
@@ -41,14 +42,21 @@ export default function MyPitchesScreen({ navigation }) {
     else navigation.navigate('MyPitch', { pitchId: card.id });
   };
 
-  if (status === 'loading') return <View style={s.page}><Skeleton rows={6} /></View>;
-  if (status === 'error') return <View style={s.page}><LoadError onRetry={load} /></View>;
+  // ui-walk-fixes D3 — this list is drawn two ways. Inside the Collabs tab it is a segment under
+  // that page's own title (no `route` is passed). Opened as a screen of its own — where she lands
+  // after sending a pitch — it has no bottom tabs, so it carries the title bar and the way back,
+  // in every state (item 8 board T14 draws this bar).
+  const bar = route ? <Header title={C8.mine.tab} onBack={() => navigation.goBack()} /> : null;
+
+  if (status === 'loading') return <View style={s.page}>{bar}<Skeleton rows={6} /></View>;
+  if (status === 'error') return <View style={s.page}>{bar}<LoadError onRetry={load} /></View>;
 
   const g = data.groups || {};
   const empty = !data.total;
 
   return (
     <View style={s.page}>
+      {bar}
       <ScrollView contentContainerStyle={s.body}>
         {empty ? (
           <EmptyState title={C8.mine.emptyTitle} body={C8.mine.emptyBody} />

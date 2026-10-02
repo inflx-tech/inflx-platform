@@ -17,6 +17,7 @@ import { KV5 } from '../../components/invitations/bits5';
 import { CooldownBox8 } from '../../components/pitch/bits8';
 import { WithdrawPitchSheet8 } from '../../components/pitch/sheets8';
 import { C8, deliverablesShort } from '../../components/pitch/copy8';
+import { Header } from '../brand/BrandPitchSettingsScreen';
 
 export default function MyPitchScreen({ navigation, route }) {
   const { pitchId } = route.params || {};
@@ -44,8 +45,12 @@ export default function MyPitchScreen({ navigation, route }) {
     setP(r.data.pitch);
   }
 
-  if (status === 'loading') return <View style={s.page}><Skeleton rows={6} /></View>;
-  if (status === 'error') return <View style={s.page}><LoadError onRetry={load} /></View>;
+  // ui-walk-fixes D3 — a pushed screen has no bottom tabs, so it carries its own way back, in
+  // every state. The bar names who the pitch is with, as the pitch conversation's bar does.
+  const back = () => navigation.goBack();
+  const title = p && p.brand ? p.brand.name : '';
+  if (status === 'loading') return <View style={s.page}><Header title={title} onBack={back} /><Skeleton rows={6} /></View>;
+  if (status === 'error') return <View style={s.page}><Header title={title} onBack={back} /><LoadError onRetry={load} /></View>;
 
   const open = ['waiting', 'talking'].includes(p.group);
   const selling = p.goal === 'conversion' || p.goal === 'hybrid';
@@ -53,6 +58,7 @@ export default function MyPitchScreen({ navigation, route }) {
 
   return (
     <View style={s.page}>
+      <Header title={title} onBack={back} />
       <ScrollView contentContainerStyle={s.body}>
         <Text style={s.name}>{p.brand.name}</Text>
 

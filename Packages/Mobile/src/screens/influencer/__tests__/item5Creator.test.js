@@ -104,11 +104,17 @@ describe('I12 · I13 · I14 — the invitation', () => {
   });
 
   it('Accept confirms then calls the API; Counter is hidden when negotiation is off (checks 28, 37)', async () => {
-    influencerApi.myInvitation.mockResolvedValue(ok({ invitation: { ...DETAIL, canCounter: false } }));
-    influencerApi.acceptInvitation.mockResolvedValue(ok({ invitation: { ...DETAIL, status: 'accepted', group: 'accepted', canAnswer: false, canCounter: false } }));
-    const { getByText, getAllByText, getByTestId, queryByTestId } = render(<InvitationScreen navigation={nav()} route={{ params: { ciId: 'ci1' } }} />);
+    // ASSERTION DRIFT — ui-walk-fixes spec U23 (06-diff/drift/E.md). The fixture was
+    // `canCounter: false` alone — no reason and no `canMoveRequest`, fields item 6 added after this
+    // test was written — and the test asserted no button with the testID 'counter'. What the server
+    // sends when negotiation is off (invitationRows.service.js creatorState) is the shape below,
+    // and for it that place is taken by "Ask for another date"; the word "Counter" is not drawn.
+    influencerApi.myInvitation.mockResolvedValue(ok({ invitation: { ...DETAIL, canCounter: false, counterHiddenReason: 'switch_off', switchOn: false, canMoveRequest: true } }));
+    influencerApi.acceptInvitation.mockResolvedValue(ok({ invitation: { ...DETAIL, status: 'accepted', group: 'accepted', canAnswer: false, canCounter: false, counterHiddenReason: 'closed', canMoveRequest: false } }));
+    const { getByText, getAllByText, getByTestId, queryByText, queryByTestId } = render(<InvitationScreen navigation={nav()} route={{ params: { ciId: 'ci1' } }} />);
     await waitFor(() => getByTestId('accept'));
-    expect(queryByTestId('counter')).toBeNull();
+    expect(queryByText('Counter')).toBeNull();
+    getByText('Ask for another date');
     fireEvent.press(getByTestId('accept'));
     getByText('Accept these terms?'); getByText('Urban Threads will send the agreement next. Nothing is final until you both sign it.');
     const accepts = getAllByText('Accept');

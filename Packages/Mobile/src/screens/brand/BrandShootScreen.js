@@ -7,6 +7,10 @@
  * passed, her mark waiting for confirmation, and the record once it is done. Which of those it is
  * comes from the server's `stage` and `can`, never from a guess on the phone. Nothing here moves
  * money, and the screen says so where it matters.
+ *
+ * ui-walk-fixes (board C, rule 1): the button strip is part of the column, under the page
+ * (BottomBar) — it used to float over the page's last lines. The page lost the 150 of empty
+ * space that only existed to scroll clear of it, and the toast sits just above the strip.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
@@ -17,6 +21,8 @@ import { PrimaryButton, SecondaryButton, TextButton } from '../../components/set
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7, StateBox7 } from '../../components/agreement/bits7';
 import { GateCard10, StepLine10, TimeCard10, Row10, DelayedChip10, AmberBox10, GreenBox10, MoveBox10, WaitBox10 } from '../../components/shoot/bits10';
@@ -33,7 +39,7 @@ export default function BrandShootScreen({ navigation, route }) {
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
   const [sheetError, setSheetError] = useState(null);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
@@ -78,7 +84,8 @@ export default function BrandShootScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`brand-shoot-${stage}${sh.delayed ? '-delayed' : ''}`}>
       <Header title={title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 150 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: 18 }} testID="brand-shoot-scroll">
         <View style={s.crumbRow}>
           <Text style={s.crumb}>{`${String(sh.campaignName || '').toUpperCase()} · ${String(sh.setName || '').toUpperCase()}`}</Text>
           {sh.delayed ? <DelayedChip10 /> : null}
@@ -183,9 +190,12 @@ export default function BrandShootScreen({ navigation, route }) {
           </>
         ) : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
-      {/* One main button at a time — the one the stage actually offers. */}
-      <View style={s.bar} testID="brand-shoot-actions">
+      {/* One main button at a time — the one the stage actually offers. With nothing to offer
+          the strip is not drawn at all. */}
+      <BottomBar testID="brand-shoot-actions">
         {/* Item 12: the visit is done — the content step is where the brand goes next. */}
         {stage === 'complete' && sh.aim === 'engagement' ? (
           <PrimaryButton label={C12.openContentBrand} onPress={() => navigation.navigate('BrandContent', { campaignId, setId, ciId })} testID="open-content" />
@@ -219,11 +229,10 @@ export default function BrandShootScreen({ navigation, route }) {
             {sh.can.move ? <TextButton label={C10.brand.sheDidntCome} icon="undo-variant" onPress={() => setSheet('move')} testID="she-didnt-come" /> : null}
           </>
         ) : null}
-      </View>
+      </BottomBar>
 
       <MoveTimeSheet10 visible={sheet === 'move'} side="brand" otherName={name} currentAt={plan.visitAt} postingDate={sh.postingDate}
         busy={busy} serverError={sheetError} onSend={move} onClose={() => { setSheetError(null); setSheet(null); }} />
-      {toast}
     </View>
   );
 }
@@ -237,5 +246,5 @@ const s = StyleSheet.create({
   chipText: { fontFamily: fonts.sansBold, fontSize: 11 },
   para: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 20, marginBottom: 12 },
   countdown: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.ink, marginTop: 2, marginBottom: 12 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
+  page: { flex: 1 },
 });

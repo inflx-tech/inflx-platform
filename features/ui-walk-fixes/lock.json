@@ -1,0 +1,31 @@
+{
+  "feature": "ui-walk-fixes",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 2 Oct 2026, on the drawn board: \"remove this text [Creators whose own settings rule this set out can't be picked…] instead… when brand click on the influencer cant invite then we tell info that this creator not accepting the pay for sale or something… next remove this [Pay for Sale / Pay for Content / Hybrid / +] no need to mention this… Bottom tabs only on the five main pages… ok for this recommendation, next Q3 and 4 also accepting your recommendation. next all your screens will be accepted\") — decisions D1–D6 in 01-spec.md",
+  "approved_at": "2026-10-02T10:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 2 Oct 2026: \"all your screens will be accepted\", with two changes to board B — decisions D1 and D2 — applied before the build)",
+  "mockup_locked_at": "2026-10-02T10:00:00+05:30",
+  "mockup_final": "04-preview/mockups/ui-walk-fixes-mockups-v1.html",
+  "notes": "Eleven screen problems from the founder's walk of 1 Oct 2026, all verified in code (research/C01..C11). Phones (brand + creator, OTA) and two small server changes (a withdrawn agreement returns to 'Your move'; the brand's creator lists say why a creator can't be invited). No migration, no money, no new app install. Board: 04-preview/build.js assembles 04-preview/src into the mockup. One rule reversal, by the founder (D2): the brand is now told why a creator can't be invited; a block still reads exactly like 'paused'. Production-impacting: explicit go before the push and before each OTA.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "at": "2026-10-02",
+    "waves": "shared pieces → boards A,B,D,E,F,G,H,J + server → board C (keypad) → final review (12 fresh reviewers, each finding re-verified, 13 fixed) → closing items (U22–U26)",
+    "mobile": "2153/2153 (94 suites); was 840/840 before this contract",
+    "backend_full_run": "vs the last stored full run (1 Oct): 137 suites / 1834 tests / 1629 passed / 177 failed -> 139 / 1871 / 1666 / 177; 0 that passed before fail now, 0 new tests fail (06-diff/backend-compare.txt). qa_all_green stays false on the pre-existing failures.",
+    "migration": "none",
+    "device": "NOT seen on a phone. Every \"walk owed\" row of 03-expected-outputs.md is still open; no after-shots.",
+    "server_changes": "collabEligibility, invitationCopy, invitations.controller, invitationSend (why a creator cannot be invited; the Worked-with tab and the Filters count that had answered errors since item 5), invitationRows + agreement + agreementCopy (a withdrawn agreement can be sent again; shoot.yourMove; the Remote stage delivered; the Withdraw flag), collabCounts (Needs You), shootPlan (two row sentences)"
+  }
+}

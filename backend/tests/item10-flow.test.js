@@ -469,7 +469,9 @@ describe('the walk fix — her number when the time passes, and the shoot on the
     };
     // Walk fix (1 Oct 2026): this used to be null until the plan was sent, which left the brand
     // with no way from the set to the plan. Signed with nothing sent is now a row he can open.
-    expect((await rowOf()).shoot).toEqual({ stage: 'not_sent', line: 'Signed — plan the store visit', visitAt: null });
+    // ui-walk-fixes (board F): the row also says the step is his (`yourMove`) — the whole sequence
+    // is walked in tests/ui-walk-fixes-shoot-turn.test.js.
+    expect((await rowOf()).shoot).toEqual({ stage: 'not_sent', line: 'Signed — plan the store visit', visitAt: null, yourMove: true });
     await bSend(w);
     expect((await rowOf()).shoot).toMatchObject({ stage: 'sent', line: expect.stringMatching(/^Plan sent for .* waiting for Tanvi to answer$/) });
     await hAccept(w);

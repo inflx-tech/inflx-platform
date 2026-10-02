@@ -80,7 +80,9 @@ export const C4 = {
   set: {
     newTitle: 'New set', editTitle: 'Edit set',
     nameLabel: 'Set name', nameHint: 'Creators see this name in their invitation.', nameMax: 60,
-    suggestedName: (letter) => `Set ${letter}`,
+    // ui-walk-fixes board A: a new set's name box opens EMPTY with this grey example. Nothing is
+    // ever typed for the brand (the old "Set A" pre-fill is gone); the name stays required.
+    namePlaceholder: 'e.g. Festive sarees',
     aimLabel: 'Aim', aimHint: "Everyone in this set works to the same Aim. It can't be changed once you invite.",
     modeLabel: 'Mode of work', modeHint: 'Store Visit: the creator shoots at your branch. Remote: you ship the products.',
     branchLabel: 'Branch', branchPlaceholder: 'Choose a branch', branchHint: 'Creators see the city, not the address. Your main branch is listed first.',

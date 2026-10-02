@@ -16,7 +16,7 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 export function targetOf(n) {
   const d = n && n.data_json ? n.data_json : {};
   // shoppable-posts-v2: a post notice (approved, sent back, left the shop) opens that post in the Create tab.
-  if (d.screen === 'post' && d.post_id) return { name: 'CreateTab', params: { screen: 'PostStatus', params: { postId: d.post_id } } };
+  if (d.screen === 'post' && d.post_id) return { name: 'CreateTab', params: { screen: 'PostStatus', params: { postId: d.post_id }, initial: false } };
   const ci = d.campaign_influencer_id;
   if (!ci) return null;
   if (d.screen === 'creator_offer' && d.offer_id) return { name: 'CreatorSell', params: { ciId: ci } };

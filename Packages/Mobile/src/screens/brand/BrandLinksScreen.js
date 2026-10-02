@@ -3,11 +3,12 @@
  * Contract: features/item3-discovery-profiles-groups · prompt §6.1
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { FieldError } from '../../components/settings/primitives';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { applyServerError } from '../../utils/serverError';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
@@ -23,7 +24,7 @@ export default function BrandLinksScreen({ navigation }) {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -59,7 +60,9 @@ export default function BrandLinksScreen({ navigation }) {
   return (
     <View style={base.screen}>
       <Header title={L.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[base.body, { paddingBottom: 140 }]} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: the form scrolls in the room above the Save strip; nothing floats over it. */}
+      <FormArea>
+      <FormScroll contentContainerStyle={base.body}>
         <Text style={base.label}>{L.website}</Text>
         <TextInput style={s.input} value={f.website_url} onChangeText={(v) => { setF(p => ({ ...p, website_url: v })); setErrors({}); }} placeholder="https://" placeholderTextColor={T.ink3} autoCapitalize="none" keyboardType="url" testID="field-website" />
         <FieldError text={errors.website_url} />
@@ -67,9 +70,10 @@ export default function BrandLinksScreen({ navigation }) {
         <Text style={base.label}>{L.instagram}</Text>
         <TextInput style={s.input} value={f.instagram_handle} onChangeText={(v) => { setF(p => ({ ...p, instagram_handle: v })); setErrors({}); }} placeholder="@yourbrand" placeholderTextColor={T.ink3} autoCapitalize="none" testID="field-instagram" />
         <FieldError text={errors.instagram_handle} />
-      </ScrollView>
-      <SaveBar dirty={dirty} errorCount={0} saving={saving} onSave={save} />
+      </FormScroll>
       {toast}
+      </FormArea>
+      <SaveBar dirty={dirty} errorCount={0} saving={saving} onSave={save} />
     </View>
   );
 }

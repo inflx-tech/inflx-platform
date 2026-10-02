@@ -25,6 +25,19 @@ export const timeOf7 = (iso) => {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
 };
 export const stamp7 = (iso) => (iso ? `${longDate7(String(iso).slice(0, 10))}, ${timeOf7(iso)}` : '');
+/**
+ * The calendar day of a moment, in India — the day the two of them mean, and the day the server
+ * prints (agreementCopy.js `asDay`). A plain day ('2026-10-17') is returned as it is.
+ * ui-walk-fixes (board F, frame F4): "Sent to Sneha on 13 Oct" must be the Indian day she was sent
+ * it, not the day it was in London.
+ */
+export const dayOf7 = (v) => {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const t = new Date(s).getTime();
+  return Number.isNaN(t) ? s : new Date(t + 330 * 60000).toISOString().slice(0, 10);
+};
 
 /** The server's refusals, word for word (§7 of the gap-check prompt). */
 export const MSG7 = {
@@ -77,7 +90,19 @@ export const C7 = {
     confirmHint: (name) => `Nothing can be changed once it is sent. If you need different terms, remove ${name} from the set and invite her again while there is still time.`,
     notYet: 'Not yet',
     send: 'Send',
+    // ui-walk-fixes (E9): what the Send button reads while it is sending (it read "Saving").
+    sending: 'Sending',
     sent: 'Agreement sent.',
+    // ui-walk-fixes (board F, frame F4) — the agreement once it is out and she has not signed.
+    // The same two sentences are in backend/src/services/agreementCopy.js (BRAND), word for word.
+    // `sentDay` and `byDay` arrive already written as days ("13 Oct"), as the server passes them.
+    waitingForHer: (first, sentDay, byDay) => `Sent to ${first} on ${sentDay}. Waiting for her to sign by ${byDay}.`,
+    youSignAfter: 'You sign after her. Nothing is binding until both signatures are on it.',
+    // The set's strip once any agreement is out (P1) — the server's BRAND.bothNeededBy, word for word.
+    bothNeededBy: (date, days) => `Both signatures needed by ${shortDate7(date)} · ${days} ${days === 1 ? 'day' : 'days'}`,
+    // What the Send and Withdraw sheets say when the server gives no reason of its own.
+    sendFailed: 'Could not send',
+    withdrawFailed: 'Could not withdraw',
     // P9 / P10 — the money
     sheSignedYouComplete: (name, date) => `${name} signed on ${shortDate7(date)}. Your signature completes it.`,
     whatItCosts: 'What it costs you',
@@ -187,8 +212,13 @@ export const C7 = {
     // Both signed, and the first payment has not landed yet — the rules pay it at the
     // signature, so this is a state we should almost never see, and must not call zero.
     signedPaymentComing: (date) => `Signed ${shortDate7(date)}. Your first payment is on its way.`,
+    // ui-walk-fixes (frame F7, spec U25): the labelled "Next" row on an Active card that is
+    // waiting on the brand to START the next step. Phone-only words (the server sends no sentence
+    // for a visit that is not planned yet). The plan is the BRAND's to send, so the old, never
+    // drawn "Book your store visit" — which told her to do it — is gone.
+    next: 'Next',
     nextTheyShip: 'They ship your products',
-    nextBookVisit: 'Book your store visit',
+    nextTheyPlanVisit: (brand) => `${brand} plans your store visit`,
     agreementLink: 'Agreement',
     // Item 10: the button that opens her store visit from the signed agreement.
     storeVisit: 'Store visit',

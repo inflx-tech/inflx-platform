@@ -687,6 +687,175 @@ describe('the endings (checks 22–25, 39)', () => {
     expect(r.body.error.message).toBe(MSG.WITHDRAW_TOO_LATE('Tanvi Suresh'));
   });
 
+  // ui-walk-fixes U6(a), board F3 / F6, check 23. The phone makes Withdraw reachable; before this
+  // the row fell into "Accepted, waiting for the agreement" with no send, and the brand's own
+  // read said can.send = false, although the send endpoint has always accepted 'withdrawn'.
+  describe('a withdrawn agreement can be sent again (ui-walk-fixes check 23)', () => {
+    const ORDER = ['yourMove', 'negotiating', 'accepted', 'signed', 'waiting', 'deferred', 'declined', 'expired', 'withdrawn'];
+    /** The set as the phone reads it, and this creator's row wherever it sits. */
+    const setRow = async (w) => {
+      const sum = await api.get(`${w.url}/summary`, w.b.token);
+      expect(sum.status).toBe(200);
+      const creators = sum.body.data.creators;
+      const row = creators.order.flatMap(k => creators.groups[k].rows).find(x => x.id === w.ciId);
+      return { creators, row };
+    };
+
+    it('out for signature the row carries what the phone opens it with; after Withdraw she is back under "Your move" with "Send agreement"', async () => {
+      const w = await world('engagement');
+      const first = await send(w);
+      expect(first.status).toBe(201);
+
+      // OUT for signature — the flags frame F3's menu reads.
+      let s = await setRow(w);
+      expect(s.row.group).toBe('waiting');
+      expect(s.row.actions).toMatchObject({ sendAgreement: false, signAgreement: false, withdrawAgreement: true, viewAgreement: true, downloadAgreement: false });
+      expect(s.row.agreement.status).toBe('pending_influencer');
+      expect(s.row.agreement.sentAt).toBeTruthy();
+      expect(s.creators.groups.yourMove.count).toBe(0);
+
+      const out = await withdraw(w);
+      expect(out.status).toBe(200);
+      // The reply the phone holds after Withdraw already says it can go out again.
+      expect(out.body.data.agreement.can).toMatchObject({ send: true, sign: false, withdraw: false, download: false });
+
+      // Frame F6: back under "Your move", with the send action, and nowhere else.
+      s = await setRow(w);
+      expect(s.row.group).toBe('yourMove');
+      expect(s.creators.groups.yourMove.rows.map(x => x.id)).toEqual([w.ciId]);
+      expect(s.row.status).toBe('accepted');
+      expect(s.row.actions).toMatchObject({ sendAgreement: true, signAgreement: false, withdrawAgreement: false, viewAgreement: false, downloadAgreement: false });
+      expect(s.row.agreement).toMatchObject({ status: 'withdrawn', sentAt: null, line: null });
+      expect(s.creators.groups.accepted.count).toBe(0);
+      expect(s.creators.groups.waiting.count).toBe(0);
+      expect(s.creators.groups.withdrawn.count).toBe(0);
+      // No server group was added — the phone splits "waiting" itself.
+      expect(s.creators.order).toEqual(ORDER);
+      expect(Object.keys(s.creators.groups)).toEqual(ORDER);
+    });
+
+    it('the brand\'s own read says it can send; nothing else about the withdrawn agreement changes, and her side is untouched', async () => {
+      const w = await world('engagement');
+      await send(w);
+      await withdraw(w);
+
+      const r = await brandRead(w);
+      expect(r.status).toBe(200);
+      const ag = r.body.data.agreement;
+      expect(ag.status).toBe('withdrawn');
+      expect(ag.sentAt).toBeNull();
+      expect(ag.can).toEqual({ send: true, sign: false, withdraw: false, download: false });
+      // Its ending is still named, exactly as before.
+      expect(ag.ending.outcome).toBe('withdrawn');
+      expect(ag.ending.text).toMatch(/^You withdrew this agreement on .+\. Tanvi Suresh is waiting for a new one\.$/);
+      expect(ag.signatures).toEqual({ creator: null, brand: null });
+
+      // Her side: waiting for an agreement, nothing to sign, nothing to decline.
+      const card = await api.get(`/influencers/me/invitations/${w.ciId}`, w.cr.token);
+      expect(card.status).toBe(200);
+      expect(card.body.data.invitation.group).toBe('accepted');
+      expect(card.body.data.invitation.agreement).toBeNull();
+      const her = await hers(w);
+      expect(her.status).toBe(200);
+      expect(her.body.data.agreement.can).toEqual({ sign: false, decline: false, download: false });
+      expect((await herSign(w)).status).toBe(404);
+    });
+
+    it('sending again works the way the phone sends it — the row, the preview, Send — and she can then sign', async () => {
+      const w = await world('engagement');
+      // Never sent: the preview has no number, so the screen prints DRAFT (board F5).
+      const fresh = await preview(w);
+      expect(fresh.body.data.agreement).toMatchObject({ reference: null, draft: true });
+
+      const first = await send(w);
+      const reference = first.body.data.agreement.reference;
+      expect(reference).toBeTruthy();
+      // While it is out, the preview door names the agreement that is out.
+      const whileOut = await preview(w);
+      expect(whileOut.body.data.agreement).toMatchObject({ reference, draft: false });
+      await withdraw(w);
+
+      // 1. The set row offers it.
+      let s = await setRow(w);
+      expect(s.row.actions.sendAgreement).toBe(true);
+      // 2. "Send agreement" opens the preview.
+      const p = await preview(w);
+      expect(p.status).toBe(200);
+      expect(p.body.data.agreement.draft).toBe(true);
+      // Taken back, it is a draft again: the phone prints the reference when there is one, so the
+      // number stamped at the first send must NOT ride on the preview — it would head an unsent
+      // agreement "INFLX-… · PAY FOR CONTENT", the header of one that is out (frames F4 / F5).
+      expect(p.body.data.agreement.reference).toBeNull();
+      // The number itself is kept on the contract, and comes back when it is sent again (below).
+      expect((await con(w.ciId)).reference_no).toBe(reference);
+      expect(p.body.data.agreement.terms.money.fee).toBe(9000);
+      // 3. Send.
+      const again = await send(w);
+      expect(again.status).toBe(201);
+      const ag = again.body.data.agreement;
+      expect(ag.status).toBe('pending_influencer');
+      expect(ag.sentAt).toBeTruthy();
+      expect(ag.ending).toBeNull();
+      expect(ag.reference).toBe(reference);            // the same agreement, not a new number
+      expect(ag.can).toEqual({ send: false, sign: false, withdraw: true, download: false });
+      const row = await con(w.ciId);
+      expect(row.status).toBe('pending_influencer');
+      expect(row.withdrawn_at).toBeNull();
+      expect((await query(`SELECT count(*)::int n FROM contracts WHERE campaign_influencer_id = $1`, [w.ciId])).rows[0].n).toBe(1);
+
+      // The row is out for signature again, and it is hers to sign.
+      s = await setRow(w);
+      expect(s.row.group).toBe('waiting');
+      expect(s.row.actions).toMatchObject({ sendAgreement: false, withdrawAgreement: true, viewAgreement: true });
+      expect(s.creators.groups.yourMove.count).toBe(0);
+      const signed = await herSign(w);
+      expect(signed.status).toBe(200);
+
+      // Signed by both — the flags the phone reopens and downloads it with.
+      expect((await brandSign(w)).status).toBe(200);
+      s = await setRow(w);
+      expect(s.row.group).toBe('signed');
+      expect(s.row.actions).toMatchObject({ sendAgreement: false, signAgreement: false, withdrawAgreement: false, viewAgreement: true, downloadAgreement: true });
+      expect(s.row.agreement.status).toBe('active');
+      expect(s.row.agreement.sentAt).toBeTruthy();
+    });
+
+    it('the read never offers a send the endpoint would refuse: not after the cutoff, and not twice', async () => {
+      const w = await world('engagement');
+      await send(w);
+      await withdraw(w);
+
+      // Out again: the read stops offering it, and a second Send is refused as before.
+      expect((await send(w)).status).toBe(201);
+      expect((await brandRead(w)).body.data.agreement.can.send).toBe(false);
+      let r = await send(w);
+      expect(r.status).toBe(422);
+      expect(r.body.error.message).toBe(MSG.ALREADY_OUT('Tanvi Suresh'));
+
+      // Withdrawn, then the set's cutoff passes: the read and the endpoint agree it is closed.
+      expect((await withdraw(w)).status).toBe(200);
+      expect((await brandRead(w)).body.data.agreement.can.send).toBe(true);
+      await moveSetTo(w.s.id, day(1));
+      expect((await brandRead(w)).body.data.agreement.can.send).toBe(false);
+      r = await send(w);
+      expect(r.status).toBe(422);
+      expect(r.body.error.code).toBe('INVITE_CLOSED');
+    });
+
+    // Board F4: the brand's waiting sentence and its sibling. The app says the same words from
+    // components/agreement/copy7.js (C7.brand) — one sentence written twice, so both are pinned.
+    it('the brand\'s two waiting sentences are the approved words, and the app\'s copy file carries them word for word', () => {
+      const { BRAND } = require('../src/services/agreementCopy');
+      expect(BRAND.waitingForHer('Sneha', '13 Oct', '17 Oct')).toBe('Sent to Sneha on 13 Oct. Waiting for her to sign by 17 Oct.');
+      expect(BRAND.youSignAfter).toBe('You sign after her. Nothing is binding until both signatures are on it.');
+      const appCopy = require('fs').readFileSync(
+        require('path').join(__dirname, '..', '..', 'Packages', 'Mobile', 'src', 'components', 'agreement', 'copy7.js'), 'utf8');
+      // eslint-disable-next-line no-template-curly-in-string
+      expect(appCopy).toContain('waitingForHer: (first, sentDay, byDay) => `Sent to ${first} on ${sentDay}. Waiting for her to sign by ${byDay}.`');
+      expect(appCopy).toContain(`youSignAfter: '${BRAND.youSignAfter}'`);
+    });
+  });
+
   it('she declines with a reason; the brand sees it; the invitation ends; she can be invited again (check 23)', async () => {
     const w = await world('engagement');
     await send(w);

@@ -93,10 +93,14 @@ describe('D2 — nearest first and the distance chips', () => {
     expect(getByTestId('filter-within-50').props.accessibilityState.selected).toBe(false);
   });
 
-  it('choosing "Within 50 km" and applying sends within=50; the quick chip names it', async () => {
+  // REWRITTEN 2 Oct 2026 — ui-walk-fixes board B (frame B3). The chips row is gone: the summary
+  // chip that named the filter ("Within 50 km  ✕") became "Filters · N" on the one Filters button
+  // plus an underlined "Clear all" on the count line, which does what tapping that chip did.
+  it('choosing "Within 50 km" and applying sends within=50; the button reads "Filters · 1" and "Clear all" on the count line undoes it', async () => {
     const fetcher = jest.fn(() => ok({ total: 1, rows: [row()] }));
-    const { getByTestId, getByText } = render(<DiscoverList fetcher={fetcher} countFetcher={fetcher} lists={lists} />);
+    const { getByTestId, getByText, queryByText, queryByTestId } = render(<DiscoverList fetcher={fetcher} countFetcher={fetcher} lists={lists} />);
     await waitFor(() => getByTestId('open-filters'));
+    expect(queryByText('Clear all')).toBeNull();
     fireEvent.press(getByTestId('open-filters'));
     await waitFor(() => getByTestId('filters-sheet'));
     fireEvent.press(getByTestId('filter-within-50'));
@@ -104,8 +108,60 @@ describe('D2 — nearest first and the distance chips', () => {
     await waitFor(() => expect(getByTestId('filters-apply').props.accessibilityState.disabled).toBe(false));
     await act(async () => { fireEvent.press(getByTestId('filters-apply')); });
     await waitFor(() => expect(fetcher.mock.calls.some(c => c[0].within === '50' && c[0].sort === 'distance' && c[0].page === 1)).toBe(true));
+    await waitFor(() => getByText('1 creator'));
     getByText('Filters · 1');
-    getByText('Within 50 km  ✕');
+    // No chip names the filter any more, and there is no one-tap "Open to invitations" chip.
+    expect(queryByText('Within 50 km  ✕')).toBeNull();
+    expect(queryByText(/✕/)).toBeNull();
+    expect(queryByTestId('quick-open')).toBeNull();
+    // "Clear all" does what the chip's ✕ did: every filter back to where this list starts.
+    const calls = fetcher.mock.calls.length;
+    await act(async () => { fireEvent.press(getByText('Clear all')); });
+    await waitFor(() => expect(fetcher.mock.calls.length).toBeGreaterThan(calls));
+    expect(fetcher.mock.calls[fetcher.mock.calls.length - 1][0]).toMatchObject({ within: 'any', openOnly: true, sort: 'distance', page: 1 });
+    await waitFor(() => getByText('1 creator'));
+    getByText('Filters');
+    expect(queryByText(/Filters · /)).toBeNull();
+    expect(queryByText('Clear all')).toBeNull();
+  });
+
+  // ui-walk-fixes U12: the count line's "Nearest first ▾" opens the Filters sheet — one home for the sort.
+  it('"Nearest first ▾" opens the Filters sheet instead of a menu of its own', async () => {
+    const fetcher = jest.fn(() => ok({ total: 1, rows: [row()] }));
+    const { getByTestId, queryByTestId } = render(<DiscoverList fetcher={fetcher} countFetcher={fetcher} lists={lists} />);
+    await waitFor(() => getByTestId('sort-toggle'));
+    expect(queryByTestId('filters-sheet')).toBeNull();
+    fireEvent.press(getByTestId('sort-toggle'));
+    await waitFor(() => getByTestId('filters-sheet'));
+    for (const k of Object.keys(C3.discover.sorts)) {
+      expect(queryByTestId(`sort-${k}`)).toBeNull();
+      getByTestId(`filter-sort-${k}`);
+    }
+    await waitFor(() => expect(getByTestId('filters-apply').props.accessibilityState.disabled).toBe(false));
+  });
+
+  // ui-walk-fixes board B (B6): "Clear all" inside the sheet returns to where THIS list starts.
+  // In a group picker "Open to invitations only" starts off, and it must not be switched on by clearing.
+  it('Clear all inside the sheet keeps "Open to invitations only" off on a list that starts with it off', async () => {
+    const fetcher = jest.fn(() => ok({ total: 1, rows: [row()] }));
+    const { getByTestId, getByText, queryByText } = render(<DiscoverList mode="select" defaultOpenOnly={false} fetcher={fetcher} countFetcher={fetcher} lists={lists} />);
+    await waitFor(() => getByText('1 creator'));
+    expect(fetcher.mock.calls[0][0]).toMatchObject({ openOnly: false });
+    fireEvent.press(getByTestId('open-filters'));
+    await waitFor(() => getByTestId('filters-sheet'));
+    expect(getByTestId('filter-openonly').props.value).toBe(false);
+    fireEvent.press(getByTestId('filter-within-50'));
+    fireEvent.press(getByTestId('filters-clear'));
+    expect(getByTestId('filter-openonly').props.value).toBe(false);
+    expect(getByTestId('filter-within-any').props.accessibilityState.selected).toBe(true);
+    await waitFor(() => expect(getByTestId('filters-apply').props.accessibilityState.disabled).toBe(false));
+    await act(async () => { fireEvent.press(getByTestId('filters-apply')); });
+    await waitFor(() => getByText('1 creator'));
+    // Nothing differs from where the list starts, so nothing is counted and there is nothing to clear.
+    getByText('Filters');
+    expect(queryByText(/Filters · /)).toBeNull();
+    expect(queryByText('Clear all')).toBeNull();
+    expect(fetcher.mock.calls[fetcher.mock.calls.length - 1][0]).toMatchObject({ openOnly: false, within: 'any' });
   });
 
   it('picking another sort in the sheet changes the request; a sort alone never counts as a filter', async () => {

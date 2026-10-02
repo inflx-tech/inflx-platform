@@ -4,15 +4,20 @@
  * address card with Maps and call, the record rows, and a pure-JS time picker capped by the
  * posting date. Contract: features/item10-store-visit · mockups V1–V15 · prompt §8
  *
- * The picker is JavaScript on purpose (founder Q8): the native picker is in the binary, but the
- * Stage-4 guard test refuses it in shoot files, and that guard now enforces a decision.
+ * The picker is JavaScript on purpose (founder Q8, kept by ui-walk-fixes U7): the phone's own
+ * Android clock is in the binary and stays unused. shoot10.test.js refuses an import of it.
+ * ui-walk-fixes board G replaced Q8's chips with two boxes, Date and Time; the time list is in
+ * TimeList10.js so this file, which fifteen screens import, carries only the picker's shell.
  */
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { Card7 } from '../agreement/bits7';
-import { C10, istParts, dayParts, istToIso, clock10, day10, whenLine10, todayIst10 } from './copy10';
+import { FieldError } from '../settings/primitives';
+import DateField from '../DateField';
+import { TimeField10, openDays10, slotIso10 } from './TimeList10';
+import { C10, istParts, istDay10, day10, whenLine10 } from './copy10';
 
 /* ── V1 · the gate card ────────────────────────────────────────────────────── */
 
@@ -177,72 +182,89 @@ export function GreenBox10({ text, testID }) {
 
 /* ── the time picker ───────────────────────────────────────────────────────── */
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);     // 7 am … 8 pm
-const MINUTES = [0, 15, 30, 45];
-const WD = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+/** An instant → the day in India and the time on an Indian clock. Nothing in, nothing chosen. */
+function halves10(iso) {
+  const p = istParts(iso);
+  return p ? { day: istDay10(iso), slot: { h: p.h, min: p.min } } : { day: null, slot: null };
+}
 
 /**
- * A date strip from today to the posting day (never after it — the error is made impossible
- * rather than explained), then hour and minute chips in 15-minute steps. Everything is an Indian
- * clock reading; `value` in and out is an ISO instant.
+ * Two boxes side by side, "Date *" and "Time *" (ui-walk-fixes board G, frames G1–G10). Nothing
+ * is chosen for her: both read grey until tapped. Date opens the app's calendar, open from today
+ * in India to the posting day (never after it — the error is made impossible rather than
+ * explained). Time opens one list of 15-minute times; on today's date the times already gone
+ * are grey. Everything is an Indian clock reading; `value` in and out is an ISO instant.
+ *
+ * What the parent is told (`onChange`):
+ *   · nothing while only one box is filled — a day without a time is not a moment, so the
+ *     half-finished choice is held here, privately;
+ *   · the instant, once both are filled, and again each time either changes;
+ *   · `null`, in the one case where a whole choice stops being one: the date is changed and the
+ *     time kept beside it has already gone on that day. The time is cleared, the box goes back to
+ *     "Choose a time", and the parent must not go on holding the old moment.
+ * When the PARENT changes `value` — to another moment, or back to null — the boxes follow it and
+ * the private half is dropped.
+ *
+ * Starting again (`resetKey`, optional): a parent that holds null while only one box is filled
+ * cannot start the picker again by handing it null a second time — nothing has changed, so
+ * nothing is told. It changes `resetKey` instead (any value; a counter is the usual one): the
+ * boxes go back to what `value` says and the half-chosen date or time is dropped, whether or not
+ * `value` itself moved. The move sheet does this each time it opens. Left out, nothing changes.
+ *
+ * Optional, all additive: `dateLabel` ("New date" on the move sheet) and `error` — a sentence is
+ * printed as the one red line under the pair and the boxes it points at are outlined red (frame
+ * G5); `true` outlines the boxes only, for a caller that prints the sentence somewhere else.
+ *
+ * The Date box puts the keypad away before its calendar opens, as the Time box always has: on
+ * the move sheet both sit above a "Say why" box, and the calendar needs the keypad's room.
  */
-export function TimePicker10({ value, onChange, maxDay, minDay, testID }) {
-  const start = dayParts(minDay || todayIst10());
-  const end = dayParts(maxDay) || start;
-  const days = useMemo(() => {
-    const out = [];
-    if (!start) return out;
-    const cursor = new Date(Date.UTC(start.y, start.m, start.d));
-    const last = end ? Date.UTC(end.y, end.m, end.d) : cursor.getTime() + 29 * 86400000;
-    for (let i = 0; i < 60 && cursor.getTime() <= last; i++) {
-      out.push({ y: cursor.getUTCFullYear(), m: cursor.getUTCMonth(), d: cursor.getUTCDate(), wd: cursor.getUTCDay() });
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
-    }
-    return out;
-  }, [start && start.y, start && start.m, start && start.d, end && end.y, end && end.m, end && end.d]);
-  const sel = istParts(value) || (days[0] ? { ...days[0], h: 11, min: 0 } : null);
-  const same = (a, b) => a && b && a.y === b.y && a.m === b.m && a.d === b.d;
-  const emit = (p) => onChange && onChange(istToIso(p.y, p.m, p.d, p.h, p.min));
+export function TimePicker10({ value, onChange, maxDay, minDay, testID, dateLabel, error, resetKey }) {
+  const v = value || null;
+  // `seen` is the last value the parent and this picker agreed on; `sel` is what the boxes show;
+  // `turn` is the last `resetKey` acted on.
+  const [seen, setSeen] = useState(v);
+  const [sel, setSel] = useState(() => halves10(v));
+  const [turn, setTurn] = useState(resetKey);
+  if (v !== seen || !Object.is(resetKey, turn)) { setSeen(v); setTurn(resetKey); setSel(halves10(v)); }
+
+  const days = openDays10(maxDay, minDay);
+
+  function settle(next) {
+    const iso = slotIso10(next.day, next.slot);
+    const gone = !!iso && new Date(iso).getTime() <= Date.now();
+    const kept = gone ? { day: next.day, slot: null } : next;
+    const out = slotIso10(kept.day, kept.slot);
+    setSel(kept);
+    if (out === seen) return;
+    setSeen(out);
+    if (onChange) onChange(out);
+  }
+
+  // The red outline goes on the box that is empty; with both filled the pair itself is refused
+  // (a time in the past, the same time again), so both are outlined.
+  const whole = !!(sel.day && sel.slot);
+  const red = (filled) => !!error && (!filled || whole);
 
   return (
     <View testID={testID || 'time-picker'}>
-      <Text style={g.pickHd}>{C10.plan.date}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={g.strip}>
-        {days.map((d) => {
-          const on = same(d, sel);
-          return (
-            <TouchableOpacity key={`${d.y}-${d.m}-${d.d}`} style={[g.dayChip, on && g.chipOn]} onPress={() => emit({ ...d, h: sel ? sel.h : 11, min: sel ? sel.min : 0 })} testID={`day-${d.d}`}>
-              <Text style={[g.dayWd, on && g.chipOnText]}>{WD[d.wd]}</Text>
-              <Text style={[g.dayNum, on && g.chipOnText]}>{d.d}</Text>
-              <Text style={[g.dayMon, on && g.chipOnText]}>{MON[d.m]}</Text>
-            </TouchableOpacity>
-          );
-        })}
-        {!days.length ? <Text style={g.pickEmpty}>No day works — the posting date has passed.</Text> : null}
-      </ScrollView>
-      <Text style={g.pickHd}>{C10.plan.time}</Text>
-      <View style={g.wrap}>
-        {HOURS.map((h) => {
-          const on = sel && sel.h === h;
-          return (
-            <TouchableOpacity key={h} style={[g.tChip, on && g.chipOn]} onPress={() => sel && emit({ ...sel, h })} testID={`hour-${h}`}>
-              <Text style={[g.tText, on && g.chipOnText]}>{`${h % 12 || 12} ${h >= 12 ? 'pm' : 'am'}`}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      <View style={[g.wrap, { marginTop: 6 }]}>
-        {MINUTES.map((m) => {
-          const on = sel && sel.min === m;
-          return (
-            <TouchableOpacity key={m} style={[g.tChip, on && g.chipOn]} onPress={() => sel && emit({ ...sel, min: m })} testID={`minute-${m}`}>
-              <Text style={[g.tText, on && g.chipOnText]}>{`:${String(m).padStart(2, '0')}`}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {sel ? <Text style={g.pickSummary} testID="picked-time">{whenLine10(istToIso(sel.y, sel.m, sel.d, sel.h, sel.min))}</Text> : null}
+      {days.none ? (
+        <Text style={g.pickEmpty} testID="no-day-works">{C10.plan.noDay}</Text>
+      ) : (
+        <View style={g.pickRow}>
+          <View style={g.pickCol}>
+            <Text style={g.pickLabel}>{dateLabel || C10.plan.date}<Text style={g.pickStar}> *</Text></Text>
+            <DateField value={sel.day} onChange={(day) => settle({ day, slot: sel.slot })} placeholder={C10.plan.chooseDate}
+              minDate={days.min} maxDate={days.max} icon="calendar-blank-outline" hideCaret display={day10}
+              invalid={red(!!sel.day)} style={g.pickBox} testID="pick-date" closeKeypad />
+          </View>
+          <View style={g.pickCol}>
+            <Text style={g.pickLabel}>{C10.plan.time}<Text style={g.pickStar}> *</Text></Text>
+            <TimeField10 value={sel.slot} day={sel.day} onChange={(slot) => settle({ day: sel.day, slot })}
+              invalid={red(!!sel.slot)} testID="pick-time" />
+          </View>
+        </View>
+      )}
+      <FieldError text={typeof error === 'string' ? error : null} />
     </View>
   );
 }
@@ -286,17 +308,11 @@ export const g = StyleSheet.create({
   boxIcon: { marginRight: 8, marginTop: 1 },
   boxText: { fontFamily: fonts.sansSemiBold, fontSize: 13, lineHeight: 19 },
 
-  pickHd: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, marginTop: 10, marginBottom: 6 },
-  strip: { gap: 6, paddingVertical: 2 },
-  dayChip: { minWidth: 56, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 12, borderWidth: 1, borderColor: T.border, backgroundColor: '#FFFFFF', alignItems: 'center' },
-  dayWd: { fontFamily: fonts.monoMedium, fontSize: 9, color: T.ink3, letterSpacing: 0.5 },
-  dayNum: { fontFamily: fonts.sansBold, fontSize: 17, color: T.ink, marginTop: 1 },
-  dayMon: { fontFamily: fonts.monoMedium, fontSize: 9, color: T.ink3, letterSpacing: 0.5, marginTop: 1 },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tChip: { paddingHorizontal: 11, paddingVertical: 7, borderRadius: 18, borderWidth: 1, borderColor: T.border, backgroundColor: '#FFFFFF' },
-  tText: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.ink2 },
-  chipOn: { backgroundColor: T.ink, borderColor: T.ink },
-  chipOnText: { color: '#FFFFFF' },
-  pickSummary: { fontFamily: fonts.sansBold, fontSize: 13.5, color: T.ink, marginTop: 10 },
-  pickEmpty: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.danger, padding: 8 },
+  // The picker (ui-walk-fixes board G): two equal boxes, 8 apart, each under its own label.
+  pickRow: { flexDirection: 'row', gap: 8 },
+  pickCol: { flex: 1, minWidth: 0 },
+  pickLabel: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, marginBottom: 6 },
+  pickStar: { color: T.danger },
+  pickBox: { marginBottom: 0 },
+  pickEmpty: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.danger, lineHeight: 17 },
 });

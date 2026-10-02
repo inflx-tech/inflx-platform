@@ -3,20 +3,39 @@
  * move), N21 (every way it ends). The same thread from the brand's side, with the minimum warning
  * the creator never sees.
  * Contract: features/item6-negotiation · prompt §6.4–§6.6
+ *
+ * ui-walk-fixes (board E, frames E5 / E6): both of the brand's bars are the shared AnswerBar — the
+ * main answer full width, then two equal, level halves ("Counter back" or "Keep {date}" as the
+ * dark outline, Decline as the red outline).
+ *
+ * ui-walk-fixes (board C, rule 1): the bar is a strip in the column, under the page (BottomBar).
+ * It used to float over the page, and the page measured it to keep that much room under its last
+ * line; in the column nothing can be covered, so the measuring and the room are gone. The toast
+ * sits just above the strip.
+ *
+ * A counter the server refuses is said INSIDE the open counter pop-up (`serverError`), where the
+ * brand is looking — it used to be a toast raised behind the pop-up. Nothing is read again while
+ * that pop-up is open: a re-read that fails puts "Couldn't load" in place of the whole page, and
+ * the pop-up — with everything typed in it and the refusal itself — would go with it. The
+ * conversation is read again when the pop-up that showed a refusal is closed.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
-import { PrimaryButton, SecondaryButton, DangerButton } from '../../components/settings/primitives';
+import { PrimaryButton, SecondaryButton, DangerButton, AnswerBar } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import useRouteToast from '../../hooks/useRouteToast';
 import { RoundPill6, StateBox6, TurnCard6, ValueLine6, EndingCard6 } from '../../components/negotiation/bits6';
 import { BrandCounterSheet6, DeclineCounterSheet6, MoveConfirmSheet6 } from '../../components/negotiation/sheets6';
 import { C6, TERM_LABEL, termValue, NEGOTIABLE, snapshotLine6, shortDate6, first } from '../../components/negotiation/copy6';
+
+const PAGE_PAD = 18;
 
 export default function BrandThreadScreen({ navigation, route }) {
   const { campaignId, setId, ciId } = route?.params || {};
@@ -24,13 +43,25 @@ export default function BrandThreadScreen({ navigation, route }) {
   const [thread, setThread] = useState(null);
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
-  const { toast, show } = useToast();
+  // Why the server refused the counter, shown inside the counter pop-up. A toast cannot be seen
+  // from behind a pop-up, so a refusal announced that way is a refusal nobody reads.
+  const [counterError, setCounterError] = useState(null);
+  // Which pop-up is open NOW — an answer from the server arrives after the tap that asked for it,
+  // and by then the brand may have closed the pop-up.
+  const sheetNow = useRef(null);
+  sheetNow.current = sheet;
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
     setStatus(st => (st === 'ready' ? 'ready' : 'loading'));
     const r = await brandApi.brandThread(campaignId, setId, ciId);
-    if (!r.success) { setStatus('error'); return; }
+    if (!r.success) {
+      // "Couldn't load" replaces the page and every pop-up on it. None may be left marked open
+      // behind it, or it would come back by itself after "Try again" — with an old refusal in it.
+      setSheet(null); setCounterError(null);
+      setStatus('error'); return;
+    }
     setThread(r.data.thread); setStatus('ready');
   }, [campaignId, setId, ciId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -40,7 +71,29 @@ export default function BrandThreadScreen({ navigation, route }) {
     setSheet(null); setThread(r.data.thread); show(msg); return true;
   };
   async function accept() { setBusy(true); const r = await brandApi.brandAcceptCounter(campaignId, setId, ciId); setBusy(false); after(r, C6.thread.accepted6); }
-  async function counter(body) { setBusy(true); const r = await brandApi.brandCounter(campaignId, setId, ciId, body); setBusy(false); after(r, C6.counter.sent); }
+  async function counter(body) {
+    setBusy(true); setCounterError(null);
+    const r = await brandApi.brandCounter(campaignId, setId, ciId, body);
+    setBusy(false);
+    if (!r || !r.success) {
+      const why = (r && r.error && r.error.message) || COPY.saveFailed;
+      // Refused with the pop-up still open: it stays open with what was typed, and says why.
+      // Nothing is read again behind it (see the note at the top); closing it does that.
+      if (sheetNow.current === 'counter') { setCounterError(why); return; }
+      // Refused after the brand closed the pop-up (a slow send): nothing covers the page, so a
+      // toast can be read, and the page is read again — what a refusal always did here.
+      show(why); load(); return;
+    }
+    after(r, C6.counter.sent);
+  }
+  const openCounter = () => { setCounterError(null); setSheet('counter'); };
+  // A refusal means the page behind the pop-up may be out of date (she answered meanwhile, the
+  // round was used), so closing a pop-up that showed one reads the conversation again.
+  const closeCounter = () => {
+    const refused = !!counterError;
+    setCounterError(null); setSheet(null);
+    if (refused) load();
+  };
   async function declineCounter(body) { setBusy(true); const r = await brandApi.brandDeclineCounter(campaignId, setId, ciId, body); setBusy(false); after(r, C6.declineCounter.done); }
   async function answerMove(answer) {
     setBusy(true);
@@ -68,7 +121,8 @@ export default function BrandThreadScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`brand-thread-${movePending ? 'move' : myMove ? 'yourmove' : neg.open ? 'waiting' : 'closed'}`}>
       <Header title={title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 150 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: PAGE_PAD }} testID="brand-thread-scroll">
         <Text style={s.sub}>{C6.thread.sub(thread.setName, thread.campaignName)}</Text>
         <EndingCard6 ending={thread.ending} />
         <StateBox6 tone={movePending || myMove ? 'move' : 'wait'} text={stateText} testID="brand-thread-state" />
@@ -102,26 +156,30 @@ export default function BrandThreadScreen({ navigation, route }) {
           <Text style={s.hint} testID="brand-accept-hint">{C6.thread.brandAcceptHint(acceptLine)}</Text>
         ) : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
       {movePending ? (
-        <View style={s.bar} testID="move-actions">
-          <PrimaryButton label={C6.moveAnswer.agree} onPress={() => setSheet('move')} testID="move-agree" />
-          <View style={s.pair}>
-            <View style={{ flex: 1, marginRight: 8 }}><SecondaryButton label={C6.moveAnswer.keep(thread.postingDate)} onPress={() => answerMove('kept')} testID="move-keep" /></View>
-            <View style={{ flex: 1 }}><DangerButton label={C6.moveAnswer.decline} onPress={() => answerMove('declined')} testID="move-decline" /></View>
-          </View>
-        </View>
+        <BottomBar testID="move-actions">
+          {/* E6: three answers in the same shape. */}
+          <AnswerBar main={<PrimaryButton label={C6.moveAnswer.agree} onPress={() => setSheet('move')} testID="move-agree" />}>
+            <SecondaryButton strong label={C6.moveAnswer.keep(thread.postingDate)} onPress={() => answerMove('kept')} testID="move-keep" />
+            <DangerButton outline label={C6.moveAnswer.decline} onPress={() => answerMove('declined')} testID="move-decline" />
+          </AnswerBar>
+        </BottomBar>
       ) : myMove ? (
-        <View style={s.bar} testID="brand-thread-actions">
-          <PrimaryButton label={C6.thread.acceptLine(acceptLine)} onPress={accept} busy={busy} testID="brand-accept" />
-          <View style={s.pair}>
-            {thread.can.counter ? <View style={{ flex: 1, marginRight: 8 }}><SecondaryButton label={C6.thread.counterBack} onPress={() => setSheet('counter')} testID="brand-counter-back" /></View> : null}
-            <View style={{ flex: 1 }}><DangerButton label={C6.thread.decline} onPress={() => setSheet('decline')} testID="brand-decline" /></View>
-          </View>
-        </View>
+        <BottomBar testID="brand-thread-actions">
+          {/* E5: Counter back is gone, not greyed, when the brand has no counter left. */}
+          <AnswerBar main={<PrimaryButton label={C6.thread.acceptLine(acceptLine)} onPress={accept} busy={busy} testID="brand-accept" />}>
+            {thread.can.counter
+              ? <SecondaryButton strong icon="undo-variant" label={C6.thread.counterBack} onPress={openCounter} testID="brand-counter-back" />
+              : null}
+            <DangerButton outline label={C6.thread.decline} onPress={() => setSheet('decline')} testID="brand-decline" />
+          </AnswerBar>
+        </BottomBar>
       ) : null}
-      {toast}
-      <BrandCounterSheet6 visible={sheet === 'counter'} thread={thread} minimums={thread.minimums} onSend={counter} onClose={() => setSheet(null)} />
+      <BrandCounterSheet6 visible={sheet === 'counter'} thread={thread} minimums={thread.minimums}
+        serverError={sheet === 'counter' ? counterError : null} onSend={counter} onClose={closeCounter} />
       <DeclineCounterSheet6 visible={sheet === 'decline'} creatorName={thread.creator.name} busy={busy} onDecline={declineCounter} onClose={() => setSheet(null)} />
       <MoveConfirmSheet6 visible={sheet === 'move'} thread={thread} busy={busy} onConfirm={() => answerMove('agreed')} onClose={() => setSheet(null)} />
     </View>
@@ -131,6 +189,5 @@ export default function BrandThreadScreen({ navigation, route }) {
 const s = StyleSheet.create({
   sub: { fontFamily: fonts.sansBold, fontSize: 10.5, color: T.ink3, letterSpacing: 0.6, marginBottom: 12 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, marginTop: 6, lineHeight: 18 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
-  pair: { flexDirection: 'row', marginTop: 8 },
+  page: { flex: 1 },
 });

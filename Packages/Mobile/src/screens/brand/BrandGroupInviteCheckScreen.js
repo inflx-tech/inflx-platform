@@ -12,13 +12,18 @@
  * What is new is that the overlap with the basket is named BEFORE the tap, not discovered after.
  *
  * Contract: features/item5-invitations · prompt §6.2 · features/one-basket-add-creators
+ *
+ * ui-walk-fixes board C: the "Add N to your selection" strip is part of the column, under the
+ * list (BottomBar) — it no longer floats over the last rows; the toast floats just above it.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton } from '../../components/settings/primitives';
-import { Skeleton, LoadError } from '../../components/settings/feedback';
+import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { MemberRow } from '../../components/discovery/DiscoverList';
 import { AvatarStack } from '../../components/discovery/bits';
@@ -33,6 +38,8 @@ export default function BrandGroupInviteCheckScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [data, setData] = useState(null);
   const [summary, setSummary] = useState(null);
+  // ui-walk-fixes D2: a creator who can't be invited says why when tapped, here as in the picker.
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -66,7 +73,9 @@ export default function BrandGroupInviteCheckScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="group-invite-check">
       <Header title={title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 120 }}>
+      {/* ui-walk-fixes board C: the list scrolls in the room above the strip; nothing floats over it. */}
+      <FormArea>
+      <ScrollView style={s.fill} contentContainerStyle={{ padding: 18, paddingBottom: 24 }}>
         <Text style={s.sub}>{summary.set.name.toUpperCase()}</Text>
         <View style={s.card}>
           <Text style={s.big} testID="group-summary">{G.summary(counts.can, counts.total)}</Text>
@@ -79,17 +88,30 @@ export default function BrandGroupInviteCheckScreen({ navigation, route }) {
         </View>
         {dupes.length ? <Text style={s.was} testID="overlap">{G.overlap(nameList5(dupes.map(c => c.name)))}</Text> : null}
         {cannot.length ? <Text style={s.secth} testID="cant-title">{G.cant(counts.cannot)}</Text> : null}
-        {cannot.map(c => (
-          <MemberRow key={c.id} c={{ ...c, status: null }} sub={c.label} right={<Chip5 label={c.pick && c.pick.state === 'invited' ? C5.pick.invited : C5.pick.cantInvite} tone={c.pick && c.pick.state === 'invited' ? 'waiting' : 'ended'} />} />
-        ))}
+        {/* D2: the line under her name is the server's short reason (c.label); tapping a creator
+            who can't be invited shows the server's sentence, falling back to that line when an
+            older server sends none. "Already in this set" has nothing more to say, as before. */}
+        {cannot.map(c => {
+          const invited = !!(c.pick && c.pick.state === 'invited');
+          const why = c.message || (c.pick && c.pick.message) || c.label;
+          return (
+            <MemberRow key={c.id} c={{ ...c, status: null }} sub={c.label}
+              onOpen={!invited && why ? () => show(why) : undefined}
+              right={<Chip5 label={invited ? C5.pick.invited : C5.pick.cantInvite} tone={invited ? 'waiting' : 'ended'} />} />
+          );
+        })}
         <Text style={s.hint}>{G.hint}</Text>
       </ScrollView>
-      <View style={s.footer}>
-        {counts.can === 0 ? <Text style={[s.hint, { textAlign: 'center', marginBottom: 8 }]}>{G.nobody}</Text>
-          : fresh === 0 ? <Text style={[s.hint, { textAlign: 'center', marginBottom: 8 }]}>{G.addNone}</Text>
-            : <Text style={[s.running, { marginBottom: 8 }]} testID="group-running">{G.running(have.size, fresh)}</Text>}
+      {toast}
+      </FormArea>
+      {/* The line above the button is the strip's first child; the strip keeps the two 8 apart
+          (the 8 the line used to carry under itself). */}
+      <BottomBar testID="group-check-bar">
+        {counts.can === 0 ? <Text style={[s.hint, s.centre]}>{G.nobody}</Text>
+          : fresh === 0 ? <Text style={[s.hint, s.centre]}>{G.addNone}</Text>
+            : <Text style={s.running} testID="group-running">{G.running(have.size, fresh)}</Text>}
         <PrimaryButton label={G.add(fresh)} onPress={add} disabled={fresh === 0} testID="group-next" />
-      </View>
+      </BottomBar>
     </View>
   );
 }
@@ -104,5 +126,7 @@ const s = StyleSheet.create({
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, marginTop: 14 },
   was: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, backgroundColor: T.surface, borderRadius: 10, padding: 10, marginBottom: 14 },
   running: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, textAlign: 'center' },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
+  centre: { textAlign: 'center' },
+  // The list fills the box above the strip.
+  fill: { flex: 1 },
 });

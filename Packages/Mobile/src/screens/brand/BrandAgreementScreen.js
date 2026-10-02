@@ -10,16 +10,25 @@
  *
  * The brand signs LAST, because the brand pays. Everything it is about to
  * commit is on one screen before it taps anything.
+ *
+ * ui-walk-fixes (board C): every strip at the foot of this screen is the one shared strip
+ * (BottomBar) — Send, Sign, Withdraw and the after-both-signed pair used to be two kinds. The
+ * toast sits just above whichever strip is showing. The screen draws its own title bar, which now
+ * starts at the phone's top inset like every other pushed screen (D4).
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
-import { PrimaryButton, SecondaryButton, DangerButton, EmptyState } from '../../components/settings/primitives';
+import { PrimaryButton, SecondaryButton, DangerButton, EmptyState, AnswerBar } from '../../components/settings/primitives';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
+import useRouteToast from '../../hooks/useRouteToast';
+import useTopInset, { TOP_GAP } from '../../hooks/useTopInset';
 import { rupees5 } from '../../components/invitations/copy5';
-import { C7, MSG7, AIM_LABEL7, longDate7, shortDate7, offerDates7 } from '../../components/agreement/copy7';
+import { C7, MSG7, AIM_LABEL7, longDate7, shortDate7, dayOf7, offerDates7 } from '../../components/agreement/copy7';
 import {
   Reference7, Card7, MoneyRow7, TermRow7, TotalRow7, SignatureBlock7,
   StandardTermsRow7, StateBox7, ShortfallCard7, MoneyMoved7,
@@ -40,7 +49,13 @@ export default function BrandAgreementScreen({ navigation, route }) {
   // The reason the server refused a signature, shown INSIDE the sign sheet. A toast cannot be
   // seen from behind a modal, so a refusal announced that way is a refusal nobody reads.
   const [signError, setSignError] = useState(null);
-  const { toast, show } = useToast();
+  // ui-walk-fixes (board F, frame F5): the same for a refused Send or Withdraw. Their reason was a
+  // toast behind the sheet too — "Signatures for this set closed on 17 Oct." said to nobody.
+  const [sheetError, setSheetError] = useState(null);
+  const { toast, show } = useToast({ inFlow: true });
+  // F4: "Agreement sent." arrives with the route, so it is read on the agreement that is now out
+  // rather than lost with the preview that closed.
+  useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -65,14 +80,41 @@ export default function BrandAgreementScreen({ navigation, route }) {
   }, [campaignId, setId, ciId, preview]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // F3: "Withdraw agreement" in the set's ⋯ menu opens this screen with the withdraw sheet already
+  // up (`ask: 'withdraw'`). Once only, and only if the server still allows it.
+  const asked = useRef(false);
+  const ask = route && route.params ? route.params.ask : undefined;
+  useEffect(() => {
+    if (asked.current || ask !== 'withdraw' || status !== 'ready' || !ag) return;
+    asked.current = true;
+    if (navigation && typeof navigation.setParams === 'function') navigation.setParams({ ask: undefined });
+    if (ag.can && ag.can.withdraw) setSheet('withdraw');
+  }, [ask, status, ag]); // eslint-disable-line
+
+  const openSheet = (which) => { setSheetError(null); setSheet(which); };
+  // A refusal means the screen behind the sheet is out of date (she signed meanwhile, the set
+  // closed), so closing a sheet that showed one reads the agreement again.
+  function closeSheet() {
+    const refused = !!sheetError;
+    setSheetError(null);
+    setSheet(null);
+    if (refused) load();
+  }
+
+  /**
+   * ui-walk-fixes (board F, frame F4). The brand used to be sent back to the set the instant it
+   * tapped Send, with "Agreement sent." raised on the screen that was closing. Now it STAYS on the
+   * agreement, in its sent state: the route is replaced with `preview: false` (so a later refocus
+   * reads the agreement that is out, never the draft again) and the message rides along.
+   */
   async function send() {
     setBusy(true);
+    setSheetError(null);
     const r = await brandApi.sendAgreement(campaignId, setId, ciId);
     setBusy(false);
-    if (!r || !r.success) { show((r && r.error && r.error.message) || 'Could not send'); return; }
+    if (!r || !r.success) { setSheetError((r && r.error && r.error.message) || C7.brand.sendFailed); return; }
     setSheet(null);
-    show(C7.brand.sent);
-    navigation.goBack();
+    navigation.replace('BrandAgreement', { campaignId, setId, ciId, preview: false, toast: C7.brand.sent });
   }
 
   async function sign(body) {
@@ -93,14 +135,15 @@ export default function BrandAgreementScreen({ navigation, route }) {
     setAg(r.data.agreement);
   }
 
+  /** F6: back on the set, which says "Agreement withdrawn." and lists her under "Your move" again. */
   async function withdraw() {
     setBusy(true);
+    setSheetError(null);
     const r = await brandApi.withdrawAgreement(campaignId, setId, ciId);
     setBusy(false);
-    if (!r || !r.success) { show((r && r.error && r.error.message) || 'Could not withdraw'); return; }
+    if (!r || !r.success) { setSheetError((r && r.error && r.error.message) || C7.brand.withdrawFailed); return; }
     setSheet(null);
-    show(C7.brand.withdrawn);
-    navigation.goBack();
+    navigation.navigate('BrandSetDetail', { campaignId, setId, toast: C7.brand.withdrawn });
   }
 
   async function download() {
@@ -111,9 +154,11 @@ export default function BrandAgreementScreen({ navigation, route }) {
     Linking.openURL(url).catch(() => show('Could not open the document'));
   }
 
-  if (status === 'loading') return <Frame nav={navigation}><Skeleton rows={6} /></Frame>;
-  if (status === 'error') return <Frame nav={navigation}><LoadError onRetry={load} /></Frame>;
-  if (!ag) return <Frame nav={navigation}><EmptyState title="No agreement yet" body="" /></Frame>;
+  // The toast is drawn in every state: "Agreement sent." arrives while the sent agreement is still
+  // being read, and must not wait for it.
+  if (status === 'loading') return <Frame nav={navigation}><Skeleton rows={6} />{toast}</Frame>;
+  if (status === 'error') return <Frame nav={navigation}><LoadError onRetry={load} />{toast}</Frame>;
+  if (!ag) return <Frame nav={navigation}><EmptyState title="No agreement yet" body="" />{toast}</Frame>;
 
   const t = ag.terms || {};
   const money = t.money || {};
@@ -127,13 +172,30 @@ export default function BrandAgreementScreen({ navigation, route }) {
   const sigs = ag.signatures || {};
   const bothSigned = !!(sigs.creator && sigs.brand);
   const shortfall = cost && cost.shortfall > 0 ? cost : null;
+  // ui-walk-fixes (board F, frame F4) — sent, and she has not signed. This state had no sentence
+  // at all: the terms, and a red Withdraw. Which state it is comes from the server (`can.withdraw`,
+  // the status), never from the phone having just pressed Send.
+  const sentWaiting = !preview && !ag.ending && !sigs.creator && !sigs.brand && (!!can.withdraw || ag.status === 'pending_influencer');
+  const signBy = t.cutoff || ag.cutoff;
 
   return (
     <Frame nav={navigation} title={C7.brand.title(firstName)}>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} testID="brand-agreement-body">
-        <Reference7 reference={ag.reference} suffix={ag.reference ? AIM_LABEL7[t.aim] : C7.brand.draft} />
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} testID="brand-agreement-body">
+        {/* The preview prints a single "DRAFT": the reference number is stamped only when it is
+            sent, and Reference7 already says DRAFT in its place (it used to read "DRAFT · DRAFT"). */}
+        <Reference7 reference={ag.reference} suffix={ag.reference ? AIM_LABEL7[t.aim] : null} />
 
         {ag.ending ? <StateBox7 tone="ended" text={ag.ending.text} testID="agreement-ending" /> : null}
+        {/* The blue box names the day it was sent, so it is drawn only when there is one. An
+            agreement put out through the website's "Approve & Send" is out for her signature with
+            no sent date; the sentence would read "Sent to Sneha on . Waiting…" — a hole where the
+            date belongs (final review, finding F-4). The two "Not signed yet" boxes and "You sign
+            after her…" below still say whose turn it is. */}
+        {sentWaiting && ag.sentAt ? (
+          <StateBox7 tone="wait" icon="clock-outline" testID="waiting-for-her"
+            text={C7.brand.waitingForHer(firstName, shortDate7(dayOf7(ag.sentAt)), shortDate7(signBy))} />
+        ) : null}
         {bothSigned ? <StateBox7 tone="done" text={C7.brand.bothSigned(sigs.brand.at)} testID="agreement-done" /> : null}
         {!bothSigned && sigs.creator && !ag.ending ? (
           <StateBox7 tone="move" text={C7.brand.sheSignedYouComplete(firstName, sigs.creator.at)} testID="she-signed" />
@@ -224,8 +286,9 @@ export default function BrandAgreementScreen({ navigation, route }) {
           </>
         ) : null}
 
-        {/* Both signature boxes. */}
-        {(sigs.creator || sigs.brand) ? (
+        {/* Both signature boxes. F4: once it is sent they are both there, reading "Not signed yet",
+            with the line that says who signs first. The preview still shows neither. */}
+        {(sigs.creator || sigs.brand || sentWaiting) ? (
           <>
             <Text style={s.sigHd}>{C7.brand.signatures}</Text>
             <SignatureBlock7 who="Creator" name={sigs.creator ? sigs.creator.name : creatorName}
@@ -233,6 +296,7 @@ export default function BrandAgreementScreen({ navigation, route }) {
             <SignatureBlock7 who="Brand" name={sigs.brand ? sigs.brand.name : brandName}
               forBrand={sigs.brand ? brandName : null}
               at={sigs.brand && sigs.brand.at} device={sigs.brand && sigs.brand.device} ip={sigs.brand && sigs.brand.ip} />
+            {sentWaiting ? <Text style={s.hint} testID="you-sign-after">{C7.brand.youSignAfter}</Text> : null}
           </>
         ) : null}
 
@@ -253,60 +317,83 @@ export default function BrandAgreementScreen({ navigation, route }) {
                 <Text style={s.para}>{remote ? C7.brand.nextShip(firstName) : C7.brand.nextVisit(firstName)}</Text>
               </Card7>
             )}
-            <View style={s.row}>
-              <View style={{ flex: 1 }}><SecondaryButton label={C7.brand.download} onPress={download} testID="download" /></View>
-              <View style={{ flex: 1 }}>
-                {/* Walk fix (20 Sep): this button is the only door to the shoot, so it says what
-                    the shoot actually needs — "Confirm the shoot is done" once she has marked
-                    attended, not "Plan the visit" forever. */}
-                <PrimaryButton
-                  label={remote ? C7.brand.shootPlan : C10.openLabel(shoot && shoot.stage, shoot && shoot.passed)}
-                  icon={!remote && shoot && shoot.stage === 'attended' ? 'check' : undefined}
-                  onPress={() => (remote
-                    ? show(C10.remoteNext)
-                    : navigation.navigate('BrandShoot', { campaignId, setId, ciId }))}
-                  testID="shoot-plan" />
-              </View>
-            </View>
           </>
         ) : null}
 
         {preview ? <Text style={s.hint} testID="not-editable">{C7.brand.notEditable}</Text> : null}
       </ScrollView>
+      {/* Above whichever strip is showing — never on top of it, never behind a sheet's scrim. */}
+      {toast}
+      </FormArea>
 
-      {/* One main button at a time, and only the one that is actually available. */}
+      {/* One main button at a time, and only the one that is actually available. Each is the
+          shared strip (BottomBar), the same one the after-both-signed pair below sits in. */}
       {preview ? (
-        <View style={s.footer} testID="preview-actions">
-          <PrimaryButton label={C7.brand.sendForSignature} onPress={() => setSheet('send')} testID="send-for-signature" />
-        </View>
+        <BottomBar testID="preview-actions">
+          <PrimaryButton label={C7.brand.sendForSignature} onPress={() => openSheet('send')} testID="send-for-signature" />
+        </BottomBar>
       ) : can.sign ? (
-        <View style={s.footer} testID="sign-actions">
+        <BottomBar testID="sign-actions">
           <PrimaryButton
             label={cost && cost.gate ? C7.brand.signAndLock(rupees5(cost.totalToLock)) : C7.brand.signAndComplete}
             onPress={() => setSheet('sign')} disabled={!!shortfall} testID="brand-sign" />
-        </View>
+        </BottomBar>
       ) : can.withdraw ? (
-        <View style={s.footer} testID="withdraw-actions">
-          <DangerButton label={C7.brand.withdraw} onPress={() => setSheet('withdraw')} testID="brand-withdraw" />
-        </View>
+        /* F4: nothing is owed by the brand while it waits, so there is no yellow button — only a
+           quiet red-outline Withdraw (it was a solid red block). */
+        <BottomBar testID="withdraw-actions">
+          <DangerButton outline label={C7.brand.withdraw} onPress={() => openSheet('withdraw')} testID="brand-withdraw" />
+        </BottomBar>
       ) : null}
 
-      <SendAgreementSheet7 visible={sheet === 'send'} creatorName={firstName} cutoff={t.cutoff || ag.cutoff}
-        busy={busy} onSend={send} onClose={() => setSheet(null)} />
+      {/* ui-walk-fixes (board E, frames E11 / E12) — after both have signed. The button that says
+          what the shoot needs takes the full width, with Download as a full-width outline button
+          under it, both in the bar at the foot of the screen. They used to sit side by side at the
+          end of the scrolling page, Download 10 lower, and the long labels wrapped inside half a
+          button. */}
+      {bothSigned ? (
+        <BottomBar testID="signed-actions">
+          <AnswerBar
+            main={(
+              /* Walk fix (20 Sep): this button is the only door to the shoot, so it says what the
+                 shoot actually needs — "Confirm the shoot is done" once she has marked attended,
+                 not "Plan the visit" forever. Spec U14: on Remote it opens the Remote shoot (it
+                 used to show a message written before item 11 shipped). */
+              <PrimaryButton
+                label={remote ? C7.brand.shootPlan : C10.openLabel(shoot && shoot.stage, shoot && shoot.passed)}
+                icon={!remote && shoot && shoot.stage === 'attended' ? 'check' : undefined}
+                onPress={() => navigation.navigate(remote ? 'BrandRemote' : 'BrandShoot', { campaignId, setId, ciId })}
+                testID="shoot-plan" />
+            )}
+          >
+            <SecondaryButton strong icon="download" label={C7.brand.download} onPress={download} testID="download" />
+          </AnswerBar>
+        </BottomBar>
+      ) : null}
+
+      <SendAgreementSheet7 visible={sheet === 'send'} creatorName={firstName} cutoff={signBy}
+        busy={busy} serverError={sheet === 'send' ? sheetError : null} onSend={send} onClose={closeSheet} />
       <BrandSignSheet7 visible={sheet === 'sign'} defaultName="" brandName={brandName} creatorName={firstName}
         cost={cost} busy={busy} serverError={signError} onSign={sign}
         onClose={() => { setSignError(null); setSheet(null); }} />
       <WithdrawAgreementSheet7 visible={sheet === 'withdraw'} creatorName={firstName}
-        busy={busy} onWithdraw={withdraw} onClose={() => setSheet(null)} />
-      {toast}
+        busy={busy} serverError={sheet === 'withdraw' ? sheetError : null} onWithdraw={withdraw} onClose={closeSheet} />
     </Frame>
   );
 }
 
+/**
+ * The screen and its own title row. ui-walk-fixes D4: the row starts at the phone's real top inset
+ * plus the same small gap as every other pushed screen's title row (useTopInset) — on a phone that
+ * draws edge to edge it used to start under the status bar. That gap is the one kept above a
+ * 40-high back control, so the back control here is 40 high too (as on the creator's agreement):
+ * the title then sits on the same line as every other pushed screen's.
+ */
 function Frame({ nav, title, children }) {
+  const top = useTopInset();
   return (
     <View style={s.screen}>
-      <View style={s.bar}>
+      <View style={[s.bar, { paddingTop: top }]} testID="agreement-bar">
         <TouchableOpacity onPress={() => nav.goBack()} style={s.back} testID="back"><Text style={s.backText}>‹</Text></TouchableOpacity>
         <Text style={s.barTitle} numberOfLines={1}>{title || 'Agreement'}</Text>
         <View style={s.back} />
@@ -318,8 +405,10 @@ function Frame({ nav, title, children }) {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#FFFFFF' },
-  bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.border },
-  back: { width: 40, alignItems: 'center' },
+  // paddingTop here is only the gap; Frame adds the phone's top inset to it (useTopInset).
+  bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: TOP_GAP, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: T.border },
+  page: { flex: 1 },
+  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   backText: { fontFamily: fonts.sansRegular, fontSize: 26, color: T.ink },
   barTitle: { flex: 1, fontFamily: fonts.sansBold, fontSize: 16, color: T.ink, textAlign: 'center' },
   para: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 20 },
@@ -327,6 +416,4 @@ const s = StyleSheet.create({
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 18, marginBottom: 12 },
   countdown: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.ink, marginBottom: 12 },
   sigHd: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1, color: T.ink3, marginTop: 6, marginBottom: 8 },
-  row: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  footer: { padding: 16, borderTopWidth: 1, borderTopColor: T.border, backgroundColor: '#FFFFFF' },
 });

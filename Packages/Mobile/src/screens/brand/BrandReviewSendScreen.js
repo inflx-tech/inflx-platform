@@ -4,6 +4,12 @@
  * invitations" — one all-or-nothing action. When the server names creators that failed, the
  * rows are marked and one button offers "Remove {n} and send the rest".
  * Contract: features/item5-invitations · prompt §6.6 · APPROVAL.md Q2
+ *
+ * ui-walk-fixes board C: the Send strip is part of the column, under the list (BottomBar) — it no
+ * longer floats over the last rows; the toast floats just above it.
+ * ui-walk-fixes D2 (wave-2 review): the banner above a refused batch says "Fix them" only when
+ * something CAN be fixed. A creator refused by one of her own invitation rules cannot be fixed
+ * by changing her terms, so the banner then says to remove her instead.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
@@ -12,6 +18,8 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, Banner } from '../../components/settings/primitives';
 import { useToast } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { Stepper5, LockedSetCard5, ReviewRow5 } from '../../components/invitations/bits5';
@@ -26,7 +34,7 @@ export default function BrandReviewSendScreen({ navigation, route }) {
   const [warnings, setWarnings] = useState({});
   const [failures, setFailures] = useState({});
   const [busy, setBusy] = useState(false);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   const draft = getDraft(setId);
 
   const refresh = useCallback(async () => {
@@ -46,6 +54,11 @@ export default function BrandReviewSendScreen({ navigation, route }) {
   const goal = draft.set.goal;
   const belowCount = draft.creators.filter(c => (warnings[c.id] || []).length).length;
   const failedIds = Object.keys(failures);
+  // A refusal that carries `why` came from one of her own rules (see send() below): her terms are
+  // not the problem and nothing on them can be changed to get her in. The banner must not say
+  // "Fix them" for those.
+  const cantFix = failedIds.filter(id => failures[id].why).length;
+  const failedBody = !cantFix ? R.failedBody : cantFix === failedIds.length ? R.failedBodyRemove : R.failedBodySome;
 
   async function send() {
     const d = getDraft(setId);
@@ -83,8 +96,12 @@ export default function BrandReviewSendScreen({ navigation, route }) {
     }
     const list = r.error && r.error.details && r.error.details.failures;
     if (Array.isArray(list) && list.length) {
+      // ui-walk-fixes D2: a creator refused by one of her own invitation rules arrives with the
+      // short reason (`label`) beside the sentence (`message`). Her row prints the short reason,
+      // as the picker did, and says the sentence when tapped. Every other refusal (bad terms, a
+      // duplicate) has no label: the row prints its message and still opens her terms to fix it.
       const by = {};
-      for (const f of list) by[f.influencerId] = f.message;
+      for (const f of list) by[f.influencerId] = { line: f.label || f.message, why: f.label ? (f.message || f.label) : null };
       setFailures(by);
       return;
     }
@@ -104,25 +121,29 @@ export default function BrandReviewSendScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="review-send">
       <Header title={R.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 140 }}>
+      {/* ui-walk-fixes board C: the list scrolls in the room above the Send strip; nothing floats over it. */}
+      <FormArea>
+      <ScrollView style={s.fill} contentContainerStyle={{ padding: 18, paddingBottom: 24 }}>
         <Stepper5 text={R.all(draft.creators.length)} />
         <LockedSetCard5 set={draft.set} showCutoff />
-        {failedIds.length ? <View testID="failed-banner"><Banner title={R.failedTitle(failedIds.length)} body={R.failedBody} /></View>
+        {failedIds.length ? <View testID="failed-banner"><Banner title={R.failedTitle(failedIds.length)} body={failedBody} /></View>
           : belowCount ? <View style={s.warn} testID="below-banner"><Text style={s.warnText}>{R.belowMany(belowCount)}</Text></View> : null}
         {/* creator-terms-v2 (T7): an offer ending within 7 days after posting */}
         {!failedIds.length && soonCount ? <View style={s.warn} testID="ends-soon-banner"><Text style={s.warnText}>⚠ {R.endsSoonMany(soonCount, soonDays)}</Text></View> : null}
         {draft.creators.map((c, i) => (
           <ReviewRow5 key={c.id} name={c.name} avatarUrl={c.avatarUrl} line={summaryLine(goal, draft.terms[c.id] || {})}
-            source={c.sourceGroupName || null} below={(warnings[c.id] || []).length > 0} endsSoon={endsSoonDays(draft.terms[c.id] || {}) != null} error={failures[c.id]}
-            onPress={() => navigation.navigate('BrandCreatorTerms', { campaignId, setId, index: i })} testID={`review-row-${c.id}`} />
+            source={c.sourceGroupName || null} below={(warnings[c.id] || []).length > 0} endsSoon={endsSoonDays(draft.terms[c.id] || {}) != null} error={failures[c.id] ? failures[c.id].line : undefined}
+            onPress={() => (failures[c.id] && failures[c.id].why ? show(failures[c.id].why) : navigation.navigate('BrandCreatorTerms', { campaignId, setId, index: i }))} testID={`review-row-${c.id}`} />
         ))}
         <Text style={s.hint}>{R.hint(draft.set.cutoff)}</Text>
       </ScrollView>
-      <View style={s.footer}>
-        {failedIds.length ? <View style={{ marginBottom: 8 }}><SecondaryButton label={R.removeAndSend(failedIds.length)} onPress={removeFailedAndSend} testID="remove-and-send" /></View> : null}
-        <PrimaryButton label={R.send(draft.creators.length)} onPress={send} busy={busy} busyLabel="Sending" disabled={!draft.creators.length || failedIds.length > 0} testID="send-invitations" />
-      </View>
       {toast}
+      </FormArea>
+      {/* The strip keeps its children 8 apart, and the outline button drops its own top gap in it. */}
+      <BottomBar testID="review-send-bar">
+        {failedIds.length ? <SecondaryButton label={R.removeAndSend(failedIds.length)} onPress={removeFailedAndSend} testID="remove-and-send" /> : null}
+        <PrimaryButton label={R.send(draft.creators.length)} onPress={send} busy={busy} busyLabel="Sending" disabled={!draft.creators.length || failedIds.length > 0} testID="send-invitations" />
+      </BottomBar>
     </View>
   );
 }
@@ -131,5 +152,6 @@ const s = StyleSheet.create({
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, marginTop: 14, padding: 0 },
   warn: { borderRadius: 12, padding: 10, backgroundColor: T.state.yourMove.bg, marginBottom: 8 },
   warnText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.yourMove.fg, lineHeight: 17 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
+  // The list fills the box above the Send strip.
+  fill: { flex: 1 },
 });

@@ -9,24 +9,37 @@
  * Files go STRAIGHT to storage: ask for a signed URL, stream the file from disk
  * (uploadContentFile — no Blob in memory, proved with 195 MB on a real phone), then confirm, which
  * is when the server believes it. Nothing is ever read into the app's memory.
+ *
+ * ui-walk-fixes board J (J1–J5): a link saves by itself (LinkBox12), and every save on this
+ * screen — links and captions — goes through one line (useSaves12), so answers land in order.
+ * The one thing the phone now decides is when "I've posted everything" may be PRESSED: as soon as
+ * every link box has text and every Story has its screenshot. Pressing it finishes the saving
+ * first, and the server still refuses the step itself if a link is missing.
+ *
+ * ui-walk-fixes board C (frame C4 — the same moment as J2): the button and its one line sit in
+ * their own strip under the page (BottomBar), never over it, and the page is a FormScroll — the
+ * link box she has just pasted into, with "Saving…" at its right end and its red line, stays in
+ * view above the strip and the keypad. A stage with nothing to press has no strip at all.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet, Linking } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Keyboard } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi, uploadContentFile } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, EmptyState, FieldError } from '../../components/settings/primitives';
 import { Skeleton, useToast } from '../../components/settings/feedback';
-import { ActionSheet } from '../../components/settings/sheets';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { LoadErrorList } from '../../components/discovery/DiscoverList';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, Row10, AmberBox10, GreenBox10, WaitBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FeeCard12, FileTile12, AddTile12, RowHead12, NoteLine12, RoundPill12, QuoteBox12, Line12 } from '../../components/content/bits12';
+import { FeeCard12, FileTile12, AddTile12, RowHead12, NoteLine12, RoundPill12, QuoteBox12, Line12, LinkBox12, useSaves12 } from '../../components/content/bits12';
 import { SendSheet12, ReportSheet12 } from '../../components/content/sheets12';
+import MediaViewer12 from '../../components/content/MediaViewer12';
 import { C12, MSG12, LIMITS12, day10 } from '../../components/content/copy12';
 
 const mimeOf = (a) => {
@@ -34,6 +47,18 @@ const mimeOf = (a) => {
   if (t) return t === 'image/jpg' ? 'image/jpeg' : t;
   const n = String((a && a.fileName) || '').toLowerCase();
   return n.endsWith('.mp4') ? 'video/mp4' : n.endsWith('.png') ? 'image/png' : /\.jpe?g$/.test(n) ? 'image/jpeg' : '';
+};
+
+/** The keys her unsaved text is kept under in the screen's line of saves. */
+const captionKey = (row) => `caption:${row.key}`;
+const linkKey = (row, slot) => `${row.key}:${slot}`;
+/** Every link box she owes: one per slot of every row that is not a Story. */
+const linkSlots = (content) => {
+  const out = [];
+  for (const row of (content && content.rows) || []) {
+    if (!row.isStory) for (const p of row.proofs || []) out.push({ key: linkKey(row, p.slot), url: p.url || '' });
+  }
+  return out;
 };
 
 export default function ContentScreen({ navigation, route }) {
@@ -46,23 +71,26 @@ export default function ContentScreen({ navigation, route }) {
   const [sheetError, setSheetError] = useState(null);
   const [uploads, setUploads] = useState({});           // tempId → { rowKey, progress }
   const [rowError, setRowError] = useState({});         // rowKey → message
-  const [captions, setCaptions] = useState({});         // rowKey → text being edited
-  const [links, setLinks] = useState({});               // `${rowKey}:${slot}` → text being edited
-  const [menu, setMenu] = useState(null);               // a file's ⋯
+  const [viewer, setViewer] = useState(null);           // the open file: { label, files, index, edit }
   const [urls, setUrls] = useState({});                 // fileId → signed URL (photos)
   const mounted = useRef(true);
-  const { toast, show } = useToast();
+  // Board C: the toast is drawn in the box above the button strip, just above it.
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
   useEffect(() => () => { mounted.current = false; }, []);
+  // J — every caption and link she types is held and sent here, in order (bits12 · useSaves12).
+  const saves = useSaves12({ onContent: setC, failed: COPY.saveFailed });
+  const inLine = saves.run;
 
   const load = useCallback(async () => {
     setStatus((st) => (st === 'ready' ? 'ready' : 'loading'));
-    const r = await influencerApi.myContent(ciId);
+    // In the same line as the saves: a read that left before a save can never land after it.
+    const r = await inLine(() => influencerApi.myContent(ciId));
     if (!mounted.current) return;
     if (!r || !r.success) { setStatus('error'); return; }
     setC(r.data.content);
     setStatus('ready');
-  }, [ciId]);
+  }, [ciId, inLine]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   // Photo thumbnails: a 300-second signed URL each, fetched as the photos appear.
@@ -117,41 +145,27 @@ export default function ContentScreen({ navigation, route }) {
     load();
   }
 
+  /** "Remove" in the viewer: it closes back to the row, then the file goes (no extra confirm — U12). */
   async function removeFile(file) {
-    setMenu(null);
+    setViewer(null);
     const r = await influencerApi.contentRemoveFile(ciId, file.id);
     if (!r || !r.success) { show(refuse(r)); load(); return; }
     load();
   }
-  async function viewFile(file) {
-    setMenu(null);
-    const r = await influencerApi.contentFileUrl(ciId, file.id);
-    if (!r || !r.success) { show(refuse(r)); return; }
-    Linking.openURL(r.data.view.url).catch(() => {});
-  }
-  async function saveCaption(row) {
-    const text = captions[row.key];
-    if (text == null) return;
-    const r = await influencerApi.contentCaption(ciId, row.key, text);
-    if (!r || !r.success) { setRowError((e) => ({ ...e, [row.key]: refuse(r) })); return; }
-    setCaptions((x) => { const n = { ...x }; delete n[row.key]; return n; });
-    setC(r.data.content);
-  }
-  async function saveLink(row, slot) {
-    const key = `${row.key}:${slot}`;
-    const url = links[key];
-    if (url == null) return;
-    const r = url.trim()
-      ? await influencerApi.contentSetProof(ciId, row.key, slot, { url: url.trim() })
-      : await influencerApi.contentClearProof(ciId, row.key, slot);
-    if (!r || !r.success) { setRowError((e) => ({ ...e, [key]: refuse(r) })); return; }
-    setRowError((e) => ({ ...e, [key]: null }));
-    setLinks((x) => { const n = { ...x }; delete n[key]; return n; });
-    setC(r.data.content);
-  }
+  /** Her Story screenshots as the viewer's files, opened at the one she tapped. */
+  const openShot = (row, slot) => {
+    const shots = (row.proofs || []).filter((p) => p.screenshotFileId);
+    setViewer({ label: row.label, files: shots.map((p) => ({ id: p.screenshotFileId, kind: 'photo' })), index: Math.max(0, shots.findIndex((p) => p.slot === slot)) });
+  };
+  /** How a row's caption and a slot's link are sent; the line of saves decides when. */
+  const captionCfg = (row) => ({ server: row.caption || '', send: (text) => influencerApi.contentCaption(ciId, row.key, text) });
+  const sendLink = (row, slot) => (url) => (url
+    ? influencerApi.contentSetProof(ciId, row.key, slot, { url })
+    : influencerApi.contentClearProof(ciId, row.key, slot));
   async function act(call, done, closeSheet = true) {
     setBusy(true); setSheetError(null);
-    const r = await call();
+    const r = await inLine(call);
+    if (!mounted.current) return;
     setBusy(false);
     if (!r || !r.success) { if (sheet) setSheetError(refuse(r)); else show(refuse(r)); load(); return; }
     if (closeSheet) setSheet(null);
@@ -159,7 +173,24 @@ export default function ContentScreen({ navigation, route }) {
     if (done) show(done);
   }
   const submit = () => act(() => influencerApi.contentSubmit(ciId, c.round.current), C12.sent);
-  const posted = () => act(() => influencerApi.contentPosted(ciId), C12.postedDone);
+  /** "Send to …": a caption she is still in is saved first; refused, it shows on its row and the sheet stays shut. */
+  async function openSend() {
+    Keyboard.dismiss();
+    setSheetError(null);
+    const done = await saves.flush();
+    if (!mounted.current) return;
+    if ((c.rows || []).some((row) => done.unsaved(captionKey(row)))) return;
+    setSheet('send');
+  }
+  /** "I've posted everything": the keypad closes, the saving finishes, and only then is it marked posted. */
+  async function posted() {
+    Keyboard.dismiss();
+    setBusy(true); setSheetError(null);
+    const done = await saves.flush();
+    if (!mounted.current) return;
+    if (linkSlots(c).some((x) => done.unsaved(x.key))) { setBusy(false); return; }   // the red line is on that row
+    await act(() => influencerApi.contentPosted(ciId), C12.postedDone);
+  }
   const report = (note) => act(() => influencerApi.contentReport(ciId, { kind: 'brand_silent', note }), C12.reportedDone);
 
   if (status === 'loading') return <View style={base.screen}><Header title={C12.titleHers} onBack={() => navigation.goBack()} /><Skeleton rows={6} /></View>;
@@ -183,14 +214,24 @@ export default function ContentScreen({ navigation, route }) {
     { key: 'live', label: C12.steps.contentLive, state: 'done', detail: day10(c.liveConfirmedAt) },
     { key: 'final', label: C12.steps.finalPayment, state: stage === 'complete' ? 'done' : 'now', detail: day10(c.finalDueAt) },
   ];
-  const slotsLeft = c.proofsLeft || [];
-  const linksLeft = slotsLeft.filter((x) => !x.isStory).length;
-  const shotsLeft = slotsLeft.filter((x) => x.isStory).length;
+  // J · U13 — the button and the one line under it. A link box counts as soon as it has text
+  // (saved or not); a Story counts when INFLX has its screenshot. The line, in this order: what is
+  // still missing › a link that needs fixing › a link still being saved.
+  const boxes = stage === 'approved' ? linkSlots(c) : [];
+  const linksLeft = boxes.filter((x) => !String(saves.text[x.key] != null ? saves.text[x.key] : x.url).trim()).length;
+  const shotsLeft = (c.proofsLeft || []).filter((x) => x.isStory).length;
+  const linkRefused = boxes.some((x) => saves.refused(x.key));
+  const linkWrong = boxes.some((x) => saves.errorOf(x.key));
+  const linkSaving = boxes.some((x) => saves.text[x.key] != null || saves.busy[x.key]);
+  const canPost = !linkRefused && linksLeft === 0 && (!!c.can.markPosted || shotsLeft === 0);
+  const postLine = linksLeft || shotsLeft ? C12.toGo(linksLeft, shotsLeft)
+    : linkWrong ? C12.linkNeedsFixing : linkSaving ? C12.savingLink : null;
 
   return (
     <View style={base.screen} testID={`content-${stage}${c.frozen ? '-frozen' : ''}${c.delayed ? '-delayed' : ''}`}>
       <Header title={C12.titleHers} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 190 }} keyboardShouldPersistTaps="handled">
+      <FormArea>
+      <FormScroll contentContainerStyle={{ padding: 18 }} testID="content-scroll">
         <View style={s.crumbRow}>
           <Text style={s.crumb}>{C12.crumb(brand, c.setName)}</Text>
           {c.delayed ? <DelayedChip10 /> : null}
@@ -241,15 +282,19 @@ export default function ContentScreen({ navigation, route }) {
               <View key={row.key} style={s.row} testID={`edit-row-${row.key}`}>
                 <RowHead12 row={row} have={row.files.length} />
                 <View style={s.tiles}>
-                  {row.files.map((f) => <FileTile12 key={f.id} file={f} url={urls[f.id]} note={f.pinnedNote} onPress={() => setMenu(f)} />)}
+                  {row.files.map((f, i) => (
+                    <FileTile12 key={f.id} file={f} url={urls[f.id]} note={f.pinnedNote}
+                      onPress={() => setViewer({ label: row.label, files: row.files, index: i, edit: true })} />
+                  ))}
                   {pendingOf(row.key).map(([id, u]) => <FileTile12 key={id} progress={u.progress} />)}
                   {row.files.length + pendingOf(row.key).length < 10 ? <AddTile12 onPress={() => addFiles(row)} testID={`add-${row.key}`} /> : null}
                 </View>
                 {row.files.filter((f) => f.pinnedNote).map((f) => <NoteLine12 key={f.id} text={f.pinnedNote} />)}
-                <TextInput style={s.caption} value={captions[row.key] != null ? captions[row.key] : row.caption} placeholder={C12.captionPlaceholder}
-                  placeholderTextColor={T.ink3} multiline maxLength={500} onChangeText={(v) => setCaptions((x) => ({ ...x, [row.key]: v }))}
-                  onEndEditing={() => saveCaption(row)} testID={`caption-${row.key}`} />
-                <Text style={s.counter}>{`${(captions[row.key] != null ? captions[row.key] : row.caption || '').length} / 500`}</Text>
+                <TextInput style={s.caption} value={saves.text[captionKey(row)] != null ? saves.text[captionKey(row)] : row.caption} placeholder={C12.captionPlaceholder}
+                  placeholderTextColor={T.ink3} multiline maxLength={500} onChangeText={(v) => saves.change(captionKey(row), v, captionCfg(row))}
+                  onEndEditing={() => saves.commit(captionKey(row))} testID={`caption-${row.key}`} />
+                <Text style={s.counter}>{`${(saves.text[captionKey(row)] != null ? saves.text[captionKey(row)] : row.caption || '').length} / 500`}</Text>
+                <FieldError text={saves.errorOf(captionKey(row))} />
                 <FieldError text={rowError[row.key]} />
               </View>
             ))}
@@ -264,7 +309,7 @@ export default function ContentScreen({ navigation, route }) {
             {c.rows.map((row) => (
               <View key={row.key} style={s.row}>
                 <RowHead12 row={row} have={row.files.length} />
-                <View style={s.tiles}>{row.files.map((f) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => viewFile(f)} />)}</View>
+                <View style={s.tiles}>{row.files.map((f, i) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => setViewer({ label: row.label, files: row.files, index: i })} />)}</View>
                 {row.caption ? <Text style={s.para}>{row.caption}</Text> : null}
               </View>
             ))}
@@ -283,7 +328,7 @@ export default function ContentScreen({ navigation, route }) {
                   <>
                     <View style={s.tiles}>
                       {row.proofs.filter((p) => p.screenshotFileId).map((p) => (
-                        <FileTile12 key={p.slot} file={{ id: p.screenshotFileId, kind: 'photo' }} url={urls[p.screenshotFileId]} />
+                        <FileTile12 key={p.slot} file={{ id: p.screenshotFileId, kind: 'photo' }} url={urls[p.screenshotFileId]} onPress={() => openShot(row, p.slot)} />
                       ))}
                       {row.proofs.filter((p) => !p.filled).slice(0, 1).map((p) => (
                         <AddTile12 key={p.slot} onPress={() => addFiles(row, 'story_proof', p.slot)} testID={`add-shot-${row.key}`} />
@@ -292,14 +337,11 @@ export default function ContentScreen({ navigation, route }) {
                     <Line12 text={C12.storyProof} />
                   </>
                 ) : row.proofs.map((p) => {
-                  const key = `${row.key}:${p.slot}`;
+                  // J1–J5 — it saves by itself: "Saving…", then the tick, or the red line.
+                  const key = linkKey(row, p.slot);
                   return (
-                    <View key={key}>
-                      <TextInput style={s.link} value={links[key] != null ? links[key] : (p.url || '')} placeholder={C12.pasteLink}
-                        placeholderTextColor={T.ink3} autoCapitalize="none" autoCorrect={false} keyboardType="url"
-                        onChangeText={(v) => setLinks((x) => ({ ...x, [key]: v }))} onEndEditing={() => saveLink(row, p.slot)} testID={`link-${key}`} />
-                      <FieldError text={rowError[key]} />
-                    </View>
+                    <LinkBox12 key={key} saves={saves} id={key} url={p.url} send={sendLink(row, p.slot)}
+                      placeholder={C12.pasteLink} style={s.link} testID={`link-${key}`} />
                   );
                 })}
                 <FieldError text={rowError[row.key]} />
@@ -330,37 +372,40 @@ export default function ContentScreen({ navigation, route }) {
             <StepLine10 steps={paidSteps} />
           </>
         ) : null}
-      </ScrollView>
+      </FormScroll>
+      {toast}
+      </FormArea>
 
-      <View style={s.bar} testID="content-actions">
+      <BottomBar testID="content-actions">
         {showIntro ? <PrimaryButton label={C12.startUploading} onPress={() => setStarted(true)} testID="start-uploading" /> : null}
         {editing && !showIntro ? (
           <>
             <PrimaryButton label={stage === 'changes' ? C12.sendChanges : C12.sendTo(brand)} disabled={!c.can.submit || Object.keys(uploads).length > 0}
-              onPress={() => { setSheetError(null); setSheet('send'); }} testID="send" />
+              onPress={openSend} testID="send" />
             <Text style={s.hint} testID="send-hint">{stage === 'changes' ? C12.replaceHint : c.missing.length ? (anyFiles ? C12.moreToAdd(c.missing) : C12.everyRow) : ''}</Text>
           </>
         ) : null}
         {stage === 'approved' && !c.frozen ? (
           <>
-            <PrimaryButton label={C12.postedEverything} disabled={!c.can.markPosted} onPress={posted} busy={busy} busyLabel="Sending" testID="posted" />
-            {slotsLeft.length ? <Text style={s.hint} testID="to-go">{C12.toGo(linksLeft, shotsLeft)}</Text> : null}
+            <PrimaryButton label={C12.postedEverything} disabled={!canPost} onPress={posted} busy={busy} busyLabel="Sending" testID="posted" />
+            {postLine ? <Text style={s.hint} testID="to-go">{postLine}</Text> : null}
           </>
         ) : null}
         {stage === 'posted' && c.can.report ? (
           <SecondaryButton label={C12.askInflx} onPress={() => { setSheetError(null); setSheet('report'); }} testID="ask-inflx" />
         ) : null}
-      </View>
+      </BottomBar>
 
       <SendSheet12 visible={sheet === 'send'} brandName={brand} rows={c.rows} busy={busy} serverError={sheetError}
         resend={stage === 'changes'} onSend={submit} onClose={() => setSheet(null)} />
       <ReportSheet12 visible={sheet === 'report'} kind="brand_silent" brandName={brand} busy={busy} serverError={sheetError}
         onReport={report} onClose={() => setSheet(null)} />
-      <ActionSheet visible={!!menu} onClose={() => setMenu(null)} actions={menu ? [
-        { label: C12.view, onPress: () => viewFile(menu) },
-        ...(editing ? [{ label: C12.remove, destructive: true, onPress: () => removeFile(menu) }] : []),
-      ] : []} />
-      {toast}
+      {/* H1–H5, H7 — one tap on a tile opens the file here. "Remove", and the brand's pinned note,
+          only on a file she can still change; a package with the brand and a Story screenshot are
+          the file and nothing else. */}
+      <MediaViewer12 open={viewer} fetchUrl={(id) => influencerApi.contentFileUrl(ciId, id)} onClose={() => setViewer(null)}
+        noteOf={viewer && viewer.edit ? (f) => f.pinnedNote : undefined}
+        onRemove={viewer && viewer.edit && editing ? removeFile : undefined} />
     </View>
   );
 }
@@ -375,7 +420,6 @@ const s = StyleSheet.create({
   tiles: { flexDirection: 'row', flexWrap: 'wrap' },
   caption: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink, borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 10, minHeight: 60, textAlignVertical: 'top', marginTop: 4 },
   counter: { fontFamily: fonts.sansRegular, fontSize: 11, color: T.ink3, textAlign: 'right', marginTop: 4 },
-  link: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink, borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, marginBottom: 6 },
+  link: { marginBottom: 6 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, textAlign: 'center' },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
 });

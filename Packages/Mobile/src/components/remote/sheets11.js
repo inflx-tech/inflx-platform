@@ -9,7 +9,7 @@
  *     (check 39).
  */
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { Sheet } from '../settings/sheets';
 import { PrimaryButton, SecondaryButton, DangerButton, FieldError } from '../settings/primitives';
@@ -102,17 +102,24 @@ export function PickupDaySheet11({ visible, address, brandName, today, busy, ser
  */
 export function SelfSentSheet11({ visible, brandName, pincode, busy, serverError, onSend, onClose }) {
   const [note, setNote] = useState('');
+  // ui-walk-fixes (board C, rule 3): the note box sits just above two buttons. The sheet shrinks
+  // to the room above the keypad, its body scrolls, and the buttons are pinned under it with the
+  // server's refusal beside them.
   return (
-    <Sheet visible={visible} onClose={onClose} testID="self-sent-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="self-sent-sheet" fit
+      footer={(
+        <>
+          <FieldError text={serverError} />
+          {serverError ? <View style={sh.gap} /> : null}
+          <PrimaryButton label={C11.creator.selfSent} icon="check" onPress={() => onSend(note.trim() || null)}
+            busy={busy} busyLabel="Marking" testID="self-sent-confirm" />
+          <SecondaryButton label="Not yet" onPress={onClose} disabled={busy} testID="self-sent-cancel" />
+        </>
+      )}>
       <Text style={sh.title}>{C11.creator.selfSent}</Text>
       <Text style={sh.body}>{C11.creator.selfSendTitle(pincode, brandName)}</Text>
       <TextField4 label={C11.creator.selfSentNoteLabel} value={note} onChangeText={setNote}
         placeholder={C11.creator.selfSentNotePlaceholder} max={200} testID="self-sent-note" />
-      <FieldError text={serverError} />
-      <View style={{ height: 8 }} />
-      <PrimaryButton label={C11.creator.selfSent} icon="check" onPress={() => onSend(note.trim() || null)}
-        busy={busy} busyLabel="Marking" testID="self-sent-confirm" />
-      <SecondaryButton label="Not yet" onPress={onClose} disabled={busy} testID="self-sent-cancel" />
     </Sheet>
   );
 }
@@ -184,10 +191,31 @@ export function ReportSheet11({ visible, kind, busy, serverError, onConfirm, onC
 export function ConfirmReturnSheet11({ visible, lines, autoConfirmDueAt, busy, serverError, onConfirm, onClose }) {
   const [answers, setAnswers] = useState({});
   const all = (lines || []).every((l) => answers[l.id]);
+  // ui-walk-fixes (board C, rule 3): the list sat in a fixed 320-high scroller that could not give
+  // way. The whole body now scrolls inside the Sheet's shrinking shape (the inner scroller is
+  // gone) and the two buttons are pinned under it, however many items came back.
+  //
+  // NO NOTE BOX HERE (final review, 2 Oct 2026). Marking an item Missing or Damaged used to open a
+  // note box that kept nothing: the pop-up handed it an empty value and a do-nothing handler, so
+  // every letter typed vanished — and the server's confirm step takes { lineId, status } for each
+  // item and has nowhere to put a note (remoteReturn.service.js confirmReturn). Item 11's locked
+  // frame R13 draws three buttons per item and no note, so the box is simply not drawn
+  // (`withNote={false}`); the creator's own check (R9) keeps hers. Letting the brand's note be
+  // saved would be new behaviour and a server change — see 06-diff/drift/C2.md.
   return (
-    <Sheet visible={visible} onClose={onClose} testID="confirm-return-sheet">
+    <Sheet visible={visible} onClose={onClose} testID="confirm-return-sheet" fit
+      footer={(
+        <>
+          <FieldError text={serverError} />
+          {serverError ? <View style={sh.gap} /> : null}
+          <PrimaryButton label={C11.brand.confirmReturn} icon="check" disabled={!all}
+            onPress={() => onConfirm(Object.entries(answers).map(([lineId, status]) => ({ lineId, status })))}
+            busy={busy} busyLabel="Confirming" testID="confirm-return-confirm" />
+          <SecondaryButton label="Not yet" onPress={onClose} disabled={busy} testID="confirm-return-cancel" />
+        </>
+      )}>
       <Text style={sh.title}>What came back?</Text>
-      <ScrollView style={{ maxHeight: 320 }}>
+      <View>
         {(lines || []).map((l) => (
           <View key={l.id} style={sh.line} testID={`confirm-line-${l.id}`}>
             <View style={sh.lineHead}>
@@ -197,20 +225,14 @@ export function ConfirmReturnSheet11({ visible, lines, autoConfirmDueAt, busy, s
             <ThreeWayCheck11
               value={answers[l.id] || null}
               onChange={(v) => setAnswers((a) => ({ ...a, [l.id]: v }))}
-              onNote={() => {}}
+              withNote={false}
               disabled={busy}
               testID={`confirm-check-${l.id}`}
             />
           </View>
         ))}
-      </ScrollView>
+      </View>
       {autoConfirmDueAt ? <Text style={sh.body} testID="auto-confirm">{C11.brand.autoConfirms(autoConfirmDueAt)}</Text> : null}
-      <FieldError text={serverError} />
-      <View style={{ height: 8 }} />
-      <PrimaryButton label={C11.brand.confirmReturn} icon="check" disabled={!all}
-        onPress={() => onConfirm(Object.entries(answers).map(([lineId, status]) => ({ lineId, status })))}
-        busy={busy} busyLabel="Confirming" testID="confirm-return-confirm" />
-      <SecondaryButton label="Not yet" onPress={onClose} disabled={busy} testID="confirm-return-cancel" />
     </Sheet>
   );
 }
@@ -230,4 +252,5 @@ const sh = StyleSheet.create({
   lineHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   lineName: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink },
   qty: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2 },
+  gap: { height: 8 },
 });

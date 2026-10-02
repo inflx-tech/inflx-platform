@@ -45,6 +45,56 @@ const MSG = {
   DECLINE_NOTE_LONG: 'Keep it under 200 characters.',
 };
 
+/**
+ * ui-walk-fixes, founder decision D2 (2 Oct 2026) — WHY a creator can't be invited, in the
+ * brand's words: a short line for her row and a full sentence for when the brand taps her
+ * (board B, frames B1, B2 and the table B10).
+ *
+ * `detail` is which rule of collabEligibility.decideInvite failed FIRST; only that one is ever
+ * worded. 'not_accepting' covers a creator who paused AND a creator who blocked this brand, so
+ * the two read byte for byte the same. Anything without a detail (the brand's own facts
+ * missing, a creator nobody can find) keeps the old "Not open to this set".
+ *
+ * The Aim and the mode are named as the apps name them; the city is the city of THIS SET's
+ * branch, and when it is not known the sentence says "your branch" instead.
+ */
+const AIM_NAME = { conversion: 'Pay for Sale', engagement: 'Pay for Content', hybrid: 'Hybrid' };
+const MODE_NAME = { visit: 'Store Visit', shipment: 'Remote', remote: 'Remote' };
+const CANT_INVITE = {
+  aim: { label: (w) => `Not taking ${w.aim}`, message: (w) => `${w.who} isn't taking ${w.aim} collaborations.` },
+  mode: { label: (w) => `Not taking ${w.mode}`, message: (w) => `${w.who} isn't taking ${w.mode} collaborations.` },
+  category: { label: () => 'Not taking your category', message: (w) => `${w.who} isn't taking invitations from brands in your category.` },
+  visit_city: {
+    label: (w) => (w.city ? `No store visits in ${w.city}` : 'Not taking store visits at your branch'),
+    message: (w) => (w.city ? `${w.who} doesn't do store visits in ${w.city}.` : `${w.who} doesn't do store visits at your branch's city.`),
+  },
+  not_accepting: { label: () => 'Not taking invitations', message: (w) => `${w.who} isn't taking invitations right now.` },
+  other: { label: () => 'Not open to this set', message: (w) => `${w.who} isn't open to this set.` },
+};
+const CANT_INVITE_DETAILS = ['not_accepting', 'aim', 'mode', 'category', 'visit_city'];
+
+/**
+ * @param {object} p
+ * @param {string|null} p.detail  one of CANT_INVITE_DETAILS, or null / anything else
+ * @param {string} [p.name]       the creator's name; only her first name is printed
+ * @param {string} [p.aim]        the set's Aim code
+ * @param {string} [p.mode]       the set's mode code (visit | shipment | remote)
+ * @param {string} [p.city]       the city of the set's branch, when known
+ * @returns {{ detail: string|null, label: string, message: string }}
+ */
+function cantInvite({ detail, name, aim, mode, city } = {}) {
+  const w = {
+    who: first(name),
+    aim: AIM_NAME[String(aim || '').toLowerCase()] || null,
+    mode: MODE_NAME[String(mode || '').toLowerCase()] || null,
+    city: city ? String(city).trim() || null : null,
+  };
+  const known = CANT_INVITE_DETAILS.includes(detail) ? detail : null;
+  // An Aim or a mode the apps have no name for cannot be put in a sentence; say the old line.
+  const worded = (known === 'aim' && !w.aim) || (known === 'mode' && !w.mode) ? 'other' : (known || 'other');
+  return { detail: known, label: CANT_INVITE[worded].label(w), message: CANT_INVITE[worded].message(w) };
+}
+
 /** The five decline reasons on the mockup (I14), stored as codes; the legacy codes stay readable. */
 const DECLINE_REASONS = [
   { code: 'fee_too_low', label: 'Fee too low' },
@@ -101,4 +151,4 @@ const NOTIFY = {
   },
 };
 
-module.exports = { MSG, DECLINE_REASONS, declineLabel, DELIVERABLE_TYPES, USAGE_PLACES, USAGE_DURATIONS, deliverablesInWords, usageInWords, NOTIFY, first };
+module.exports = { MSG, DECLINE_REASONS, declineLabel, DELIVERABLE_TYPES, USAGE_PLACES, USAGE_DURATIONS, deliverablesInWords, usageInWords, NOTIFY, first, cantInvite, CANT_INVITE_DETAILS, AIM_NAME, MODE_NAME };

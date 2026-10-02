@@ -553,7 +553,12 @@ describe('the pool (checks 21–28, 39–41)', () => {
     const s2 = await set(b, c2.id, { goal: 'conversion', go_live_date: day(20) });
     const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, entry.terms), poolEntryId: entry.entryId }] });
     expect(sent.status).toBe(422);
-    expect(sent.body.error.details.failures[0].message).toBe(MSG5.INELIGIBLE('Ritu V.'));
+    // ui-walk-fixes, founder decision D2 (2 Oct 2026): the refusal now says why. It used to be
+    // MSG5.INELIGIBLE('Ritu V.') — "Ritu V. can no longer be invited to this set."
+    // (drift: features/ui-walk-fixes/06-diff/drift/SB.md)
+    expect(sent.body.error.details.failures[0]).toMatchObject({
+      code: 'NOT_ACCEPTING', message: "Ritu isn't taking invitations right now.", label: 'Not taking invitations', detail: 'not_accepting',
+    });
     expect((await poolRows(b.brandId))[0].state).toBe('waiting');
   });
 

@@ -33,6 +33,11 @@ Brand V1–V3, V7, V10–V14; Creator V4–V6, V8, V9, V15. Token pass on `Shoot
 `Delayed` tone; `DateTimeChipPicker` restyled, 15-minute steps, max = posting date. The Stage-4
 guard test that refuses a native picker import **stays**.
 
+> **Corrected 2 Oct 2026 (features/ui-walk-fixes, board G).** That guard test did not exist when
+> this was written; it now does (`shoot10.test.js`, "no file in the app imports the Android date or
+> time picker"). The chip picker itself was replaced by two boxes, Date and Time, at the founder's
+> request — Q8's "chip" half is superseded, its "no Android clock" half is kept.
+
 ## Phase 4 — tests and evidence
 Checks 1–48, `compare.js baseline_item10.json after-item10.json`, governance check, `06-diff/notes.md`.
 

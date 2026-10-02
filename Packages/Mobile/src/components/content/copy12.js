@@ -6,6 +6,7 @@
  */
 import { first, rupees5, DELIVERABLE_TYPES } from '../invitations/copy5';
 import { day10 } from '../shoot/copy10';
+import { CS } from '../shop/copyShop';
 
 export { first, rupees5, day10 };
 
@@ -114,7 +115,24 @@ export const C12 = {
   uploading: (p) => `${Math.round((p || 0) * 100)}%`,
   add: 'Add',
   remove: 'Remove',
-  view: 'View',
+
+  /* ── the file viewer (ui-walk-fixes board H, frames H1–H7) ── */
+  // One tap on a tile opens the file inside the app; the small "View" menu is gone. "Add a note"
+  // and "Remove" (the words above and below) are the buttons under the file.
+  viewer: {
+    title: (label, n, m) => `${label} · ${n} of ${m}`,
+    couldntLoad: "Couldn't load this file",
+    tryAgain: 'Try again',
+    // The shopper app's sentence, the same words (one string, components/shop/copyShop.js).
+    needsUpdate: CS.videoNeedsUpdate,
+    openInBrowser: 'Open in browser',
+    close: 'Close',
+    previous: 'Previous file',
+    next: 'Next file',
+    // The sound button on a video (an icon; these are what a screen reader says it does).
+    soundOff: 'Turn sound off',
+    soundOn: 'Turn sound on',
+  },
 
   /* ── C5 ── */
   sendTitle: (brand) => `Send this to ${brand}?`,
@@ -165,6 +183,11 @@ export const C12 = {
   postedEverything: "I've posted everything",
   toGo: (links, shots) => `${joinAnd([links ? plural(links, 'link', 'links') : null, shots ? plural(shots, 'screenshot', 'screenshots') : null].filter(Boolean))} to go.`,
   save: 'Save',
+  // ui-walk-fixes board J (J2, J4) — the phone's own words, so they live here and never in MSG12:
+  // inside the link box while it saves, and the line under "I've posted everything".
+  saving: 'Saving…',
+  savingLink: 'Saving your link…',
+  linkNeedsFixing: 'One link needs fixing — see above.',
 
   /* ── C11 ── */
   yourMovePosted: (name, d) => `Your move. ${first(name)} posted everything on ${day10(d)}.`,

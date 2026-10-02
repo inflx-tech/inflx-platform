@@ -127,9 +127,20 @@ export function StandardTermsRow7({ version, sub, onPress, testID }) {
 }
 
 /** A tinted sentence box — amber for your move, blue waiting, green done. */
-export function StateBox7({ tone = 'wait', text, testID }) {
+export function StateBox7({ tone = 'wait', text, icon, testID }) {
   if (!text) return null;
   const c = tone === 'move' ? T.state.yourMove : tone === 'done' ? T.state.completed : tone === 'ended' ? T.state.ended : T.state.waiting;
+  // ui-walk-fixes (board F, frame F4): `icon` is an optional MaterialCommunityIcons name drawn
+  // before the sentence — the clock on "Waiting for her to sign". Additive: a caller that passes
+  // nothing gets exactly the box it always had.
+  if (icon) {
+    return (
+      <View style={[b.state, b.stateRow, { backgroundColor: c.bg }]} testID={testID || `state-${tone}`}>
+        <Icon name={icon} size={15} color={c.fg} style={b.stateIcon} />
+        <Text style={[b.stateText, b.stateTextFlex, { color: c.fg }]}>{text}</Text>
+      </View>
+    );
+  }
   return (
     <View style={[b.state, { backgroundColor: c.bg }]} testID={testID || `state-${tone}`}>
       <Text style={[b.stateText, { color: c.fg }]}>{text}</Text>
@@ -168,4 +179,7 @@ export const b = StyleSheet.create({
   chev: { fontFamily: fonts.sansRegular, fontSize: 20, color: T.ink3 },
   state: { borderRadius: 12, padding: 12, marginBottom: 12 },
   stateText: { fontFamily: fonts.sansSemiBold, fontSize: 13, lineHeight: 19 },
+  stateRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  stateIcon: { marginRight: 8, marginTop: 2 },
+  stateTextFlex: { flex: 1 },
 });

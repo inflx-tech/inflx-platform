@@ -1,0 +1,273 @@
+<style>
+/* board G — shoot plan date and time. Only what the two stylesheets do not already have. */
+.bG-box{padding-inline:9px;gap:5px;white-space:nowrap}
+.bG-box .ico{width:14px;height:14px}
+.bG-box.ph{font-size:12.5px}
+/* today's pill picker (TODAY frame only) */
+.bG-strip{display:flex;gap:6px;overflow:hidden;margin-right:-14px}
+.bG-day{flex:none;min-width:52px;padding:7px 9px;border-radius:12px;border:1px solid var(--border);background:#fff;display:grid;justify-items:center;gap:1px}
+.bG-day i{font-style:normal;font-family:var(--mono);font-size:9px;letter-spacing:.05em;color:var(--ink3);line-height:1.2}
+.bG-day b{font-size:16px;line-height:1.2}
+.bG-day.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.bG-day.on i{color:#fff}
+.bG-pill{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;line-height:1.3;padding:6px 8px;border-radius:18px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.bG-pill.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.bG-sum{font-size:13.5px;font-weight:800}
+/* calendar sheet head + the plain Cancel line under it, as the app's calendar has them */
+.bG-month{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:14px}
+.bG-month i{font-style:normal;font-weight:400;font-size:24px;line-height:1;padding-inline:8px;color:var(--ink)}
+.bG-month i.off{color:var(--ink3)}
+.bG-cancel{text-align:center;font-weight:700;font-size:12.5px;color:var(--ink2);padding:6px 0 2px}
+/* the time list is longer than the sheet: it scrolls inside this window */
+.bG-window{height:336px;overflow:hidden}
+.bG-window .tlist{margin-top:-21px}
+.bG-typing{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.bG-caret{display:inline-block;width:1.5px;height:14px;background:var(--ink);margin-left:1px;vertical-align:-2px}
+</style>
+<section id="board-G">
+  <header><div class="eyebrow">Brand and creator apps · point 9 of 11</div><h2>Shoot plan: choosing the date and the time</h2><p class="prose">You reported that choosing the time on the shoot plan is badly designed. Today it is a strip of day pills, fourteen hour pills and four minute pills; it shows a day and a time as if chosen when nothing is, and it offers hours that have already gone. It becomes the two boxes your item 10 board drew, Date and Time: nothing is chosen for you, Date opens the app's calendar and Time opens one simple list, both from the bottom of the screen, and a time that has passed cannot be tapped. This replaces the pill picker chosen in item 10; what stays from that choice is that it is built inside the app, not the phone's own Android clock.</p></header>
+  <div class="flow">
+
+    <!-- G0 · TODAY -->
+    <div class="shot">
+      <div class="phone today"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div>
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div>
+          <div class="grp"><div class="lbl">Date</div>
+            <div class="bG-strip">
+              <div class="bG-day on"><i>THU</i><b>1</b><i>OCT</i></div>
+              <div class="bG-day"><i>FRI</i><b>2</b><i>OCT</i></div>
+              <div class="bG-day"><i>SAT</i><b>3</b><i>OCT</i></div>
+              <div class="bG-day"><i>SUN</i><b>4</b><i>OCT</i></div>
+              <div class="bG-day"><i>MON</i><b>5</b><i>OCT</i></div>
+            </div>
+          </div>
+          <div class="grp"><div class="lbl">Time</div>
+            <div class="chips"><span class="bG-pill">7 am</span><span class="bG-pill">8 am</span><span class="bG-pill">9 am</span><span class="bG-pill">10 am</span><span class="bG-pill on">11 am</span><span class="bG-pill">12 pm</span><span class="bG-pill">1 pm</span><span class="bG-pill">2 pm</span><span class="bG-pill">3 pm</span><span class="bG-pill">4 pm</span><span class="bG-pill">5 pm</span><span class="bG-pill">6 pm</span><span class="bG-pill">7 pm</span><span class="bG-pill">8 pm</span></div>
+            <div class="chips"><span class="bG-pill on">:00</span><span class="bG-pill">:15</span><span class="bG-pill">:30</span><span class="bG-pill">:45</span></div>
+            <b class="bG-sum">Thu 1 Oct, 11:00 am</b>
+          </div>
+          <div class="hint">Dates after 24 Oct aren't offered — she can't shoot after her last day to go live.</div>
+          <div class="grp"><div class="lbl">Roughly how long</div><div class="field">About 2 hours</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G0</i><span class="tagtoday">TODAY</span></div><b>Brand · Plan the visit, as it is now</b><span>Today's pill, "11 am" and ":00" are black and the bold line reads Thu 1 Oct, 11:00 am, so it looks chosen. It is not: nothing counts until a pill is tapped, and pressing Send answers "Choose a date and time." Hours that have already gone today are offered like any other, and one time takes taps in two separate groups. The bottom tabs the app also shows on this screen today are left off this drawing; boards B and C deal with them.</span></div>
+    </div>
+
+    <!-- G1 · AFTER · nothing chosen -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div><div class="crumbs">TANVI SURESH · SET A</div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> From the set</div><div class="tline"><span>Mode</span><b>Store Visit</b></div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>She goes live by</span><b>24 Oct 2026</b></div></div>
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field ph bG-box"><svg class="ico"><use href="#i-cal2"/></svg>Choose a date</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field ph bG-box"><svg class="ico"><use href="#i-clock2"/></svg>Choose a time</div></div>
+          </div>
+          <div class="hint">Dates after 24 Oct aren't offered — she can't shoot after her last day to go live.</div>
+          <div class="grp"><div class="lbl">Roughly how long</div><div class="field">About 2 hours</div></div>
+          <div class="grp"><div class="lbl">Anything she should bring or know</div><div class="textarea" style="color:var(--ink3)">Parking is behind the building. Come to the first floor and ask at the desk.</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G1</i><span class="tagafter">AFTER</span></div><b>Brand · Plan the visit, nothing chosen yet</b><span>Two boxes side by side, as your item 10 board drew them. Both read grey until tapped: no day and no time is suggested, so nothing looks chosen that is not. The pills and the bold line are gone; everything else on the screen is unchanged.</span></div>
+    </div>
+
+    <!-- G2 · AFTER · calendar -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field focus bG-box"><svg class="ico"><use href="#i-cal2"/></svg>18 Oct</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field ph bG-box"><svg class="ico"><use href="#i-clock2"/></svg>Choose a time</div></div>
+          </div>
+          <div style="height:330px"></div>
+        </div>
+        <div class="dim"><div class="sheet"><span class="grab"></span>
+          <div class="bG-month"><i class="off">‹</i>October 2026<i class="off">›</i></div>
+          <div class="cal">
+            <span class="dow">M</span><span class="dow">T</span><span class="dow">W</span><span class="dow">T</span><span class="dow">F</span><span class="dow">S</span><span class="dow">S</span>
+            <span></span><span></span><span></span><span>1</span><span>2</span><span>3</span><span>4</span>
+            <span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span>
+            <span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span class="sel">18</span>
+            <span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span class="off">25</span>
+            <span class="off">26</span><span class="off">27</span><span class="off">28</span><span class="off">29</span><span class="off">30</span><span class="off">31</span>
+          </div>
+          <div class="bG-cancel">Cancel</div>
+        </div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G2</i><span class="tagafter">AFTER</span></div><b>Brand · the Date box tapped</b><span>The same month calendar the app uses for every other date. Days before today and after the 24 Oct posting date are grey and cannot be tapped. Here today is 1 Oct, so the month is open from the 1st to the 24th, and both arrows are grey because no other month has a day she can shoot. One tap picks the day and closes the sheet. Shown opened a second time, so the chosen day, the 18th, is the black square.</span></div>
+    </div>
+
+    <!-- G3 · AFTER · time list, today -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>3:20</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-cal2"/></svg>1 Oct</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field focus bG-box"><svg class="ico"><use href="#i-clock2"/></svg>4:00 pm</div></div>
+          </div>
+          <div style="height:412px"></div>
+        </div>
+        <div class="dim"><div class="sheet"><span class="grab"></span>
+          <b style="font-size:15px">Time</b>
+          <div class="bG-window"><div class="tlist">
+            <div class="off">2:45 pm</div>
+            <div class="off">3:00 pm</div>
+            <div class="off">3:15 pm</div>
+            <div>3:30 pm</div>
+            <div>3:45 pm</div>
+            <div class="sel">4:00 pm<svg class="ico"><use href="#i-check"/></svg></div>
+            <div>4:15 pm</div>
+            <div>4:30 pm</div>
+            <div>4:45 pm</div>
+          </div></div>
+        </div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G3</i><span class="tagafter">AFTER</span></div><b>Brand · the Time box tapped, the visit is today</b><span>One list of whole times, every 15 minutes from 7:00 am to 8:45 pm, shown here scrolled to the afternoon. The date is today and the phone's clock reads 3:20, so every time up to 3:15 pm is grey and cannot be tapped. One tap picks a time and closes the sheet. Shown opened a second time, so the chosen one, 4:00 pm, is bold with a tick. On any later day the whole list is open.</span></div>
+    </div>
+
+    <!-- G4 · AFTER · filled -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div><div class="crumbs">TANVI SURESH · SET A</div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> From the set</div><div class="tline"><span>Mode</span><b>Store Visit</b></div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>She goes live by</span><b>24 Oct 2026</b></div></div>
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-cal2"/></svg>18 Oct</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-clock2"/></svg>11:00 am</div></div>
+          </div>
+          <div class="hint">Dates after 24 Oct aren't offered — she can't shoot after her last day to go live.</div>
+          <div class="grp"><div class="lbl">Roughly how long</div><div class="field">About 2 hours</div></div>
+          <div class="grp"><div class="lbl">Anything she should bring or know</div><div class="textarea" style="color:var(--ink3)">Parking is behind the building. Come to the first floor and ask at the desk.</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G4</i><span class="tagafter">AFTER</span></div><b>Brand · both chosen</b><span>The boxes read 18 Oct and 11:00 am, exactly as the locked item 10 board. Tapping either box opens it again to change it. If the date is then changed to today and 11:00 am has already gone, the Time box goes back to "Choose a time".</span></div>
+    </div>
+
+    <!-- G5 · AFTER · Send with nothing chosen -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div><div class="crumbs">TANVI SURESH · SET A</div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> From the set</div><div class="tline"><span>Mode</span><b>Store Visit</b></div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>She goes live by</span><b>24 Oct 2026</b></div></div>
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div>
+          <div class="grp">
+            <div class="twocol">
+              <div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field ph error bG-box"><svg class="ico"><use href="#i-cal2"/></svg>Choose a date</div></div>
+              <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field ph error bG-box"><svg class="ico"><use href="#i-clock2"/></svg>Choose a time</div></div>
+            </div>
+            <div class="err">Choose a date and time.</div>
+          </div>
+          <div class="hint">Dates after 24 Oct aren't offered — she can't shoot after her last day to go live.</div>
+          <div class="grp"><div class="lbl">Roughly how long</div><div class="field">About 2 hours</div></div>
+          <div class="grp"><div class="lbl">Anything she should bring or know</div><div class="textarea" style="color:var(--ink3)">Parking is behind the building. Come to the first floor and ask at the desk.</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G5</i><span class="tagafter">AFTER</span></div><b>Brand · Send pressed with nothing chosen</b><span>Both boxes are outlined red with one red line under them. The message is the same one the app gives today, but now it matches the screen: the boxes it points at really are empty.</span></div>
+    </div>
+
+    <!-- G6 · AFTER · creator counter, full screen -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Ask for another time</h3></div><div class="crumbs">URBAN THREADS</div>
+          <span class="rnd" style="align-self:flex-start">ROUND 1 OF 2</span>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-cal2"/></svg>19 Oct</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-clock2"/></svg>4:00 pm</div></div>
+          </div>
+          <div class="chg"><span>They asked for</span><span class="v"><b class="old">18 Oct, 11:00 am</b><span class="ar">→</span><b class="new">19 Oct, 4:00 pm</b></span></div>
+          <div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea" style="color:var(--ink3)">I have a shoot that morning. Afternoon suits me better.</div></div>
+          <div class="greybox">Only the time can change. The branch and the 24 Oct posting date came from the set.</div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G6</i><span class="tagafter">AFTER</span></div><b>Creator · Ask for another time</b><span>It stays the full screen it is today (your item 10 board drew it as a sheet from the bottom; the app has it as a full screen, which copes better with the keypad), with the same two boxes in place of the pills. They start empty; once she has chosen both, the line under them shows the time she was asked for and the one she is asking for. On the brand's phone this same screen is titled "Suggest another time".</span></div>
+    </div>
+
+    <!-- G7 · AFTER · move sheet, agreed time still ahead -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">SHOOT PLAN</div><div style="height:260px"></div></div>
+        <div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Move the visit?</b>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">New date <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-cal2"/></svg>19 Oct</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-clock2"/></svg>4:00 pm</div></div>
+          </div>
+          <div class="chg"><span>Agreed</span><span class="v"><b class="old">19 Oct, 4:00 pm</b><span class="ar">→</span><b class="new">—</b></span></div>
+          <div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea"></div></div>
+          <div class="greybox">Tanvi has to agree the new time. It still has to be before 24 Oct.</div>
+          <button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send new time</button>
+          <button class="btn block b-sec" type="button">Not yet</button>
+        </div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G7</i><span class="tagafter">AFTER</span></div><b>Brand · Move the visit, agreed time still ahead</b><span>The boxes open already showing the agreed 19 Oct, 4:00 pm, so only what changes needs a tap; the line reads "→ —" until something does. With the pills gone the sheet is much shorter: about three-quarters of the phone as drawn here, where today's is estimated to run close to the full height. On the creator's phone the title is "Ask to move the visit?".</span></div>
+    </div>
+
+    <!-- G8 · AFTER · move sheet, agreed time already passed -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">SHOOT PLAN</div><div style="height:260px"></div></div>
+        <div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Move the visit?</b>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">New date <span class="req">*</span></div><div class="field ph bG-box"><svg class="ico"><use href="#i-cal2"/></svg>Choose a date</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field ph bG-box"><svg class="ico"><use href="#i-clock2"/></svg>Choose a time</div></div>
+          </div>
+          <div class="chg"><span>Agreed</span><span class="v"><b class="old">19 Oct, 4:00 pm</b><span class="ar">→</span><b class="new">—</b></span></div>
+          <div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea"></div></div>
+          <div class="greybox">Tanvi has to agree the new time. It still has to be before 24 Oct.</div>
+          <button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send new time</button>
+          <button class="btn block b-sec" type="button">Not yet</button>
+        </div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G8</i><span class="tagafter">AFTER</span></div><b>Brand · the same sheet once the agreed time has passed</b><span>Opened from "Send a new time" or "She didn't come — send a new time". The agreed time is already behind, so both boxes start empty instead of showing a day that can no longer be picked.</span></div>
+    </div>
+
+    <!-- G9 · AFTER · move sheet with the keypad up -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">SHOOT PLAN</div><div style="height:550px"></div></div>
+        <div class="dim" style="flex-direction:column;justify-content:flex-end;align-items:stretch"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Move the visit?</b>
+          <div class="twocol">
+            <div class="grp"><div class="lbl">New date <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-cal2"/></svg>21 Oct</div></div>
+            <div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field bG-box"><svg class="ico"><use href="#i-clock2"/></svg>11:00 am</div></div>
+          </div>
+          <div class="chg"><span>Agreed</span><span class="v"><b class="old">19 Oct, 4:00 pm</b><span class="ar">→</span><b class="new">21 Oct, 11:00 am</b></span></div>
+          <div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea bG-typing">The store is closed that day for a private event.<i class="bG-caret"></i></div></div>
+          <div class="greybox">Tanvi has to agree the new time. It still has to be before 24 Oct.</div>
+          <button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send new time</button>
+          <button class="btn block b-sec" type="button">Not yet</button>
+        </div>
+        <div class="kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>G9</i><span class="tagafter">AFTER</span></div><b>Brand · typing the reason</b><span>The sheet moves up with the keypad instead of sliding under it. The box being typed in and "Send new time" both stay in view above the keys. A real keypad is taller than the one drawn: where the whole sheet no longer fits, its top moves up out of view, one swipe away, and the buttons stay above the keys, the same way board C draws it.</span></div>
+    </div>
+
+    <!-- G10 · AFTER · edge: posting date already passed -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div><div class="crumbs">TANVI SURESH · SET A</div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> From the set</div><div class="tline"><span>Mode</span><b>Store Visit</b></div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>She goes live by</span><b>24 Oct 2026</b></div></div>
+          <div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div>
+          <div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div>
+          <div class="err">No day works — the posting date has passed.</div>
+          <div class="hint">Dates after 24 Oct aren't offered — she can't shoot after her last day to go live.</div>
+          <div class="grp"><div class="lbl">Roughly how long</div><div class="field">About 2 hours</div></div>
+          <div class="grp"><div class="lbl">Anything she should bring or know</div><div class="textarea" style="color:var(--ink3)">Parking is behind the building. Come to the first floor and ask at the desk.</div></div>
+        </div>
+        <div class="savebar"><button class="btn block b-dis" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to Tanvi</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>G10</i><span class="tagafter">AFTER</span></div><b>Brand · the posting date has already passed</b><span>The screen is opened after 24 Oct, so no day can be chosen. The two boxes are replaced by the one red line the app already shows in this case today.</span></div>
+    </div>
+
+  </div>
+</section>

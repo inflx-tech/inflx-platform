@@ -112,6 +112,38 @@ describe('the three-way check (R9, §8)', () => {
     expect(queryByTestId('c-note').props.maxLength).toBe(300);
   });
 
+  // ui-walk-fixes, final review: the note box is opt-out, for a caller that has nowhere to keep a
+  // note (the brand's "What came back?" pop-up). Everyone who passes nothing keeps the box.
+  it('withNote={false} draws no note box for any verdict; the default still draws it and hands on what is typed', () => {
+    const onNote = jest.fn();
+    for (const verdict of ['missing', 'damaged']) {
+      const off = render(<ThreeWayCheck11 value={verdict} onChange={() => {}} withNote={false} testID="c" />);
+      expect(off.queryByTestId('c-note')).toBeNull();
+      expect(off.getByTestId(`c-${verdict}`).props.accessibilityState).toEqual({ selected: true, disabled: false });
+      off.unmount();
+      for (const on of [{}, { withNote: true }, { withNote: undefined }]) {
+        const kept = render(<ThreeWayCheck11 value={verdict} note="Torn" onChange={() => {}} onNote={onNote} {...on} testID="c" />);
+        expect(kept.getByTestId('c-note').props.value).toBe('Torn');
+        fireEvent.changeText(kept.getByTestId('c-note'), 'Torn at the hem');
+        expect(onNote).toHaveBeenLastCalledWith('Torn at the hem');
+        kept.unmount();
+      }
+    }
+  });
+
+  // ui-walk-fixes (closing pass, drift/K2.md): two boxes, two sets of grey words. Both were one
+  // key written twice in the creator's block of the copy file; the later line silently won, so her
+  // Delivery note box (R3) asked "What was wrong?". The check's note has its own key now.
+  it('the note box under Missing / Damaged asks "What was wrong?" — its own words, not the Delivery note\'s', () => {
+    for (const verdict of ['missing', 'damaged']) {
+      const r = render(<ThreeWayCheck11 value={verdict} onChange={() => {}} onNote={() => {}} testID="c" />);
+      expect(r.getByTestId('c-note').props.placeholder).toBe('What was wrong?');
+      r.unmount();
+    }
+    expect(C11.creator.checkNotePlaceholder).toBe('What was wrong?');
+    expect(C11.creator.notePlaceholder).toBe('A landmark, or a good time to deliver');
+  });
+
   it('each verdict can be chosen, and a disabled control cannot', () => {
     const onChange = jest.fn();
     const { getByTestId, rerender } = render(<ThreeWayCheck11 value={null} onChange={onChange} onNote={() => {}} testID="c" />);

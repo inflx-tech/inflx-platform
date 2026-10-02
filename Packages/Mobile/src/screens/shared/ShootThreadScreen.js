@@ -8,6 +8,9 @@
  * buttons, not three — a time that doesn't suit is never a refusal, it is another time.
  *
  * One screen serves both sides; the brand's is the same component with `side` fixed.
+ *
+ * ui-walk-fixes (board C, rule 1): the two buttons sit in a strip IN the column, under the page
+ * (BottomBar) — never floating over it.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
@@ -16,6 +19,8 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi, brandApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -23,13 +28,21 @@ import { RoundPill6, StateBox6, TurnCard6, ValueLine6, EndingCard6 } from '../..
 import { C10, whenShort10 } from '../../components/shoot/copy10';
 import { first } from '../../components/invitations/copy5';
 
+/** This side's move: the answers strip is drawn under the page. */
+const isMyMove = (sh, me) => {
+  const neg = (sh && sh.thread && sh.thread.negotiation) || {};
+  return !!(neg.open && neg.whoseMove === me);
+};
+
 export default function ShootThreadScreen({ navigation, route, side = 'influencer' }) {
   const { campaignId, setId, ciId } = route?.params || {};
   const brandSide = side === 'brand';
+  const me = brandSide ? 'brand' : 'influencer';
   const [status, setStatus] = useState('loading');
   const [sh, setSh] = useState(null);
   const [busy, setBusy] = useState(false);
-  const { toast, show } = useToast();
+  // Board C: with the strip the toast floats just above it; with none it stays where it always was.
+  const { toast, show } = useToast({ inFlow: isMyMove(sh, me) });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
@@ -56,8 +69,7 @@ export default function ShootThreadScreen({ navigation, route, side = 'influence
 
   const thread = sh.thread || { turns: [], negotiation: {} };
   const neg = thread.negotiation || {};
-  const me = brandSide ? 'brand' : 'influencer';
-  const myMove = !!(neg.open && neg.whoseMove === me);
+  const myMove = isMyMove(sh, me);
   const them = brandSide ? sh.creator.name : sh.brand.name;
   const turns = thread.turns || [];
   const moved = turns.some((t) => t.kind === 'accept');
@@ -70,7 +82,8 @@ export default function ShootThreadScreen({ navigation, route, side = 'influence
   return (
     <View style={base.screen} testID={`shoot-thread-${myMove ? 'yourmove' : neg.open ? 'waiting' : 'closed'}`}>
       <Header title={title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 160 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: 18 }} testID="shoot-thread-scroll">
         <Text style={s.crumb}>{`${C10.thread.crumb} · ${String(sh.setName || '').toUpperCase()}`}</Text>
         <EndingCard6 ending={thread.ending} />
         <StateBox6 tone={myMove ? 'move' : 'wait'} text={stateText} testID="shoot-thread-state" />
@@ -96,9 +109,11 @@ export default function ShootThreadScreen({ navigation, route, side = 'influence
           );
         })}
       </ScrollView>
+      {toast}
+      </FormArea>
 
       {myMove ? (
-        <View style={s.bar} testID="shoot-thread-actions">
+        <BottomBar testID="shoot-thread-actions">
           <PrimaryButton label={C10.thread.accept(thread.current && thread.current.visitAt)} icon="check" onPress={accept} busy={busy} testID="shoot-thread-accept" />
           {thread.can && thread.can.counter ? (
             <SecondaryButton icon="undo-variant" label={brandSide ? C10.thread.suggestAnother : C10.hers.askAnother}
@@ -106,9 +121,8 @@ export default function ShootThreadScreen({ navigation, route, side = 'influence
               testID="shoot-thread-counter" />
           ) : null}
           <Text style={s.hint} testID="no-decline">{C10.thread.noDecline}</Text>
-        </View>
+        </BottomBar>
       ) : null}
-      {toast}
     </View>
   );
 }
@@ -116,5 +130,6 @@ export default function ShootThreadScreen({ navigation, route, side = 'influence
 const s = StyleSheet.create({
   crumb: { fontFamily: fonts.sansBold, fontSize: 10.5, color: T.ink3, letterSpacing: 0.6, marginBottom: 12 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, marginTop: 8, textAlign: 'center' },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
+  // The page fills the room between the title row and the strip (the strip itself is BottomBar's).
+  page: { flex: 1 },
 });

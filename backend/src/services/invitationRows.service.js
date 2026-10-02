@@ -45,6 +45,23 @@ const STATUS_GROUP = {
   expired: 'expired', slots_filled: 'expired', withdrawn: 'withdrawn', removed: 'withdrawn',
 };
 /**
+ * ui-walk-fixes U6(a), board F6 — the brand owes this creator an agreement.
+ *
+ * She has accepted and nothing is out: either the agreement was never sent ('draft'), or the brand
+ * sent it and took it back ('withdrawn', which agreement.withdraw leaves with sent_at cleared). A
+ * withdrawn agreement used to fall out of "Your move" with no way to send it again, although the
+ * send endpoint has always accepted it. The same two conditions as agreement.send's own UPDATE
+ * (status IN ('draft','withdrawn') AND sent_at IS NULL), so the row never offers a send the
+ * endpoint would refuse. A contract marked 'withdrawn' because she was REMOVED or MOVED is not
+ * touched: her invitation is no longer 'accepted'.
+ * Contract: features/ui-walk-fixes
+ */
+function agreementOwedOn(r) {
+  const unsent = r.contract_status === 'draft' || (r.contract_status === 'withdrawn' && !r.agreement_sent_at);
+  return unsent && ['accepted', 'applied'].includes(r.status);
+}
+
+/**
  * Item 6: a row is the brand's move when an open thread waits on the brand or a move request is
  * unanswered; an open thread waiting on the creator is "Negotiating" (blue, Waiting chip).
  */
@@ -54,7 +71,7 @@ function groupOf(r) {
   const movePending = !!r.move_requested_at && !r.move_answer && ['invited', 'negotiating'].includes(r.status);
   // Item 7 (P1): TWO different "your move"s sit together — one creator needs an
   // agreement sent, another has signed and is waiting for the brand.
-  const agreementOwed = r.contract_status === 'draft' && ['accepted', 'applied'].includes(r.status);
+  const agreementOwed = agreementOwedOn(r);
   const hersSigned = !!r.creator_signed_at && !r.brand_signed_at && r.contract_status === 'pending_brand';
   if (movePending || hersSigned || agreementOwed || (threadOpen && r.neg_turn === 'brand')) return 'yourMove';
   if (threadOpen) return 'negotiating';
@@ -147,6 +164,39 @@ const NEG_JOIN = `
        WHERE n.campaign_influencer_id = ci.id LIMIT 1
     ) neg ON true`;
 
+/**
+ * ui-walk-fixes (board F, frames F2 / F7) — whose turn a store visit's own conversation is.
+ *
+ * A visit whose time is still being agreed reads stage 'sent' whether the plan is with her or
+ * she has asked for another time and it is with the brand: the turn lives on the conversation
+ * (negotiations.production_event_id — one per visit, opened by the first counter or move), never
+ * on the visit. The two lists carried only the stage, so a row could not tell the two apart.
+ * NULL when no conversation is open — nobody has proposed another time, or a time is agreed.
+ * Used inside the two `pe` laterals below. The reminder job reads the same column (shootPlan.remind).
+ */
+const SHOOT_TURN_SQL = `(SELECT sn.current_turn FROM negotiations sn WHERE sn.production_event_id = pe.id AND sn.outcome IS NULL LIMIT 1)`;
+
+/** The visit as shootPlan's stage functions read it. */
+const visitOf = (r) => ({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at });
+
+/**
+ * Whether the store visit's next step is the reader's — one rule with the shoot screens
+ * (shootPlan.read `can`), so a row and the screen behind it cannot disagree:
+ *   not_sent   the brand owes the plan
+ *   sent       hers until she answers the plan; once either side has proposed another time,
+ *              whoever the conversation is waiting on
+ *   agreed     nobody's — until the time passes with nothing marked, when the brand sends a new one
+ *   attended   the brand's confirmation
+ *   complete   nobody's
+ */
+function shootYourMove(r, side) {
+  const pe = visitOf(r);
+  const stage = shootPlan.stageOf(pe);
+  if (stage === 'sent') return r.shoot_turn ? r.shoot_turn === (side === 'brand' ? 'brand' : 'influencer') : side !== 'brand';
+  if (side !== 'brand') return false;
+  return stage === 'not_sent' || stage === 'attended' || (stage === 'agreed' && shootPlan.passedOf(pe));
+}
+
 const ROW_SELECT = `
   SELECT ci.id, ci.influencer_id, ci.status, ci.agreed_fee, ci.commission_pct,
          ci.alloc_scope, ci.alloc_category, ci.alloc_category_node_id, ci.alloc_product_ids,
@@ -165,6 +215,11 @@ const ROW_SELECT = `
          -- Item 10 walk fix: the shoot's stage inputs, so the row can say where the visit is.
          pe.shoot_id, pe.pe_shoot_mode, pe.shoot_status, pe.visit_scheduled_at,
          pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+         -- ui-walk-fixes (board F): whose turn the visit's own conversation is, and the Remote
+         -- facts the lateral below has always computed. This projection is explicit, so a column
+         -- the lateral works out and this list does not name never reaches the row — which is
+         -- how the Remote line stayed on "Waiting for her delivery address" for the whole shoot.
+         pe.shoot_turn, pe.address_sent_at, pe.parcel_delivered_at, pe.parcel_booked_at, pe.lines_unchecked,
          -- Item 12: the content move (contentFlow.CONTENT_MOVE_SQL), so the row can open the content step.
          ${require('./contentFlow.service').CONTENT_MOVE_SQL('ci')} AS content_move,
          -- Item 14: the Pay for Sale move (saleLive.SALE_MOVE_SQL), so the row can open Going live.
@@ -191,6 +246,8 @@ const ROW_SELECT = `
     LEFT JOIN LATERAL (
       SELECT pe.id AS shoot_id, pe.mode AS pe_shoot_mode, pe.status AS shoot_status, pe.visit_scheduled_at,
              pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+             -- ui-walk-fixes (board F): the turn on the visit's own conversation (SHOOT_TURN_SQL).
+             ${SHOOT_TURN_SQL} AS shoot_turn,
              -- Item 11: the Remote facts, so the brand's set row opens the right screen and says
              -- where the shoot has got to. Same three as the creator's lateral.
              pe.address_sent_at,
@@ -240,9 +297,14 @@ function brandRow(r, goal) {
       thread: !!r.neg_id || !!r.move_requested_at,
       // Item 7 (P1) — the brand's two agreement moves, and the one thing it
       // may still take back. Only one of these is ever true at a time.
-      sendAgreement: r.contract_status === 'draft' && ['accepted', 'applied'].includes(r.status) && !r.signed_both,
+      // ui-walk-fixes U6(a): an agreement the brand withdrew can be sent again (agreementOwedOn).
+      sendAgreement: agreementOwedOn(r) && !r.signed_both,
       signAgreement: r.contract_status === 'pending_brand' && !!r.creator_signed_at && !r.brand_signed_at,
-      withdrawAgreement: r.contract_status === 'pending_influencer' && !r.creator_signed_at,
+      // ui-walk-fixes (board F3): true exactly when agreement.withdraw would accept it — out for
+      // her signature, unsigned, AND stamped by the phone's own Send (sent_at). A contract the
+      // website's "Approve & Send" put out for signature has no sent_at; the withdraw endpoint
+      // answers 404 for it, so the row must not offer a Withdraw that fails.
+      withdrawAgreement: r.contract_status === 'pending_influencer' && !!r.agreement_sent_at && !r.creator_signed_at,
       viewAgreement: !!r.contract_id && !!r.agreement_sent_at,
       downloadAgreement: !!r.signed_both,
     },
@@ -265,8 +327,10 @@ function brandRow(r, goal) {
     // plan is sent — before that the row was a dead end and the brand could not reach the plan.
     shoot: r.shoot_id && r.pe_shoot_mode === 'visit' ? {
       stage: shootPlan.stageOf({ id: r.shoot_id, status: r.shoot_status, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
-      line: shootPlan.brandLineFor({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }, r.name),
+      line: shootPlan.brandLineFor({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }, r.name, r.shoot_turn || null),
       visitAt: r.visit_scheduled_at || null,
+      // ui-walk-fixes (board F): whether the visit's next step is the brand's (shootYourMove).
+      yourMove: shootYourMove(r, 'brand'),
     } : null,
     // Item 11: present from the moment the collaboration is signed — on Remote the brand
     // arrives before anything has been created, and the row still has to open the right screen
@@ -330,6 +394,9 @@ const CREATOR_SELECT = `
          -- Item 10: the shoot's stage inputs (the lateral below); the projection is explicit, so name them.
          pe.shoot_id, pe.pe_shoot_mode, pe.shoot_status, pe.visit_scheduled_at,
          pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+         -- ui-walk-fixes (board F): the visit conversation's turn, and the Remote facts — named
+         -- here for the same reason: unnamed, her card said "Send your delivery address" for ever.
+         pe.shoot_turn, pe.address_sent_at, pe.parcel_delivered_at, pe.parcel_booked_at, pe.lines_unchecked,
          -- Item 12: the content move (contentFlow.CONTENT_MOVE_SQL), so the row can open the content step.
          ${require('./contentFlow.service').CONTENT_MOVE_SQL('ci')} AS content_move,
          -- Item 14: the Pay for Sale move (saleLive.SALE_MOVE_SQL), so the row can open Going live.
@@ -362,6 +429,8 @@ const CREATOR_SELECT = `
     LEFT JOIN LATERAL (
       SELECT pe.id AS shoot_id, pe.mode AS pe_shoot_mode, pe.status AS shoot_status, pe.visit_scheduled_at,
              pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+             -- ui-walk-fixes (board F): the turn on the visit's own conversation (SHOOT_TURN_SQL).
+             ${SHOOT_TURN_SQL} AS shoot_turn,
              -- Item 11: the Remote shoot's own timestamps, so her Active card can route to the
              -- Remote screen and say the one line that matters (R2).
              pe.address_sent_at,
@@ -566,6 +635,8 @@ function creatorCard(r, today) {
       line: shootPlan.lineFor({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
       visitAt: r.visit_scheduled_at || null,
       delayed: !!r.delayed_at,
+      // ui-walk-fixes (board F): whether the visit's next step is hers (shootYourMove).
+      yourMove: shootYourMove(r, 'creator'),
     } : null,
     // Item 11 (R2): the Remote shoot on her Active card. Present from the moment the
     // collaboration is signed, because on Remote SHE moves first — "Send your delivery

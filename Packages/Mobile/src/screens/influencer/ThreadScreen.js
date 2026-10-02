@@ -3,14 +3,23 @@
  * Newest turn first, the original invitation always last as plain values, a state box at the top,
  * and Accept / Decline when it is her move.
  * Contract: features/item6-negotiation · prompt §6.4
+ *
+ * ui-walk-fixes (board E, frames E3 / E4): her answers are the shared AnswerBar — Accept with the
+ * terms she is agreeing to (a long label is centred and may wrap), then Counter back and Decline
+ * as two equal, level halves; on the last round, Decline alone at full width.
+ *
+ * ui-walk-fixes (board C, rule 1): the bar is a strip IN the column, under the page (BottomBar) —
+ * it no longer floats over the page, so the page needs no measured room under its last line.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import { PrimaryButton, DangerButton, SecondaryButton } from '../../components/settings/primitives';
+import { PrimaryButton, DangerButton, SecondaryButton, AnswerBar } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -18,13 +27,18 @@ import { DeclineSheet5 } from '../../components/invitations/sheets5';
 import { RoundPill6, StateBox6, TurnCard6, ValueLine6, EndingCard6 } from '../../components/negotiation/bits6';
 import { C6, TERM_LABEL, termValue, NEGOTIABLE, snapshotLine6, shortDate6 } from '../../components/negotiation/copy6';
 
+const PAGE_PAD = 18;
+/** Her move: the answers strip is drawn under the page. */
+const isMyMove = (thread) => !!(thread && thread.negotiation && thread.negotiation.open && thread.negotiation.whoseMove === 'influencer');
+
 export default function ThreadScreen({ navigation, route }) {
   const { ciId } = route?.params || {};
   const [status, setStatus] = useState('loading');
   const [thread, setThread] = useState(null);
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
-  const { toast, show } = useToast();
+  // Board C: with the strip the toast floats just above it; with none it stays where it always was.
+  const { toast, show } = useToast({ inFlow: isMyMove(thread) });
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
@@ -56,7 +70,7 @@ export default function ThreadScreen({ navigation, route }) {
 
   const neg = thread.negotiation || {};
   const goal = thread.goal;
-  const myMove = neg.open && neg.whoseMove === 'influencer';
+  const myMove = isMyMove(thread);
   const lastRound = myMove && neg.noRoundsLeft;
   const left = Math.max(0, (neg.roundLimit || 0) - (neg.countersUsed || 0));
   const stateText = thread.ending ? null
@@ -68,7 +82,8 @@ export default function ThreadScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`thread-${myMove ? 'yourmove' : neg.open ? 'waiting' : 'closed'}`}>
       <Header title={title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 140 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: PAGE_PAD }} testID="thread-scroll">
         <Text style={s.sub}>{C6.thread.sub(thread.campaignName, thread.setName)}</Text>
         <EndingCard6 ending={thread.ending} />
         <StateBox6 tone={stateTone} text={stateText} testID="thread-state" />
@@ -95,19 +110,20 @@ export default function ThreadScreen({ navigation, route }) {
 
         {!myMove && neg.open ? <Text style={s.hint} testID="they-can">{C6.thread.canDo(left)}</Text> : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
       {myMove ? (
-        <View style={s.bar} testID="thread-actions">
-          <PrimaryButton label={C6.thread.acceptLine(acceptLine)} onPress={accept} busy={busy} testID="thread-accept" />
-          <View style={s.pair}>
-            {!lastRound && thread.can.counter ? (
-              <View style={{ flex: 1, marginRight: 8 }}><SecondaryButton label={C6.thread.counterBack} onPress={() => navigation.navigate('Counter', { ciId })} testID="thread-counter" /></View>
-            ) : null}
-            <View style={{ flex: 1 }}><DangerButton label={C6.thread.decline} onPress={() => setSheet('decline')} testID="thread-decline" /></View>
-          </View>
-        </View>
+        <BottomBar testID="thread-actions">
+          <AnswerBar main={<PrimaryButton label={C6.thread.acceptLine(acceptLine)} onPress={accept} busy={busy} testID="thread-accept" />}>
+            {/* Gone, not greyed, when she has no counter left (N6). */}
+            {!lastRound && thread.can.counter
+              ? <SecondaryButton strong icon="undo-variant" label={C6.thread.counterBack} onPress={() => navigation.navigate('Counter', { ciId })} testID="thread-counter" />
+              : null}
+            <DangerButton outline label={C6.thread.decline} onPress={() => setSheet('decline')} testID="thread-decline" />
+          </AnswerBar>
+        </BottomBar>
       ) : null}
-      {toast}
       <DeclineSheet5 visible={sheet === 'decline'} busy={busy} onDecline={decline} onClose={() => setSheet(null)} />
     </View>
   );
@@ -116,6 +132,6 @@ export default function ThreadScreen({ navigation, route }) {
 const s = StyleSheet.create({
   sub: { fontFamily: fonts.sansBold, fontSize: 10.5, color: T.ink3, letterSpacing: 0.6, marginBottom: 12 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, marginTop: 6, lineHeight: 17 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
-  pair: { flexDirection: 'row', marginTop: 8 },
+  // The page fills the room between the title row and the strip (the strip itself is BottomBar's).
+  page: { flex: 1 },
 });

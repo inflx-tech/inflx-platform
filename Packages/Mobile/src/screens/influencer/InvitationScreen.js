@@ -4,15 +4,34 @@
  * Counter (only when it is allowed — hidden, never refused) and Decline with a reason. After the
  * cutoff the three actions disappear and the card reads as expired.
  * Contract: features/item5-invitations · prompt §6.10, §6.11 · APPROVAL.md §3.4
+ *
+ * ui-walk-fixes (board E, frames E1 / E2): the three answers are the shared AnswerBar — Accept,
+ * then Counter and Decline as two equal, level halves (Decline a red outline); with Counter not
+ * allowed, Decline alone at full width. "Nothing is final…" sits at the top of the bar, where the
+ * bar can never hide it.
+ *
+ * ui-walk-fixes (spec U23): the second button is one of three things, from what the server says.
+ *   canCounter                      "Counter" — opens the chooser (the money, or the date).
+ *   no counter, canMoveRequest      "Ask for another date" — opens the move request DIRECTLY. This
+ *                                   is the brand that switched countering off: the switch never
+ *                                   blocks a move request (item 6), and she has not asked yet. It
+ *                                   used to read "Counter" and lead into a counter the server
+ *                                   refused on Send.
+ *   neither                         no second button: Accept, then Decline alone (frame E2).
+ *
+ * ui-walk-fixes (board C, rule 1): the bar is a strip IN the column, under the page (BottomBar) —
+ * it no longer floats over the page, so the page needs no measured room under its last line.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import { PrimaryButton, SecondaryButton, DangerButton } from '../../components/settings/primitives';
+import { PrimaryButton, SecondaryButton, DangerButton, AnswerBar, AnswerNote } from '../../components/settings/primitives';
 import { ConfirmSheet } from '../../components/settings/sheets';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { Avatar } from '../brand/BrandBlockedCreatorsScreen';
@@ -26,13 +45,18 @@ import { C7 } from '../../components/agreement/copy7';
 
 const D = C5.creator.detail;
 
+const PAGE_PAD = 18;
+
 export default function InvitationScreen({ navigation, route }) {
   const { ciId } = route?.params || {};
   const [status, setStatus] = useState('loading');
   const [inv, setInv] = useState(null);
   const [sheet, setSheet] = useState(null); // 'accept' | 'decline'
   const [busy, setBusy] = useState(false);
-  const { toast, show } = useToast();
+  // Board C: a strip under the page (her answers, or the agreement door) — or none at all.
+  const hasBar = !!inv && (!!inv.canAnswer || !!inv.agreement);
+  // With a strip the toast floats just above it; with none it stays where it always was.
+  const { toast, show } = useToast({ inFlow: hasBar });
 
   const load = useCallback(async () => {
     setStatus(st => (st === 'ready' ? 'ready' : 'loading'));
@@ -56,6 +80,11 @@ export default function InvitationScreen({ navigation, route }) {
     if (!r.success) { show((r.error && r.error.message) || COPY.saveFailed); return; }
     setSheet(null); setInv(r.data.invitation); show(D.declined);
   }
+  /** "Ask for a change" — the one door to it, from the chooser's date choice and from U23's button. */
+  function openMoveRequest() {
+    setSheet(null);
+    navigation.navigate('MoveRequest', { ciId });
+  }
 
   if (status === 'loading') return <View style={base.screen}><Header title={D.title} onBack={() => navigation.goBack()} /><Skeleton /></View>;
   if (status === 'error') return <View style={base.screen}><Header title={D.title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} /></View>;
@@ -75,7 +104,8 @@ export default function InvitationScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`invitation-${inv.group}`}>
       <Header title={D.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 140 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: PAGE_PAD }} testID="invitation-scroll">
         <View style={s.brandRow}>
           <Avatar name={inv.brand.name} url={inv.brand.logoUrl} size={44} />
           <View style={{ flex: 1, marginLeft: 12 }}>
@@ -126,44 +156,57 @@ export default function InvitationScreen({ navigation, route }) {
           ) : null}
         </View>
         {inv.note ? <Text style={s.quote} testID="brand-note">“{inv.note}”</Text> : null}
-        {inv.canAnswer ? <Text style={s.hint}>{D.final}</Text> : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
       {/* Item 7 (P4): the agreement is hers to read and sign, so the footer says
           so instead of sitting empty. */}
       {!inv.canAnswer && inv.agreement ? (
-        <View style={s.footer} testID="agreement-actions">
+        <BottomBar testID="agreement-actions">
           <PrimaryButton
             label={inv.agreement.canSign ? C7.creator.sign : C7.creator.agreementLink}
             onPress={() => navigation.navigate('Agreement', { ciId: inv.id })}
             testID="open-agreement" />
-        </View>
+        </BottomBar>
       ) : null}
 
       {inv.canAnswer ? (
-        <View style={s.footer} testID="answer-actions">
-          {/* N19: when the brand is not taking counters the button is gone, not greyed, and one
-              plain line says why. She never taps something only to be refused. */}
-          {inv.counterHiddenReason === 'switch_off' ? <Text style={s.switchOff} testID="counter-off">{C6.invitation.counterOff(inv.brand.name)}</Text> : null}
-          <PrimaryButton label={D.accept} onPress={() => setSheet('accept')} testID="accept" />
-          <View style={s.pair}>
-            {inv.canCounter || inv.canMoveRequest ? (
-              <View style={{ flex: 1, marginRight: 8 }}><SecondaryButton label={D.counter} onPress={() => setSheet('choice')} testID="counter" /></View>
-            ) : null}
-            <View style={{ flex: 1 }}><DangerButton label={D.decline} onPress={() => setSheet('decline')} testID="decline" /></View>
-          </View>
-        </View>
+        <BottomBar testID="answer-actions">
+          {/* E1: "Nothing is final…" leads the bar. N19 / E2: when the brand is not taking
+              counters "Counter" is gone, not greyed, and one plain line says why. She never taps
+              something only to be refused. U23: while she may still ask to be moved, the second
+              button says exactly that and opens the request — same place, same testID, the same
+              dark outline, no undo arrow. */}
+          <AnswerBar
+            note={[
+              D.final,
+              inv.counterHiddenReason === 'switch_off'
+                ? <AnswerNote key="off" text={C6.invitation.counterOff(inv.brand.name)} testID="counter-off" />
+                : null,
+            ]}
+            main={<PrimaryButton label={D.accept} onPress={() => setSheet('accept')} testID="accept" />}
+          >
+            {inv.canCounter
+              ? <SecondaryButton strong icon="undo-variant" label={D.counter} onPress={() => setSheet('choice')} testID="counter" />
+              : inv.canMoveRequest
+                ? <SecondaryButton strong shrink label={C6.invitation.askDate} onPress={openMoveRequest} testID="counter" />
+                : null}
+            <DangerButton outline label={D.decline} onPress={() => setSheet('decline')} testID="decline" />
+          </AnswerBar>
+        </BottomBar>
       ) : null}
-      {toast}
       <ConfirmSheet visible={sheet === 'accept'} title={D.acceptTitle} body={D.acceptBody(inv.brand.name)} confirmLabel={D.accept} cancelLabel={D.notYet} onConfirm={accept} onCancel={() => setSheet(null)} />
       <DeclineSheet5 visible={sheet === 'decline'} busy={busy} onDecline={decline} onClose={() => setSheet(null)} />
-      {/* N1: two different things hide behind one word, so she picks which. */}
+      {/* N1: two different things hide behind one word, so she picks which. The chooser is told
+          whether a counter is allowed, so it can never offer one that is not (U23). */}
       <CounterChoiceSheet6 visible={sheet === 'choice'}
         roundLimit={(inv.negotiation && inv.negotiation.roundLimit) || 2}
         countersUsed={(inv.negotiation && inv.negotiation.countersUsed) || 0}
+        canCounter={!!inv.canCounter}
         canMoveRequest={inv.canMoveRequest}
         onMoney={() => { setSheet(null); navigation.navigate('Counter', { ciId }); }}
-        onMove={() => { setSheet(null); navigation.navigate('MoveRequest', { ciId }); }}
+        onMove={openMoveRequest}
         onClose={() => setSheet(null)} />
     </View>
   );
@@ -176,7 +219,6 @@ const s = StyleSheet.create({
   sentence: { borderRadius: 12, padding: 10, marginBottom: 12 },
   pool: { borderRadius: 12, padding: 10, marginBottom: 12, backgroundColor: T.state.active.bg },
   poolText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.active.fg, lineHeight: 17 },
-  switchOff: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, textAlign: 'center', marginBottom: 8 },
   sentenceText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, lineHeight: 17 },
   locked: { backgroundColor: T.surface, borderRadius: 14, padding: 12, marginBottom: 12 },
   card: { borderWidth: 1, borderColor: T.border, borderRadius: 14, padding: 12, marginBottom: 12 },
@@ -185,7 +227,6 @@ const s = StyleSheet.create({
   payTitle: { fontFamily: fonts.sansBold, fontSize: 12, color: T.state.waiting.fg },
   payText: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.state.waiting.fg, marginTop: 4, lineHeight: 17 },
   quote: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink2, fontStyle: 'italic', lineHeight: 19, marginBottom: 8 },
-  hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, textAlign: 'center', marginTop: 6 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
-  pair: { flexDirection: 'row', marginTop: 8 },
+  // The page fills the room between the title row and the strip (the strip itself is BottomBar's).
+  page: { flex: 1 },
 });

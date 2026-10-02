@@ -180,6 +180,9 @@ export const C6 = {
     fromPoolTermsOnly: (terms, agreedAt) => `The ${terms} you agreed on ${stampDate4(agreedAt)}.`,
     counterOff: (brand) => `${brand} aren't taking counters on this campaign.`,
     counter: 'Counter',
+    // ui-walk-fixes (spec U23): the second button when she may not counter the money but may
+    // still ask to be moved — it opens the move request directly, with no chooser in between.
+    askDate: 'Ask for another date',
   },
   switch: {
     label: 'Allow creators to counter',
@@ -189,6 +192,8 @@ export const C6 = {
   },
   set: {
     yourMove: 'Your move', negotiating: 'Negotiating', waitingChip: 'Waiting', yourMoveChip: 'Your move',
+    // ui-walk-fixes (board F, frame F1): the button on a row where she countered or asked to move.
+    reply: 'Reply',
     countered: (line, d) => `Countered ${line} · ${shortDate4(d)}`,
     youCountered: (line, d) => `You countered ${line} · ${shortDate4(d)}`,
     askedFor: (d, at) => `Asked for ${shortDate4(d)} · ${shortDate4(at)}`,

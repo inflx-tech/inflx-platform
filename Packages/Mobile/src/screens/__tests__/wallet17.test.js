@@ -141,7 +141,9 @@ describe('BW3 · BW4 — locked in collaborations', () => {
     expect(r.getByTestId('collab-still-locked').props.children).toBe('₹6,000');
     r.getByText('INFLX campaign fee ₹960 · charged to you at signing, never to her.');
     fireEvent.press(r.getByTestId('collab-open'));
-    expect(n.navigate).toHaveBeenCalledWith('CampaignsTab', { screen: 'BrandSetDetail', params: { campaignId: 'c2', setId: 's2', name: 'Set A' } });
+    // ASSERTION DRIFT — ui-walk-fixes D3 (drift/S0b.md): the jump now asks for the Campaigns page
+    // to sit under the set (`initial: false`), so the set has no bottom tabs and Back reaches it.
+    expect(n.navigate).toHaveBeenCalledWith('CampaignsTab', { screen: 'BrandSetDetail', params: { campaignId: 'c2', setId: 's2', name: 'Set A' }, initial: false });
   });
 
   it('BW4: a Hybrid collaboration waits on the brand confirming it is live, and shows no campaign fee', () => {

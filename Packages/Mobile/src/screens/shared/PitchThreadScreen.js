@@ -17,14 +17,30 @@
  *
  * One screen serves both sides, because the only thing that changes is which
  * four endpoints it calls and whose name is at the top.
+ *
+ * ui-walk-fixes (board E): the answers are the shared AnswerBar, as on item 6's
+ * conversation — Accept, then "Counter back" and Reject / Decline as two equal,
+ * level halves; on the last round the red outline alone at full width.
+ *
+ * ui-walk-fixes (board C, rule 1): the bar is a strip IN the column, under the page
+ * (BottomBar) — it no longer floats over the page, so the page needs no measured
+ * room under its last line.
+ *
+ * ui-walk-fixes (closing pass): the counter screen ends by putting this screen in its place with
+ * a message — `replace('PitchThread' | 'BrandPitchThread', { pitchId, toast: 'Counter sent.' })` —
+ * and this screen never read it, so the counter went without a word. It reads the route message
+ * now (useRouteToast), exactly as item 6's conversation (ThreadScreen) does after its own counter:
+ * the message is taken on arrival and is on show once the thread is drawn.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi, brandApi } from '../../services/api';
-import { PrimaryButton, DangerButton, SecondaryButton } from '../../components/settings/primitives';
+import { PrimaryButton, DangerButton, SecondaryButton, AnswerBar } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { DeclineSheet5 } from '../../components/invitations/sheets5';
@@ -32,16 +48,26 @@ import { RoundPill6, StateBox6, TurnCard6, EndingCard6 } from '../../components/
 import { C6, snapshotLine6 } from '../../components/negotiation/copy6';
 import { AcceptPitchSheet8, RejectPitchSheet8 } from '../../components/pitch/sheets8';
 import { C8 } from '../../components/pitch/copy8';
+import useRouteToast, { goBackWithToast } from '../../hooks/useRouteToast';
+
+const PAGE_PAD = 18;
+/** This side's move: the answers strip is drawn under the page. */
+const isMyMove = (thread, me) => !!(thread && thread.negotiation && thread.negotiation.open && thread.negotiation.whoseMove === me);
 
 export default function PitchThreadScreen({ navigation, route, side = 'influencer' }) {
   const { pitchId } = route?.params || {};
   const brandSide = side === 'brand';
+  const me = brandSide ? 'brand' : 'influencer';
   const [status, setStatus] = useState('loading');
   const [thread, setThread] = useState(null);
   const [pitch, setPitch] = useState(null);
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
-  const { toast, show } = useToast();
+  // Board C: with the strip the toast floats just above it; with none it stays where it always was.
+  const { toast, show } = useToast({ inFlow: isMyMove(thread, me) });
+  // The message the counter screen hands over ("Counter sent."). A hook — it must stay above the
+  // two early returns below.
+  useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
     setStatus((st) => (st === 'ready' ? 'ready' : 'loading'));
@@ -66,7 +92,8 @@ export default function PitchThreadScreen({ navigation, route, side = 'influence
     setBusy(false);
     setSheet(null);
     if (!r || !r.success) { show((r && r.error && r.error.message) || COPY.saveFailed); load(); return; }
-    if (brandSide) { navigation.navigate('CampaignsTab', { screen: 'BrandPool', params: { highlight: r.data.poolEntryId } }); return; }
+    // ui-walk-fixes (board F, frame F8): the pool says who has just arrived in it.
+    if (brandSide) { navigation.navigate('CampaignsTab', { screen: 'BrandPool', params: { highlight: r.data.poolEntryId, toast: C8.brand.inPool(thread && thread.creator ? thread.creator.name : '') }, initial: false }); return; }
     load();
     show(C6.thread.accepted6);
   }
@@ -78,7 +105,8 @@ export default function PitchThreadScreen({ navigation, route, side = 'influence
     setBusy(false);
     setSheet(null);
     if (!r || !r.success) { show((r && r.error && r.error.message) || COPY.saveFailed); load(); return; }
-    navigation.goBack();
+    // ui-walk-fixes (F8): back where the brand came from, which says "Pitch rejected."
+    goBackWithToast(navigation, C8.brand.rejected);
   }
 
   async function decline(body) {
@@ -97,8 +125,7 @@ export default function PitchThreadScreen({ navigation, route, side = 'influence
 
   const neg = thread.negotiation || {};
   const goal = thread.goal;
-  const me = brandSide ? 'brand' : 'influencer';
-  const myMove = neg.open && neg.whoseMove === me;
+  const myMove = isMyMove(thread, me);
   const lastRound = myMove && neg.noRoundsLeft;
   const left = Math.max(0, (neg.roundLimit || 0) - (neg.countersUsed || 0));
   const them = brandSide ? thread.creator.name : thread.brand.name;
@@ -109,7 +136,8 @@ export default function PitchThreadScreen({ navigation, route, side = 'influence
   return (
     <View style={base.screen} testID={`pitch-thread-${myMove ? 'yourmove' : neg.open ? 'waiting' : 'closed'}`}>
       <Header title={title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 140 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: PAGE_PAD }} testID="pitch-thread-scroll">
         <Text style={s.crumb} testID="pitch-thread-crumb">
           {brandSide ? C8.thread.crumbBrand(thread.goal) : C8.thread.crumbCreator(thread.goal)}
         </Text>
@@ -135,37 +163,41 @@ export default function PitchThreadScreen({ navigation, route, side = 'influence
 
         {!myMove && neg.open ? <Text style={s.hint} testID="they-can">{C6.thread.canDo(left)}</Text> : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
       {myMove ? (
-        <View style={s.bar} testID="pitch-thread-actions">
-          <PrimaryButton
-            label={C6.thread.acceptLine(snapshotLine6(goal, thread.current))}
-            onPress={() => (brandSide ? setSheet('accept') : accept())}
-            busy={busy}
-            testID="pitch-thread-accept"
-          />
-          <View style={s.pair}>
-            {!lastRound && thread.can && thread.can.counter ? (
-              <View style={{ flex: 1, marginRight: 8 }}>
-                <SecondaryButton
-                  label={C6.thread.counterBack}
-                  onPress={() => navigation.navigate('PitchCounter', { pitchId, side })}
-                  testID="pitch-thread-counter"
-                />
-              </View>
-            ) : null}
-            <View style={{ flex: 1 }}>
-              <DangerButton
-                label={brandSide ? C8.brand.reject : C6.thread.decline}
-                onPress={() => setSheet(brandSide ? 'reject' : 'decline')}
-                testID="pitch-thread-decline"
+        <BottomBar testID="pitch-thread-actions">
+          <AnswerBar
+            main={(
+              <PrimaryButton
+                label={C6.thread.acceptLine(snapshotLine6(goal, thread.current))}
+                onPress={() => (brandSide ? setSheet('accept') : accept())}
+                busy={busy}
+                testID="pitch-thread-accept"
               />
-            </View>
-          </View>
-        </View>
+            )}
+          >
+            {/* Gone, not greyed, when there is no counter left. */}
+            {!lastRound && thread.can && thread.can.counter ? (
+              <SecondaryButton
+                strong
+                icon="undo-variant"
+                label={C6.thread.counterBack}
+                onPress={() => navigation.navigate('PitchCounter', { pitchId, side })}
+                testID="pitch-thread-counter"
+              />
+            ) : null}
+            <DangerButton
+              outline
+              label={brandSide ? C8.brand.reject : C6.thread.decline}
+              onPress={() => setSheet(brandSide ? 'reject' : 'decline')}
+              testID="pitch-thread-decline"
+            />
+          </AnswerBar>
+        </BottomBar>
       ) : null}
 
-      {toast}
       <AcceptPitchSheet8 visible={sheet === 'accept'} pitch={pitch} busy={busy} onAccept={accept} onClose={() => setSheet(null)} />
       <RejectPitchSheet8 visible={sheet === 'reject'} pitch={pitch} busy={busy} onReject={reject} onClose={() => setSheet(null)} />
       <DeclineSheet5 visible={sheet === 'decline'} busy={busy} onDecline={decline} onClose={() => setSheet(null)} />
@@ -184,6 +216,6 @@ const C8PitchedTheirs = (t, thread, name) => (isOpening(t, thread) ? `${String(n
 const s = StyleSheet.create({
   crumb: { fontFamily: fonts.sansBold, fontSize: 10.5, color: T.ink3, letterSpacing: 0.6, marginBottom: 12 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, marginTop: 6, lineHeight: 17 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
-  pair: { flexDirection: 'row', marginTop: 8 },
+  // The page fills the room between the title row and the strip (the strip itself is BottomBar's).
+  page: { flex: 1 },
 });

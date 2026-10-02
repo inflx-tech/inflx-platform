@@ -11,6 +11,8 @@ jest.mock('../../../services/api', () => ({
     getMe: jest.fn(), getPitchSettings: jest.fn(), discoverCreators: jest.fn(), listGroups: jest.fn(), createGroup: jest.fn(),
     getCreatorProfile: jest.fn(), groupsForCreator: jest.fn(), setGroupsForCreator: jest.fn(), workedWith: jest.fn(),
     blockCreator: jest.fn(), unblockCreator: jest.fn(), listBranches: jest.fn(),
+    // ui-walk-fixes board B — "Add creators" to a group (frame B6).
+    getGroup: jest.fn(), addGroupMembers: jest.fn(),
     // Item 8 — the Pitches segment renders the real inbox.
     pitchInbox: jest.fn().mockResolvedValue({ success: true, data: { total: 0, unread: 0, order: [], groups: {} } }),
   },
@@ -211,5 +213,190 @@ describe('A6 — coming soon', () => {
     getByText('Your to-dos across campaigns and creators will show here.');
     fireEvent.press(getByTestId('coming-soon-button'));
     expect(n.navigate).toHaveBeenCalledWith('CreatorsTab');
+  });
+});
+
+/**
+ * ui-walk-fixes board B (locked 2 Oct 2026) — frame B8 (Creators › Discover) and frame B6
+ * ("Add creators" to a group). Expected-outputs checks 5 and 6.
+ * Contract: features/ui-walk-fixes
+ */
+describe('ui-walk-fixes board B — Discover and the group picker', () => {
+  const { Keyboard, StyleSheet } = require('react-native');
+  const { within } = require('@testing-library/react-native');
+  const { settingsTokens: T } = require('../../../theme/tokens');
+  const BrandGroupAddCreatorsScreen = require('../BrandGroupAddCreatorsScreen').default;
+  const flat = (el) => StyleSheet.flatten(el.props.style) || {};
+  const says = (el, text) => within(el).getByText(text);
+  const lastList = () => brandApi.discoverCreators.mock.calls.filter(c => !c[0].countOnly).pop()[0];
+
+  let pad, errorSpy;
+  beforeEach(() => {
+    const handlers = { keyboardDidShow: [], keyboardDidHide: [] };
+    const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, fn) => {
+      (handlers[event] = handlers[event] || []).push(fn);
+      return { remove: () => { handlers[event] = handlers[event].filter(f => f !== fn); } };
+    });
+    pad = {
+      show: () => act(() => { handlers.keyboardDidShow.forEach(f => f({ endCoordinates: { height: 280 } })); }),
+      hide: () => act(() => { handlers.keyboardDidHide.forEach(f => f()); }),
+      restore: () => spy.mockRestore(),
+    };
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    const said = errorSpy.mock.calls.map(c => String(c[0]));
+    errorSpy.mockRestore();
+    pad.restore();
+    expect(said).toEqual([]);
+  });
+
+  it('B8: Creators › Discover has the one control row — search + Filters — and the FULL creator card, unchanged', async () => {
+    brandApi.discoverCreators.mockResolvedValue(ok({ total: 2, page: 1, rows: [
+      creatorRow({ id: 'a', name: 'Priya Sharma', distance_km: 32, languages: ['Telugu', 'English'] }),
+      creatorRow({ id: 'b', name: 'Sneha N.', acceptedAims: ['conversion'], acceptedModes: ['visit'] }),
+    ] }));
+    const { getByTestId, getByText, getAllByText, queryByTestId, queryByText } = render(<BrandCreatorsScreen navigation={nav()} route={{ params: {} }} />);
+    await waitFor(() => getByText('2 creators'));
+    // The one row, and nothing of the chips row.
+    expect(flat(getByTestId('discover-controls')).flexDirection).toBe('row');
+    getByTestId('discover-search');
+    says(getByTestId('open-filters'), 'Filters');
+    expect(queryByTestId('quick-open')).toBeNull();
+    expect(queryByText('Open to invitations')).toBeNull();
+    expect(queryByText('Clear all')).toBeNull();
+    getByText('Nearest first ▾');
+    // "Open to invitations only" is inside Filters, and still on.
+    expect(lastList()).toMatchObject({ openOnly: true });
+    // The card does not change here: the browse card (not a tick row), its place line, the three
+    // labelled numbers, the Aim / mode tags and the add-to-group button.
+    getByTestId('creator-a'); getByTestId('add-to-group-a');
+    expect(queryByTestId('select-a')).toBeNull(); expect(queryByTestId('tick-a')).toBeNull();
+    getByText('Fashion · Hyderabad · 32 km · Telugu, English');
+    expect(getAllByText('48.2K')).toHaveLength(2); expect(getAllByText('Instagram')).toHaveLength(2);
+    expect(getAllByText('12.0K')).toHaveLength(2); expect(getAllByText('YouTube')).toHaveLength(2);
+    expect(getAllByText('4.2%')).toHaveLength(2); expect(getAllByText('Engagement')).toHaveLength(2);
+    expect(getAllByText('Pay for Sale')).toHaveLength(2);
+    getByText('Pay for Content'); getByText('Hybrid'); getByText('Remote'); expect(getAllByText('📍 Store Visit')).toHaveLength(2);
+    expect(queryByText(/ IG · /)).toBeNull();
+    // And the switch really is in the sheet, on.
+    fireEvent.press(getByTestId('open-filters'));
+    await waitFor(() => getByTestId('filters-sheet'));
+    getByText('Open to invitations only');
+    expect(getByTestId('filter-openonly').props.value).toBe(true);
+    await waitFor(() => expect(getByTestId('filters-apply').props.accessibilityState.disabled).toBe(false));
+  });
+
+  describe('B6 — Add creators to a group', () => {
+    const GROUP = { group: { id: 'g1', name: 'Diwali shortlist', memberCount: 12, capacityLeft: 88 }, memberIds: ['m'] };
+    const ROWS = [
+      creatorRow({ id: 'm', name: 'Priya Sharma' }),
+      creatorRow({ id: 's', name: 'Sneha N.', cityName: 'Eluru', distance_km: 58, languages: ['Telugu'], instagram: 18400, youtube: 6300, engagement: 5.1 }),
+      creatorRow({ id: 'l', name: 'Lakshmi M.', status: 'NOT_ACCEPTING' }),
+    ];
+    const open = (n = nav()) => render(<BrandGroupAddCreatorsScreen navigation={n} route={{ params: { groupId: 'g1', groupName: 'Diwali shortlist' } }} />);
+    beforeEach(() => {
+      brandApi.getGroup.mockResolvedValue(ok(GROUP));
+      brandApi.discoverCreators.mockResolvedValue(ok({ total: 3, page: 1, rows: ROWS }));
+    });
+
+    it('the title bar carries "Adding to … · N creators"; one control row; "Open to invitations only" starts OFF', async () => {
+      const { getByTestId, getByText, queryByTestId, queryByText } = open();
+      await waitFor(() => getByTestId('select-s'));
+      expect(getByTestId('group-add-subline').props.children).toBe('Adding to Diwali shortlist · 12 creators');
+      expect(getByTestId('group-add-subline').props.numberOfLines).toBe(1);
+      getByText('Add creators');
+      expect(flat(getByTestId('discover-controls')).flexDirection).toBe('row');
+      says(getByTestId('open-filters'), 'Filters');
+      expect(queryByTestId('quick-open')).toBeNull();
+      expect(queryByText('Open to invitations')).toBeNull();
+      expect(lastList()).toMatchObject({ openOnly: false, sort: 'distance', within: 'any', page: 1 });
+      fireEvent.press(getByTestId('open-filters'));
+      await waitFor(() => getByTestId('filters-sheet'));
+      expect(getByTestId('filter-openonly').props.value).toBe(false);
+      // Turning it on is one filter; the button counts it and the count line offers "Clear all".
+      fireEvent(getByTestId('filter-openonly'), 'valueChange', true);
+      await waitFor(() => expect(getByTestId('filters-apply').props.accessibilityState.disabled).toBe(false));
+      await act(async () => { fireEvent.press(getByTestId('filters-apply')); });
+      await waitFor(() => expect(lastList()).toMatchObject({ openOnly: true }));
+      await waitFor(() => getByTestId('select-s'));
+      says(getByTestId('open-filters'), 'Filters · 1');
+      await act(async () => { fireEvent.press(getByText('Clear all')); });
+      await waitFor(() => expect(lastList()).toMatchObject({ openOnly: false }));
+      await waitFor(() => getByTestId('select-s'));
+      says(getByTestId('open-filters'), 'Filters');
+      expect(queryByText('Clear all')).toBeNull();
+    });
+
+    it('the compact three-line row: name, place line, the three numbers, no tags; a member is ticked and greyed; "Not taking invitations" sits under her numbers and she can still be added', async () => {
+      brandApi.addGroupMembers.mockResolvedValue(ok({ added: 2 }));
+      const n = nav();
+      const { getByTestId, getByText, queryByText, queryByTestId } = open(n);
+      await waitFor(() => getByTestId('select-s'));
+      // A creator you can tick: three lines, each cut with … when long.
+      expect(getByTestId('pick-name-s').props.children).toBe('Sneha N.');
+      expect(getByTestId('pick-line-s').props.children).toBe('Fashion · Eluru · 58 km · Telugu');
+      expect(getByTestId('pick-numbers-s').props.children).toBe('18.4K IG · 6.3K YT · 5.1% eng');
+      for (const id of ['pick-name-s', 'pick-line-s', 'pick-numbers-s']) expect(getByTestId(id).props.numberOfLines).toBe(1);
+      // No tag line and no labelled numbers (D1).
+      for (const t of ['Pay for Sale', 'Pay for Content', 'Hybrid', '📍 Store Visit', 'Remote', 'Instagram', 'YouTube', 'Engagement']) expect(queryByText(t)).toBeNull();
+      // Already in the group: ticked, locked, face and name greyed, the line says so, no numbers.
+      expect(getByTestId('select-m').props.accessibilityState).toMatchObject({ checked: true, disabled: true });
+      expect(getByTestId('pick-line-m').props.children).toBe('Already in this group');
+      expect(flat(getByTestId('pick-name-m')).opacity).toBe(0.5);
+      expect(flat(getByTestId('pick-line-m')).opacity).toBeUndefined();
+      expect(flat(getByTestId('tick-m')).backgroundColor).toBe(T.surface);
+      expect(queryByTestId('pick-numbers-m')).toBeNull();
+      // Not taking invitations: all three lines, the chip under them, and still tickable.
+      getByTestId('pick-numbers-l');
+      says(getByTestId('select-l'), 'Not taking invitations');
+      expect(getByTestId('select-l').props.accessibilityState).toMatchObject({ checked: false, disabled: false });
+      // The capacity line counts down as you tick, as before.
+      getByText('Diwali shortlist can take 88 more creators.');
+      fireEvent.press(getByTestId('select-s'));
+      fireEvent.press(getByTestId('select-l'));
+      expect(getByTestId('select-s').props.accessibilityState.checked).toBe(true);
+      expect(flat(getByTestId('tick-s')).backgroundColor).toBe(T.ink);
+      expect(getByTestId('select-l').props.accessibilityState.checked).toBe(true);
+      getByText('Diwali shortlist can take 86 more creators.');
+      getByText('Add 2 creators');
+      // A member cannot be unticked or added twice.
+      fireEvent.press(getByTestId('select-m'));
+      getByText('Add 2 creators');
+      await act(async () => { fireEvent.press(getByTestId('add-selected')); });
+      expect(brandApi.addGroupMembers).toHaveBeenCalledWith('g1', ['s', 'l']);
+      expect(n.navigate).toHaveBeenCalledWith('BrandGroupDetail', { groupId: 'g1', toast: 'Added 2 creators to Diwali shortlist.' });
+    });
+
+    it('a full group greys the creators who would not fit, without hiding their lines', async () => {
+      brandApi.getGroup.mockResolvedValue(ok({ group: { ...GROUP.group, memberCount: 99, capacityLeft: 1 }, memberIds: ['m'] }));
+      const { getByTestId, getByText } = open();
+      await waitFor(() => getByTestId('select-s'));
+      fireEvent.press(getByTestId('select-s'));
+      getByText('Diwali shortlist can take 0 more creators.');
+      expect(getByTestId('select-l').props.accessibilityState).toMatchObject({ checked: false, disabled: true });
+      expect(flat(getByTestId('pick-name-l')).opacity).toBe(0.5);
+      getByTestId('pick-line-l'); getByTestId('pick-numbers-l');
+      // The one she ticked can still be unticked.
+      expect(getByTestId('select-s').props.accessibilityState).toMatchObject({ checked: true, disabled: false });
+      fireEvent.press(getByTestId('select-s'));
+      getByText('Diwali shortlist can take 1 more creator.');
+    });
+
+    it('B5: the footer steps away while the keypad is open and comes back when it closes', async () => {
+      const { getByTestId, getByText, queryByTestId, queryByText } = open();
+      await waitFor(() => getByTestId('select-s'));
+      fireEvent.press(getByTestId('select-s'));
+      getByTestId('group-add-footer'); getByTestId('capacity-line'); getByText('Add 1 creator');
+      pad.show();
+      expect(queryByTestId('group-add-footer')).toBeNull();
+      expect(queryByTestId('capacity-line')).toBeNull();
+      expect(queryByTestId('add-selected')).toBeNull();
+      expect(queryByText('Add 1 creator')).toBeNull();
+      getByTestId('group-add-subline'); getByTestId('add-tabs'); getByTestId('discover-search');
+      expect(getByTestId('select-s').props.accessibilityState.checked).toBe(true);
+      pad.hide();
+      getByTestId('group-add-footer'); getByText('Add 1 creator'); getByText('Diwali shortlist can take 87 more creators.');
+    });
   });
 });

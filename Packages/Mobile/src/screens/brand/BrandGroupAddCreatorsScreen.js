@@ -2,7 +2,17 @@
  * BrandGroupAddCreatorsScreen — G5: pick creators for a group from All creators (the
  * Discover list in select mode, all filters, "Open to invitations" off by default) or from
  * Worked with. Members already in the group are ticked and locked; the 100 cap is enforced.
- * Contract: features/item3-discovery-profiles-groups · prompt §6.4 G5
+ *
+ * ui-walk-fixes board B, frame B6 (locked 2 Oct 2026): "Adding to {group} · N creators" is the
+ * title bar's second line; the list is the compact three-line pick row behind one search +
+ * Filters row (DiscoverList), with "Open to invitations only" still OFF here and changed inside
+ * Filters; the footer steps away while the keypad is open. The capacity line stays.
+ *
+ * ui-walk-fixes board C: the footer is a strip in the column, under the list (BottomBar) — it no
+ * longer floats over the last rows. It still steps away while the keypad is open (B5), and the
+ * toast floats just above it (or just above the keypad while it is away).
+ *
+ * Contract: features/item3-discovery-profiles-groups · prompt §6.4 G5 · features/ui-walk-fixes
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, TextInput, ActivityIndicator, StyleSheet } from 'react-native';
@@ -10,12 +20,15 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton, EmptyState } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import SegmentedControl from '../../components/shell/SegmentedControl';
 import DiscoverList, { MemberRow, LoadErrorList } from '../../components/discovery/DiscoverList';
 import { CheckboxRow } from '../../components/discovery/bits';
 import useReferenceLists from '../../hooks/useReferenceLists';
+import { useKeyboardVisible } from '../../hooks/useKeyboardVisible';
 import { C3 } from '../../components/discovery/copy3';
 
 const G = C3.groups;
@@ -29,7 +42,9 @@ export default function BrandGroupAddCreatorsScreen({ navigation, route }) {
   const [sel, setSel] = useState(new Set());
   const [saving, setSaving] = useState(false);
   const lists = useReferenceLists();
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
+  // Frame B5: the footer steps out of the way while the keypad is open.
+  const typing = useKeyboardVisible();
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -64,9 +79,11 @@ export default function BrandGroupAddCreatorsScreen({ navigation, route }) {
 
   return (
     <View style={base.screen} testID="group-add-creators">
-      <Header title={G.addTitle} onBack={() => navigation.goBack()} />
+      {/* Board B6: "Adding to … · N creators" is the title bar's second line. */}
+      <Header title={G.addTitle} subtitle={G.addingTo(name, group.memberCount)} subtitleTestID="group-add-subline" onBack={() => navigation.goBack()} />
+      {/* ui-walk-fixes board C: the tabs and the list fill the room above the strip; nothing floats over them. */}
+      <FormArea>
       <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
-        <Text style={s.sub}>{G.addingTo(name, group.memberCount)}</Text>
         <SegmentedControl segments={G.tabs} value={tab} onChange={setTab} testID="add-tabs" />
       </View>
       {tab === G.tabs[0] ? (
@@ -75,11 +92,15 @@ export default function BrandGroupAddCreatorsScreen({ navigation, route }) {
       ) : (
         <WorkedSelectList selectedIds={sel} disabledIds={members} capacityLeft={capacityLeft} onToggle={toggle} />
       )}
-      <View style={s.footer}>
-        <Text style={s.cap} testID="capacity-line">{G.capacity(name, capacityLeft)}</Text>
-        <PrimaryButton label={G.addN(sel.size)} onPress={add} disabled={!sel.size} busy={saving} busyLabel="Adding" testID="add-selected" />
-      </View>
       {toast}
+      </FormArea>
+      {/* The capacity line is the strip's first child; the strip keeps it 8 above the button. */}
+      {typing ? null : (
+        <BottomBar testID="group-add-footer">
+          <Text style={s.cap} testID="capacity-line">{G.capacity(name, capacityLeft)}</Text>
+          <PrimaryButton label={G.addN(sel.size)} onPress={add} disabled={!sel.size} busy={saving} busyLabel="Adding" testID="add-selected" />
+        </BottomBar>
+      )}
     </View>
   );
 }
@@ -110,7 +131,7 @@ function WorkedSelectList({ selectedIds, disabledIds, capacityLeft, onToggle }) 
         <TextInput style={s.search} value={search} onChangeText={setSearch} placeholder={C3.discover.search} placeholderTextColor={T.ink3} autoCapitalize="none" autoCorrect={false} testID="worked-search" />
       </View>
       {status === 'loading' ? <Skeleton rows={4} /> : status === 'error' ? <LoadErrorList what="creators" onRetry={() => load(1)} /> : (
-        <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 140 }}
+        <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 24 }}
           onEndReachedThreshold={0.4} onEndReached={() => { if (rows.length < total && status === 'ready') load(page + 1); }}
           ListFooterComponent={status === 'more' ? <ActivityIndicator color={T.ink3} style={{ marginVertical: 12 }} /> : null}
           ListEmptyComponent={<EmptyState title={C3.worked.emptyTitle} body={C3.worked.emptyBody} />}
@@ -129,8 +150,6 @@ function WorkedSelectList({ selectedIds, disabledIds, capacityLeft, onToggle }) 
 }
 
 const s = StyleSheet.create({
-  sub: { fontFamily: fonts.sansMedium, fontSize: 13, color: T.ink2, marginBottom: 10 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
-  cap: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, textAlign: 'center', marginBottom: 8 },
+  cap: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, textAlign: 'center' },
   search: { fontFamily: fonts.sansRegular, borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: T.ink, backgroundColor: T.surface },
 });

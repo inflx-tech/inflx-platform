@@ -20,6 +20,7 @@ import { Sheet, sh } from '../settings/sheets';
 import { Skeleton } from '../settings/feedback';
 import ComingSoonScreen from './ComingSoonScreen';
 import { joinLabels } from '../registration/completeness';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 
 export const PENDING_COPY = {
   underReview: 'Under review',
@@ -28,7 +29,7 @@ export const PENDING_COPY = {
     brandTitle: 'INFLX',
     cards: [
       { key: 'brands', title: 'Brands on INFLX', sub: "Browse who's here", tab: 'CollabsTab', screen: 'FindBrands' },
-      { key: 'how', title: 'How collaborations work', sub: 'A 2-minute read', tab: 'ProfileTab', screen: 'LegalList' },
+      { key: 'how', title: 'How collaborations work', sub: 'A 2-minute read', tab: 'ProfileTab', screen: 'LegalList', mainUnder: true },
     ],
     note: 'This gets you approved faster — an admin can only verify an account that\'s complete.',
   },
@@ -74,6 +75,8 @@ export default function PendingHomeScreen(props) {
   const [status, setStatus] = useState('loading');
   const [me, setMe] = useState(null);
   const [sheet, setSheet] = useState(false);
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
 
   const load = useCallback(async () => {
     const r = isBrand ? await brandApi.getMe() : await influencerApi.getMe();
@@ -96,7 +99,7 @@ export default function PendingHomeScreen(props) {
 
   // Unknown (the request failed) falls back to the tab's previous behaviour.
   if (status === 'unknown' || (status === 'ready' && userStatus === 'approved')) return <ComingSoonScreen {...props} />;
-  if (status === 'loading') return <View style={s.screen} testID="pending-home-loading"><Text style={s.tabTitle}>{route?.params?.tabTitle || 'Home'}</Text><Skeleton rows={3} /></View>;
+  if (status === 'loading') return <View style={s.screen} testID="pending-home-loading"><Text style={[s.tabTitle, { paddingTop: top }]}>{route?.params?.tabTitle || 'Home'}</Text><Skeleton rows={3} /></View>;
 
   const copy = isBrand ? PENDING_COPY.brand : PENDING_COPY.creator;
   const heading = isBrand ? ((me.brand && me.brand.business_name) || 'Home') : PENDING_COPY.creator.brandTitle;
@@ -105,13 +108,18 @@ export default function PendingHomeScreen(props) {
   // locked tab press (or the server's 403) raises, with the server's words for this status.
   const pressCard = (c) => {
     if (c.locked) { emitAccountGate(gateEventFor(userStatus)); return; }
-    if (c.screen) navigation.navigate(c.tab, { screen: c.screen }); else if (c.tab) navigation.navigate(c.tab);
+    // ui-walk-fixes D3 — a card that opens a screen inside another tab. Where that tab is open to
+    // a pending account (Profile), the tab's main page is put underneath (`mainUnder`): the screen
+    // then has no bottom tabs and Back reaches the main page. A LOCKED tab's main page must never
+    // be built, so that card ("Brands on INFLX") jumps as before and keeps the tabs.
+    if (c.screen) navigation.navigate(c.tab, c.mainUnder ? { screen: c.screen, initial: false } : { screen: c.screen });
+    else if (c.tab) navigation.navigate(c.tab);
   };
 
   return (
     <View style={s.screen} testID={`pending-home-${isBrand ? 'brand' : 'creator'}`}>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <Text style={s.tabTitle}>{heading}</Text>
+        <Text style={[s.tabTitle, { paddingTop: top }]}>{heading}</Text>
         <View style={s.note} testID="pending-home-note">
           <Text style={s.noteTitle}>{PENDING_COPY.underReview}</Text>
           <Text style={s.noteBody}>{PENDING_COPY.underReviewLine}</Text>
@@ -145,7 +153,7 @@ export default function PendingHomeScreen(props) {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
-  tabTitle: { fontFamily: fonts.sansBold, fontSize: 20, color: T.ink, paddingTop: 54, paddingHorizontal: 18, paddingBottom: 12 },
+  tabTitle: { fontFamily: fonts.sansBold, fontSize: 20, color: T.ink, paddingTop: TOP_GAP_TITLE, paddingHorizontal: 18, paddingBottom: 12 },
   note: { marginHorizontal: 18, backgroundColor: T.state.yourMove.bg, borderRadius: 12, padding: 14, marginBottom: 14 },
   noteTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: T.state.yourMove.fg },
   noteBody: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.state.yourMove.fg, marginTop: 3, lineHeight: 18 },

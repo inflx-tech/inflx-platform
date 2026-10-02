@@ -7,9 +7,13 @@
  * the collaboration — no money moves on Pay for Sale — or tells INFLX what's wrong. Completed
  * shows the collaboration's sales, split as item 16 records them. `stage` and `can` come from the
  * server; the brand sees only what she has sent.
+ *
+ * ui-walk-fixes (board C, rule 1): the button strip is part of the column, under the page
+ * (BottomBar) — it used to float over the page's last lines. The page lost the 190 of empty
+ * space that only existed to scroll clear of it, and the toast sits just above the strip.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
@@ -18,11 +22,14 @@ import { Skeleton, useToast } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
 import { LoadErrorList } from '../../components/discovery/DiscoverList';
 import { Header, s as base } from './BrandPitchSettingsScreen';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormArea } from '../../components/shell/FormScroll';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, MoveBox10, DelayedChip10 } from '../../components/shoot/bits10';
 import { FileTile12, RoundPill12, History12, LinkLine12, Line12, FeeCard12 } from '../../components/content/bits12';
 import { ChangesSheet12 } from '../../components/content/sheets12';
+import MediaViewer12 from '../../components/content/MediaViewer12';
 import { ReportSheet14 } from '../../components/sale/sheets14';
 import { C14, day10, rupees } from '../../components/sale/copy14';
 import { Progress14, PostLine14 } from '../influencer/SaleLiveScreen';
@@ -41,8 +48,9 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
   const [busy, setBusy] = useState(false);
   const [sheetError, setSheetError] = useState(null);
   const [urls, setUrls] = useState({});
+  const [viewer, setViewer] = useState(null);           // the open file: { label, files, index }
   const mounted = useRef(true);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
   useEffect(() => () => { mounted.current = false; }, []);
 
@@ -70,11 +78,6 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
   }, [c]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refuse = (r) => (r && r.error && r.error.message) || COPY.saveFailed;
-  async function viewFile(id) {
-    const r = await brandApi.contentFileUrl(campaignId, setId, ciId, id);
-    if (!r || !r.success) { show(refuse(r)); return; }
-    Linking.openURL(r.data.view.url).catch(() => {});
-  }
   async function act(call, done) {
     setBusy(true); setSheetError(null);
     const r = await call();
@@ -112,7 +115,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
     const proof = (row.proofs || [])[0] || {};
     if (row.isStory) {
       return proof.screenshotFileId
-        ? <View style={s.tiles}><FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} onPress={() => viewFile(proof.screenshotFileId)} /></View>
+        ? <View style={s.tiles}><FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} onPress={() => setViewer({ label: rowTitle(row), files: [{ id: proof.screenshotFileId, kind: 'photo' }], index: 0 })} /></View>
         : null;
     }
     return <LinkLine12 url={proof.url} testID={`link-${row.key}`} />;
@@ -121,7 +124,8 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID={`brand-sale-${stage}${c.frozen ? '-frozen' : ''}${c.delayed ? '-delayed' : ''}`}>
       <Header title={name} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 190 }}>
+      <FormArea>
+      <ScrollView style={s.page} contentContainerStyle={{ padding: 18 }} testID="brand-sale-scroll">
         <View style={s.crumbRow}>
           <Text style={s.crumb}>{C14.crumbBrand(c.campaignName, c.setName)}</Text>
           {c.delayed ? <DelayedChip10 /> : null}
@@ -194,7 +198,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
             {pkg.map((row) => (
               <View key={row.key} style={s.row} testID={`review-row-${row.key}`}>
                 <Text style={s.rowLabel}>{rowTitle(row)}</Text>
-                <View style={s.tiles}>{row.files.map((f) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => viewFile(f.id)} />)}</View>
+                <View style={s.tiles}>{row.files.map((f, i) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => setViewer({ label: rowTitle(row), files: row.files, index: i })} />)}</View>
                 {row.caption ? <Text style={s.para}>{row.caption}</Text> : null}
               </View>
             ))}
@@ -260,8 +264,11 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
           <StepLine10 steps={c.steps.map((st) => ({ ...st, detail: st.key === 'posts' ? st.detail : st.at ? day10(st.at) : null }))} />
         ) : null}
       </ScrollView>
+      {toast}
+      </FormArea>
 
-      <View style={s.bar} testID="brand-sale-actions">
+      {/* With nothing the stage offers, the strip is not drawn at all. */}
+      <BottomBar testID="brand-sale-actions">
         {stage === 'in_review' && !c.frozen ? (
           <>
             <PrimaryButton label={C14.approve} icon="check" onPress={approve} busy={busy} busyLabel="Approving" testID="approve" />
@@ -274,13 +281,15 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
         {reportKinds.length ? (
           <TextButton label={C14.somethingWrong} onPress={() => { if (!busy) { setSheetError(null); setSheet('report'); } }} testID="something-wrong" />
         ) : null}
-      </View>
+      </BottomBar>
 
       <ChangesSheet12 visible={sheet === 'changes'} round={c.round} noteCount={0} busy={busy} serverError={sheetError}
         onSend={askChanges} onClose={() => setSheet(null)} />
       <ReportSheet14 visible={sheet === 'report'} kinds={reportKinds} busy={busy} serverError={sheetError}
         onReport={report} onClose={() => setSheet(null)} />
-      {toast}
+      {/* H1–H5 — one tap on a tile opens the file here, and nothing else: this review has no
+          notes on files (it sends `notes: []`), so the viewer is given no "Add a note". */}
+      <MediaViewer12 open={viewer} fetchUrl={(id) => brandApi.contentFileUrl(campaignId, setId, ciId, id)} onClose={() => setViewer(null)} />
     </View>
   );
 }
@@ -308,5 +317,5 @@ const s = StyleSheet.create({
   mtot: { borderBottomWidth: 0, borderTopWidth: 1.5, borderTopColor: T.ink },
   mtotLabel: { fontFamily: fonts.sansBold, fontSize: 13.5, color: T.ink },
   mtotVal: { fontFamily: fonts.sansBold, fontSize: 13.5, color: T.ink },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border, gap: 8 },
+  page: { flex: 1 },
 });

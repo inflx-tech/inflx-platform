@@ -151,10 +151,16 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
     const gate = await eligibility.canBrandInviteCreator({
       brandId: brand.id, influencerId: influencer_id, set,
       proposedTerms: { fee, commissionPct: terms.commissionPct != null ? terms.commissionPct : body.commission_pct },
+      name: inf.full_name || null,
     });
     if (!gate.ok) {
-      const message = strict ? MSG.INELIGIBLE(name) : eligibility.MESSAGE.invite[gate.reason];
-      throw new AppError(gate.reason, message, strict ? 422 : 403, 'influencer_id');
+      // ui-walk-fixes, founder decision D2 (2 Oct 2026): the item 5 send tells the brand WHY,
+      // in the same words the picker printed on her row — the sentence as the message, the
+      // short line and the rule beside it. (It used to say only "{name} can no longer be
+      // invited to this set.") The legacy brief door — only the website calls it, and the
+      // website is not in this change — keeps its coarse sentence and its 403.
+      if (strict) throw new AppError(gate.reason, gate.message, 422, 'influencer_id', { detail: gate.detail || null, label: gate.label });
+      throw new AppError(gate.reason, eligibility.MESSAGE.invite[gate.reason], 403, 'influencer_id');
     }
     eligibility_warnings = gate.warnings;
     minimums = gate.minimums || null;
@@ -478,7 +484,12 @@ async function sendBatch({ brand, campaign, set, creators, sourceGroupId = null,
       plans.push(await prepareOne({ brand, campaign, set, body, mode: 'strict', source: mine ? 'group' : 'brand_picker', sourceGroupId: mine, actorUserId }));
     } catch (e) {
       if (!(e instanceof AppError)) throw e;
-      failures.push({ influencerId, name: (e.details && e.details.name) || null, code: e.code, field: e.field || null, message: e.message });
+      // D2: `detail` and `label` are set only when she failed one of her own invitation rules
+      // (see collabEligibility); every other refusal — a duplicate, bad terms — leaves them null.
+      failures.push({
+        influencerId, name: (e.details && e.details.name) || null, code: e.code, field: e.field || null, message: e.message,
+        detail: (e.details && e.details.detail) || null, label: (e.details && e.details.label) || null,
+      });
     }
   }
   if (failures.length) {

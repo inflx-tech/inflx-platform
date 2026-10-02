@@ -8,6 +8,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { PrimaryButton } from '../settings/primitives';
 import { C3 } from '../discovery/copy3';
+import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 
 const TARGETS = {
   brandHome: { tab: 'CreatorsTab' }, brandWallet: { tab: 'CreatorsTab' },
@@ -20,13 +21,15 @@ export default function ComingSoonScreen({ navigation, route, kind: kindProp, ti
   const kind = kindProp || route?.params?.kind || 'brandHome';
   const c = C3.comingSoon[kind] || C3.comingSoon.brandHome;
   const target = TARGETS[kind] || TARGETS.brandHome;
+  // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
+  const top = useTopInset(TOP_GAP_TITLE);
   function go() {
     if (target.screen) navigation.navigate(target.tab, { screen: target.screen });
     else navigation.navigate(target.tab);
   }
   return (
     <View style={s.screen} testID={`coming-soon-${kind}`}>
-      <Text style={s.tabTitle}>{titleProp || route?.params?.tabTitle || ''}</Text>
+      <Text style={[s.tabTitle, { paddingTop: top }]}>{titleProp || route?.params?.tabTitle || ''}</Text>
       <View style={s.body}>
         <Text style={s.title}>{c.title}</Text>
         <Text style={s.text}>{c.body}</Text>
@@ -40,7 +43,7 @@ export default function ComingSoonScreen({ navigation, route, kind: kindProp, ti
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
-  tabTitle: { fontFamily: fonts.sansBold, fontSize: 20, color: T.ink, paddingTop: 54, paddingHorizontal: 18 },
+  tabTitle: { fontFamily: fonts.sansBold, fontSize: 20, color: T.ink, paddingTop: TOP_GAP_TITLE, paddingHorizontal: 18 },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
   title: { fontFamily: fonts.sansBold, fontSize: 17, color: T.ink, textAlign: 'center' },
   text: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink2, textAlign: 'center', marginTop: 8, lineHeight: 19 },

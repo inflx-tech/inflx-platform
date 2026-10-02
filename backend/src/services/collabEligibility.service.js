@@ -16,6 +16,25 @@
  * part of a result. The summaries handed to the other side carry only the accepted Aims
  * and modes and the paused/open state.
  *
+ * ui-walk-fixes, FOUNDER DECISION D2 (2 Oct 2026) — the BRAND is now told WHICH of her
+ * rules ruled a set out. This reverses item 5's "brands never receive the reason". A
+ * refusal from the invite direction carries, beside the unchanged coarse `reason`:
+ *
+ *   detail   not_accepting | aim | mode | category | visit_city | null
+ *   label    the short line for her row        ("Not taking Pay for Sale")
+ *   message  the sentence when the brand taps  ("Asha isn't taking Pay for Sale collaborations.")
+ *
+ * What did NOT change, and what the tests pin:
+ *   · ONE reason only — the first rule that fails, in decideInvite's order. Paused and
+ *     blocked are checked first and read byte for byte the same (`not_accepting`), so a
+ *     blocked brand learns neither that it is blocked nor any of her other settings.
+ *   · Her minimums never produce a reason. They stay warnings and never stop an invitation.
+ *   · What is named is what her public "Open to" summary already says (Aims, modes) plus
+ *     the brand's OWN category and the brand's OWN branch city. Her lists are never sent.
+ *   · The pitch direction (canCreatorPitchBrand) is untouched: the creator still gets the
+ *     coarse code only.
+ *   · Nothing of this is handed to a creator-facing endpoint.
+ *
  * MISSING ROW = DEFAULTS (founder Q7): a brand or creator who has never opened the
  * settings screen is fully open. Nothing is backfilled.
  *
@@ -25,6 +44,8 @@
 
 const db = require('../config/db');
 const ref = require('./referenceLists.service');
+// D2 — the brand's words for a refusal live with the rest of the invitation copy.
+const { cantInvite } = require('./invitationCopy');
 
 const AIMS  = Object.freeze(['conversion', 'engagement', 'hybrid']);
 const MODES = Object.freeze(['visit', 'shipment']);
@@ -42,6 +63,15 @@ const REASON = Object.freeze({
 const WARNING = Object.freeze({
   BELOW_MIN_FEE:        'BELOW_MIN_FEE',
   BELOW_MIN_COMMISSION: 'BELOW_MIN_COMMISSION',
+});
+// D2 — WHICH rule of decideInvite failed, for the brand only. Never a pitch-direction code,
+// and NOT_ACCEPTING is one value for paused and blocked alike.
+const DETAIL = Object.freeze({
+  NOT_ACCEPTING: 'not_accepting',
+  AIM:           'aim',
+  MODE:          'mode',
+  CATEGORY:      'category',
+  VISIT_CITY:    'visit_city',
 });
 
 // The one place the coarse messages live, so the pitch route, the invite route and the
@@ -386,9 +416,13 @@ async function agreedPitchFor(influencerId, brandId, set) {
  * @param {string} p.influencerId
  * @param {object} p.set             { goal, shoot_mode }  (goal = the set's Aim)
  * @param {object} [p.proposedTerms] { fee, commissionPct }  whole rupees / percent
- * @returns {{ ok: boolean, reason: string, warnings: string[] }}
+ * @param {string|null} [p.name]     her name, when the caller already has it; left out, it is
+ *                                   looked up only if she is refused. Pass null when the
+ *                                   sentence will not be used.
+ * @returns {{ ok: boolean, reason: string, warnings: string[] }} and, when refused (D2),
+ *          `detail`, `label`, `message` — see the top of this file.
  */
-async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms }) {
+async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms, name }) {
   // The four facts this decision needs, fetched together rather than one after
   // the other. Nothing here depends on anything else here.
   const [settings, blocked, herOwnPitch, brand0] = await Promise.all([
@@ -397,11 +431,15 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
     agreedPitchFor(influencerId, brandId, set),
     brandFacts(brandId),
   ]);
-  return decideInvite({
+  const brand = await withSetBranchCity(brand0, set);
+  const r = decideInvite({
     settings, blocked, herOwnPitch: !!herOwnPitch,
-    brand: await withSetBranchCity(brand0, set),
+    brand,
     set, proposedTerms,
   });
+  if (r.ok) return r;
+  const who = name !== undefined ? name : (await creatorNamesMany([influencerId])).get(influencerId);
+  return inWords(r, { name: who, set, brand });
 }
 
 /**
@@ -411,13 +449,20 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
  * There is exactly one copy of these rules. Both `canBrandInviteCreator` and
  * `canBrandInviteMany` call this, so the single answer and the list answer
  * cannot drift; that was the whole point of putting item 2 in one file.
+ *
+ * D2 (2 Oct 2026): a refusal also names WHICH rule failed, as `detail`. It is the FIRST
+ * rule that fails in the order below and never more than one. The order is the privacy:
+ * paused and blocked are answered before anything about her Aims, modes, categories or
+ * cities is looked at, and with the same value, so a blocked brand learns nothing else.
+ * The brand's own facts being missing is not one of her rules and carries no detail.
  */
 function decideInvite({ settings, blocked, herOwnPitch, brand, set, proposedTerms }) {
   const warnings = [];
+  const refuse = (reason, detail) => ({ ok: false, reason, detail, warnings });
 
   // 1. Not open, or blocked → NOT_ACCEPTING.
-  if (!settings || !settings.open) return { ok: false, reason: REASON.NOT_ACCEPTING, warnings };
-  if (blocked) return { ok: false, reason: REASON.NOT_ACCEPTING, warnings };
+  if (!settings || !settings.open) return refuse(REASON.NOT_ACCEPTING, DETAIL.NOT_ACCEPTING);
+  if (blocked) return refuse(REASON.NOT_ACCEPTING, DETAIL.NOT_ACCEPTING);
 
   // Item 8, §7B: she pitched this brand for exactly this shape and it agreed, so
   // her own filters are not turned against her. Only the two absolutes above
@@ -427,20 +472,20 @@ function decideInvite({ settings, blocked, herOwnPitch, brand, set, proposedTerm
   // 2. The set's Aim and mode.
   const aim = String(set?.goal || '').toLowerCase();
   if (!herOwnPitch && aim && !settings.accepted_aims.includes(aim)) {
-    return { ok: false, reason: REASON.NOT_MATCHING, warnings };
+    return refuse(REASON.NOT_MATCHING, DETAIL.AIM);
   }
   const mode = normaliseMode(set?.shoot_mode);
   if (!herOwnPitch && mode && !settings.accepted_modes.includes(mode)) {
-    return { ok: false, reason: REASON.NOT_MATCHING, warnings };
+    return refuse(REASON.NOT_MATCHING, DETAIL.MODE);
   }
 
-  if (!brand) return { ok: false, reason: REASON.NOT_MATCHING, warnings };
+  if (!brand) return refuse(REASON.NOT_MATCHING, null);
 
   // 3. Brand categories. A brand with none set does not match a creator who picked
   //    categories (founder Q5c). Creators who picked none are unaffected.
   const picked = Array.isArray(settings.brand_category_codes) ? settings.brand_category_codes : null;
   if (!herOwnPitch && picked && picked.length) {
-    if (!overlaps(brand.subCategories, picked)) return { ok: false, reason: REASON.NOT_MATCHING, warnings };
+    if (!overlaps(brand.subCategories, picked)) return refuse(REASON.NOT_MATCHING, DETAIL.CATEGORY);
   }
 
   // 4. Store Visit — founder, 19 Sep 2026 (creator-distance-and-visit-preference): HER
@@ -450,7 +495,7 @@ function decideInvite({ settings, blocked, herOwnPitch, brand, set, proposedTerm
   if (!herOwnPitch && mode === 'visit') {
     const visit = (settings.visit_city_ids || []).map(Number);
     if (visit.length && !brand.branchCityIds.some(id => visit.includes(Number(id)))) {
-      return { ok: false, reason: REASON.NOT_MATCHING, warnings };
+      return refuse(REASON.NOT_MATCHING, DETAIL.VISIT_CITY);
     }
   }
 
@@ -485,12 +530,51 @@ function decideInvite({ settings, blocked, herOwnPitch, brand, set, proposedTerm
 }
 
 /**
+ * D2 — a refusal put into the brand's words. The ONE place the single check and the list
+ * check both go through, so a creator reads the same on the picker, in a group check and in
+ * the refusal after Review and send.
+ *
+ * `detail` comes from decideInvite and from nowhere else. The city is the city of THIS SET's
+ * branch as withSetBranchCity found it; unknown, the copy says "your branch" instead.
+ */
+function inWords(r, { name, set, brand }) {
+  if (!r || r.ok) return r;
+  const w = cantInvite({
+    detail: r.detail || null,
+    name,
+    aim: set && set.goal,
+    mode: set && set.shoot_mode,
+    city: brand ? brand.setBranchCity : null,
+  });
+  return { ...r, detail: w.detail, label: w.label, message: w.message };
+}
+
+/** Names for the refusal sentence — one query, asked only for creators who were refused. */
+async function creatorNamesMany(ids) {
+  const list = [...new Set((ids || []).filter(Boolean))];
+  if (!list.length) return new Map();
+  const { rows } = await db.query(
+    `SELECT i.id, COALESCE(i.full_name, u.name) AS name
+       FROM influencers i JOIN users u ON u.id = i.user_id
+      WHERE i.id = ANY($1::uuid[])`,
+    [list]
+  );
+  return new Map(rows.map(r => [r.id, r.name]));
+}
+
+/**
  * Item 5 (A4) — the same check for a list of creators against one set. One result per
  * creator, in input order; a creator that does not exist reads as NOT_MATCHING.
- * @param {{brandId:string, set:object, creators:Array<{influencerId:string, fee?:number, commissionPct?:number}>}} p
- * @returns {Promise<Array<{influencerId:string, ok:boolean, reason:string, warnings:string[], minimums:object|null}>>}
+ *
+ * D2: a refused creator also carries `detail`, `label` and `message` (all three null when
+ * she can be invited). `names` is what the caller already knows — a Map or a plain object of
+ * influencerId → name, taken from the rows it is about to return, NEVER from a request body;
+ * a refused creator whose name is not in it is looked up, all of them in one query.
+ *
+ * @param {{brandId:string, set:object, creators:Array<{influencerId:string, fee?:number, commissionPct?:number}>, names?:Map<string,string>|object}} p
+ * @returns {Promise<Array<{influencerId:string, ok:boolean, reason:string, detail:string|null, label:string|null, message:string|null, warnings:string[], minimums:object|null}>>}
  */
-async function canBrandInviteMany({ brandId, set, creators }) {
+async function canBrandInviteMany({ brandId, set, creators, names }) {
   const list = (creators || [])
     .map(c => ({ ...c, influencerId: c.influencerId || c.influencer_id }))
     .filter(c => c.influencerId);
@@ -513,9 +597,9 @@ async function canBrandInviteMany({ brandId, set, creators }) {
   ]);
   const brand = await withSetBranchCity(brand0, set);
 
-  return list.map((c) => {
+  const decided = list.map((c) => {
     try {
-      const r = decideInvite({
+      return decideInvite({
         settings: settingsById.get(c.influencerId),
         blocked: blocked.has(c.influencerId),
         herOwnPitch: pitched.has(c.influencerId),
@@ -523,21 +607,48 @@ async function canBrandInviteMany({ brandId, set, creators }) {
         set,
         proposedTerms: { fee: c.fee, commissionPct: c.commissionPct },
       });
-      return { influencerId: c.influencerId, ok: r.ok, reason: r.reason, warnings: r.warnings || [], minimums: r.minimums || null };
     } catch (e) {
-      return { influencerId: c.influencerId, ok: false, reason: REASON.NOT_MATCHING, warnings: [], minimums: null };
+      return { ok: false, reason: REASON.NOT_MATCHING, detail: null, warnings: [], minimums: null };
     }
+  });
+
+  // D2 — the sentence needs her first name. Whatever the caller already holds is used; the
+  // rest is one more query, and only when somebody on the page was refused.
+  const known = names instanceof Map ? names : new Map(Object.entries(names || {}));
+  const unnamed = list.filter((c, i) => !decided[i].ok && !known.get(c.influencerId)).map(c => c.influencerId);
+  const looked = unnamed.length ? await creatorNamesMany(unnamed) : new Map();
+
+  return list.map((c, i) => {
+    const r = inWords(decided[i], { name: known.get(c.influencerId) || looked.get(c.influencerId), set, brand });
+    return {
+      influencerId: c.influencerId, ok: r.ok, reason: r.reason,
+      detail: r.ok ? null : r.detail, label: r.ok ? null : r.label, message: r.ok ? null : r.message,
+      warnings: r.warnings || [], minimums: r.minimums || null,
+    };
   });
 }
 
 /* ── the batch loaders, each one query ─────────────────────────────────────── */
 
-/** A set names ONE branch, so Store Visit is judged on that branch's city. */
+/**
+ * A set names ONE branch, so Store Visit is judged on that branch's city.
+ *
+ * D2: the same query also reads that city's NAME (`setBranchCity`), because "No store visits
+ * in Hyderabad" must name the very city the rule was judged on. It stays unset when the set
+ * is not a Store Visit, names no branch, or the branch has no city — and then the copy says
+ * "your branch" rather than guess among the brand's branches.
+ */
 async function withSetBranchCity(brand, set) {
   if (!brand) return brand;
   if (normaliseMode(set && set.shoot_mode) !== 'visit' || !set || !set.branch_id) return brand;
-  const { rows } = await db.query(`SELECT city_id FROM brand_branches WHERE id = $1`, [set.branch_id]);
-  return { ...brand, branchCityIds: rows[0] && rows[0].city_id != null ? [Number(rows[0].city_id)] : [] };
+  const { rows } = await db.query(
+    `SELECT bb.city_id, rc.name AS city_name
+       FROM brand_branches bb LEFT JOIN ref_cities rc ON rc.id = bb.city_id
+      WHERE bb.id = $1`,
+    [set.branch_id]
+  );
+  const known = rows[0] && rows[0].city_id != null;
+  return { ...brand, branchCityIds: known ? [Number(rows[0].city_id)] : [], setBranchCity: known ? rows[0].city_name || null : null };
 }
 
 /** Which of these creators have blocked this brand. */
@@ -721,7 +832,9 @@ async function inviteSummaryFor(influencerId, viewerBrandId) {
   let reason = REASON.NOT_ACCEPTING;
   if (!paused && viewerBrandId) {
     // No set yet: steps 1 and 3 only (brand categories), which is what the profile can know.
-    const r = await canBrandInviteCreator({ brandId: viewerBrandId, influencerId, set: {} });
+    // The profile card still shows the coarse reason only (D2 is about the pickers), so the
+    // refusal sentence is not built for a name here — hence name: null, and no lookup.
+    const r = await canBrandInviteCreator({ brandId: viewerBrandId, influencerId, set: {}, name: null });
     canInvite = r.ok;
     reason = r.reason;
   } else if (!paused) {
@@ -738,8 +851,9 @@ async function inviteSummaryFor(influencerId, viewerBrandId) {
 }
 
 module.exports = {
-  AIMS, MODES, REASON, WARNING, MESSAGE,
+  AIMS, MODES, REASON, WARNING, MESSAGE, DETAIL,
   BRAND_DEFAULTS, CREATOR_DEFAULTS,
+  decideInvite,
   loadBrandPitchSettings,
   loadCreatorInvitationSettings,
   isBlocked,

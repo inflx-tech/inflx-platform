@@ -73,7 +73,8 @@ import ContentScreen from '../screens/influencer/ContentScreen';
 import CreatorSellScreen from '../screens/influencer/CreatorSellScreen';
 import CreatorOfferScreen from '../screens/influencer/CreatorOfferScreen';
 import CreatorNotificationsScreen from '../screens/influencer/CreatorNotificationsScreen';
-import { tabScreenOptions } from './BrandNavigator';
+import { tabScreenOptions, tabRootOptions } from './BrandNavigator';
+import { TopInsetProvider } from '../hooks/useTopInset';
 // shoppable-posts-v2 — the Create tab. Contract: features/shoppable-posts-v2
 import CreateHomeScreen from '../screens/create/CreateHomeScreen';
 import PostBrandScreen from '../screens/create/PostBrandScreen';
@@ -212,20 +213,31 @@ function ProfileStackScreen() {
   );
 }
 
+// ui-walk-fixes D3 — the bottom tabs show on the five main pages and on no pushed screen, the
+// same rule as the brand app (tabRootOptions). Each tab's main page is the first screen of its
+// stack; null where the tab is one plain screen.
+export const CREATOR_TAB_ROOTS = {
+  HomeTab: null, CollabsTab: 'Collabs', CreateTab: 'CreateHome', WalletTab: 'CreatorWallet', ProfileTab: 'ProfileMain',
+};
+
 export default function InfluencerNavigator() {
   // Read once, at mount: initialRouteName only matters the first time the navigator renders.
   // The lock itself reads the live status on every press (lockedTab.js).
   const initialRouteName = initialTabFor(getAccountStatus(), 'CollabsTab');
+  // ui-walk-fixes D4 — TopInsetProvider is the one safe-area provider above every title of this
+  // app: titles start at the phone's real top inset (useTopInset), from the first frame.
   return (
-    <View style={{ flex: 1 }}>
-      <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
-        <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
-        <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={{ title: 'Collabs' }} listeners={lockedTabListeners()} />
-        <Tab.Screen name="CreateTab" component={CreateStackScreen} options={{ title: 'Create' }} listeners={lockedTabListeners()} />
-        <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
-        <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
-      </Tab.Navigator>
-      <PendingSheetHost />
-    </View>
+    <TopInsetProvider>
+      <View style={{ flex: 1 }}>
+        <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
+          <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={tabRootOptions('Home', CREATOR_TAB_ROOTS.HomeTab)} />
+          <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={tabRootOptions('Collabs', CREATOR_TAB_ROOTS.CollabsTab)} listeners={lockedTabListeners()} />
+          <Tab.Screen name="CreateTab" component={CreateStackScreen} options={tabRootOptions('Create', CREATOR_TAB_ROOTS.CreateTab)} listeners={lockedTabListeners()} />
+          <Tab.Screen name="WalletTab" component={WalletStackScreen} options={tabRootOptions('Wallet', CREATOR_TAB_ROOTS.WalletTab)} />
+          <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={tabRootOptions('Profile', CREATOR_TAB_ROOTS.ProfileTab)} />
+        </Tab.Navigator>
+        <PendingSheetHost />
+      </View>
+    </TopInsetProvider>
   );
 }

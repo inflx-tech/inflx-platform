@@ -6,12 +6,13 @@
  * Contract: features/registration-and-profile · features/item3-discovery-profiles-groups
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi, uploadFile } from '../../services/api';
 import { FieldError } from '../../components/settings/primitives';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { applyServerError } from '../../utils/serverError';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
@@ -65,7 +66,7 @@ export default function BrandBusinessDetailsScreen({ navigation, route }) {
   const [saving, setSaving] = useState(false);
   const [logoBusy, setLogoBusy] = useState(false);
   const [done, setDone] = useState(false);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -140,7 +141,9 @@ export default function BrandBusinessDetailsScreen({ navigation, route }) {
   return (
     <View style={base.screen}>
       <Header title={D.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[base.body, { paddingBottom: 140 }]} keyboardShouldPersistTaps="handled">
+      {/* ui-walk-fixes board C: the form scrolls in the room above the Save strip; nothing floats over it. */}
+      <FormArea>
+      <FormScroll contentContainerStyle={base.body}>
         <ImagePickerField label={brand.logo_url ? D.logo : 'Add a logo'} hint={D.logoHint} name={brand.business_name} url={brand.logo_url} onPick={pickLogo} onRemove={removeLogo}
           busy={logoBusy} changeLabel={D.change} removeLabel={D.remove} testID="logo" />
         <View style={{ height: 16 }} />
@@ -152,9 +155,10 @@ export default function BrandBusinessDetailsScreen({ navigation, route }) {
         <Locked label={D.phone} value={maskIndian(brand.login_phone || brand.phone)} hint={D.phoneHint} testID="locked-phone"
           action={{ label: D.changeNumber, onPress: changeNumber, testID: 'change-number-link' }} />
         <Locked label={D.major} value="Fashion" testID="locked-type" />
-      </ScrollView>
-      <SaveBar dirty={dirty} errorCount={dirty ? errorCount : 0} saving={saving} onSave={save} label={D.save} />
+      </FormScroll>
       {toast}
+      </FormArea>
+      <SaveBar dirty={dirty} errorCount={dirty ? errorCount : 0} saving={saving} onSave={save} label={D.save} />
     </View>
   );
 }

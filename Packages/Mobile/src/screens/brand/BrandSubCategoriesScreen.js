@@ -4,11 +4,12 @@
  * against these. Contract: features/item3-discovery-profiles-groups · prompt §6.1 A3
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi, referenceApi } from '../../services/api';
 import { Chip, FieldError, Section } from '../../components/settings/primitives';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
 import { Header, s as base } from './BrandPitchSettingsScreen';
@@ -23,7 +24,7 @@ export default function BrandSubCategoriesScreen({ navigation }) {
   const [sel, setSel] = useState([]);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -55,7 +56,10 @@ export default function BrandSubCategoriesScreen({ navigation }) {
   return (
     <View style={base.screen}>
       <Header title={S.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[base.body, { paddingBottom: 140 }]}>
+      {/* ui-walk-fixes board C: the page scrolls in the room above the Save strip; nothing floats over it.
+          No text box here — FormScroll is used so every Save screen is built the same way. */}
+      <FormArea>
+      <FormScroll contentContainerStyle={base.body}>
         <Text style={base.hint}>{S.intro}</Text>
         <Section title={S.major}><Text style={{ fontFamily: fonts.sansMedium, fontSize: 14, color: T.ink }}>Fashion</Text></Section>
         <Section title={S.label}>
@@ -67,9 +71,10 @@ export default function BrandSubCategoriesScreen({ navigation }) {
           </View>
           <FieldError text={dirty ? error : ''} />
         </Section>
-      </ScrollView>
-      <SaveBar dirty={dirty} errorCount={error ? 1 : 0} saving={saving} onSave={save} />
+      </FormScroll>
       {toast}
+      </FormArea>
+      <SaveBar dirty={dirty} errorCount={error ? 1 : 0} saving={saving} onSave={save} />
     </View>
   );
 }

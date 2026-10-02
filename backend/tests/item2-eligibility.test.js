@@ -159,13 +159,24 @@ describe('§3.2 brand → creator', () => {
     expect((await invite(b, c, remoteSet, {})).reason).toBe('OK');
   });
 
+  // ui-walk-fixes, founder decision D2 (2 Oct 2026): a refusal now says which rule it was, as
+  // a short line and a sentence. The exact-shape assertion moved with it (drift: 06-diff/drift/SB.md).
+  // What it protects is unchanged — paused and blocked are the SAME object, word for word.
   it('1. paused → NOT_ACCEPTING; blocked → NOT_ACCEPTING, identical', async () => {
     const b = await brand(); const c = await creator();
+    const notTaking = {
+      ok: false, reason: 'NOT_ACCEPTING', warnings: [],
+      detail: 'not_accepting', label: 'Not taking invitations', message: "Priya isn't taking invitations right now.",
+    };
     await setCreator(c.influencerId, { open: false });
-    expect(await invite(b, c, remoteSet, {})).toEqual({ ok: false, reason: 'NOT_ACCEPTING', warnings: [] });
+    const paused = await invite(b, c, remoteSet, {});
+    expect(paused).toEqual(notTaking);
     await setCreator(c.influencerId, { open: true });
     await block('creator', c.influencerId, 'brand', b.brandId);
-    expect(await invite(b, c, remoteSet, {})).toEqual({ ok: false, reason: 'NOT_ACCEPTING', warnings: [] });
+    const blocked = await invite(b, c, remoteSet, {});
+    expect(blocked).toEqual(notTaking);
+    expect(JSON.stringify(blocked)).toBe(JSON.stringify(paused));
+    expect(JSON.stringify(blocked)).not.toMatch(/block/i);
   });
 
   it("2. the set's aim or mode she does not accept → NOT_MATCHING; 'remote' (no shoot) counts as Remote; no mode skips", async () => {
@@ -255,6 +266,264 @@ describe('§3.2 brand → creator', () => {
     expect((await invite(women, c, remoteSet, { commissionPct: 8 })).reason).toBe('NOT_MATCHING');
     const s = await elig.loadCreatorInvitationSettings(c.influencerId);
     expect(s.min_commissions.map(r => r.category_code).sort()).toEqual(['MEN', 'WOMEN']);
+  });
+});
+
+/**
+ * ui-walk-fixes · founder decision D2 (2 Oct 2026) · checks 6a and 6b.
+ * The brand is told WHICH of her rules ruled a set out: `detail`, a short `label` for her row
+ * and a full `message` for when the brand taps her. What must not move is pinned here too.
+ */
+describe('D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b)', () => {
+  const words = (r) => ({ ok: r.ok, reason: r.reason, detail: r.detail, label: r.label, message: r.message });
+  const mainBranch = async (b) => (await query(`SELECT id FROM brand_branches WHERE brand_id = $1 AND is_main`, [b.brandId])).rows[0].id;
+  const many = (b, set, creators, names) => elig.canBrandInviteMany({ brandId: b.brandId, set, creators: creators.map(c => ({ influencerId: c.influencerId })), names });
+
+  it('Aim: the short line and the sentence name the SET\'s Aim in its display name, for all three Aims', async () => {
+    const b = await brand(); const c = await creator({ name: 'Asha K.' });
+    await setCreator(c.influencerId, { aims: ['hybrid'] });
+    expect(words(await invite(b, c, { goal: 'conversion', shoot_mode: 'shipment' }, {}))).toEqual({
+      ok: false, reason: 'NOT_MATCHING', detail: 'aim',
+      label: 'Not taking Pay for Sale', message: "Asha isn't taking Pay for Sale collaborations.",
+    });
+    expect(words(await invite(b, c, { goal: 'engagement', shoot_mode: 'shipment' }, {}))).toEqual({
+      ok: false, reason: 'NOT_MATCHING', detail: 'aim',
+      label: 'Not taking Pay for Content', message: "Asha isn't taking Pay for Content collaborations.",
+    });
+    await setCreator(c.influencerId, { aims: ['conversion'] });
+    expect(words(await invite(b, c, { goal: 'hybrid', shoot_mode: 'shipment' }, {}))).toEqual({
+      ok: false, reason: 'NOT_MATCHING', detail: 'aim',
+      label: 'Not taking Hybrid', message: "Asha isn't taking Hybrid collaborations.",
+    });
+  });
+
+  it('mode: Store Visit and Remote in their display names ("remote", no shoot, reads as Remote)', async () => {
+    const b = await brand(); const c = await creator({ name: 'Asha K.' });
+    await setCreator(c.influencerId, { modes: ['shipment'] });
+    expect(words(await invite(b, c, { goal: 'conversion', shoot_mode: 'visit' }, {}))).toEqual({
+      ok: false, reason: 'NOT_MATCHING', detail: 'mode',
+      label: 'Not taking Store Visit', message: "Asha isn't taking Store Visit collaborations.",
+    });
+    await setCreator(c.influencerId, { modes: ['visit'] });
+    const remote = { ok: false, reason: 'NOT_MATCHING', detail: 'mode', label: 'Not taking Remote', message: "Asha isn't taking Remote collaborations." };
+    expect(words(await invite(b, c, { goal: 'conversion', shoot_mode: 'shipment' }, {}))).toEqual(remote);
+    expect(words(await invite(b, c, { goal: 'conversion', shoot_mode: 'remote' }, {}))).toEqual(remote);
+  });
+
+  it('her brand categories: the brand is told it is its category — and never which categories she picked', async () => {
+    const b = await brand({ sub_categories: ['WATCHES'] }); const c = await creator({ name: 'Asha K.' });
+    await setCreator(c.influencerId, { categories: ['WOMEN', 'MEN'] });
+    const r = await invite(b, c, { goal: 'conversion', shoot_mode: 'shipment' }, {});
+    expect(words(r)).toEqual({
+      ok: false, reason: 'NOT_MATCHING', detail: 'category',
+      label: 'Not taking your category', message: "Asha isn't taking invitations from brands in your category.",
+    });
+    expect(JSON.stringify(r)).not.toMatch(/WOMEN|MEN|WATCHES/);
+  });
+
+  it('her visit cities: the city named is the city of THIS SET\'s branch; unknown, the no-city wording — and her own cities are never sent', async () => {
+    const b = await brand({ city: 'Hyderabad' }); const c = await creator({ name: 'Asha K.', city: 'Chennai' });
+    await setCreator(c.influencerId, { visitCityIds: [await cityId('Chennai')] });
+    // the set names its branch → that branch's city is named
+    const withBranch = await invite(b, c, { goal: 'conversion', shoot_mode: 'visit', branch_id: await mainBranch(b) }, {});
+    expect(words(withBranch)).toEqual({
+      ok: false, reason: 'NOT_MATCHING', detail: 'visit_city',
+      label: 'No store visits in Hyderabad', message: "Asha doesn't do store visits in Hyderabad.",
+    });
+    expect(JSON.stringify(withBranch)).not.toMatch(/Chennai/);
+    // a set that names no branch is judged on every branch city, so no single city is known
+    const noCity = { ok: false, reason: 'NOT_MATCHING', detail: 'visit_city', label: 'Not taking store visits at your branch', message: "Asha doesn't do store visits at your branch's city." };
+    expect(words(await invite(b, c, { goal: 'conversion', shoot_mode: 'visit' }, {}))).toEqual(noCity);
+    // a branch with no city on it → the same no-city wording
+    await query(`UPDATE brand_branches SET city_id = NULL WHERE brand_id = $1`, [b.brandId]);
+    expect(words(await invite(b, c, { goal: 'conversion', shoot_mode: 'visit', branch_id: await mainBranch(b) }, {}))).toEqual(noCity);
+    // Remote is never city-bound, so the same creator has no reason at all there
+    expect((await invite(b, c, { goal: 'conversion', shoot_mode: 'shipment' }, {})).ok).toBe(true);
+  });
+
+  it('ONLY ONE reason, the first that fails: paused/blocked, then Aim, mode, category, visit city', async () => {
+    const b = await brand({ city: 'Hyderabad', sub_categories: ['WATCHES'] }); const c = await creator({ name: 'Asha K.', city: 'Chennai' });
+    const set = { goal: 'conversion', shoot_mode: 'visit', branch_id: await mainBranch(b) };
+    const chennai = [await cityId('Chennai')];
+    // she fails all four of her own rules at once
+    await setCreator(c.influencerId, { aims: ['engagement'], modes: ['shipment'], categories: ['WOMEN'], visitCityIds: chennai });
+    expect((await invite(b, c, set, {})).detail).toBe('aim');
+    await setCreator(c.influencerId, { modes: ['shipment'], categories: ['WOMEN'], visitCityIds: chennai });
+    expect((await invite(b, c, set, {})).detail).toBe('mode');
+    await setCreator(c.influencerId, { categories: ['WOMEN'], visitCityIds: chennai });
+    expect((await invite(b, c, set, {})).detail).toBe('category');
+    await setCreator(c.influencerId, { visitCityIds: chennai });
+    expect((await invite(b, c, set, {})).detail).toBe('visit_city');
+    await setCreator(c.influencerId, {});
+    expect((await invite(b, c, set, {})).ok).toBe(true);
+    // every result holds one detail, one line and one sentence — never a list of them
+    await setCreator(c.influencerId, { aims: ['engagement'], modes: ['shipment'], categories: ['WOMEN'], visitCityIds: chennai });
+    const r = await invite(b, c, set, {});
+    expect(Object.keys(r).sort()).toEqual(['detail', 'label', 'message', 'ok', 'reason', 'warnings']);
+    expect(r.message).toBe("Asha isn't taking Pay for Sale collaborations.");
+    expect(r.message).not.toMatch(/Store Visit|category|Hyderabad/);
+  });
+
+  it('PRIVACY 1 — paused and blocked are byte-identical in label, detail and message, even when her other settings would fail too', async () => {
+    const b = await brand({ city: 'Hyderabad', sub_categories: ['WATCHES'] }); const c = await creator({ name: 'Asha K.', city: 'Chennai' });
+    const set = { goal: 'conversion', shoot_mode: 'visit', branch_id: await mainBranch(b) };
+    const closed = { aims: ['engagement'], modes: ['shipment'], categories: ['WOMEN'], visitCityIds: [await cityId('Chennai')] };
+
+    await setCreator(c.influencerId, { ...closed, open: false });
+    const paused = await invite(b, c, set, {});
+    const pausedList = (await many(b, set, [c]))[0];
+
+    await setCreator(c.influencerId, { ...closed, open: true });
+    await block('creator', c.influencerId, 'brand', b.brandId);
+    const blocked = await invite(b, c, set, {});
+    const blockedList = (await many(b, set, [c]))[0];
+
+    expect(words(paused)).toEqual({ ok: false, reason: 'NOT_ACCEPTING', detail: 'not_accepting', label: 'Not taking invitations', message: "Asha isn't taking invitations right now." });
+    expect(JSON.stringify(blocked)).toBe(JSON.stringify(paused));
+    expect(JSON.stringify(blockedList)).toBe(JSON.stringify(pausedList));
+    // a blocked brand learns none of her other settings: nothing about Aim, mode, category or city
+    for (const r of [blocked, blockedList]) {
+      expect(JSON.stringify(r)).not.toMatch(/block|Pay for|Store Visit|Remote|category|Hyderabad|Chennai/i);
+    }
+    // …and a creator who is BOTH paused and blocking reads the same again
+    await setCreator(c.influencerId, { ...closed, open: false });
+    expect(JSON.stringify(await invite(b, c, set, {}))).toBe(JSON.stringify(paused));
+  });
+
+  it('PRIVACY 2 — her minimum fee and commission never produce a reason: they stay warnings and she can be invited', async () => {
+    const b = await brand(); const c = await creator({ name: 'Asha K.', ig: 10 });   // 10 followers: no reason either
+    await setCreator(c.influencerId, { minFeeEng: 8000, minFeeHyb: 5000 });
+    await setCommission(c.influencerId, 'conversion', 'ALL', 15);
+    await setCommission(c.influencerId, 'hybrid', 'ALL', 15);
+    const cases = [
+      [{ goal: 'engagement', shoot_mode: 'shipment' }, { fee: 1 }, ['BELOW_MIN_FEE']],
+      [{ goal: 'conversion', shoot_mode: 'shipment' }, { commissionPct: 1 }, ['BELOW_MIN_COMMISSION']],
+      [{ goal: 'hybrid', shoot_mode: 'shipment' }, { fee: 1, commissionPct: 1 }, ['BELOW_MIN_FEE', 'BELOW_MIN_COMMISSION']],
+    ];
+    for (const [set, terms, warnings] of cases) {
+      const r = await invite(b, c, set, terms);
+      expect(r).toMatchObject({ ok: true, reason: 'OK', warnings });
+      expect(r).not.toHaveProperty('detail');
+      expect(r).not.toHaveProperty('label');
+      expect(r).not.toHaveProperty('message');
+      const [l] = await elig.canBrandInviteMany({ brandId: b.brandId, set, creators: [{ influencerId: c.influencerId, ...terms }] });
+      expect(l).toMatchObject({ ok: true, reason: 'OK', warnings, detail: null, label: null, message: null });
+    }
+  });
+
+  it('PRIVACY 4 — the pitch direction is untouched: a creator still gets the coarse code and nothing else', async () => {
+    const b = await brand(); const c = await creator({ ig: 100 });
+    const shapes = [];
+    await setBrand(b.brandId, { accepting: false });
+    shapes.push(await pitch(c, b, 'conversion', 'visit'));                       // paused
+    await setBrand(b.brandId, { aims: ['engagement'] });
+    shapes.push(await pitch(c, b, 'conversion', 'visit'));                       // Aim
+    await setBrand(b.brandId, { modes: ['shipment'] });
+    shapes.push(await pitch(c, b, 'conversion', 'visit'));                       // mode
+    await setBrand(b.brandId, { minIg: 100000, niches: ['comedy'], cityIds: [1] });
+    shapes.push(await pitch(c, b, 'conversion', 'visit'));                       // private filters
+    await setBrand(b.brandId, {});
+    await block('brand', b.brandId, 'creator', c.influencerId);
+    shapes.push(await pitch(c, b, 'conversion', 'visit'));                       // blocked
+    expect(shapes).toEqual([
+      { ok: false, reason: 'NOT_ACCEPTING' },
+      { ok: false, reason: 'NOT_MATCHING' },
+      { ok: false, reason: 'NOT_MATCHING' },
+      { ok: false, reason: 'NOT_MATCHING' },
+      { ok: false, reason: 'NOT_ACCEPTING' },
+    ]);
+    // the words a creator is given are the ones she was given before D2
+    expect(elig.MESSAGE.pitch).toEqual({
+      NOT_ACCEPTING: "This brand isn't accepting pitches right now.",
+      NOT_MATCHING: "You don't match this brand's pitch criteria.",
+      BEING_MEASURED: 'Your numbers are still being measured.',
+    });
+    const pitchCopy = require('../src/services/pitchCopy');
+    expect(pitchCopy.MSG.NOT_ACCEPTING('Kalamkari Co')).toBe("Kalamkari Co aren't taking pitches right now.");
+    expect(pitchCopy.MSG.NOT_MATCHING('Kalamkari Co')).toBe("You don't meet what Kalamkari Co are looking for.");
+    expect(pitchCopy.MSG.AIM_NOT_TAKEN('Kalamkari Co')).toBe("Kalamkari Co aren't taking that kind of pitch.");
+    expect(pitchCopy.MSG.MODE_NOT_TAKEN('Kalamkari Co')).toBe("Kalamkari Co aren't taking that way of working.");
+    // and the summary a creator reads of a brand carries no detail, line or sentence
+    const s = await elig.pitchSummaryFor(b.brandId, c.influencerId);
+    expect(Object.keys(s).sort()).toEqual(['acceptingLabelState', 'aims', 'canPitch', 'cooldownLine', 'cooldownUntil', 'modes', 'reason']);
+  });
+
+  it('PRIVACY 5 — invited from her own agreed pitch she is still exempt from Aim, mode, category and city; paused and blocked still apply', () => {
+    // The rule itself, with the facts in hand (decideInvite is pure). The pool lookup that
+    // sets herOwnPitch is exercised end to end in item5-invitations and item8-pitch.
+    const closed = { ...elig.CREATOR_DEFAULTS, accepted_aims: ['engagement'], accepted_modes: ['shipment'], brand_category_codes: ['MEN'], visit_city_ids: [999], min_fee_engagement: 99999, min_commissions: [{ aim: 'conversion', category_code: 'ALL', pct: 90 }] };
+    const facts = { subCategories: ['WATCHES'], branchCityIds: [1], setBranchCity: 'Hyderabad' };
+    const set = { goal: 'conversion', shoot_mode: 'visit' };
+    const ask = (over) => elig.decideInvite({ settings: closed, blocked: false, herOwnPitch: true, brand: facts, set, proposedTerms: { commissionPct: 1 }, ...over });
+    // exactly today's answer: OK, no warnings, no minimums, marked as from her pitch — and no reason
+    expect(ask({})).toEqual({ ok: true, reason: 'OK', warnings: [], minimums: null, fromHerPitch: true });
+    // the same creator as an ordinary pick fails her first rule
+    expect(ask({ herOwnPitch: false })).toEqual({ ok: false, reason: 'NOT_MATCHING', detail: 'aim', warnings: [] });
+    // the two absolutes survive her pitch, and read the same as each other
+    const paused = ask({ settings: { ...closed, open: false } });
+    const blocked = ask({ blocked: true });
+    expect(paused).toEqual({ ok: false, reason: 'NOT_ACCEPTING', detail: 'not_accepting', warnings: [] });
+    expect(blocked).toEqual(paused);
+  });
+
+  it('anything that is not one of her rules keeps the old line: "Not open to this set"', async () => {
+    const c = await creator({ name: 'Asha K.' });
+    // the brand's own facts are missing (no such brand)
+    const ghost = '00000000-0000-4000-8000-000000000000';
+    const r = await elig.canBrandInviteCreator({ brandId: ghost, influencerId: c.influencerId, set: { goal: 'conversion', shoot_mode: 'shipment' } });
+    expect(words(r)).toEqual({ ok: false, reason: 'NOT_MATCHING', detail: null, label: 'Not open to this set', message: "Asha isn't open to this set." });
+    const [l] = await elig.canBrandInviteMany({ brandId: ghost, set: { goal: 'conversion', shoot_mode: 'shipment' }, creators: [{ influencerId: c.influencerId }] });
+    expect(words(l)).toEqual(words(r));
+    // pure: no brand facts → no detail, whatever else is true of her
+    expect(elig.decideInvite({ settings: { ...elig.CREATOR_DEFAULTS }, blocked: false, herOwnPitch: false, brand: null, set: { goal: 'conversion' } }))
+      .toEqual({ ok: false, reason: 'NOT_MATCHING', detail: null, warnings: [] });
+  });
+
+  it('one copy of the rule: the list answer and the single answer are the same words for every reason', async () => {
+    const b = await brand({ city: 'Hyderabad', sub_categories: ['WATCHES'] });
+    const set = { goal: 'conversion', shoot_mode: 'visit', branch_id: await mainBranch(b) };
+    const mk = async (name, patch, blockIt) => {
+      const c = await creator({ name, city: 'Chennai' });
+      if (patch) await setCreator(c.influencerId, patch);
+      if (blockIt) await block('creator', c.influencerId, 'brand', b.brandId);
+      return c;
+    };
+    const chennai = [await cityId('Chennai')];
+    const cs = [
+      await mk('Open Olivia'),
+      await mk('Paused Padma', { open: false }),
+      await mk('Blocking Bhanu', null, true),
+      await mk('Aim Asha', { aims: ['engagement'] }),
+      await mk('Mode Meera', { modes: ['shipment'] }),
+      await mk('Category Kavya', { categories: ['WOMEN'] }),
+      await mk('City Chitra', { visitCityIds: chennai }),
+    ];
+    const list = await many(b, set, cs);
+    expect(list.map(x => x.influencerId)).toEqual(cs.map(c => c.influencerId));     // input order kept
+    expect(list.map(x => x.detail)).toEqual([null, 'not_accepting', 'not_accepting', 'aim', 'mode', 'category', 'visit_city']);
+    expect(list.map(x => x.label)).toEqual([null, 'Not taking invitations', 'Not taking invitations', 'Not taking Pay for Sale', 'Not taking Store Visit', 'Not taking your category', 'No store visits in Hyderabad']);
+    for (let i = 0; i < cs.length; i += 1) {
+      const single = await invite(b, cs[i], set, {});
+      expect({ ok: list[i].ok, reason: list[i].reason, detail: list[i].detail, label: list[i].label, message: list[i].message })
+        .toEqual({ ok: single.ok, reason: single.reason, detail: single.detail || null, label: single.label || null, message: single.message || null });
+    }
+    // the first name in the sentence is hers, looked up when the caller does not hand it over…
+    expect(list[3].message).toBe("Aim isn't taking Pay for Sale collaborations.");
+    // …and taken from the caller's own rows when it does (a Map or a plain object)
+    const named = await many(b, set, [cs[3]], new Map([[cs[3].influencerId, 'Asha Kumari']]));
+    expect(named[0].message).toBe("Asha isn't taking Pay for Sale collaborations.");
+    const namedObj = await many(b, set, [cs[4]], { [cs[4].influencerId]: 'Meera R.' });
+    expect(namedObj[0].message).toBe("Meera isn't taking Store Visit collaborations.");
+  });
+
+  it('the Aim and mode names are the ones the apps print', () => {
+    const copy = require('../src/services/invitationCopy');
+    const pitchCopy = require('../src/services/pitchCopy');
+    expect(copy.AIM_NAME).toEqual(pitchCopy.AIM_LABEL);
+    expect(copy.MODE_NAME).toEqual(pitchCopy.MODE_LABEL);
+    expect(copy.CANT_INVITE_DETAILS.slice().sort()).toEqual(Object.values(elig.DETAIL).sort());
+    // a creator with no name on file still gets a sentence
+    expect(copy.cantInvite({ detail: 'not_accepting', name: null }).message).toBe("She isn't taking invitations right now.");
   });
 });
 

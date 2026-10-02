@@ -164,8 +164,15 @@ describe('sending — one action, all or nothing (checks 17, 18, 20, 38)', () =>
     expect(r.body.error.details.sent).toBe(0);
     const failures = r.body.error.details.failures;
     expect(failures.map(f => f.influencerId).sort()).toEqual([paused.influencerId, noCommission.influencerId].sort());
-    expect(failures.find(f => f.influencerId === paused.influencerId).message).toBe(MSG.INELIGIBLE('Ritu V.'));
-    expect(failures.find(f => f.influencerId === noCommission.influencerId).message).toBe(MSG.COMMISSION_REQUIRED);
+    // ui-walk-fixes, founder decision D2 (2 Oct 2026): the refusal says WHY, in the picker's
+    // own words. It used to be MSG.INELIGIBLE('Ritu V.') — "Ritu V. can no longer be invited to
+    // this set." (drift: features/ui-walk-fixes/06-diff/drift/SB.md)
+    expect(failures.find(f => f.influencerId === paused.influencerId)).toMatchObject({
+      code: 'NOT_ACCEPTING', field: 'influencer_id',
+      message: "Ritu isn't taking invitations right now.", label: 'Not taking invitations', detail: 'not_accepting',
+    });
+    // a refusal that is not one of her invitation rules carries no reason line
+    expect(failures.find(f => f.influencerId === noCommission.influencerId)).toMatchObject({ message: MSG.COMMISSION_REQUIRED, label: null, detail: null });
     expect((await query(`SELECT count(*)::int n FROM campaign_influencers WHERE set_id = $1`, [w.s.id])).rows[0].n).toBe(0);
     expect(await notifs(ok.userId)).toEqual([]);
     // "Remove {n} and send the rest" — the same request without the failed ones succeeds
@@ -319,11 +326,56 @@ describe('picking (checks 2–5, 10)', () => {
     const r = await api.get(`${w.url}/pickable?openOnly=false`, w.b.token);
     expect(r.status).toBe(200);
     const by = new Map(r.body.data.rows.map(x => [x.id, x.pick]));
-    expect(by.get(ok.influencerId)).toMatchObject({ state: 'ok' });
-    expect(by.get(notOpen.influencerId)).toMatchObject({ state: 'ineligible', label: 'Not open to this set' });
-    expect(by.get(invited.influencerId)).toMatchObject({ state: 'invited', label: 'Already in this set' });
+    expect(by.get(ok.influencerId)).toEqual({ state: 'ok', label: null, reason: 'OK', inSet: 'none' });
+    // ui-walk-fixes D2: she has Pay for Sale switched off and this is a Pay for Sale set, so her
+    // row says so. It used to read 'Not open to this set' (drift: 06-diff/drift/SB.md).
+    expect(by.get(notOpen.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_MATCHING', detail: 'aim',
+      label: 'Not taking Pay for Sale', message: "Kavya isn't taking Pay for Sale collaborations.", inSet: 'none',
+    });
+    // "Already in this set" is unchanged, field for field
+    expect(by.get(invited.influencerId)).toEqual({ state: 'invited', label: 'Already in this set', reason: null, inSet: 'live' });
     expect(by.get(declined.influencerId)).toMatchObject({ state: 'ok', inSet: 'dead' });
     expect(JSON.stringify(r.body)).not.toMatch(/min_fee|minFee|threshold/i);
+  });
+
+  // ui-walk-fixes · frame B4 ("Show 14 creators") · check 5. The Filters pop-up — since board B
+  // the only way to filter in Add creators — asks THIS endpoint for the number on its yellow
+  // button. A count answer carries no rows; the handler mapped over them anyway and answered 500,
+  // which the phone printed as "Show 0 creators" for every choice (live since item 5; no test
+  // asked for the count here — the Creators tab's own count was the only one covered).
+  it('the Filters pop-up\'s count: countOnly answers the list\'s own total — with a filter and without — and no rows', async () => {
+    const w = await world('conversion');
+    await creator({ name: 'Priya Sharma', ig: 90000 });
+    await creator({ name: 'Sneha N.', ig: 12000 });
+    const paused = await creator({ name: 'Ritu V.', ig: 90000 });
+    await setCreatorInvite(paused.influencerId, { open: false });
+    /** The list and the count for the same choice: both answer, and the count is the list's total. */
+    const both = async (q = '') => {
+      const list = await api.get(`${w.url}/pickable?tab=all${q}`, w.b.token);
+      const count = await api.get(`${w.url}/pickable?tab=all${q}&countOnly=1`, w.b.token);
+      expect(list.status).toBe(200);
+      expect(count.status).toBe(200);
+      expect(count.body.data).toEqual({ tab: 'all', total: list.body.data.total });
+      expect(list.body.data.rows).toHaveLength(list.body.data.total);   // one page holds them all here
+      return count.body.data.total;
+    };
+    expect(await both()).toBe(2);                                        // the picker's default: open to this brand
+    expect(await both('&openOnly=false')).toBe(3);
+    expect(await both('&minInstagram=50000')).toBe(1);
+    expect(await both('&openOnly=false&minInstagram=50000')).toBe(2);
+    expect(await both('&search=sneha')).toBe(1);
+    expect(await both('&minInstagram=50000&search=sneha')).toBe(0);      // nobody matches: 0 is now a true 0
+    // the phone's own spelling of the call (no tab = All creators), and the string form of the flag
+    expect((await api.get(`${w.url}/pickable?countOnly=true&minInstagram=50000`, w.b.token)).body).toMatchObject({ success: true, data: { tab: 'all', total: 1 } });
+    // and it is the number the Creators tab's count gives for the same choice
+    expect((await api.get('/brands/me/discover-creators?minInstagram=50000&countOnly=1', w.b.token)).body.data).toEqual({ total: 1 });
+    // Worked with and Pool have no Filters pop-up and never returned a bare count: unchanged
+    for (const t of ['worked', 'pool']) {
+      const r = await api.get(`${w.url}/pickable?tab=${t}&countOnly=1`, w.b.token);
+      expect(r.status).toBe(200);
+      expect(r.body.data).toMatchObject({ tab: t, total: 0, rows: [], set: { id: w.s.id } });
+    }
   });
 
   it('a group against a set: "{k} of {n} can be invited" with the three labels', async () => {
@@ -340,8 +392,17 @@ describe('picking (checks 2–5, 10)', () => {
     expect(r.body.data.can.map(x => x.id)).toEqual([a.influencerId]);
     const labels = Object.fromEntries(r.body.data.cannot.map(x => [x.id, x.label]));
     expect(labels[b2.influencerId]).toBe('Not taking invitations');
-    expect(labels[c2.influencerId]).toBe('Not open to this set');
+    // ui-walk-fixes D2: she takes Store Visit only and this set is Remote, so the label says
+    // that. It used to read 'Not open to this set' (drift: 06-diff/drift/SB.md).
+    expect(labels[c2.influencerId]).toBe('Not taking Remote');
     expect(labels[d2.influencerId]).toBe('Already in this set');
+    // the sentence and the rule ride beside the label, and inside `pick`
+    const cannot = Object.fromEntries(r.body.data.cannot.map(x => [x.id, x]));
+    expect(cannot[b2.influencerId]).toMatchObject({ detail: 'not_accepting', message: "B isn't taking invitations right now." });
+    expect(cannot[c2.influencerId]).toMatchObject({ detail: 'mode', message: "C isn't taking Remote collaborations." });
+    expect(cannot[c2.influencerId].pick).toEqual({ state: 'ineligible', reason: 'NOT_MATCHING', detail: 'mode', label: 'Not taking Remote', message: "C isn't taking Remote collaborations.", inSet: 'none' });
+    expect(cannot[d2.influencerId]).toMatchObject({ detail: null, message: null });
+    expect(cannot[d2.influencerId].pick).toEqual({ state: 'invited', label: 'Already in this set', reason: null, inSet: 'live' });
   });
 
   it('eligibility returns her minimums to the brand; below-minimum warns and still sends', async () => {
@@ -355,6 +416,261 @@ describe('picking (checks 2–5, 10)', () => {
     const sent = await send(w, [one(p)]);
     expect(sent.status).toBe(201);
     expect(sent.body.data.rows[0].warnings).toEqual(['BELOW_MIN_COMMISSION']);
+  });
+});
+
+/* ───────────────────────── why a creator can't be invited (ui-walk-fixes, D2) */
+
+/**
+ * features/ui-walk-fixes · founder decision D2 (2 Oct 2026) · checks 6a and 6b · board B
+ * frames B1, B2, B6, B10. Every brand list that marks a creator "Can't invite" now carries
+ * the short reason (`label`), the full sentence (`message`) and which rule it was (`detail`).
+ * This reverses item 5's "the brand is never sent a reason"; what it must NOT change is
+ * pinned beside it: paused = blocked, minimums are never a reason, creators are sent nothing.
+ */
+describe("why a creator can't be invited — the brand is told (ui-walk-fixes D2, checks 6a, 6b)", () => {
+  const D2_WORDS = /Not taking|isn't taking|doesn't do store visits|No store visits|Not open to this set|isn't open to this set|"detail"/;
+  const picks = async (w, q = 'openOnly=false') => {
+    const r = await api.get(`${w.url}/pickable?${q}`, w.b.token);
+    if (r.status !== 200) throw new Error(`pickable: ${JSON.stringify(r.body)}`);
+    return { body: r.body, rows: new Map(r.body.data.rows.map(x => [x.id, x])), by: new Map(r.body.data.rows.map(x => [x.id, x.pick])) };
+  };
+  /** A Hyderabad brand with a Store Visit set at its main branch. */
+  async function visitWorld(goal = 'conversion') {
+    const b = await brand({ city: 'Hyderabad', state: 'Telangana' });
+    const c = await campaign(b);
+    const { rows: [branch] } = await query(`SELECT id FROM brand_branches WHERE brand_id = $1 AND is_main`, [b.brandId]);
+    const s = await set(b, c.id, { goal, shoot_mode: 'visit', branch_id: branch.id });
+    return { b, c, s, url: `/campaigns/${c.id}/sets/${s.id}` };
+  }
+  const { ref, block, collab } = require('./helpers/item3');
+
+  it('the set picker: each of the five causes shows its own short line and sentence; the city is this set\'s branch city (B1, B2, B10)', async () => {
+    const w = await visitWorld('conversion');
+    const open = await creator({ name: 'Priya Sharma' });
+    const aim = await creator({ name: 'Asha K.' });
+    await setCreatorInvite(aim.influencerId, { aims: ['engagement', 'hybrid'] });
+    const mode = await creator({ name: 'Meera Rao' });
+    await setCreatorInvite(mode.influencerId, { modes: ['shipment'] });
+    const category = await creator({ name: 'Kavya D.' });
+    await setCreatorInvite(category.influencerId, { categories: ['MEN'] });
+    const city = await creator({ name: 'Chitra S.' });
+    await setCreatorInvite(city.influencerId, { visitCityIds: [await ref.cityIdForName('Chennai')] });
+    const paused = await creator({ name: 'Ritu V.' });
+    await setCreatorInvite(paused.influencerId, { open: false });
+
+    const { body, by } = await picks(w);
+    expect(body.data.set).toMatchObject({ goal: 'conversion', shootMode: 'visit', branchCity: 'Hyderabad' });
+    expect(by.get(open.influencerId)).toEqual({ state: 'ok', label: null, reason: 'OK', inSet: 'none' });
+    expect(by.get(aim.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_MATCHING', detail: 'aim', inSet: 'none',
+      label: 'Not taking Pay for Sale', message: "Asha isn't taking Pay for Sale collaborations.",
+    });
+    expect(by.get(mode.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_MATCHING', detail: 'mode', inSet: 'none',
+      label: 'Not taking Store Visit', message: "Meera isn't taking Store Visit collaborations.",
+    });
+    expect(by.get(category.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_MATCHING', detail: 'category', inSet: 'none',
+      label: 'Not taking your category', message: "Kavya isn't taking invitations from brands in your category.",
+    });
+    expect(by.get(city.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_MATCHING', detail: 'visit_city', inSet: 'none',
+      label: 'No store visits in Hyderabad', message: "Chitra doesn't do store visits in Hyderabad.",
+    });
+    expect(by.get(paused.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_ACCEPTING', detail: 'not_accepting', inSet: 'none',
+      label: 'Not taking invitations', message: "Ritu isn't taking invitations right now.",
+    });
+    // her own lists and numbers are still never part of the page
+    expect(JSON.stringify(body)).not.toMatch(/min_fee|minFee|threshold|Chennai|visit_city_ids|visitCityIds|brand_category_codes|brandCategoryCodes/i);
+
+    // the same set as Pay for Content names Pay for Content (frame B1's own example)
+    const w2 = await visitWorld('engagement');
+    await setCreatorInvite(aim.influencerId, { aims: ['conversion'] });
+    expect((await picks(w2)).by.get(aim.influencerId)).toMatchObject({ detail: 'aim', label: 'Not taking Pay for Content', message: "Asha isn't taking Pay for Content collaborations." });
+  });
+
+  it('PRIVACY 1 — a creator who paused and a creator who blocked this brand produce byte-identical label, detail and message, on every list', async () => {
+    const w = await world('conversion');
+    // the same name on purpose: the sentence carries her first name and nothing else of her
+    const paused = await creator({ name: 'Asha K.' });
+    await setCreatorInvite(paused.influencerId, { open: false, aims: ['engagement'], modes: ['visit'], categories: ['MEN'] });
+    const blocked = await creator({ name: 'Asha K.' });
+    await setCreatorInvite(blocked.influencerId, { aims: ['engagement'], modes: ['visit'], categories: ['MEN'] });
+    await block('creator', blocked.influencerId, 'brand', w.b.brandId);
+
+    // the set picker
+    const { by, rows } = await picks(w);
+    expect(by.get(paused.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_ACCEPTING', detail: 'not_accepting', inSet: 'none',
+      label: 'Not taking invitations', message: "Asha isn't taking invitations right now.",
+    });
+    expect(JSON.stringify(by.get(blocked.influencerId))).toBe(JSON.stringify(by.get(paused.influencerId)));
+    expect(rows.get(blocked.influencerId).status).toBe(rows.get(paused.influencerId).status);
+    // a blocked brand learns nothing else about her: no Aim, mode or category is named
+    expect(JSON.stringify(by.get(blocked.influencerId))).not.toMatch(/block|Pay for|Store Visit|Remote|category/i);
+
+    // the group check
+    const g = await api.post('/brands/me/influencer-groups', w.b.token, { name: 'Shortlist', influencer_ids: [paused.influencerId, blocked.influencerId] });
+    const gid = g.body.data.group ? g.body.data.group.id : g.body.data.id;
+    const check = await api.get(`${w.url}/group-check/${gid}`, w.b.token);
+    const cannot = Object.fromEntries(check.body.data.cannot.map(x => [x.id, x]));
+    const said = (x) => JSON.stringify({ label: x.label, message: x.message, detail: x.detail, pick: x.pick });
+    expect(said(cannot[blocked.influencerId])).toBe(said(cannot[paused.influencerId]));
+
+    // the eligibility check
+    const el = await api.post(`${w.url}/eligibility`, w.b.token, { creators: [{ influencerId: paused.influencerId }, { influencerId: blocked.influencerId }] });
+    const strip = ({ influencerId, ...rest }) => JSON.stringify(rest);
+    expect(strip(el.body.data.results[1])).toBe(strip(el.body.data.results[0]));
+
+    // the refusal after Review and send
+    const r = await send(w, [one(paused), one(blocked)]);
+    expect(r.status).toBe(422);
+    const [f1, f2] = r.body.error.details.failures;
+    expect(strip(f2)).toBe(strip(f1));
+    expect(f1).toMatchObject({ code: 'NOT_ACCEPTING', detail: 'not_accepting', label: 'Not taking invitations', message: "Asha isn't taking invitations right now." });
+  });
+
+  it('the "Open to invitations only" filter treats paused and blocked alike: both hidden when on, both shown when off', async () => {
+    const w = await world('conversion');
+    const open = await creator({ name: 'Priya Sharma' });
+    const paused = await creator({ name: 'Asha K.' });
+    await setCreatorInvite(paused.influencerId, { open: false });
+    const blocked = await creator({ name: 'Asha K.' });
+    await block('creator', blocked.influencerId, 'brand', w.b.brandId);
+    const on = await picks(w, '');                 // the picker's default: only creators open to this brand
+    expect([...on.by.keys()]).toEqual([open.influencerId]);
+    expect(on.body.data.total).toBe(1);
+    const off = await picks(w, 'openOnly=false');
+    expect([...off.by.keys()].sort()).toEqual([open.influencerId, paused.influencerId, blocked.influencerId].sort());
+    expect(off.body.data.total).toBe(3);
+    // and with the filter off, nothing on the row tells the two apart
+    const row = (id) => { const { id: _i, instagramHandle: _h, avatarUrl: _a, ...rest } = off.rows.get(id); return JSON.stringify(rest); };
+    expect(row(blocked.influencerId)).toBe(row(paused.influencerId));
+  });
+
+  it('PRIVACY 2 — her minimum fee, minimum commission and follower count never produce a reason: she is pickable, and they stay warnings', async () => {
+    const w = await world('conversion');
+    const p = await creator({ name: 'Priya Sharma', ig: 12 });
+    await setCreatorInvite(p.influencerId, { minFeeEng: 80000, minFeeHyb: 50000 });
+    await query(`INSERT INTO creator_min_commissions (influencer_id, aim, category_code, pct) VALUES ($1, 'conversion', 'ALL', 40)`, [p.influencerId]);
+    expect((await picks(w)).by.get(p.influencerId)).toEqual({ state: 'ok', label: null, reason: 'OK', inSet: 'none' });
+    const el = await api.post(`${w.url}/eligibility`, w.b.token, { creators: [{ influencerId: p.influencerId, commissionPct: 1 }] });
+    expect(el.body.data.results[0]).toMatchObject({ ok: true, reason: 'OK', warnings: ['BELOW_MIN_COMMISSION'], detail: null, label: null, message: null });
+    // Pay for Content, below her minimum fee: the same
+    const w2 = await world('engagement');
+    expect((await picks(w2)).by.get(p.influencerId)).toEqual({ state: 'ok', label: null, reason: 'OK', inSet: 'none' });
+    const el2 = await api.post(`${w2.url}/eligibility`, w2.b.token, { creators: [{ influencerId: p.influencerId, fee: 1 }] });
+    expect(el2.body.data.results[0]).toMatchObject({ ok: true, warnings: ['BELOW_MIN_FEE'], detail: null, label: null, message: null });
+    // and the invitation still goes
+    const sent = await send(w, [one(p, { commissionPct: 1, scope: 'store' })]);
+    expect(sent.status).toBe(201);
+    expect(sent.body.data.rows[0].warnings).toEqual(['BELOW_MIN_COMMISSION']);
+  });
+
+  it('the eligibility check and the refusal after Review and send say the same line and sentence as the picker', async () => {
+    const w = await world('conversion');
+    const ok = await creator({ name: 'Priya Sharma' });
+    const asha = await creator({ name: 'Asha K.' });
+    await setCreatorInvite(asha.influencerId, { aims: ['engagement'] });
+    const pick = (await picks(w)).by.get(asha.influencerId);
+    expect(pick).toMatchObject({ detail: 'aim', label: 'Not taking Pay for Sale', message: "Asha isn't taking Pay for Sale collaborations." });
+
+    // A4 — a name in the request body is the client's and is not what the sentence uses
+    const el = await api.post(`${w.url}/eligibility`, w.b.token, { creators: [{ influencerId: ok.influencerId }, { influencerId: asha.influencerId, name: 'Somebody Else' }] });
+    expect(el.status).toBe(200);
+    expect(el.body.data.results[0]).toMatchObject({ ok: true, detail: null, label: null, message: null });
+    expect(el.body.data.results[1]).toMatchObject({ ok: false, reason: 'NOT_MATCHING', detail: pick.detail, label: pick.label, message: pick.message, inSet: 'none', alreadyIn: false });
+
+    // A8 — nothing is written, and the failure names her reason
+    const r = await send(w, [one(ok), one(asha)]);
+    expect(r.status).toBe(422);
+    expect(r.body.error.message).toBe(pick.message);
+    expect(r.body.error.details.sent).toBe(0);
+    expect(r.body.error.details.failures).toEqual([{
+      influencerId: asha.influencerId, name: null, code: 'NOT_MATCHING', field: 'influencer_id',
+      message: pick.message, label: pick.label, detail: pick.detail,
+    }]);
+    expect((await query(`SELECT count(*)::int n FROM campaign_influencers WHERE set_id = $1`, [w.s.id])).rows[0].n).toBe(0);
+  });
+
+  it('Worked with and Pool carry the same pick state; PRIVACY 5 — from her own agreed pitch she is exempt on a matching set, an ordinary pick on a differing one, and never exempt from a pause', async () => {
+    const b = await brand();
+    const c = await campaign(b);
+    const content = await set(b, c.id, { goal: 'engagement', shoot_mode: 'shipment' });
+    const sale = await set(b, c.id, { name: 'Set B', goal: 'conversion', shoot_mode: 'shipment' });
+    const url = (s) => `/campaigns/${c.id}/sets/${s.id}`;
+    const tab = async (s, t) => new Map((await api.get(`${url(s)}/pickable?tab=${t}`, b.token)).body.data.rows.map(x => [x.id, x.pick]));
+
+    // Worked with: a signed collaboration, then she switches Pay for Sale off
+    const worked = await creator({ name: 'Divya R.' });
+    await collab(b.brandId, worked.influencerId);
+    await setCreatorInvite(worked.influencerId, { aims: ['engagement'] });
+    expect((await tab(sale, 'worked')).get(worked.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_MATCHING', detail: 'aim', inSet: 'none',
+      label: 'Not taking Pay for Sale', message: "Divya isn't taking Pay for Sale collaborations.",
+    });
+    expect((await tab(content, 'worked')).get(worked.influencerId)).toEqual({ state: 'ok', label: null, reason: 'OK', inSet: 'none' });
+    // the tab's search still finds her, and a name that matches nobody finds nobody
+    const found = await api.get(`${url(sale)}/pickable?tab=worked&search=divya`, b.token);
+    expect(found.status).toBe(200);
+    expect(found.body.data).toMatchObject({ tab: 'worked', total: 1 });
+    expect(found.body.data.rows[0]).toMatchObject({ id: worked.influencerId, name: 'Divya R.', collaborations: 1, pick: { detail: 'aim' } });
+    expect((await api.get(`${url(sale)}/pickable?tab=worked&search=nobody`, b.token)).body.data).toMatchObject({ total: 0, rows: [] });
+
+    // Pool: she pitched this brand Pay for Content · Remote and it agreed
+    const p = await creator({ name: 'Priya Sharma' });
+    const pitched = await api.post('/influencers/me/pitches', p.token, {
+      brandId: b.brandId, shootMode: 'shipment', proposedGoLiveDate: day(20), goal: 'engagement', fee: 9000,
+      deliverables: [{ type: 'reel', count: 1 }, { type: 'story', count: 2 }],
+      message: 'I shoot ethnic wear every week and my saves are strong. I would love to work with you.',
+    });
+    expect(pitched.status).toBe(201);
+    expect((await api.post(`/brands/me/pitches/${pitched.body.data.pitch.id}/accept`, b.token, {})).status).toBe(200);
+    // she then closes herself to everything the matching set is
+    await setCreatorInvite(p.influencerId, { aims: ['conversion'], modes: ['visit'], categories: ['MEN'], minFeeEng: 99999 });
+    // the matching set (same Aim, same mode): her own settings are not turned against her
+    expect((await tab(content, 'pool')).get(p.influencerId)).toEqual({ state: 'ok', label: null, reason: 'OK', inSet: 'none' });
+    // a set of another Aim: an ordinary pick, and the first rule that fails is named
+    expect((await tab(sale, 'pool')).get(p.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_MATCHING', detail: 'mode', inSet: 'none',
+      label: 'Not taking Remote', message: "Priya isn't taking Remote collaborations.",
+    });
+    // paused always applies, whatever was agreed
+    await setCreatorInvite(p.influencerId, { open: false, aims: ['conversion'], modes: ['visit'], categories: ['MEN'] });
+    expect((await tab(content, 'pool')).get(p.influencerId)).toEqual({
+      state: 'ineligible', reason: 'NOT_ACCEPTING', detail: 'not_accepting', inSet: 'none',
+      label: 'Not taking invitations', message: "Priya isn't taking invitations right now.",
+    });
+  });
+
+  it('PRIVACY 3 — nothing of it reaches the creator: her lists, her invitation, her settings, the brand she sees and her bell', async () => {
+    const w = await world('conversion');
+    const asha = await creator({ name: 'Asha K.' });
+    // an invitation she holds, so her list and detail have something in them
+    const other = await set(w.b, w.c.id, { name: 'Set B', goal: 'engagement' });
+    const inv = await send({ b: w.b, url: `/campaigns/${w.c.id}/sets/${other.id}` }, [one(asha, CONTENT)]);
+    expect(inv.status).toBe(201);
+    const ciId = inv.body.data.rows[0].id;
+    // she is refused for the Pay for Sale set, on every brand surface
+    await setCreatorInvite(asha.influencerId, { aims: ['engagement'] });
+    expect((await picks(w)).by.get(asha.influencerId).detail).toBe('aim');
+    await api.post(`${w.url}/eligibility`, w.b.token, { creators: [{ influencerId: asha.influencerId }] });
+    expect((await send(w, [one(asha)])).status).toBe(422);
+
+    for (const path of [
+      '/influencers/me/invitations', '/influencers/me/invitations?tab=done', `/influencers/me/invitations/${ciId}`,
+      '/influencers/me/invitation-settings', '/influencers/me/find-brands?canPitchOnly=false', `/brands/${w.b.brandId}/public`,
+    ]) {
+      const r = await api.get(path, asha.token);
+      expect(r.status).toBe(200);
+      expect(JSON.stringify(r.body)).not.toMatch(D2_WORDS);
+    }
+    // the refusals told her nothing: her bell holds only the invitation she was sent
+    const bell = await notifs(asha.userId);
+    expect(bell.map(n => n.type)).toEqual(['offer.invited']);
+    expect(JSON.stringify(bell)).not.toMatch(D2_WORDS);
   });
 });
 
@@ -472,6 +788,46 @@ describe('after sending (checks 21–24, 36, 39)', () => {
     summary = await api.get(`/campaigns/${w2.c.id}/sets/${w2.s.id}/summary`, w2.b.token);
     g = summary.body.data.creators.groups;
     expect(g.deferred.count).toBe(1); expect(g.expired.count).toBe(1); expect(g.waiting.count).toBe(0);
+  });
+
+  // ui-walk-fixes U6(a), board F6, check 23: an agreement the brand TOOK BACK is owed again, as a
+  // draft is. A contract marked 'withdrawn' because she was removed or moved is a different thing
+  // and stays where it was. The groups and their order are untouched — no server group was added.
+  it('a withdrawn agreement returns an accepted creator to "Your move" with Send agreement; one who was removed or moved stays put (ui-walk-fixes check 23)', async () => {
+    const w = await world('conversion');
+    const cs = await Promise.all(['Priya', 'Tanvi', 'Ritu'].map(name => creator({ name })));
+    const s1 = await send(w, cs.map(c => one(c)));
+    const ids = Object.fromEntries(s1.body.data.rows.map(x => [x.name, x.id]));
+    for (const [i, name] of ['Priya', 'Tanvi', 'Ritu'].entries()) {
+      expect((await api.post(`/influencers/me/invitations/${ids[name]}/accept`, cs[i].token)).status).toBe(200);
+    }
+    // Priya: the agreement went out and the brand withdrew it.
+    expect((await api.post(`${w.url}/invitations/${ids.Priya}/agreement/send`, w.b.token)).status).toBe(201);
+    let summary = await api.get(`${w.url}/summary`, w.b.token);
+    expect(summary.body.data.creators.groups.waiting.rows.map(x => x.name)).toEqual(['Priya']);
+    expect((await api.post(`${w.url}/invitations/${ids.Priya}/agreement/withdraw`, w.b.token)).status).toBe(200);
+    // Tanvi: removed from the set — her unsigned contract is marked withdrawn too (check 23 above).
+    expect((await api.post(`${w.url}/invitations/${ids.Tanvi}/remove`, w.b.token)).status).toBe(200);
+    // Ritu: moved to the pool, which leaves the same mark on her contract (negotiation.moveAnswer).
+    await query(`UPDATE campaign_influencers SET status = 'deferred', deferred_at = now() WHERE id = $1`, [ids.Ritu]);
+    await query(`UPDATE contracts SET status = 'withdrawn', withdrawn_at = now() WHERE campaign_influencer_id = $1`, [ids.Ritu]);
+    const marks = await query(`SELECT status FROM contracts WHERE campaign_influencer_id = ANY($1::uuid[])`, [[ids.Priya, ids.Tanvi, ids.Ritu]]);
+    expect(marks.rows.map(x => x.status)).toEqual(['withdrawn', 'withdrawn', 'withdrawn']);
+
+    summary = await api.get(`${w.url}/summary`, w.b.token);
+    const g = summary.body.data.creators.groups;
+    expect(summary.body.data.creators.order).toEqual(['yourMove', 'negotiating', 'accepted', 'signed', 'waiting', 'deferred', 'declined', 'expired', 'withdrawn']);
+    expect(g.yourMove.rows.map(x => x.name)).toEqual(['Priya']);
+    expect(g.yourMove.rows[0]).toMatchObject({ status: 'accepted', group: 'yourMove', actions: { sendAgreement: true, signAgreement: false, withdrawAgreement: false, viewAgreement: false, remove: true } });
+    expect(g.yourMove.title).toBe('Your move');
+    expect(g.accepted.count).toBe(0); expect(g.waiting.count).toBe(0);
+    expect(g.withdrawn.rows.map(x => x.name)).toEqual(['Tanvi']);
+    expect(g.withdrawn.rows[0].actions.sendAgreement).toBe(false);
+    expect(g.deferred.rows.map(x => x.name)).toEqual(['Ritu']);
+    expect(g.deferred.rows[0].actions.sendAgreement).toBe(false);
+    // The brand's view of that one invitation agrees with its row.
+    const one1 = await api.get(`${w.url}/invitations/${ids.Priya}`, w.b.token);
+    expect(one1.body.data.invitation).toMatchObject({ group: 'yourMove', actions: { sendAgreement: true }, contract: { status: 'withdrawn', signedByBoth: false } });
   });
 
   it('the brand\'s view of one invitation carries the terms as sent and the timeline; another brand is 404', async () => {

@@ -4,11 +4,18 @@
  * to INFLX, not the brand. For a sent-back post (fix: true) the parts she may change (founder Q2)
  * open from here, and the button is "Fix and send again".
  * Contract: features/shoppable-posts-v2 · rules §4.6
+ *
+ * ui-walk-fixes (board C): the page is a FormScroll — the caption she is typing stays in view
+ * above the button strip, and with the keypad open the first tap on "Edit" opens it (a plain
+ * scroller spent that tap closing the keypad). The strip was already part of the column here (the
+ * Create tab's Footer never floated), so nothing else changes. The strip of pictures keeps its
+ * own sideways scroller.
  */
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { influencerApi } from '../../services/api';
 import { Skeleton, LoadError } from '../../components/settings/feedback';
+import { FormScroll } from '../../components/shell/FormScroll';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { CP } from '../../components/create/copyCreate';
@@ -52,7 +59,7 @@ export default function PostReviewScreen({ navigation, route }) {
       <Header title={CP.reviewTitle} onBack={() => navigation.goBack()} />
       {status === 'loading' ? <Skeleton /> : status === 'error' ? <LoadError onRetry={reload} /> : (
         <>
-          <ScrollView contentContainerStyle={{ padding: 16 }}>
+          <FormScroll contentContainerStyle={{ padding: 16 }} testID="post-review-scroll">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {post.media.map((m, i) => (
                 <View key={m.id} style={r.slide}>
@@ -74,7 +81,7 @@ export default function PostReviewScreen({ navigation, route }) {
             <Fact label={CP.fProducts} value={String(post.products.length)} note={post.products.map(p => p.name).slice(0, 3).join(' · ')}
               onEdit={fix ? () => go(post.kind === 'price' ? 'PostPrice' : 'PostProducts') : null} testID="fact-products" />
             <ErrorLine text={err} />
-          </ScrollView>
+          </FormScroll>
           <Footer label={fix ? CP.sendAgain : CP.send} disabled={busy} busy={busy} onPress={send} testID="send" />
         </>
       )}

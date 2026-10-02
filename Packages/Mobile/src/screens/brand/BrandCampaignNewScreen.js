@@ -2,13 +2,18 @@
  * BrandCampaignNewScreen — C3: two fields, saves the campaign as a draft and goes straight to the
  * first set. Arrives with a group attached when started from G10.
  * Contract: features/item4-campaigns-sets · prompt §6.2
+ * ui-walk-fixes board C: "Next" sits in its own strip under the form (BottomBar), the form is a
+ * FormScroll (the counter, hint and error line under the box being typed in stay in view), and the
+ * toast floats just above the strip.
  */
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton, SwitchRow } from '../../components/settings/primitives';
 import { useToast } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormScroll, FormArea } from '../../components/shell/FormScroll';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { TextField4 } from '../../components/campaigns/bits4';
@@ -29,7 +34,7 @@ export default function BrandCampaignNewScreen({ navigation, route }) {
   const [allowNegotiation, setAllowNegotiation] = useState(true);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  const { toast, show } = useToast();
+  const { toast, show } = useToast({ inFlow: true });
 
   async function next() {
     const e = {};
@@ -45,27 +50,30 @@ export default function BrandCampaignNewScreen({ navigation, route }) {
       return;
     }
     const c = r.data.campaign;
-    navigation.replace('BrandSetEdit', { campaignId: c.id, campaignName: c.name, dateRules: r.data.dateRules, suggestedName: C4.set.suggestedName('A'), first: true });
+    // ui-walk-fixes board A: no name is sent along — the first set's name box opens empty.
+    navigation.replace('BrandSetEdit', { campaignId: c.id, campaignName: c.name, dateRules: r.data.dateRules });
   }
 
   return (
     <View style={base.screen} testID="campaign-new">
       <Header title={N.title} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
-        <TextField4 label={N.nameLabel} required value={name} onChangeText={(v) => { setName(v); setErrors(x => ({ ...x, name: undefined })); }} placeholder={N.namePlaceholder} max={N.nameMax} error={errors.name} autoFocus testID="campaign-name" />
-        <TextField4 label={N.descLabel} value={brief} onChangeText={(v) => { setBrief(v); setErrors(x => ({ ...x, brief: undefined })); }} placeholder={N.descPlaceholder} max={N.descMax} hint={N.descHint} error={errors.brief} multiline testID="campaign-brief" />
-        <SwitchRow label={C6.switch.label} hint={C6.switch.hint} value={allowNegotiation} onValueChange={setAllowNegotiation} testID="allow-negotiation" />
-        <Text style={s.note}>{C6.switch.note}</Text>
-        {groupId ? (
-          <View style={s.info} testID="from-group">
-            <Text style={s.infoText}>{N.fromGroup(groupName || 'your group', groupCount || 0)}</Text>
-          </View>
-        ) : null}
-      </ScrollView>
-      <View style={s.bar}>
+      <FormArea>
+        <FormScroll contentContainerStyle={{ padding: 18 }}>
+          <TextField4 label={N.nameLabel} required value={name} onChangeText={(v) => { setName(v); setErrors(x => ({ ...x, name: undefined })); }} placeholder={N.namePlaceholder} max={N.nameMax} error={errors.name} autoFocus testID="campaign-name" />
+          <TextField4 label={N.descLabel} value={brief} onChangeText={(v) => { setBrief(v); setErrors(x => ({ ...x, brief: undefined })); }} placeholder={N.descPlaceholder} max={N.descMax} hint={N.descHint} error={errors.brief} multiline testID="campaign-brief" />
+          <SwitchRow label={C6.switch.label} hint={C6.switch.hint} value={allowNegotiation} onValueChange={setAllowNegotiation} testID="allow-negotiation" />
+          <Text style={s.note}>{C6.switch.note}</Text>
+          {groupId ? (
+            <View style={s.info} testID="from-group">
+              <Text style={s.infoText}>{N.fromGroup(groupName || 'your group', groupCount || 0)}</Text>
+            </View>
+          ) : null}
+        </FormScroll>
+        {toast}
+      </FormArea>
+      <BottomBar testID="campaign-new-bar">
         <PrimaryButton label={N.next} onPress={next} busy={saving} testID="campaign-next" />
-      </View>
-      {toast}
+      </BottomBar>
     </View>
   );
 }
@@ -74,5 +82,4 @@ const s = StyleSheet.create({
   note: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, marginTop: 2, marginBottom: 8 },
   info: { borderRadius: 12, padding: 11, backgroundColor: T.state.waiting.bg, marginTop: 4 },
   infoText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.waiting.fg, lineHeight: 18 },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
 });

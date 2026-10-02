@@ -1,0 +1,467 @@
+<style>
+/* board B — Add creators. Only what the two shared stylesheets do not already have. */
+.bB-fix{height:650px}                                   /* a phone drawn at a fixed height, so what fits is what fits */
+.bB-fix .scr{min-height:0;overflow:hidden;gap:0}
+.bB-band{height:40px;flex:none;display:flex;align-items:center;justify-content:center}   /* the blank strip above every title, as today: only B0 and the left half of B9 still draw it */
+.bB-top{flex:none;display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 14px 8px}
+.bB-top.bB-now{gap:5px;padding-bottom:5px}                 /* today's stacked bands, at today's spacing */
+.bB-now .search{font-size:11.5px}                          /* the same letter size as the search box on the AFTER frames: only the layout changes */
+.bB-list{flex:1;min-height:0;overflow:hidden;padding:0 14px;position:relative}
+.bB-rel{position:relative;flex:none}
+.bB-side{position:absolute;left:0;top:0;bottom:0;width:12px;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;line-height:12px;background:var(--no-bg);white-space:nowrap;overflow:hidden;text-transform:uppercase;z-index:1}
+.bB-side.bB-ok{background:var(--active-bg);color:var(--active-fg)}
+/* title bar with a second line */
+.bB-ttl{flex:1;min-width:0;display:grid;gap:1px}
+.bB-ttl h3{line-height:1.2}
+.bB-sub{font-family:var(--mono);font-size:9px;line-height:1.3;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the one control row: search + Filters */
+.bB-ctl{display:flex;gap:8px;align-items:center}
+.bB-ctl .search{flex:1;min-width:0;white-space:nowrap;overflow:hidden;font-size:11.5px;padding-inline:10px}
+.bB-ctl .search span{overflow:hidden;text-overflow:ellipsis}
+.bB-ctl .search.bB-foc{background:#fff;box-shadow:inset 0 0 0 1.5px var(--ink);color:var(--ink);font-size:13px}
+.bB-caret{display:inline-block;width:1.5px;height:16px;background:var(--ink);margin-left:1px;vertical-align:middle}
+.bB-fbtn{height:40px;padding-inline:10px;border-radius:12px;border:1.5px solid var(--border);background:#fff;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;white-space:nowrap;flex:none;color:var(--ink)}
+.bB-fbtn.bB-on{border-color:var(--ink)}
+/* first lines inside the list */
+.bB-cnt{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink2);padding:2px 0 6px}
+.bB-sort{display:inline-flex;align-items:center;gap:3px;font-weight:700;color:var(--ink)}
+.bB-sort .ico{width:12px;height:12px}
+.bB-clr{font-weight:700;text-decoration:underline;text-underline-offset:2px;color:var(--ink);margin-left:6px}
+.bB-hint{font-size:10px;line-height:1.4;color:var(--ink2);padding-bottom:6px}   /* today's grey sentence: only B0 still draws it */
+/* the compact pick row: name + round tick, one line of facts, one line of numbers */
+.bB-row{padding:7px 0;border-bottom:1px solid var(--border);display:grid;gap:4px}
+.bB-hd{display:flex;gap:9px;align-items:flex-start}
+.bB-t{flex:1;min-width:0;display:grid;gap:1px}
+.bB-t b{font-size:13px;line-height:1.25}
+.bB-l{font-size:11px;line-height:1.3;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bB-num{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.bB-off .avatar,.bB-off .bB-t b{opacity:.5}                /* a row that can't be ticked: face and name greyed; the line that says why stays readable */
+.bB-tick{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:grid;place-items:center;flex:none;background:#fff}
+.bB-tick .ico{width:12px;height:12px}
+.bB-tick.bB-on{background:var(--ink);border-color:var(--ink);color:#fff}
+.bB-tick.bB-dis{background:var(--surface);border-color:var(--surface);color:var(--ink3)}
+.bB-1l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* B2 — the greyed row just tapped, and the app's black message floating just above the bottom button */
+.bB-row.bB-tap{background:var(--surface);margin-inline:-14px;padding-inline:14px}
+.bB-tap .bB-tick.bB-dis{border-color:var(--border)}
+.toast.bB-msg{position:absolute;left:14px;right:14px;bottom:8px;z-index:2;box-shadow:0 6px 16px rgba(26,26,23,.22)}
+/* the full creator card inside a list: today's picker (B0) and the Creators tab (B8) */
+.bB-list .ccard{margin-bottom:8px;grid-template-columns:minmax(0,1fr)}
+.bB-list .ccard .top{gap:8px}
+.bB-list .ccard .bB-1l{font-size:11px}
+/* the selection line above the main button */
+.bB-rev{margin-left:auto;font-weight:700;font-size:12px;text-decoration:underline;text-underline-offset:3px}
+/* the Filters sheet's lower sections, one line each */
+.bB-secs .mline{padding:4px 0}
+/* B5 — the keypad at its real share of the phone, so the rows left above it are counted, not flattered */
+.kbd.bB-kbd{gap:7px;padding:10px 4px 26px}
+.kbd.bB-kbd .kr i{height:38px}
+/* B9 — two phone tops side by side */
+.bB-pair{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.bB-col{display:grid;gap:6px;justify-items:center}
+.bB-half{min-height:0;height:330px;border-bottom:2px dashed #B9B8B1;border-radius:30px 30px 0 0}
+.bB-half .scr{min-height:0;overflow:hidden;gap:0}
+/* B10 — the reasons table: the words the app shows, set apart from the explanation around them */
+.bB-say{color:var(--ink);font-weight:600}
+</style>
+<section id="board-B">
+  <header><div class="eyebrow">Brand app · point 2 of 11</div><h2>Add creators: give the list the screen</h2><p class="prose">You reported that when you choose creators for a set, the filters and bars leave almost no room for the creators. That is true: today one creator and the top edge of the next is all that fits. After the change each creator is a compact three-line row, the chips become one Filters button beside the search box, the campaign line moves into the title, and the bottom tabs and the blank strip above the title are gone, so about six creators are in view instead of one. The grey sentence at the top of the list and the tag line on each row are gone, as you asked, and a creator who can't be invited now says why: a short reason on her row, and the full sentence when you tap her.</p></header>
+  <div class="flow">
+
+    <!-- B0 · TODAY · the picker as it opens -->
+    <div class="shot">
+      <div class="phone today bB-fix">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr nopad">
+          <div class="bB-rel">
+            <span class="ruler bB-side">stays put</span>
+            <div class="bB-band"><span class="ruler">blank strip</span></div>
+            <div class="bB-top bB-now">
+              <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Add creators</h3></div>
+              <div class="crumbs" style="font-size:10px;white-space:nowrap">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div>
+              <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+              <div class="search">Search by name or @handle</div>
+              <div class="frow2"><span class="fchip on">Open to invitations</span><span class="fchip">Filters</span></div>
+            </div>
+          </div>
+          <div class="bB-list">
+            <span class="ruler bB-side bB-ok">the list</span>
+            <div class="bB-hint">Creators whose own settings rule this set out can't be picked, and the reason is never shown to them.</div>
+            <div class="bB-cnt"><span>128 creators</span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+            <div class="ccard">
+              <div class="top"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div style="flex:1;min-width:0"><div class="nm">Priya Sharma</div><div class="xs mut bB-1l">Fashion · Guntur · 32 km · Telugu, English</div></div><span class="bB-tick"></span></div>
+              <div class="stats"><div class="stat"><b>48.2K</b><span>Instagram</span></div><div class="stat"><b>12.1K</b><span>YouTube</span></div><div class="stat"><b>4.2%</b><span>Engagement</span></div></div>
+              <div class="row" style="flex-wrap:wrap;gap:5px"><span class="tag">Pay for Sale</span><span class="tag">Pay for Content</span><span class="tag">Hybrid</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span><span class="tag">Remote</span></div>
+            </div>
+            <div class="ccard">
+              <div class="top"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div style="flex:1;min-width:0"><div class="nm">Sneha N.</div><div class="xs mut bB-1l">Fashion · Eluru · 58 km · Telugu</div></div><span class="bB-tick"></span></div>
+              <div class="stats"><div class="stat"><b>18.4K</b><span>Instagram</span></div><div class="stat"><b>6.3K</b><span>YouTube</span></div><div class="stat"><b>5.1%</b><span>Engagement</span></div></div>
+              <div class="row" style="flex-wrap:wrap;gap:5px"><span class="tag">Pay for Sale</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="bB-rel">
+          <span class="ruler bB-side">stays put</span>
+          <div class="savebar"><button class="btn block b-dis" type="button">Next: terms for 0 creators</button></div>
+          <div class="tabbar">
+            <span class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</span>
+            <span class="tab on"><span class="p"><svg class="ico"><use href="#i-layers"/></svg></span>Campaigns</span>
+            <span class="tab"><span class="p"><svg class="ico"><use href="#i-users"/></svg></span>Creators</span>
+            <span class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</span>
+            <span class="tab"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</span>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>B0</i><span class="tagtoday">TODAY</span></div><b>Brand app · Add creators, as it opens today</b><span>Everything beside a red strip stays put: a blank strip, the title, the campaign line, four tabs, the search box and the chips at the top; the button and the bottom tabs at the bottom. The list gets only the green part: the sentence, the count, one creator and the top edge of the next. Open the keypad to search and the button and the bottom tabs ride up over what is left.</span></div>
+    </div>
+
+    <!-- B1 · AFTER · arrival, compact three-line rows -->
+    <div class="shot">
+      <div class="phone bB-fix">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr nopad">
+          <div class="bB-top">
+            <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><div class="bB-ttl"><h3>Add creators</h3><div class="bB-sub">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div></div></div>
+            <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+            <div class="bB-ctl"><div class="search"><span>Search by name or @handle</span></div><span class="bB-fbtn">Filters</span></div>
+          </div>
+          <div class="bB-list">
+            <div class="bB-cnt"><span>128 creators</span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="bB-t"><b>Priya Sharma</b><span class="bB-l">Fashion · Guntur · 32 km · Telugu, English</span><span class="bB-l bB-num">48.2K IG · 12.1K YT · 4.2% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="bB-t"><b>Sneha N.</b><span class="bB-l">Fashion · Eluru · 58 km · Telugu</span><span class="bB-l bB-num">18.4K IG · 6.3K YT · 5.1% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row bB-off">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#EFEFEA">AK</span><div class="bB-t"><div class="row between"><b>Asha K.</b><span class="chip s-ended">Can't invite</span></div><span class="bB-l">Not taking Pay for Content</span></div><span class="bB-tick bB-dis"></span></div>
+            </div>
+            <div class="bB-row bB-off">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E6F4EA">MR</span><div class="bB-t"><div class="row between"><b>Meera Rao</b><span class="chip s-wait">Invited</span></div><span class="bB-l">Already in this set</span></div><span class="bB-tick bB-dis"><svg class="ico"><use href="#i-check"/></svg></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="bB-t"><b>Divya R.</b><span class="bB-l">Fashion · Machilipatnam · 64 km · Telugu, Hindi</span><span class="bB-l bB-num">64.1K IG · 8.3K YT · 3.6% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E7E3FB">TS</span><div class="bB-t"><b>Tanvi Suresh</b><span class="bB-l">Fashion · Tenali · 71 km · Telugu, English</span><span class="bB-l bB-num">12.9K IG · 2.0K YT · 6.0% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">HG</span><div class="bB-t"><b>Harini G.</b><span class="bB-l">Fashion · Narasaraopet · 78 km · Telugu</span><span class="bB-l bB-num">27.3K IG · 5.2K YT · 4.7% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="savebar"><button class="btn block b-dis" type="button">Next: terms for 0 creators</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>B1</i><span class="tagafter">AFTER</span></div><b>Brand app · Add creators, as it opens</b><span>The title sits straight under the status bar with the campaign line inside it, the chips are one Filters button beside the search box, and the bottom tabs are gone. The count comes first in the list and scrolls away with it. Each creator is three lines: her name and the round tick; her niche, city, distance and languages, cut with … when the line runs long; then her followers and engagement. The tag line and the grey sentence are gone. Six creators fit where one card fits today. A creator who can't be invited keeps a shorter greyed row that says why in a few words; one already in this set is ticked and locked.</span></div>
+    </div>
+
+    <!-- B2 · AFTER · just after tapping a creator who can't be invited -->
+    <div class="shot">
+      <div class="phone bB-fix">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr nopad">
+          <div class="bB-top">
+            <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><div class="bB-ttl"><h3>Add creators</h3><div class="bB-sub">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div></div></div>
+            <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+            <div class="bB-ctl"><div class="search"><span>Search by name or @handle</span></div><span class="bB-fbtn">Filters</span></div>
+          </div>
+          <div class="bB-list">
+            <div class="bB-cnt"><span>128 creators</span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="bB-t"><b>Priya Sharma</b><span class="bB-l">Fashion · Guntur · 32 km · Telugu, English</span><span class="bB-l bB-num">48.2K IG · 12.1K YT · 4.2% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="bB-t"><b>Sneha N.</b><span class="bB-l">Fashion · Eluru · 58 km · Telugu</span><span class="bB-l bB-num">18.4K IG · 6.3K YT · 5.1% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row bB-off bB-tap">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#EFEFEA">AK</span><div class="bB-t"><div class="row between"><b>Asha K.</b><span class="chip s-ended">Can't invite</span></div><span class="bB-l">Not taking Pay for Content</span></div><span class="bB-tick bB-dis"></span></div>
+            </div>
+            <div class="bB-row bB-off">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E6F4EA">MR</span><div class="bB-t"><div class="row between"><b>Meera Rao</b><span class="chip s-wait">Invited</span></div><span class="bB-l">Already in this set</span></div><span class="bB-tick bB-dis"><svg class="ico"><use href="#i-check"/></svg></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="bB-t"><b>Divya R.</b><span class="bB-l">Fashion · Machilipatnam · 64 km · Telugu, Hindi</span><span class="bB-l bB-num">64.1K IG · 8.3K YT · 3.6% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E7E3FB">TS</span><div class="bB-t"><b>Tanvi Suresh</b><span class="bB-l">Fashion · Tenali · 71 km · Telugu, English</span><span class="bB-l bB-num">12.9K IG · 2.0K YT · 6.0% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">HG</span><div class="bB-t"><b>Harini G.</b><span class="bB-l">Fashion · Narasaraopet · 78 km · Telugu</span><span class="bB-l bB-num">27.3K IG · 5.2K YT · 4.7% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="toast t-ink bB-msg">Asha isn't taking Pay for Content collaborations.</div>
+          </div>
+        </div>
+        <div class="savebar"><button class="btn block b-dis" type="button">Next: terms for 0 creators</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>B2</i><span class="tagafter">AFTER</span></div><b>Brand app · Tapping a creator who can't be invited</b><span>The same screen just after you tap Asha's greyed row. The app's black message appears just above the bottom button and tells you why in a full sentence: "Asha isn't taking Pay for Content collaborations." It names Pay for Content because that is this set's Aim. She stays unticked and the button does not change; her row is shaded here only to show which one was tapped. Today her row only says "Not open to this set", tapping it does nothing, and nothing on the screen ever says why. All five reasons are in B10.</span></div>
+    </div>
+
+    <!-- B3 · AFTER · three ticked, two filters on -->
+    <div class="shot">
+      <div class="phone bB-fix">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr nopad">
+          <div class="bB-top">
+            <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><div class="bB-ttl"><h3>Add creators</h3><div class="bB-sub">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div></div></div>
+            <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+            <div class="bB-ctl"><div class="search"><span>Search by name or @handle</span></div><span class="bB-fbtn bB-on">Filters · 2</span></div>
+          </div>
+          <div class="bB-list">
+            <div class="bB-cnt"><span>14 creators<span class="bB-clr">Clear all</span></span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="bB-t"><b>Priya Sharma</b><span class="bB-l">Fashion · Guntur · 32 km · Telugu, English</span><span class="bB-l bB-num">48.2K IG · 12.1K YT · 4.2% eng</span></div><span class="bB-tick bB-on"><svg class="ico"><use href="#i-check"/></svg></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="bB-t"><b>Sneha N.</b><span class="bB-l">Fashion · Eluru · 58 km · Telugu</span><span class="bB-l bB-num">18.4K IG · 6.3K YT · 5.1% eng</span></div><span class="bB-tick bB-on"><svg class="ico"><use href="#i-check"/></svg></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="bB-t"><b>Divya R.</b><span class="bB-l">Fashion · Machilipatnam · 64 km · Telugu, Hindi</span><span class="bB-l bB-num">64.1K IG · 8.3K YT · 3.6% eng</span></div><span class="bB-tick bB-on"><svg class="ico"><use href="#i-check"/></svg></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E7E3FB">TS</span><div class="bB-t"><b>Tanvi Suresh</b><span class="bB-l">Fashion · Tenali · 71 km · Telugu, English</span><span class="bB-l bB-num">12.9K IG · 2.0K YT · 6.0% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">HG</span><div class="bB-t"><b>Harini G.</b><span class="bB-l">Fashion · Narasaraopet · 78 km · Telugu</span><span class="bB-l bB-num">27.3K IG · 5.2K YT · 4.7% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E6F4EA">KB</span><div class="bB-t"><b>Keerthi B.</b><span class="bB-l">Fashion · Bhimavaram · 96 km · Telugu</span><span class="bB-l bB-num">15.8K IG · 1.1K YT · 5.4% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="savebar">
+          <div class="row"><span class="stack"><span class="avatar av-s" style="background:#FFE7A3">PS</span><span class="avatar av-s" style="background:#FDE2E2">SN</span><span class="avatar av-s" style="background:#DDE9FB">DR</span></span><b class="sm">3 selected</b><span class="bB-rev">Review</span></div>
+          <button class="btn block b-pri" type="button">Next: terms for 3 creators</button>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>B3</i><span class="tagafter">AFTER</span></div><b>Brand app · Three ticked, two filters on</b><span>The button reads "Filters · 2" and the count line gains "Clear all", which takes the place of today's extra chip. Above the yellow button the three faces, "3 selected" and "Review" stay exactly as they are today. Five creators and half of a sixth stay in view above that line.</span></div>
+    </div>
+
+    <!-- B4 · AFTER · the Filters sheet -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr nopad" style="opacity:.35">
+          <div class="bB-top">
+            <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><div class="bB-ttl"><h3>Add creators</h3><div class="bB-sub">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div></div></div>
+            <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+            <div class="bB-ctl"><div class="search"><span>Search by name or @handle</span></div><span class="bB-fbtn bB-on">Filters · 2</span></div>
+          </div>
+          <div style="height:510px"></div>
+        </div>
+        <div class="dim"><div class="sheet"><span class="grab"></span>
+          <div class="row between"><b style="font-size:15px">Filters</b><button class="btn b-txt sm2" type="button">Clear all</button></div>
+          <div class="row between"><div class="lbl">Open to invitations only</div><span class="sw on"></span></div>
+          <div class="grp"><div class="lbl" style="font-size:12.5px">Sort</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Nearest first</span><span class="opt">Most followers</span><span class="opt">Highest engagement</span><span class="opt">Newest</span></div></div>
+          <div class="grp"><div class="lbl" style="font-size:12.5px">Distance from your main branch</div><div class="chips"><span class="opt">Within 50 km</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Within 100 km</span><span class="opt">Same state</span><span class="opt">Anywhere</span></div><div class="hint">Creators without a city show only under Anywhere.</div></div>
+          <div class="mrows bB-secs">
+            <div class="mline"><span>Niche</span><b>Fashion</b></div>
+            <div class="mline"><span>Instagram followers</span><b>Any</b></div>
+            <div class="mline"><span>YouTube subscribers</span><b>Any</b></div>
+            <div class="mline"><span>Engagement</span><b>Any</b></div>
+            <div class="mline"><span>City</span><b>Any</b></div>
+            <div class="mline"><span>Language</span><b>Any</b></div>
+            <div class="mline"><span>Open to Aims</span><b>Any</b></div>
+            <div class="mline"><span>Mode of work</span><b>Any</b></div>
+          </div>
+          <button class="btn block b-pri" type="button">Show 14 creators</button>
+        </div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>B4</i><span class="tagafter">AFTER</span></div><b>Brand app · Filters, opened from the one button</b><span>The same sheet as today, with nothing added or removed. "Open to invitations only" now lives only here, and is still on when you arrive from a set. Sort and distance are drawn in full; the eight sections below them are drawn as one line each to fit this frame. In the app they keep today's buttons and the sheet scrolls.</span></div>
+    </div>
+
+    <!-- B5 · AFTER · keypad open while searching -->
+    <div class="shot">
+      <div class="phone bB-fix">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr nopad">
+          <div class="bB-top">
+            <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><div class="bB-ttl"><h3>Add creators</h3><div class="bB-sub">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div></div></div>
+            <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+            <div class="bB-ctl"><div class="search bB-foc"><span>pri<i class="bB-caret"></i></span></div><span class="bB-fbtn">Filters</span></div>
+          </div>
+          <div class="bB-list">
+            <div class="bB-cnt"><span>3 creators</span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="bB-t"><b>Priya Sharma</b><span class="bB-l">Fashion · Guntur · 32 km · Telugu, English</span><span class="bB-l bB-num">48.2K IG · 12.1K YT · 4.2% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FDE2E2">PV</span><div class="bB-t"><b>Priyanka V.</b><span class="bB-l">Lifestyle · Eluru · 58 km · Telugu</span><span class="bB-l bB-num">22.0K IG · 40.3K YT · 3.1% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#DDE9FB">SD</span><div class="bB-t"><b>Supriya D.</b><span class="bB-l">Fashion · Tenali · 71 km · Telugu, Hindi</span><span class="bB-l bB-num">31.5K IG · 4.4K YT · 5.8% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="kbd bB-kbd"><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kr"><i class="w"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="w"></i></div><div class="kr"><i class="w"></i><i class="sp"></i><i class="w"></i></div></div>
+      </div>
+      <div class="cap"><div class="tg"><i>B5</i><span class="tagafter">AFTER</span></div><b>Brand app · Typing in the search box</b><span>While the keypad is open the button strip steps out of the way, and so do the bottom tabs on the screens that keep them, so the creators found run down to the keypad. All three creators found here are in view above the keypad, with room for most of a fourth; today none is. The strip comes back when the keypad closes.</span></div>
+    </div>
+
+    <!-- B6 · AFTER · Add creators to a group (replaces G5) -->
+    <div class="shot">
+      <div class="phone bB-fix">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr nopad">
+          <div class="bB-top">
+            <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><div class="bB-ttl"><h3>Add creators</h3><div class="bB-sub">ADDING TO DIWALI SHORTLIST · 12 CREATORS</div></div></div>
+            <div class="segc"><span class="on">All creators</span><span>Worked with</span></div>
+            <div class="bB-ctl"><div class="search"><span>Search by name or @handle</span></div><span class="bB-fbtn">Filters</span></div>
+          </div>
+          <div class="bB-list">
+            <div class="bB-cnt"><span>164 creators</span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+            <div class="bB-row bB-off">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="bB-t"><b>Priya Sharma</b><span class="bB-l">Already in this group</span></div><span class="bB-tick bB-dis"><svg class="ico"><use href="#i-check"/></svg></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="bB-t"><b>Sneha N.</b><span class="bB-l">Fashion · Eluru · 58 km · Telugu</span><span class="bB-l bB-num">18.4K IG · 6.3K YT · 5.1% eng</span></div><span class="bB-tick bB-on"><svg class="ico"><use href="#i-check"/></svg></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="bB-t"><b>Divya R.</b><span class="bB-l">Fashion · Machilipatnam · 64 km · Telugu, Hindi</span><span class="bB-l bB-num">64.1K IG · 8.3K YT · 3.6% eng</span></div><span class="bB-tick bB-on"><svg class="ico"><use href="#i-check"/></svg></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E6F4EA">LM</span><div class="bB-t"><b>Lakshmi M.</b><span class="bB-l">Fashion · Tenali · 71 km · Telugu</span><span class="bB-l bB-num">9.6K IG · 3.0K YT · 3.9% eng</span></div><span class="bB-tick bB-on"><svg class="ico"><use href="#i-check"/></svg></span></div>
+              <div class="row"><span class="chip s-ended">Not taking invitations</span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E6F4EA">MR</span><div class="bB-t"><b>Meera Rao</b><span class="bB-l">Lifestyle · Hyderabad · 272 km · Telugu, Hindi</span><span class="bB-l bB-num">22.0K IG · 40.3K YT · 3.1% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+            <div class="bB-row">
+              <div class="bB-hd"><span class="avatar av-s" style="background:#E7E3FB">AI</span><div class="bB-t"><b>Ananya I.</b><span class="bB-l">Beauty · Visakhapatnam · 349 km · Telugu</span><span class="bB-l bB-num">51.0K IG · 7.9K YT · 3.3% eng</span></div><span class="bB-tick"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="savebar">
+          <div class="xs mut" style="text-align:center">Diwali shortlist can take 85 more creators.</div>
+          <button class="btn block b-pri" type="button">Add 3 creators</button>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>B6</i><span class="tagafter">AFTER</span></div><b>Brand app · Add creators to a group</b><span>Reached from a group on the Creators tab: the same title with a second line, the same search and Filters row, the same three-line rows, and no bottom tabs. Someone already in the group is ticked and greyed. A creator who is not taking invitations says so on a short line under her numbers and can still be added to a group. The line above the button counts down as you tick, as it does today: 12 in the group and 3 ticked leaves room for 85. "Open to invitations only" starts switched off here, as today, and is changed inside Filters.</span></div>
+    </div>
+
+    <!-- B7 · AFTER · the next screen in the flow: Terms (top and bottom only) -->
+    <div class="shot">
+      <div class="phone small">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div>
+          <div class="steps"><i class="on"></i><i></i><i></i><span>Creator 1 of 3</span></div>
+          <div class="tcard locked"><div class="sechd2"><svg class="ico"><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div>
+          <div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div>
+          <div class="callout">Not drawn here: the rest of this screen. "What she delivers" is on the Deliverables board, point 4.</div>
+          <div class="callout ok" style="margin-top:auto">No bottom tabs under this button, here or on "Review and send".</div>
+        </div>
+        <div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div>
+      </div>
+      <div class="cap"><div class="tg"><i>B7</i><span class="tagafter">AFTER</span></div><b>Brand app · Terms for the first creator</b><span>The screen that follows "Next: terms for 3 creators", drawn top and bottom only. The title sits straight under the status bar here too. The bottom tabs are gone here and on "Review and send" as well, so the yellow button is the last thing on the screen from Add creators until the invitations are sent. The deliverables block in the middle is on the Deliverables board.</span></div>
+    </div>
+
+    <!-- B8 · AFTER · Creators tab › Discover (tab root) -->
+    <div class="shot">
+      <div class="phone bB-fix">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr nopad">
+          <div class="bB-top">
+            <div class="bar"><h3>Creators</h3></div>
+            <div class="segc four"><span class="on">Discover</span><span>Groups</span><span>Pitches</span><span>Worked with</span></div>
+            <div class="bB-ctl"><div class="search"><span>Search by name or @handle</span></div><span class="bB-fbtn">Filters</span></div>
+          </div>
+          <div class="bB-list">
+            <div class="bB-cnt"><span>128 creators</span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+            <div class="ccard">
+              <div class="top"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div style="flex:1;min-width:0"><div class="nm">Priya Sharma</div><div class="xs mut bB-1l">Fashion · Guntur · 32 km · Telugu, English</div></div><span class="ib"><svg class="ico"><use href="#i-uadd"/></svg></span></div>
+              <div class="stats"><div class="stat"><b>48.2K</b><span>Instagram</span></div><div class="stat"><b>12.1K</b><span>YouTube</span></div><div class="stat"><b>4.2%</b><span>Engagement</span></div></div>
+              <div class="row" style="flex-wrap:wrap;gap:5px"><span class="tag">Pay for Sale</span><span class="tag">Pay for Content</span><span class="tag">Hybrid</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span><span class="tag">Remote</span></div>
+            </div>
+            <div class="ccard">
+              <div class="top"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div style="flex:1;min-width:0"><div class="nm">Sneha N.</div><div class="xs mut bB-1l">Fashion · Eluru · 58 km · Telugu</div></div><span class="ib"><svg class="ico"><use href="#i-uadd"/></svg></span></div>
+              <div class="stats"><div class="stat"><b>18.4K</b><span>Instagram</span></div><div class="stat"><b>6.3K</b><span>YouTube</span></div><div class="stat"><b>5.1%</b><span>Engagement</span></div></div>
+              <div class="row" style="flex-wrap:wrap;gap:5px"><span class="tag">Pay for Sale</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span></div>
+            </div>
+            <div class="ccard">
+              <div class="top"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div style="flex:1;min-width:0"><div class="nm">Divya R.</div><div class="xs mut bB-1l">Fashion · Machilipatnam · 64 km · Telugu, Hindi</div></div><span class="ib"><svg class="ico"><use href="#i-uadd"/></svg></span></div>
+              <div class="stats"><div class="stat"><b>64.1K</b><span>Instagram</span></div><div class="stat"><b>8.3K</b><span>YouTube</span></div><div class="stat"><b>3.6%</b><span>Engagement</span></div></div>
+              <div class="row" style="flex-wrap:wrap;gap:5px"><span class="tag">Pay for Sale</span><span class="tag">Hybrid</span><span class="tag">Remote</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <span class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</span>
+          <span class="tab"><span class="p"><svg class="ico"><use href="#i-layers"/></svg></span>Campaigns</span>
+          <span class="tab on"><span class="p"><svg class="ico"><use href="#i-users"/></svg></span>Creators</span>
+          <span class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</span>
+          <span class="tab"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</span>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>B8</i><span class="tagafter">AFTER</span></div><b>Brand app · Creators tab, Discover</b><span>The same single row here too: the search box with one Filters button, and the title straight under the status bar. The chips row is gone and "Open to invitations only" is inside Filters, still on. The creator card does not change here: it keeps its tags and its add-to-group button. Only the rows you tick when adding creators lose the tag line. This is a main tab, so the bottom tabs stay.</span></div>
+    </div>
+
+    <!-- B9 · AFTER · the blank strip above every title, today and after -->
+    <div class="shot wide" style="width:auto">
+      <div class="bB-pair">
+        <div class="bB-col">
+          <div class="phone today bB-half">
+            <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+            <div class="bB-band"><span class="ruler">blank strip</span></div>
+            <div class="scr nopad">
+              <div class="bB-top">
+                <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><div class="bB-ttl"><h3>Add creators</h3><div class="bB-sub">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div></div></div>
+                <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+                <div class="bB-ctl"><div class="search"><span>Search by name or @handle</span></div><span class="bB-fbtn">Filters</span></div>
+              </div>
+              <div class="bB-list">
+                <div class="bB-cnt"><span>128 creators</span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+                <div class="bB-row">
+                  <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="bB-t"><b>Priya Sharma</b><span class="bB-l">Fashion · Guntur · 32 km · Telugu, English</span><span class="bB-l bB-num">48.2K IG · 12.1K YT · 4.2% eng</span></div><span class="bB-tick"></span></div>
+                </div>
+                <div class="bB-row">
+                  <div class="bB-hd"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="bB-t"><b>Sneha N.</b><span class="bB-l">Fashion · Eluru · 58 km · Telugu</span><span class="bB-l bB-num">18.4K IG · 6.3K YT · 5.1% eng</span></div><span class="bB-tick"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="xs mut"><b>Today</b> · a blank strip above the title</div>
+        </div>
+        <div class="bB-col">
+          <div class="phone bB-half">
+            <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+            <div class="scr nopad">
+              <div class="bB-top">
+                <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><div class="bB-ttl"><h3>Add creators</h3><div class="bB-sub">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div></div></div>
+                <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+                <div class="bB-ctl"><div class="search"><span>Search by name or @handle</span></div><span class="bB-fbtn">Filters</span></div>
+              </div>
+              <div class="bB-list">
+                <div class="bB-cnt"><span>128 creators</span><span class="bB-sort">Nearest first<svg class="ico"><use href="#i-down"/></svg></span></div>
+                <div class="bB-row">
+                  <div class="bB-hd"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="bB-t"><b>Priya Sharma</b><span class="bB-l">Fashion · Guntur · 32 km · Telugu, English</span><span class="bB-l bB-num">48.2K IG · 12.1K YT · 4.2% eng</span></div><span class="bB-tick"></span></div>
+                </div>
+                <div class="bB-row">
+                  <div class="bB-hd"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="bB-t"><b>Sneha N.</b><span class="bB-l">Fashion · Eluru · 58 km · Telugu</span><span class="bB-l bB-num">18.4K IG · 6.3K YT · 5.1% eng</span></div><span class="bB-tick"></span></div>
+                </div>
+                <div class="bB-row">
+                  <div class="bB-hd"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="bB-t"><b>Divya R.</b><span class="bB-l">Fashion · Machilipatnam · 64 km · Telugu, Hindi</span><span class="bB-l bB-num">64.1K IG · 8.3K YT · 3.6% eng</span></div><span class="bB-tick"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="xs mut"><b>After</b> · the title straight under the status bar</div>
+        </div>
+      </div>
+      <div class="cap"><div class="tg"><i>B9</i><span class="tagafter">AFTER</span></div><b>Both apps · The blank strip above every title</b><span>Both halves show the top of the new Add creators screen. Left, as today: a blank strip sits between the phone's status bar and the title. Right, after: the title sits straight under the status bar, which gives every list room for about two-thirds of a creator more. The strip goes on every screen of the brand and creator apps. It was read from the code and not yet seen on a phone, so the first phone walk confirms it.</span></div>
+    </div>
+
+    <!-- B10 · AFTER · table: why a creator can't be invited, and what the brand is told -->
+    <div class="shot wide">
+      <div class="tscroll"><table>
+        <tr><th>Why</th><th>On her row</th><th>When you tap her</th></tr>
+        <tr><td>This set's Aim is one she has switched off</td><td><span class="bB-say">Not taking Pay for Sale</span><br>or Pay for Content (as on B1 and B2), or Hybrid: whichever Aim the set has</td><td><span class="bB-say">Asha isn't taking Pay for Sale collaborations.</span></td></tr>
+        <tr><td>This set's mode is one she has switched off</td><td><span class="bB-say">Not taking Store Visit</span><br>or Remote</td><td><span class="bB-say">Asha isn't taking Store Visit collaborations.</span></td></tr>
+        <tr><td>She only works with certain kinds of brand, and yours is not one of them</td><td><span class="bB-say">Not taking your category</span></td><td><span class="bB-say">Asha isn't taking invitations from brands in your category.</span></td></tr>
+        <tr><td>This set is a Store Visit, and its store is in a city she doesn't visit</td><td><span class="bB-say">No store visits in Hyderabad</span><br>the city this set's store is in</td><td><span class="bB-say">Asha doesn't do store visits in Hyderabad.</span></td></tr>
+        <tr><td>She has paused invitations, or she has blocked your brand</td><td><span class="bB-say">Not taking invitations</span></td><td><span class="bB-say">Asha isn't taking invitations right now.</span></td></tr>
+      </table></div>
+      <div class="cap"><div class="tg"><i>B10</i><span class="tagafter">AFTER</span></div><b>Why a creator can't be invited: what you are told</b><span>A creator who has paused invitations and a creator who has blocked your brand read exactly the same, as today; her minimum fee or commission never stops an invitation (those stay the warnings on the terms screen).</span></div>
+    </div>
+
+  </div>
+</section>

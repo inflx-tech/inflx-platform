@@ -8,6 +8,10 @@
  * The full amount is paid: nothing is deducted and nothing here mentions tax.
  *
  * route.params.side: 'brand' | 'creator' (set by the navigator).
+ *
+ * ui-walk-fixes (board C): the request button sits in its own strip under the form (BottomBar),
+ * never over it, and the form is a FormScroll — the amount box and the red line under it stay in
+ * view while she types.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
@@ -16,6 +20,8 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi, influencerApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, FieldError } from '../../components/settings/primitives';
 import { Skeleton, LoadError } from '../../components/settings/feedback';
+import { BottomBar } from '../../components/shell/BottomBar';
+import { FormScroll } from '../../components/shell/FormScroll';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { W17, inr } from '../../components/wallet/copy17';
 import { Box17, GreyBox17, s as b } from '../../components/wallet/bits17';
@@ -111,7 +117,7 @@ export default function WithdrawScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="withdraw">
       <Header title={W17.withdraw} onBack={back} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
+      <FormScroll contentContainerStyle={{ padding: 18 }} testID="withdraw-scroll">
         <Text style={s.lbl}>{W17.howMuch}</Text>
         <View style={[s.big, error && { borderColor: T.danger }]}>
           <Text style={s.pre}>₹</Text>
@@ -159,10 +165,10 @@ export default function WithdrawScreen({ navigation, route }) {
         <GreyBox17 testID="withdraw-explain"
           text={side === 'brand' ? W17.brandExplain(inr(n), o.processHours) : W17.creatorExplain(inr(n), o.processHours)} />
         {past}
-      </ScrollView>
-      <View style={s.bar}>
+      </FormScroll>
+      <BottomBar testID="withdraw-actions">
         <PrimaryButton label={n ? W17.request(inr(n)) : W17.requestPlain} onPress={send} busy={busy} busyLabel="Requesting" testID="withdraw-request" />
-      </View>
+      </BottomBar>
     </View>
   );
 }
@@ -186,5 +192,4 @@ const s = StyleSheet.create({
   empty: { alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 14, padding: 18 },
   emptyT: { fontFamily: fonts.sansBold, fontSize: 14, color: T.ink, textAlign: 'center' },
   emptyB: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, marginTop: 4, textAlign: 'center' },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 18, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
 });

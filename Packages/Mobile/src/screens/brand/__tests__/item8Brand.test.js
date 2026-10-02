@@ -116,9 +116,13 @@ describe('T6–T8 — deciding on one pitch', () => {
   beforeEach(() => { jest.clearAllMocks(); brandApi.pitch.mockResolvedValue(ok({ pitch: DETAIL() })); });
 
   it('everything needed to decide is on one screen', async () => {
-    const { getByTestId, getByText } = render(<BrandPitchScreen navigation={nav()} route={{ params: { pitchId: 'p1' } }} />);
+    const { getByTestId, getByText, getAllByText } = render(<BrandPitchScreen navigation={nav()} route={{ params: { pitchId: 'p1' } }} />);
     await waitFor(() => getByTestId('pitch-terms'));
-    getByText('Tanvi Suresh');
+    // ASSERTION DRIFT — ui-walk-fixes D3 (drift/S0b.md): the screen has no bottom tabs now, so it
+    // carries the title bar the item 8 board (T6) always drew. Her name is on the page, as before,
+    // and in the bar above it.
+    expect(getByTestId('pitch-creator-name').props.children).toBe('Tanvi Suresh');
+    expect(getAllByText('Tanvi Suresh')).toHaveLength(2);
     getByText('Lifestyle · Bengaluru');
     getByText('48.2K');
     getByText('₹12,000 · 1 reel, 2 stories');
@@ -141,7 +145,11 @@ describe('T6–T8 — deciding on one pitch', () => {
     fireEvent.press(getByTestId('accept-confirm'));
     await waitFor(() => expect(brandApi.acceptPitch).toHaveBeenCalledWith('p1'));
     // She is in the pool, so that is where the brand is taken.
-    expect(n.navigate).toHaveBeenCalledWith('CampaignsTab', { screen: 'BrandPool', params: { highlight: 'e1' } });
+    // ASSERTION DRIFT — ui-walk-fixes D3 (drift/S0b.md): the jump now asks for the Campaigns page
+    // to sit under the pool (`initial: false`), so the pool has no bottom tabs and Back reaches it.
+    // ASSERTION DRIFT — ui-walk-fixes board F, frame F8 (drift/F.md): the jump now carries the
+    // message the pool shows, "Tanvi is in your pool." It used to land there without a word.
+    expect(n.navigate).toHaveBeenCalledWith('CampaignsTab', { screen: 'BrandPool', params: { highlight: 'e1', toast: 'Tanvi is in your pool.' }, initial: false });
   });
 
   it('T8 — the cooldown date is on the reject sheet BEFORE the tap, with the block hint', async () => {

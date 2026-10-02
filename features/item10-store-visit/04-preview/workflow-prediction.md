@@ -23,3 +23,8 @@ re-issued byte-identical with the approval).
 
 Deliberate departures: none from the mockups. The time picker is the pure-JS chip picker rather
 than a native one (Q8), which the mockups do not show either way.
+
+> **Corrected 2 Oct 2026 (features/ui-walk-fixes, board G).** This was wrong: the mockups do show
+> it. V2, V6 and V12 each draw two side-by-side boxes, "Date *" and "Time *"; the chip picker was a
+> departure. ui-walk-fixes builds the two boxes (still in JavaScript, not the Android clock). V6
+> stays a full screen rather than the sheet the board draws — the one deliberate departure.

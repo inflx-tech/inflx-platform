@@ -1,0 +1,115 @@
+ui-walk-fixes — full backend run, 2 Oct 2026 (contract check 38; test database inflx_test on localhost:5544)
+Run: cd backend && npx jest --runInBand --silent --json — the whole suite, serially, 14:17–14:39 IST (1,295 s), with every
+server change of this contract in the tree (slices SB, SF, F and CSRV). Compared by suite file + full test name with the
+last stored full run: posting-date-last-day, 1 Oct 2026 17:57 IST (features/posting-date-last-day/06-diff/backend-compare.txt).
+
+before (last stored full run, 1 Oct, after posting-date-last-day): suites 137 tests 1834 passed 1629 failed 177 pending 28
+after  (this contract, 2 Oct):                                     suites 139 tests 1870 passed 1665 failed 177 pending 28
+
+passed before, failing now: 0
+new tests failing: 0
+failed before, passing now: 0
+skipped/pending status changed: 0
+tests renamed or rewritten (gone under their old name): 1
+   shopper-app-v2.test.js :: what can appear in the feed (checks 1–3) her Women / Men / Kids choice filters the feed (Unisex always passes); Play is videos only [was passed]
+suites added: ui-walk-fixes-server-leftovers.test.js, ui-walk-fixes-shoot-turn.test.js | suites removed: none
+suites that did not load: now: collection-library.test.js | before: collection-library.test.js
+
+new test names: 37
+  item7-agreement.test.js — 5 passed, 0 failed
+     [passed] the endings (checks 22–25, 39) a withdrawn agreement can be sent again (ui-walk-fixes check 23) out for signature the row carries what the phone opens it with; after Withdraw she is back under "Your move" with "Send agreement"
+     [passed] the endings (checks 22–25, 39) a withdrawn agreement can be sent again (ui-walk-fixes check 23) the brand's own read says it can send; nothing else about the withdrawn agreement changes, and her side is untouched
+     [passed] the endings (checks 22–25, 39) a withdrawn agreement can be sent again (ui-walk-fixes check 23) sending again works the way the phone sends it — the row, the preview, Send — and she can then sign
+     [passed] the endings (checks 22–25, 39) a withdrawn agreement can be sent again (ui-walk-fixes check 23) the read never offers a send the endpoint would refuse: not after the cutoff, and not twice
+     [passed] the endings (checks 22–25, 39) a withdrawn agreement can be sent again (ui-walk-fixes check 23) the brand's two waiting sentences are the approved words, and the app's copy file carries them word for word
+  item5-invitations.test.js — 8 passed, 0 failed
+     [passed] why a creator can't be invited — the brand is told (ui-walk-fixes D2, checks 6a, 6b) the set picker: each of the five causes shows its own short line and sentence; the city is this set's branch city (B1, B2, B10)
+     [passed] why a creator can't be invited — the brand is told (ui-walk-fixes D2, checks 6a, 6b) PRIVACY 1 — a creator who paused and a creator who blocked this brand produce byte-identical label, detail and message, on every list
+     [passed] why a creator can't be invited — the brand is told (ui-walk-fixes D2, checks 6a, 6b) the "Open to invitations only" filter treats paused and blocked alike: both hidden when on, both shown when off
+     [passed] why a creator can't be invited — the brand is told (ui-walk-fixes D2, checks 6a, 6b) PRIVACY 2 — her minimum fee, minimum commission and follower count never produce a reason: she is pickable, and they stay warnings
+     [passed] why a creator can't be invited — the brand is told (ui-walk-fixes D2, checks 6a, 6b) the eligibility check and the refusal after Review and send say the same line and sentence as the picker
+     [passed] why a creator can't be invited — the brand is told (ui-walk-fixes D2, checks 6a, 6b) Worked with and Pool carry the same pick state; PRIVACY 5 — from her own agreed pitch she is exempt on a matching set, an ordinary pick on a differing one, and never exempt from a pause
+     [passed] why a creator can't be invited — the brand is told (ui-walk-fixes D2, checks 6a, 6b) PRIVACY 3 — nothing of it reaches the creator: her lists, her invitation, her settings, the brand she sees and her bell
+     [passed] after sending (checks 21–24, 36, 39) a withdrawn agreement returns an accepted creator to "Your move" with Send agreement; one who was removed or moved stays put (ui-walk-fixes check 23)
+  item2-eligibility.test.js — 12 passed, 0 failed
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) Aim: the short line and the sentence name the SET's Aim in its display name, for all three Aims
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) mode: Store Visit and Remote in their display names ("remote", no shoot, reads as Remote)
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) her brand categories: the brand is told it is its category — and never which categories she picked
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) her visit cities: the city named is the city of THIS SET's branch; unknown, the no-city wording — and her own cities are never sent
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) ONLY ONE reason, the first that fails: paused/blocked, then Aim, mode, category, visit city
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) PRIVACY 1 — paused and blocked are byte-identical in label, detail and message, even when her other settings would fail too
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) PRIVACY 2 — her minimum fee and commission never produce a reason: they stay warnings and she can be invited
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) PRIVACY 4 — the pitch direction is untouched: a creator still gets the coarse code and nothing else
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) PRIVACY 5 — invited from her own agreed pitch she is still exempt from Aim, mode, category and city; paused and blocked still apply
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) anything that is not one of her rules keeps the old line: "Not open to this set"
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) one copy of the rule: the list answer and the single answer are the same words for every reason
+     [passed] D2 — a brand is told which rule a creator failed (ui-walk-fixes 6a, 6b) the Aim and mode names are the ones the apps print
+  shopper-app-v2.test.js — 1 passed, 0 failed
+     [passed] what can appear in the feed (checks 1–3) her Women / Men / Kids choice orders the feed and never hides a post (Unisex counts for everyone); Play is videos only
+  ui-walk-fixes-server-leftovers.test.js — 7 passed, 0 failed
+     [passed] 1 · Needs You counts an agreement the brand took back (U6a, check 23) counts it while it is unsent, stops while it is out, and counts it again once withdrawn — the number and the "Send agreement" rows agree at every step
+     [passed] 1 · Needs You counts an agreement the brand took back (U6a, check 23) a contract marked withdrawn because she was removed or moved to the pool is not counted
+     [passed] 2 · the set row offers "Withdraw agreement" exactly when the withdraw would be accepted (F3) sent from the phone: offered until she signs; the endpoint agrees at every step
+     [passed] 2 · the set row offers "Withdraw agreement" exactly when the withdraw would be accepted (F3) approved through the website door: the endpoint refuses, so the row does not offer it
+     [passed] 3 · she asked for another visit time: the brand's row says she is waiting for him (F2, U11) the sentence follows the turn while the time is contested, and only then
+     [passed] 3 · she asked for another visit time: the brand's row says she is waiting for him (F2, U11) it is the reminder's own sentence: the nudge he gets for this moment starts with the row's line, word for word
+     [passed] 3 · she asked for another visit time: the brand's row says she is waiting for him (F2, U11) the line function alone: the new sentence needs the plan out AND the turn on the brand; nothing else moved
+  ui-walk-fixes-shoot-turn.test.js — 4 passed, 0 failed
+     [passed] a store visit: whose turn it is, on the brand's row and on her card follows the visit from the plan to the confirmation — and the conversation's turn while the time is contested
+     [passed] a store visit: whose turn it is, on the brand's row and on her card she accepts the plan directly (no conversation ever opens): hers until she does, nobody's after
+     [passed] a store visit: whose turn it is, on the brand's row and on her card the flag is additive: the stage, the sentence and the visit time on both lists are what they were
+     [passed] a Remote shoot: the line on both lists moves with the shoot address → products → on its way → delivered → checked → shot: each list says where it is, and agrees with the Remote screen
+
+failing tests per suite, before -> now (only suites whose number moved): none — every suite has the same number of reds as before
+suites with reds: before 37, now 37
+
+the 177 old reds, by suite (the same 177 test names before and now — compared name for name, not only counted):
+   collab-terms-time 14 · commissions 11 · referral-admin 11 · pay-at-store 10 · listing-engine 9 · food-addon-write 8
+   referral-agency 8 · enquiry 7 · prebook-daterange 7 · pricing-service 7 · admin 6 · meals-admin-radius 5
+   offer-attach 5 · prebook 5 · referral-agency-admin 5 · admin-escrow 4 · food-flywheel-surface 4 · meals-p1 4
+   meals-rchat 4 · offer-store-direct 4 · deliverables-when-buying-content 3 · earnings 3 · food-addon-templates 3 · item3b-pipeline 3
+   meals-learning 3 · meals-p2 3 · meals-p3 3 · meals-suggest 3 · meals-x1 3 · campaigns 2
+   escrow-fee-tiers 2 · food-discovery-3c1 2 · meals-p4 2 · admin-account-review 1 · brand 1 · food-customisation 1
+   revenue-reconciliation 1
+
+Notes
+- VERDICT: nothing that passed before fails now. No test this contract added fails. The 177 reds are the same 177 tests,
+  name for name, as in the last stored run; the 28 skipped are the same 28. None was touched (old reds are not this
+  contract's to fix).
+- Where the 36 extra tests come from (1870 − 1834 = 37 new names − 1 old name gone):
+    36 are this contract's, all passing —
+      item2-eligibility 12 and item5-invitations 7: why a creator can't be invited (slice SB, decision D2, checks 6a/6b);
+      item7-agreement 5 and item5-invitations 1: a withdrawn agreement can be sent again (slice SF, check 23);
+      ui-walk-fixes-shoot-turn 4 (new suite): whose turn a store visit is, and the Remote line that never moved (slice F);
+      ui-walk-fixes-server-leftovers 7 (new suite): the Needs You count, the Withdraw flag, the visit sentence (slice CSRV).
+    1 is NOT this contract's: shopper-app-v2 "her Women / Men / Kids choice orders the feed and never hides a post…" is the
+      rewritten name of the one test listed as gone ("…filters the feed…"). That rename is shop-for-preference
+      (commit 02e11a5a, 1 Oct 18:49), which landed after the stored run was taken (17:57). It passed before and passes now.
+- Assertions this contract rewrote under an UNCHANGED test name (so they do not show as new or gone) — all pass:
+    item2-eligibility "1. paused → NOT_ACCEPTING…"; item5-invitations "when one creator cannot be invited…", "pickable rows
+    carry ok / ineligible / invited…", "a group against a set…"; item6-negotiation "a creator who became ineligible since
+    joining the pool…" (all five: slice SB, drift/SB.md); item10-flow "the brand's set-detail row says where the visit
+    is…" (slice F, drift/F.md — one additive field). Slice CSRV rewrote none (drift/CSRV.md).
+- Suites that exercise the server code this contract changed — none has a red: item2-eligibility 31/31, item2-settings-api 22/22,
+  item5-invitations 37/37, item6-negotiation 42/42, item7-agreement 54/54, item8-pitch 49/49, item10-flow 25/25,
+  ui-walk-fixes-shoot-turn 4/4, ui-walk-fixes-server-leftovers 7/7.
+- collection-library.test.js fails to load in both runs (missing service; pre-existing). It is the 38th "failed suite"
+  jest reports; the other 37 are the suites with red tests listed above.
+- Reproducible: the same whole-suite run taken at 13:22 IST today, before a retry of this slice, gave the identical
+  result — 139 / 1870 / 1665 / 177 / 28, with no test differing in either direction between the two runs.
+- The seven CSRV tests were checked against the old behaviour: with the three old conditions put back, six of the seven
+  fail (the seventh pins behaviour that did not change); with the new conditions all seven pass.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+FINAL RUN — after the final review's two server fixes (the Filters count answer; "Store visit agreed for …")
+Run: cd backend && npx jest --runInBand --silent --json, 2 Oct 2026 16:25–16:48 IST (1,400 s), test database inflx_test on
+localhost:5544, with every server change of this contract in the tree.
+
+earlier today (14:17 run above): suites 139 tests 1870 passed 1665 failed 177 pending 28
+final (16:25 run):               suites 139 tests 1871 passed 1666 failed 177 pending 28
+
+failing now and not in the 14:17 run: 0
+failing in the 14:17 run and not now: 0   (the 177 reds are the same 177, compared by suite file + full test name)
+the one added test (item5-invitations, the Filters pop-up's count answer) passes.
+Against the last stored full run before this contract (1 Oct, 137 / 1834 / 1629 / 177 / 28): 0 tests that passed then fail now.
+No server file has changed since this run (the closing items of 2 Oct evening are phone-only).
