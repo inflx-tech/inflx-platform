@@ -1,7 +1,7 @@
 {
   "feature": "ui-walk-fixes",
   "spec_version": "1.0.0",
-  "status": "built",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (chat 2 Oct 2026, on the drawn board: \"remove this text [Creators whose own settings rule this set out can't be picked…] instead… when brand click on the influencer cant invite then we tell info that this creator not accepting the pay for sale or something… next remove this [Pay for Sale / Pay for Content / Hybrid / +] no need to mention this… Bottom tabs only on the five main pages… ok for this recommendation, next Q3 and 4 also accepting your recommendation. next all your screens will be accepted\") — decisions D1–D6 in 01-spec.md",
   "approved_at": "2026-10-02T10:00:00+05:30",
@@ -27,5 +27,20 @@
     "migration": "none",
     "device": "NOT seen on a phone. Every \"walk owed\" row of 03-expected-outputs.md is still open; no after-shots.",
     "server_changes": "collabEligibility, invitationCopy, invitations.controller, invitationSend (why a creator cannot be invited; the Worked-with tab and the Filters count that had answered errors since item 5), invitationRows + agreement + agreementCopy (a withdrawn agreement can be sent again; shoot.yourMove; the Remote stage delivered; the Withdraw flag), collabCounts (Needs You), shootPlan (two row sentences)"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-02",
+    "by": "founder go (chat 2 Oct 2026: \"pls release\")",
+    "migration": "none",
+    "commit": "772f0852 (pushed 03d93209..772f0852 at 19:38 IST; gov-check OK: contract-backed, mockup_locked, 06-diff/notes.md present)",
+    "render": "pushed 19:38 IST. NOT provable from outside: every server change sits behind a signed-in brand or creator endpoint and no new route was added; /health answered 200 throughout a 7-minute watch with no restart visible. The founder's click that proves it: Add creators > Filters shows \"Show N creators\" with a real number (it read 0), and the Worked with tab loads.",
+    "ota": {
+      "brand": 241,
+      "influencer": 230,
+      "native_runtime": "3",
+      "note": "published one at a time after the push, from the committed tree (phone tree clean, otaUpdater untouched): brand 241 at 19:46 IST, then influencer 230; both manifests read back. The shopper app was not published (follower stays 232); its only touched file re-exports a check and changes nothing it does."
+    },
+    "money": "none moved — nothing here touches escrow, wallets or checkout",
+    "pending": "the founder's device walk on a normal and a small phone (06-diff/notes.md, \"What to check at the walk\"); after-shots; Maestro. release.released stays false until then."
   }
 }
