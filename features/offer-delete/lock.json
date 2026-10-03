@@ -1,7 +1,7 @@
 {
   "feature": "offer-delete",
   "spec_version": "1.0.0",
-  "status": "built",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (chat 3 Oct 2026, with a screenshot of Listings › Offers: \"Here i need delete button...in two places ..one is in draft where i can able to delete the offer or edit offer if not in live.......next place is when offer is created and when we ended that offer...then only we should get delete option for this....pls check and make change\") — decisions O1–O10 in 01-spec.md taken under standing autonomy",
   "approved_at": "2026-10-03T08:00:00+05:30",
@@ -27,5 +27,16 @@
     "migration": "201_offer_deleted_at.sql (one nullable column, lock_timeout 5s) + scripts/run-201.js; applied on production 3 Oct 2026 11:08 IST on the founder's go (\"ok pls release\"): APPLIED, 4/4 OK, nothing moved",
     "rules": "Docs/OFFER_TERMS_POSTS_RULES.md v1.17 (1.9, 1.12, change log)",
     "final_check": "three independent read-only audits (data safety, the migration and runner, the website), each finding challenged: safe to release; the one blocking finding (no lock timeout) fixed before the run"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-03",
+    "by": "founder go (chat 3 Oct 2026: \"ok pls release\")",
+    "migration": "201 applied FIRST, 11:07–11:08 IST: --dry (target the production pooler; 3 drafts, 1 ended, 3 running; column absent) → --apply (APPLIED; 4/4 OK; nothing moved: 7 offers, 10 pool items, 1 creator link, 1 post, wallets unchanged) → --dry (already applied: true; offers hidden 0)",
+    "commit": "4ce786f6 (pushed f98c67d0..4ce786f6 at 11:27 IST; gov-check OK: contract-backed, mockup_locked, 06-diff/notes.md present)",
+    "vercel": "live at 11:28:38 IST, about 95 seconds after the push — proved from outside: the Age header on https://inflx.in/login fell from 15219 s to 0 and its Etag changed (e4f17725… → 6eed437f…)",
+    "render": "pushed 11:27 IST. NOT provable from outside: no new route, and every changed endpoint sits under /v1/brands/me (401 without a session). The founder's click that proves it: Delete on an ENDED offer. The new server deletes it; the old one answers \"A published offer can't be deleted. End it instead.\" (nothing is changed by that click — wait a few minutes and try again).",
+    "ota": "none — the phone apps are untouched",
+    "money": "none moved",
+    "pending": "the founder's click-through on production: delete a draft; delete the ended offer from the list or from its page; Live rows show Open only. release.released stays false until then."
   }
 }
