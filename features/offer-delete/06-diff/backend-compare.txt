@@ -1,0 +1,21 @@
+offer-delete — full backend run, 3 Oct 2026 (contract check 13)
+Run: cd backend && npx jest --runInBand --silent --json, the whole suite, serially, 08:30–08:50 IST (1,159 s), on a private
+scratch Postgres 18 (port 5546, database inflx_test_offerdel; the shared 5544 instance was down and was not touched), with
+this contract's server change and migration 201 in the tree. Compared by suite file + full test name with the last full
+run: ui-walk-fixes, 2 Oct 2026 16:25 IST (features/ui-walk-fixes/06-diff/backend-compare.txt, the FINAL RUN block).
+
+before (2 Oct, after ui-walk-fixes): suites 139 tests 1871 passed 1666 failed 177 pending 28
+after  (this contract, 3 Oct):       suites 140 tests 1888 passed 1683 failed 177 pending 28
+
+passed before, failing now: 0
+new tests failing: 0
+failed before, passing now: 0
+the 177 reds are the same 177, name for name; the 28 skipped are the same 28
+suites that did not load: collection-library.test.js, before and now (missing service; pre-existing)
+
+tests gone under their old name: 2 — both rewritten to the new rule (03-expected-outputs.md, "Drift recorded")
+   brand-offer.test.js :: … 5: a draft is deleted outright (a published one is only ended)   → now "(a running one is only ended)"
+   offers-v2-flow.test.js :: … a draft can be deleted; a published offer can't                → now "…a scheduled offer can't — it must be ended first"
+new test names: 19, all passing
+   offer-delete.test.js 17 · brand-offer.test.js 1 (the renamed one) · offers-v2-flow.test.js 1 (the renamed one)
+suite added: offer-delete.test.js

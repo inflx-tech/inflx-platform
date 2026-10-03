@@ -15,7 +15,7 @@
  *   GET    /offers/filter-options?node=
  *   GET    /offers/:id                  the builder / review / offer page
  *   PATCH  /offers/:id                  draft autosave
- *   DELETE /offers/:id                  delete a draft
+ *   DELETE /offers/:id                  delete: a draft is erased, an ended offer hidden (features/offer-delete)
  *   GET    /offers/:id/candidates       browse / search / gift items, with locks
  *   POST   /offers/:id/sources          add a pool line
  *   DELETE /offers/:id/sources/:sourceId

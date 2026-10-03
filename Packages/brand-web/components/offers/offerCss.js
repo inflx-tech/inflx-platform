@@ -46,6 +46,7 @@ export const OFX_CSS = `
 .ofx .xs{font-size:11px} .ofx .sm{font-size:12px}
 .ofx .row{display:flex;align-items:center;gap:8px}
 .ofx .between{justify-content:space-between}
+.ofx .acts{display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:nowrap}
 .ofx .wrapx{flex-wrap:wrap}
 .ofx .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ofx .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -107,7 +108,8 @@ export const OFX_CSS = `
 .ofx .dimbg{position:fixed;inset:0;background:rgba(10,10,10,.35);display:grid;place-items:center;padding:16px;z-index:60}
 .ofx .dlg{background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);border:1px solid var(--border);padding:16px 18px;display:grid;gap:10px;width:100%;max-width:560px;max-height:90vh;overflow:auto}
 .ofx .dlg h4{font-size:16px}
-.ofx .toast{position:fixed;right:18px;bottom:18px;z-index:70;background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;font-size:12.5px;max-width:420px}
+/* top:auto — on the older Products page the list sits inside .prd, whose .prd .toast sets top:24px */
+.ofx .toast{position:fixed;top:auto;right:18px;bottom:18px;z-index:70;background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;font-size:12.5px;max-width:420px}
 .ofx .toast.err{background:var(--no-fg);color:#fff}
 .ofx .skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:ofxsh 1.4s ease-in-out infinite;height:14px}
 @keyframes ofxsh{0%{background-position:100% 0}100%{background-position:-100% 0}}

@@ -3,13 +3,20 @@
 // Name, type, numbers and dates are frozen once published. Products can be added or taken out only
 // while no creator has the offer (features/offer-add-products); after that the creators' terms and
 // posts promise this pool, and the brand can only end the offer.
+// Once Ended (early or by its date) the brand can delete it (features/offer-delete · rules v1.17 §1.9):
+// it leaves the brand's lists and this page answers not found; creators, orders and INFLX keep it.
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { brandApi } from '../../lib/api';
 import { OFX_CSS } from './offerCss';
 import { STATUS_LABEL, dayMonth, inr, longDay, span } from './offerFormat';
 import AddProductsPanel from './AddProductsPanel';
+
+// Every way back from this page to the Offers list is a full page load (a plain <a>, or
+// location.assign after a delete), not a Next <Link> / router.push. Listings picks its tab from
+// the address bar when it first draws, and a client-side link draws it before the address bar
+// changes, so a <Link> here opened Listings on Inventory (qa/web/brand/offer-delete.spec.ts).
+const OFFERS_LIST = '/dashboard/products/listing?tab=offers';
 
 export default function OfferPage({ id }) {
   const router = useRouter();
@@ -19,7 +26,7 @@ export default function OfferPage({ id }) {
   const [removing, setRemoving] = useState(false);     // choosing products to remove
   const [adding, setAdding] = useState(false);         // choosing products to add
   const [ticked, setTicked] = useState([]);
-  const [dialog, setDialog] = useState(null);          // { kind: 'remove', preview } | { kind: 'end' }
+  const [dialog, setDialog] = useState(null);          // { kind: 'remove', preview } | { kind: 'end' } | { kind: 'delete' }
   const [busy, setBusy] = useState(false);
   const [dlgErr, setDlgErr] = useState('');
 
@@ -82,11 +89,27 @@ export default function OfferPage({ id }) {
     say(`Offer ended. Its products are free from today.${d.creators_told ? ` ${d.creators_told} creator${d.creators_told > 1 ? 's were' : ' was'} told.` : ''}${dropped ? ` Taken out of ${dropped} unsigned invitation${dropped > 1 ? 's' : ''}${gone ? `; ${gone} withdrawn with nothing left to sell` : ''}.` : ''}`);
     load();
   }
+  async function confirmDelete() {
+    if (busy) return;
+    setBusy(true); setDlgErr('');
+    const r = await brandApi.deleteOffer(id);
+    if (!r.success) {
+      setBusy(false);
+      // Already gone (deleted elsewhere, or the first try went through): close the box and reload —
+      // the page then shows its "Offer not found" card with the way back to Offers.
+      if (r.error?.code === 'NOT_FOUND') { setDialog(null); load(); return; }
+      setDlgErr(r.error?.message || 'Couldn\'t delete it. Try again.');
+      return;
+    }
+    // Back to the list, which says "Offer deleted." (it reads ?deleted=1). Busy stays on until we leave.
+    // A full load, not router.push (see OFFERS_LIST above).
+    window.location.assign(`${OFFERS_LIST}&deleted=1`);
+  }
 
   if (err) {
     return (<div className="ofx"><style dangerouslySetInnerHTML={{ __html: OFX_CSS }} />
       <div className="page"><div className="card nobox"><span className="err">{err}</span>
-        <div className="row"><button className="btn btn-ghost btn-sm" onClick={load}>Try again</button><Link className="btn btn-ghost btn-sm" href="/dashboard/products/listing?tab=offers">← Offers</Link></div></div></div></div>);
+        <div className="row"><button className="btn btn-ghost btn-sm" onClick={load}>Try again</button><a className="btn btn-ghost btn-sm" href={OFFERS_LIST}>← Offers</a></div></div></div></div>);
   }
   if (!view) {
     return <div className="ofx"><style dangerouslySetInnerHTML={{ __html: OFX_CSS }} /><div className="page"><div className="card">{[0, 1, 2].map((i) => <div key={i} className="skel" />)}</div></div></div>;
@@ -110,12 +133,17 @@ export default function OfferPage({ id }) {
       <style dangerouslySetInnerHTML={{ __html: OFX_CSS }} />
       <div className="page">
         <div className="row between">
-          <Link className="link" href="/dashboard/products/listing?tab=offers">← Offers</Link>
+          <a className="link" href={OFFERS_LIST}>← Offers</a>
           {running && (
             <div className="row">
               {canAdd && <button className="btn btn-ghost btn-sm" disabled={!poolOpen} onClick={() => { setAdding((v) => !v); setRemoving(false); setTicked([]); }}>{adding ? 'Cancel adding' : 'Add products'}</button>}
               <button className="btn btn-ghost btn-sm" disabled={!poolOpen} onClick={() => { setRemoving((v) => !v); setAdding(false); setTicked([]); }}>{removing ? 'Cancel removing' : 'Remove products'}</button>
               <button className="btn btn-danger btn-sm" onClick={() => { setDlgErr(''); setDialog({ kind: 'end' }); }}>End offer now</button>
+            </div>
+          )}
+          {ds === 'ended' && (
+            <div className="row">
+              <button className="btn btn-danger btn-sm" onClick={() => { setDlgErr(''); setDialog({ kind: 'delete' }); }}>Delete</button>
             </div>
           )}
         </div>
@@ -214,11 +242,25 @@ export default function OfferPage({ id }) {
                 <span className="xs">It drops out of {view.unsigned_invitations > 1 ? 'them' : 'it'} and the creator{view.unsigned_invitations > 1 ? 's are' : ' is'} told. An invitation left with nothing to sell is withdrawn.</span>
               </div>
             )}
-            <div className="hint">{view.pool.counts.buy === 1 ? 'Its 1 product becomes' : `All ${view.pool.counts.buy} products become`}{view.pool.counts.gift ? ' (and its gifts)' : ''} free right away. It stays in your list as Ended, with its dates ({span(o.starts_on, o.ends_on)}).</div>
+            <div className="hint">{view.pool.counts.buy === 1 ? 'Its 1 product becomes' : `All ${view.pool.counts.buy} products become`}{view.pool.counts.gift ? ' (and its gifts)' : ''} free right away. It stays in your list as Ended until you delete it, with its dates ({span(o.starts_on, o.ends_on)}).</div>
             {dlgErr && <div className="err">{dlgErr}</div>}
             <div className="row" style={{ justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" disabled={busy} onClick={() => setDialog(null)}>Keep it running</button>
               <button className="btn btn-danger" disabled={busy} onClick={confirmEnd}>{busy ? 'Ending…' : 'End offer now'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dialog && dialog.kind === 'delete' && (
+        <div className="dimbg" onClick={() => !busy && setDialog(null)}>
+          <div className="dlg" onClick={(e) => e.stopPropagation()}>
+            <h4>Delete &quot;{o.name}&quot;?</h4>
+            <div className="sm">It comes off your Offers list. Creators who had it, their posts, orders and payments keep their records.</div>
+            {dlgErr && <div className="err">{dlgErr}</div>}
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" disabled={busy} onClick={() => setDialog(null)}>Keep it</button>
+              <button className="btn btn-danger" disabled={busy} onClick={confirmDelete}>{busy ? 'Deleting…' : 'Delete offer'}</button>
             </div>
           </div>
         </div>

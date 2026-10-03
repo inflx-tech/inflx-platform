@@ -42,9 +42,13 @@ const update = asyncHandler(async (req, res) => {
   return success(res, { ...(await life.view(brandId, req.params.id)), notes });
 });
 
+// offer-delete (rules 1.9, v1.17): a draft is erased → { deleted: true, mode: 'erased' }; an ended
+// offer is hidden from the brand → { deleted: true, mode: 'hidden' }; Scheduled / Live → 409
+// OFFER_LOCKED "End it first"; already deleted, another brand's or missing → 404.
 const remove = asyncHandler(async (req, res) => {
   const brandId = await brandOf(req);
-  return success(res, await life.deleteDraft(brandId, req.params.id));
+  const { deleted, mode } = await life.deleteOffer(brandId, req.params.id);
+  return success(res, { deleted, mode });
 });
 
 // ── the pool ─────────────────────────────────────────────────────────────────

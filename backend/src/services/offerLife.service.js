@@ -7,10 +7,15 @@
  *   draft ──publish──▶ published (Scheduled / Live / Ended from the dates, India time)
  *     │                    ├── add / remove products — only while no creator has the offer
  *   delete                 └── end now ──▶ ended (products free from today; creators told)
+ *  (erased)                                  │
+ *                                          delete ──▶ hidden from the brand (deleted_at)
  *
  * Only a draft can change. A published offer's name, type, numbers and dates are frozen (rules
- * 1.10); it can't be deleted, only ended (rules 1.9). Its products can still be added to or taken
- * out until it is given to a creator (features/offer-add-products); after that the pool is frozen.
+ * 1.10). Its products can still be added to or taken out until it is given to a creator
+ * (features/offer-add-products); after that the pool is frozen. A Scheduled or Live offer can't be
+ * deleted, only ended; once Ended (early or by its date) the brand can delete it, which hides it
+ * from the brand's own reads only (rules 1.9, v1.17; features/offer-delete). Every read here goes
+ * through getOwn or list, so a hidden offer is "not found" on every brand route.
  */
 
 const db = require('../config/db');
@@ -41,11 +46,15 @@ async function brandIdFor(userId) {
   return rows[0].id;
 }
 
-/** The brand's own new-builder offer, or 404 (another brand's offer is never found). */
+/**
+ * The brand's own new-builder offer, or 404. Another brand's offer is never found, and neither is
+ * one the brand deleted (offer-delete: hidden from the brand, still read by creators and orders).
+ */
 async function getOwn(brandId, offerId, { tx = db, forUpdate = false } = {}) {
   if (!/^[0-9a-f-]{36}$/i.test(String(offerId || ''))) throw new AppError('NOT_FOUND', 'Offer not found', 404);
   const { rows } = await tx.query(
-    `SELECT ${OFFER_COLS} FROM brand_offers o WHERE o.id = $1 AND o.brand_id = $2 AND o.engine = 2 ${forUpdate ? 'FOR UPDATE' : ''}`,
+    `SELECT ${OFFER_COLS} FROM brand_offers o
+      WHERE o.id = $1 AND o.brand_id = $2 AND o.engine = 2 AND o.deleted_at IS NULL ${forUpdate ? 'FOR UPDATE' : ''}`,
     [offerId, brandId]);
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Offer not found', 404);
   return shape(rows[0]);
@@ -155,11 +164,45 @@ async function updateDraft(brandId, offerId, body = {}) {
   });
 }
 
-async function deleteDraft(brandId, offerId) {
-  const offer = await getOwn(brandId, offerId);
-  if (offer.status !== 'draft') throw new AppError('OFFER_LOCKED', 'A published offer can\'t be deleted. End it instead.', 409);
-  await db.query(`DELETE FROM brand_offers WHERE id = $1 AND brand_id = $2 AND status = 'draft' AND engine = 2`, [offer.id, brandId]);
-  return { deleted: true };
+// ── deleting (rules 1.9, v1.17; features/offer-delete) ───────────────────────
+const STILL_RUNNING = 'This offer is still running. End it first, then you can delete it.';
+
+/**
+ * Delete, from the Offers list or the ended offer's page. Decided by the same status the list shows
+ * (displayStatus, India time), so both kinds of Ended qualify:
+ *   Draft            → ERASED. It was never given, posted or sold; its pool lines go with it.
+ *   Ended            → HIDDEN from the brand (deleted_at), whether ended early (status 'ended') or by
+ *                      its date (status still 'published'). The status is never changed. Its days
+ *                      still held are freed (O5): a new offer back-dated over them is never refused
+ *                      naming an offer the brand deleted. Nothing a creator, shopper, order or the
+ *                      wallet reads uses those days. Creators, posts, orders, payments and INFLX keep
+ *                      reading the row.
+ *   Scheduled / Live → 409: end it first.
+ * Already deleted, another brand's, or missing → 404 (getOwn).
+ * One transaction with the offer row locked, so a publish or an end at the same moment either
+ * waits for this or makes it refuse; it never answers deleted for an offer that is now running.
+ */
+async function deleteOffer(brandId, offerId, { today = todayInIndia() } = {}) {
+  return db.withTransaction(async (tx) => {
+    const offer = await getOwn(brandId, offerId, { tx, forUpdate: true });
+    const ds = rules.displayStatus(offer, today);
+    if (ds === 'draft') {
+      const { rowCount } = await tx.query(
+        `DELETE FROM brand_offers WHERE id = $1 AND brand_id = $2 AND status = 'draft' AND engine = 2 AND deleted_at IS NULL`,
+        [offer.id, brandId]);
+      if (!rowCount) throw new AppError('OFFER_LOCKED', STILL_RUNNING, 409);
+      return { deleted: true, mode: 'erased' };
+    }
+    if (ds !== 'ended') throw new AppError('OFFER_LOCKED', STILL_RUNNING, 409);
+    const { rowCount } = await tx.query(
+      `UPDATE brand_offers SET deleted_at = now() WHERE id = $1 AND brand_id = $2 AND engine = 2 AND deleted_at IS NULL`,
+      [offer.id, brandId]);
+    if (!rowCount) throw new AppError('NOT_FOUND', 'Offer not found', 404);
+    await tx.query(
+      `UPDATE offer_pool_items SET lock_days = 'empty'::daterange
+        WHERE offer_id = $1 AND removed_at IS NULL AND NOT isempty(lock_days)`, [offer.id]);
+    return { deleted: true, mode: 'hidden' };
+  });
 }
 
 async function addSource(brandId, offerId, body) {
@@ -262,9 +305,9 @@ async function view(brandId, offerId, { today = todayInIndia() } = {}) {
   };
 }
 
-/** Listings → Offers (O1). */
+/** Listings → Offers (O1). Offers the brand deleted are left out of the rows and the counts. */
 async function list(brandId, { type, q, status, on } = {}, { today = todayInIndia() } = {}) {
-  const where = ['o.brand_id = $1', 'o.engine = 2'];
+  const where = ['o.brand_id = $1', 'o.engine = 2', 'o.deleted_at IS NULL'];
   const params = [brandId];
   if (type && rules.TYPES.includes(type)) { params.push(type); where.push(`o.offer_type = $${params.length}`); }
   if (q) { params.push(`%${String(q).trim()}%`); where.push(`o.name ILIKE $${params.length}`); }
@@ -668,7 +711,7 @@ async function autoAddProduct(productId, { today = todayInIndia() } = {}) {
 }
 
 module.exports = {
-  brandIdFor, getOwn, createDraft, updateDraft, deleteDraft, addSource, removeSource,
+  brandIdFor, getOwn, createDraft, updateDraft, deleteOffer, STILL_RUNNING, addSource, removeSource,
   creatorsOf, view, list, publish, endNow, removePreview, removeProducts, addProducts, joinsFrom,
   priceImpact, afterPriceChange, autoAddProduct, tellCreators,
 };

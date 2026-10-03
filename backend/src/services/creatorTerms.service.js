@@ -75,6 +75,8 @@ const NOTIFY = {
  * day and ending at least one day after it — the posting date is the last day to go live, so a
  * creator who goes live on it must still have the offer, and one that starts later could never be
  * live in time. With the "ends within 7 days after posting" warning; plus the offers left out and why.
+ * This is the BRAND's view: an offer the brand deleted (offer-delete, deleted_at) is in neither list.
+ * Her own reads below (sellFor, creatorOffer, agreementSell) never filter on it.
  */
 async function offerChoices(brandId, postingDate) {
   const D = calendarDay(postingDate);
@@ -83,7 +85,7 @@ async function offerChoices(brandId, postingDate) {
             (SELECT count(*)::int FROM offer_pool_items i WHERE i.offer_id = o.id AND i.pool = 'buy' AND i.removed_at IS NULL) AS products,
             (SELECT count(*)::int FROM offer_pool_items i WHERE i.offer_id = o.id AND i.pool = 'gift' AND i.removed_at IS NULL) AS gifts
        FROM brand_offers o
-      WHERE o.brand_id = $1 AND o.engine = 2 AND o.status IN ('published', 'ended')
+      WHERE o.brand_id = $1 AND o.engine = 2 AND o.status IN ('published', 'ended') AND o.deleted_at IS NULL
       ORDER BY o.starts_on, o.name`, [brandId]);
   const offers = [], hidden = [];
   for (const r of rows) {

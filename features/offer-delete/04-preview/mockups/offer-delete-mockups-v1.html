@@ -1,0 +1,495 @@
+<!-- preview-size: desktop -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>offer-delete — Delete on a draft and on an ended offer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Board shell: the newest offer board (features/offer-add-products v1). Browser frames: the locked
+   offer-builder-v2 board (O1, O10, O11). Inside each frame: the live website classes — the Listings
+   shell (app/dashboard/products/listing/page.js .lst) and the offer screens (components/offers/offerCss.js
+   .ofx: btn btn-ghost btn-sm, btn btn-danger btn-sm, .dimbg/.dlg, .toast). Light-only by design. */
+:root{
+  color-scheme: light;
+  --white:#fff; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --ink:#0A0A0A; --ink2:#1F1F22; --muted:#52525B; --muted2:#71717A; --muted3:#A1A1AA; --border:#E4E4E7;
+  --yellow:#FFC107; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00;
+  --ok-fg:#047857; --ok-bg:#D1FAE5;
+  --warn-fg:#C2410C; --warn-bg:#FFF7ED;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EFEFEA;font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:#0A0A0A;font-size:13px;line-height:1.45;padding:22px}
+h1{font-size:18px;margin:0 0 4px} .lead{color:#52525B;margin:0 0 12px;max-width:880px}
+.board{background:#FAFAFA;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;margin:0 0 22px;max-width:1180px}
+.tag{display:inline-block;font:700 11px var(--mono);background:#0A0A0A;color:#FFC107;border-radius:6px;padding:2px 7px;margin-right:8px}
+.when{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:2px 8px;border-radius:99px;margin-right:8px;vertical-align:1px}
+.when.today{background:var(--ended-bg);color:var(--ended-fg);border:1px solid #DADAD3}
+.when.after{background:var(--warn-bg);color:var(--warn-fg)}
+.when.new{background:var(--ok-bg);color:var(--ok-fg)}
+.cap{font-weight:700;margin:0 0 12px}
+.note{font-size:12px;color:#52525B;margin:10px 0 0;max-width:920px}
+.note b{color:#0A0A0A}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:12px;color:#52525B;margin:0 0 18px}
+.ring{outline:2px dashed var(--yellow);outline-offset:3px}
+.foot{font-size:12px;color:var(--muted2);max-width:920px;margin:0 0 30px}
+
+/* ---------- browser frame (offer-builder-v2 board) ---------- */
+.web{position:relative;background:var(--bg);border:1px solid #D4D4D8;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.web .chrome{height:30px;background:#F4F4F5;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding-inline:12px}
+.web .chrome i{width:9px;height:9px;border-radius:50%;background:#D4D4D8;display:block}
+.web .chrome span{margin-left:12px;font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.web .wb{display:grid;grid-template-columns:168px minmax(0,1fr);min-height:420px}
+.side{background:#fff;border-right:1px solid var(--border);padding:14px 10px;display:grid;align-content:start;gap:2px}
+.side .logo{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;padding:0 8px 12px}
+.side a{display:flex;gap:8px;align-items:center;padding:7px 8px;border-radius:8px;color:var(--muted);font-weight:600;text-decoration:none;font-size:12.5px}
+.side a.act{background:var(--ink);color:var(--yellow)}
+.main{padding:18px 22px;min-width:0}
+
+/* ---------- the Listings shell (listing/page.js .lst) ---------- */
+.lhdr{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.lhdr .ttl{font-family:'Outfit',sans-serif;font-size:23px;font-weight:700;letter-spacing:-.3px;margin:0;line-height:1.2}
+.lhdr .vert{display:inline-flex;align-items:center;background:var(--ink);color:var(--yellow);border-radius:99px;padding:4px 12px;font-size:11px;font-weight:800;letter-spacing:.3px;margin-left:10px;vertical-align:3px}
+.lhdr .lsub{font-size:12px;color:var(--muted2);max-width:680px}
+.lhdr .grow{flex:1}
+.lhdr .acts{display:flex;gap:8px;align-items:center}
+.lbtn{padding:11px 16px;border-radius:11px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;white-space:nowrap}
+.lbtn.ghost{background:#fff;border:1px solid var(--border);color:var(--ink2)}
+.lbtn.ink{background:var(--ink);color:var(--yellow)}
+.tabrail{display:flex;align-items:center;gap:2px;border-bottom:1px solid var(--border);margin:16px 0}
+.tabrail span{padding:11px 16px;font-size:13px;font-weight:800;color:var(--muted2);border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabrail span.on{color:var(--ink);border-bottom-color:var(--yellow)}
+.lcard{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px}
+
+/* ---------- the offer screens (components/offers/offerCss.js, scoped .ofx) ---------- */
+.ofx{font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:var(--ink);font-size:13px;line-height:1.45}
+.ofx h3{font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.4px;margin:0}
+.ofx h4{margin:0;font-size:13.5px}
+.ofx .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+.ofx .page{display:grid;gap:14px;align-content:start}
+.ofx .hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.ofx .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:700;border:0;font-family:inherit;white-space:nowrap;text-decoration:none}
+.ofx .btn-ink{background:var(--ink);color:var(--yellow)}
+.ofx .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--ink)}
+.ofx .btn-danger{background:#fff;border:1px solid #F3C7C7;color:var(--no-fg)}
+.ofx .btn-sm{padding:5px 10px;font-size:11.5px}
+.ofx .link{color:var(--muted);font-size:12.5px;text-decoration:none}
+.ofx .toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ofx .inp{border:1px solid var(--border);background:#fff;border-radius:9px;padding:7px 10px;font-size:12.5px;color:var(--muted2);font-family:inherit;min-width:0}
+.ofx .inp.w{flex:1;min-width:180px}
+.ofx .chip{padding:5px 11px;border-radius:99px;background:#fff;border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap;display:inline-flex;gap:5px;align-items:center}
+.ofx .chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.ofx .chip .n{font-family:var(--mono);font-size:10.5px;opacity:.8}
+.ofx .chip .n.was{text-decoration:line-through;opacity:.55}
+.ofx .tbl{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ofx .tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted2);text-align:left;padding:8px 10px;background:var(--bg2);font-weight:700}
+.ofx .tbl td{padding:9px 10px;border-top:1px solid var(--border);vertical-align:middle}
+.ofx .tbl td b{font-size:12.5px}
+.ofx .tbl .r{text-align:right}
+.ofx .tbl .deal{max-width:240px}
+/* board only: keep type, products and dates on one line at the board's narrower frame width */
+.ofx .tbl td:nth-child(2),.ofx .tbl td:nth-child(3),.ofx .tbl td:nth-child(4){white-space:nowrap}
+.ofx .tblwrap{overflow-x:auto}
+.ofx .rowacts{display:inline-flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end;align-items:center}
+.ofx .st{display:inline-flex;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.ofx .st.live{background:var(--ok-bg);color:var(--ok-fg)}
+.ofx .st.scheduled{background:var(--wait-bg);color:var(--wait-fg)}
+.ofx .st.draft{background:var(--warn-bg);color:var(--warn-fg)}
+.ofx .st.ended{background:var(--ended-bg);color:var(--ended-fg)}
+.ofx .mono{font-family:var(--mono)}
+.ofx .mut{color:var(--muted)} .ofx .mut2{color:var(--muted2)}
+.ofx .xs{font-size:11px} .ofx .sm{font-size:12px}
+.ofx .row{display:flex;align-items:center;gap:8px}
+.ofx .between{justify-content:space-between}
+.ofx .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ofx .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:grid;gap:8px;align-content:start}
+.ofx .card.tint{background:var(--bg2);border-color:transparent}
+.ofx .card.nobox{background:var(--no-bg);border-color:#F3C7C7}
+.ofx .lbl{font-weight:700;font-size:12px}
+.ofx .big{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800}
+.ofx .hint{font-size:11.5px;color:var(--muted2)}
+.ofx .plist{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ofx .prow{display:flex;align-items:center;gap:9px;padding:8px 10px;border-top:1px solid var(--border);font-size:12px}
+.ofx .prow:first-child{border-top:0}
+.ofx .prow .t{flex:1;min-width:0;display:grid}
+/* In the live page .dimbg and .toast are fixed to the window; on the board they sit inside the frame. */
+.ofx .dimbg{position:absolute;inset:30px 0 0 0;background:rgba(10,10,10,.35);display:grid;place-items:center;padding:16px;z-index:5}
+.ofx .dlg{background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);border:1px solid var(--border);padding:16px 18px;display:grid;gap:10px;width:100%;max-width:560px}
+.ofx .dlg h4{font-size:16px}
+.ofx .toast{position:absolute;right:18px;bottom:18px;z-index:6;background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;font-size:12.5px;max-width:420px}
+
+/* ---------- small parts of this board ---------- */
+.corner{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:12px;font-size:12px;color:var(--muted)}
+.corner .lab{font-weight:700;color:var(--ink)}
+.wording{display:grid;gap:6px;margin-top:12px;max-width:920px}
+.wording div{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--muted)}
+.wording b.k{display:inline-block;min-width:54px;color:var(--ink)}
+.wording s{color:var(--muted3)}
+.wording mark{background:var(--yellow-pale);color:var(--ink);padding:0 3px;border-radius:4px}
+.rules{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:12.5px}
+.rules th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted2);text-align:left;padding:8px 12px;background:var(--bg2);font-weight:700}
+.rules td{padding:10px 12px;border-top:1px solid var(--border);vertical-align:top}
+.rules td:first-child{width:24%}
+.rules td:nth-child(2){width:24%}
+.rules .st{display:inline-flex;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap;margin-right:4px}
+.rules .st.live{background:var(--ok-bg);color:var(--ok-fg)}
+.rules .st.scheduled{background:var(--wait-bg);color:var(--wait-fg)}
+.rules .st.draft{background:var(--warn-bg);color:var(--warn-fg)}
+.rules .st.ended{background:var(--ended-bg);color:var(--ended-fg)}
+.rules .sm2{display:block;color:var(--muted2);font-size:11.5px;margin-top:3px}
+.rules .no{color:var(--no-fg);font-weight:700}
+
+@media (max-width:860px){
+  body{padding:16px}
+  .board{padding:14px 12px}
+  .web .wb{grid-template-columns:minmax(0,1fr)}
+  .side{display:none}
+  .main{padding:14px}
+  .tabrail{overflow-x:auto}
+  .lcard{padding:12px;min-width:0}
+  .ofx .inp.w{min-width:0;flex-basis:100%}
+  .ofx .dlg{padding:14px}
+  .ofx .page > .row{flex-wrap:wrap}
+  .ofx .page > .row > .row{flex-wrap:wrap}
+  .ofx .grid3{grid-template-columns:1fr}
+  .ofx .tbl{display:block;overflow-x:auto}
+  .rules td:first-child,.rules td:nth-child(2){width:auto}
+}
+</style>
+</head>
+<body>
+<h1>Offers — Delete on a draft, and on an offer that has ended</h1>
+<p class="lead">Website · Listings › Offers, and an ended offer's own page. From your message of 3 Oct 2026 with the screenshot of Listings › Offers: a Delete in two places — on a draft, and on an offer once it has ended. Live and Scheduled offers can't be deleted; end them first. Rules v1.17 §1.9. No change to the phone apps.</p>
+<div class="legend">
+  <span><span class="when today">TODAY</span>how it looks now</span>
+  <span><span class="when after">AFTER</span>an existing screen, after this change</span>
+  <span><span class="when new">NEW</span>a box that doesn't exist today</span>
+  <span><span class="ring" style="display:inline-block;width:34px;height:12px;border-radius:6px;vertical-align:-1px"></span>&nbsp; the dashed yellow ring marks what's new on a screen (it isn't part of the page)</span>
+</div>
+
+<!-- ============ X0 TODAY — the Offers list as in the founder's screenshot ============ -->
+<div class="board">
+  <p class="cap"><span class="tag">X0</span><span class="when today">TODAY</span>Your Offers list now — a draft has only Continue, every other offer only Open</p>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>inflx.in/dashboard/products/listing?tab=offers</span></div>
+    <div class="wb">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>📦 Fulfillment</a><a>↩ Returns</a><a>₹ Conversions</a><a>◫ Wallet</a><a>⚙ Settings</a></nav>
+      <div class="main">
+        <div class="lhdr">
+          <div><div class="ttl">Listings<span class="vert">FASHION</span></div><div class="lsub">Offers built on your products. You give them to creators when you set their terms.</div></div>
+          <div class="grow"></div>
+          <div class="acts"><span class="lbtn ghost">⚙ Store setup</span><span class="lbtn ink">+ Add products</span></div>
+        </div>
+        <div class="tabrail"><span>Inventory</span><span>Add products</span><span class="on">Offers</span><span>Products without offers</span><span>Gift items</span></div>
+        <div class="lcard"><div class="ofx"><div class="page">
+          <div class="hdr">
+            <div><h3>Offers</h3><div class="sub">Build offers on your products, then give them to creators when you set their terms.</div></div>
+            <span class="btn btn-ink">+ New offer</span>
+          </div>
+          <div class="toolbar"><span class="inp w">Search offers by name…</span><span class="chip act">All types</span><span class="chip">Discount</span><span class="chip">BOGO</span><span class="chip">Volume</span><span class="chip">Bundle</span><span class="chip">Free gift</span></div>
+          <div class="toolbar"><span class="chip act">All</span><span class="chip">Live<span class="n">3</span></span><span class="chip">Scheduled<span class="n">0</span></span><span class="chip">Draft<span class="n">3</span></span><span class="chip">Ended<span class="n">1</span></span><span style="flex:1"></span><span class="row sm mut">📅 Valid on <span class="inp">dd-mm-yyyy</span></span></div>
+          <div class="tblwrap"><table class="tbl">
+            <thead><tr><th>Offer</th><th>Type</th><th class="r">Products</th><th>Dates</th><th>Status</th><th class="r">Creators</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><b>kk</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">2 + 1 gift</td><td class="sm">2 Oct – 9 Oct</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="btn btn-ghost btn-sm">Continue</span></td></tr>
+              <tr><td><b>gh</b><div class="xs mut2">Not published yet</div></td><td>Volume · Value</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="btn btn-ghost btn-sm">Continue</span></td></tr>
+              <tr><td><b>flip it up</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="btn btn-ghost btn-sm">Continue</span></td></tr>
+              <tr><td><b>wish</b><div class="xs mut2">Pick any 2 from 2 for ₹1,000</div></td><td>Bundle · Pick-any</td><td class="r mono">2</td><td class="sm">2 Oct – 3 Oct</td><td><span class="st ended">Ended</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Kg sale</b><div class="xs mut2">Buy 2 → 10% · Buy 3 → 20%</div></td><td>Volume · Qty</td><td class="r mono">3</td><td class="sm">1 Oct – 8 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Salary day off</b><div class="xs mut2 deal">Buy one, get the same product free · max 1 free per order</div></td><td>BOGO</td><td class="r mono">2</td><td class="sm">1 Oct – 6 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Year end sale</b><div class="xs mut2">10% off each item</div></td><td>Discount · %</td><td class="r mono">4</td><td class="sm">1 Oct – 9 Oct</td><td><span class="st live">Live</span></td><td class="r mono">1</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+            </tbody>
+          </table></div>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Today there is no way to remove an offer. A draft you started and gave up on ("gh", "flip it up") stays in the list for good, and so does an offer you ended early ("wish"). Continue opens a draft in the builder; Open opens the offer's page.</p>
+</div>
+
+<!-- ============ X1 AFTER — Delete on Draft and Ended rows ============ -->
+<div class="board">
+  <p class="cap"><span class="tag">X1</span><span class="when after">AFTER</span>The same list — Delete on every draft and on the ended offer; live offers keep only Open</p>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>inflx.in/dashboard/products/listing?tab=offers</span></div>
+    <div class="wb">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>📦 Fulfillment</a><a>↩ Returns</a><a>₹ Conversions</a><a>◫ Wallet</a><a>⚙ Settings</a></nav>
+      <div class="main">
+        <div class="lhdr">
+          <div><div class="ttl">Listings<span class="vert">FASHION</span></div><div class="lsub">Offers built on your products. You give them to creators when you set their terms.</div></div>
+          <div class="grow"></div>
+          <div class="acts"><span class="lbtn ghost">⚙ Store setup</span><span class="lbtn ink">+ Add products</span></div>
+        </div>
+        <div class="tabrail"><span>Inventory</span><span>Add products</span><span class="on">Offers</span><span>Products without offers</span><span>Gift items</span></div>
+        <div class="lcard"><div class="ofx"><div class="page">
+          <div class="hdr">
+            <div><h3>Offers</h3><div class="sub">Build offers on your products, then give them to creators when you set their terms.</div></div>
+            <span class="btn btn-ink">+ New offer</span>
+          </div>
+          <div class="toolbar"><span class="inp w">Search offers by name…</span><span class="chip act">All types</span><span class="chip">Discount</span><span class="chip">BOGO</span><span class="chip">Volume</span><span class="chip">Bundle</span><span class="chip">Free gift</span></div>
+          <div class="toolbar"><span class="chip act">All</span><span class="chip">Live<span class="n">3</span></span><span class="chip">Scheduled<span class="n">0</span></span><span class="chip">Draft<span class="n">3</span></span><span class="chip">Ended<span class="n">1</span></span><span style="flex:1"></span><span class="row sm mut">📅 Valid on <span class="inp">dd-mm-yyyy</span></span></div>
+          <div class="tblwrap"><table class="tbl">
+            <thead><tr><th>Offer</th><th>Type</th><th class="r">Products</th><th>Dates</th><th>Status</th><th class="r">Creators</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><b>kk</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">2 + 1 gift</td><td class="sm">2 Oct – 9 Oct</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm ring">Delete</span></span></td></tr>
+              <tr><td><b>gh</b><div class="xs mut2">Not published yet</div></td><td>Volume · Value</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm ring">Delete</span></span></td></tr>
+              <tr><td><b>flip it up</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm ring">Delete</span></span></td></tr>
+              <tr><td><b>wish</b><div class="xs mut2">Pick any 2 from 2 for ₹1,000</div></td><td>Bundle · Pick-any</td><td class="r mono">2</td><td class="sm">2 Oct – 3 Oct</td><td><span class="st ended">Ended</span></td><td class="r mono">0</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Open</span><span class="btn btn-danger btn-sm ring">Delete</span></span></td></tr>
+              <tr><td><b>Kg sale</b><div class="xs mut2">Buy 2 → 10% · Buy 3 → 20%</div></td><td>Volume · Qty</td><td class="r mono">3</td><td class="sm">1 Oct – 8 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Salary day off</b><div class="xs mut2 deal">Buy one, get the same product free · max 1 free per order</div></td><td>BOGO</td><td class="r mono">2</td><td class="sm">1 Oct – 6 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Year end sale</b><div class="xs mut2">10% off each item</div></td><td>Discount · %</td><td class="r mono">4</td><td class="sm">1 Oct – 9 Oct</td><td><span class="st live">Live</span></td><td class="r mono">1</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+            </tbody>
+          </table></div>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note"><b>Draft rows:</b> Continue and a red-outline Delete, side by side on one line. Editing a draft is unchanged — Continue opens it in the builder. <b>Ended row ("wish"):</b> Open and Delete. An offer that ran past its last day also shows Ended and gets the same Delete. <b>Live rows</b> (and Scheduled ones, none today) keep only Open: a running offer can't be deleted — end it first. The same buttons appear on the older Products page's Offers tab, which shows this same list.</p>
+</div>
+
+<!-- ============ X2 NEW — confirm box for a draft ============ -->
+<div class="board">
+  <p class="cap"><span class="tag">X2</span><span class="when new">NEW</span>Delete on a draft asks first</p>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>inflx.in/dashboard/products/listing?tab=offers</span></div>
+    <div class="wb">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>📦 Fulfillment</a><a>↩ Returns</a><a>₹ Conversions</a><a>◫ Wallet</a><a>⚙ Settings</a></nav>
+      <div class="main">
+        <div class="lhdr">
+          <div><div class="ttl">Listings<span class="vert">FASHION</span></div><div class="lsub">Offers built on your products. You give them to creators when you set their terms.</div></div>
+          <div class="grow"></div>
+          <div class="acts"><span class="lbtn ghost">⚙ Store setup</span><span class="lbtn ink">+ Add products</span></div>
+        </div>
+        <div class="tabrail"><span>Inventory</span><span>Add products</span><span class="on">Offers</span><span>Products without offers</span><span>Gift items</span></div>
+        <div class="lcard"><div class="ofx"><div class="page">
+          <div class="hdr">
+            <div><h3>Offers</h3><div class="sub">Build offers on your products, then give them to creators when you set their terms.</div></div>
+            <span class="btn btn-ink">+ New offer</span>
+          </div>
+          <div class="toolbar"><span class="inp w">Search offers by name…</span><span class="chip act">All types</span><span class="chip">Discount</span><span class="chip">BOGO</span><span class="chip">Volume</span><span class="chip">Bundle</span><span class="chip">Free gift</span></div>
+          <div class="toolbar"><span class="chip act">All</span><span class="chip">Live<span class="n">3</span></span><span class="chip">Scheduled<span class="n">0</span></span><span class="chip">Draft<span class="n">3</span></span><span class="chip">Ended<span class="n">1</span></span><span style="flex:1"></span><span class="row sm mut">📅 Valid on <span class="inp">dd-mm-yyyy</span></span></div>
+          <div class="tblwrap"><table class="tbl">
+            <thead><tr><th>Offer</th><th>Type</th><th class="r">Products</th><th>Dates</th><th>Status</th><th class="r">Creators</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><b>kk</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">2 + 1 gift</td><td class="sm">2 Oct – 9 Oct</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>gh</b><div class="xs mut2">Not published yet</div></td><td>Volume · Value</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>flip it up</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>wish</b><div class="xs mut2">Pick any 2 from 2 for ₹1,000</div></td><td>Bundle · Pick-any</td><td class="r mono">2</td><td class="sm">2 Oct – 3 Oct</td><td><span class="st ended">Ended</span></td><td class="r mono">0</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Open</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>Kg sale</b><div class="xs mut2">Buy 2 → 10% · Buy 3 → 20%</div></td><td>Volume · Qty</td><td class="r mono">3</td><td class="sm">1 Oct – 8 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Salary day off</b><div class="xs mut2 deal">Buy one, get the same product free · max 1 free per order</div></td><td>BOGO</td><td class="r mono">2</td><td class="sm">1 Oct – 6 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Year end sale</b><div class="xs mut2">10% off each item</div></td><td>Discount · %</td><td class="r mono">4</td><td class="sm">1 Oct – 9 Oct</td><td><span class="st live">Live</span></td><td class="r mono">1</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div class="dimbg">
+          <div class="dlg">
+            <h4>Delete this draft?</h4>
+            <div class="sm">It isn't published, so no creator has it and no products are held. This can't be undone.</div>
+            <div class="row" style="justify-content:flex-end"><span class="btn btn-ghost">Keep it</span><span class="btn btn-danger">Delete draft</span></div>
+          </div>
+        </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">You pressed Delete on the "kk" row. <b>Keep it</b> closes the box and nothing changes. <b>Delete draft</b> erases it for good — it was never published, so no creator, post, order or product is touched. While it works the red button reads "Deleting…"; if something goes wrong, the reason shows in red inside the box and the draft stays.</p>
+</div>
+
+<!-- ============ X3 NEW — confirm box for an ended offer ============ -->
+<div class="board">
+  <p class="cap"><span class="tag">X3</span><span class="when new">NEW</span>Delete on an ended offer asks first — and says what is kept</p>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>inflx.in/dashboard/products/listing?tab=offers</span></div>
+    <div class="wb">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>📦 Fulfillment</a><a>↩ Returns</a><a>₹ Conversions</a><a>◫ Wallet</a><a>⚙ Settings</a></nav>
+      <div class="main">
+        <div class="lhdr">
+          <div><div class="ttl">Listings<span class="vert">FASHION</span></div><div class="lsub">Offers built on your products. You give them to creators when you set their terms.</div></div>
+          <div class="grow"></div>
+          <div class="acts"><span class="lbtn ghost">⚙ Store setup</span><span class="lbtn ink">+ Add products</span></div>
+        </div>
+        <div class="tabrail"><span>Inventory</span><span>Add products</span><span class="on">Offers</span><span>Products without offers</span><span>Gift items</span></div>
+        <div class="lcard"><div class="ofx"><div class="page">
+          <div class="hdr">
+            <div><h3>Offers</h3><div class="sub">Build offers on your products, then give them to creators when you set their terms.</div></div>
+            <span class="btn btn-ink">+ New offer</span>
+          </div>
+          <div class="toolbar"><span class="inp w">Search offers by name…</span><span class="chip act">All types</span><span class="chip">Discount</span><span class="chip">BOGO</span><span class="chip">Volume</span><span class="chip">Bundle</span><span class="chip">Free gift</span></div>
+          <div class="toolbar"><span class="chip act">All</span><span class="chip">Live<span class="n">3</span></span><span class="chip">Scheduled<span class="n">0</span></span><span class="chip">Draft<span class="n">3</span></span><span class="chip">Ended<span class="n">1</span></span><span style="flex:1"></span><span class="row sm mut">📅 Valid on <span class="inp">dd-mm-yyyy</span></span></div>
+          <div class="tblwrap"><table class="tbl">
+            <thead><tr><th>Offer</th><th>Type</th><th class="r">Products</th><th>Dates</th><th>Status</th><th class="r">Creators</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><b>kk</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">2 + 1 gift</td><td class="sm">2 Oct – 9 Oct</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>gh</b><div class="xs mut2">Not published yet</div></td><td>Volume · Value</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>flip it up</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>wish</b><div class="xs mut2">Pick any 2 from 2 for ₹1,000</div></td><td>Bundle · Pick-any</td><td class="r mono">2</td><td class="sm">2 Oct – 3 Oct</td><td><span class="st ended">Ended</span></td><td class="r mono">0</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Open</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>Kg sale</b><div class="xs mut2">Buy 2 → 10% · Buy 3 → 20%</div></td><td>Volume · Qty</td><td class="r mono">3</td><td class="sm">1 Oct – 8 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Salary day off</b><div class="xs mut2 deal">Buy one, get the same product free · max 1 free per order</div></td><td>BOGO</td><td class="r mono">2</td><td class="sm">1 Oct – 6 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Year end sale</b><div class="xs mut2">10% off each item</div></td><td>Discount · %</td><td class="r mono">4</td><td class="sm">1 Oct – 9 Oct</td><td><span class="st live">Live</span></td><td class="r mono">1</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div class="dimbg">
+          <div class="dlg">
+            <h4>Delete "wish"?</h4>
+            <div class="sm">It comes off your Offers list. Creators who had it, their posts, orders and payments keep their records.</div>
+            <div class="row" style="justify-content:flex-end"><span class="btn btn-ghost">Keep it</span><span class="btn btn-danger">Delete offer</span></div>
+          </div>
+        </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">You pressed Delete on the "wish" row (or on its page, X5). <b>Delete offer</b> takes it off your Offers list, its count and its page. It is not erased: a creator who had it still sees it as Ended in her terms and on her posts, with her earnings; orders and the wallet still name it; INFLX keeps the record. Shoppers already can't see an ended offer, so nothing changes for them.</p>
+</div>
+
+<!-- ============ X4 AFTER — the list after deleting a draft ============ -->
+<div class="board">
+  <p class="cap"><span class="tag">X4</span><span class="when after">AFTER</span>After Delete draft — "kk" is gone, Draft drops to 2, a note says "Draft deleted."</p>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>inflx.in/dashboard/products/listing?tab=offers</span></div>
+    <div class="wb">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>📦 Fulfillment</a><a>↩ Returns</a><a>₹ Conversions</a><a>◫ Wallet</a><a>⚙ Settings</a></nav>
+      <div class="main" style="padding-bottom:70px">
+        <div class="lhdr">
+          <div><div class="ttl">Listings<span class="vert">FASHION</span></div><div class="lsub">Offers built on your products. You give them to creators when you set their terms.</div></div>
+          <div class="grow"></div>
+          <div class="acts"><span class="lbtn ghost">⚙ Store setup</span><span class="lbtn ink">+ Add products</span></div>
+        </div>
+        <div class="tabrail"><span>Inventory</span><span>Add products</span><span class="on">Offers</span><span>Products without offers</span><span>Gift items</span></div>
+        <div class="lcard"><div class="ofx"><div class="page">
+          <div class="hdr">
+            <div><h3>Offers</h3><div class="sub">Build offers on your products, then give them to creators when you set their terms.</div></div>
+            <span class="btn btn-ink">+ New offer</span>
+          </div>
+          <div class="toolbar"><span class="inp w">Search offers by name…</span><span class="chip act">All types</span><span class="chip">Discount</span><span class="chip">BOGO</span><span class="chip">Volume</span><span class="chip">Bundle</span><span class="chip">Free gift</span></div>
+          <div class="toolbar"><span class="chip act">All</span><span class="chip">Live<span class="n">3</span></span><span class="chip">Scheduled<span class="n">0</span></span><span class="chip ring">Draft<span class="n">2</span></span><span class="chip">Ended<span class="n">1</span></span><span style="flex:1"></span><span class="row sm mut">📅 Valid on <span class="inp">dd-mm-yyyy</span></span></div>
+          <div class="tblwrap"><table class="tbl">
+            <thead><tr><th>Offer</th><th>Type</th><th class="r">Products</th><th>Dates</th><th>Status</th><th class="r">Creators</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><b>gh</b><div class="xs mut2">Not published yet</div></td><td>Volume · Value</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>flip it up</b><div class="xs mut2">Not published yet</div></td><td>Free gift · Spend</td><td class="r mono">0</td><td class="sm">—</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Continue</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>wish</b><div class="xs mut2">Pick any 2 from 2 for ₹1,000</div></td><td>Bundle · Pick-any</td><td class="r mono">2</td><td class="sm">2 Oct – 3 Oct</td><td><span class="st ended">Ended</span></td><td class="r mono">0</td><td class="r"><span class="rowacts"><span class="btn btn-ghost btn-sm">Open</span><span class="btn btn-danger btn-sm">Delete</span></span></td></tr>
+              <tr><td><b>Kg sale</b><div class="xs mut2">Buy 2 → 10% · Buy 3 → 20%</div></td><td>Volume · Qty</td><td class="r mono">3</td><td class="sm">1 Oct – 8 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Salary day off</b><div class="xs mut2 deal">Buy one, get the same product free · max 1 free per order</div></td><td>BOGO</td><td class="r mono">2</td><td class="sm">1 Oct – 6 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+              <tr><td><b>Year end sale</b><div class="xs mut2">10% off each item</div></td><td>Discount · %</td><td class="r mono">4</td><td class="sm">1 Oct – 9 Oct</td><td><span class="st live">Live</span></td><td class="r mono">1</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div class="toast">Draft deleted.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">The list reloads: 6 offers left (All was 7), Draft 3 → 2, and "Draft deleted." shows at the bottom right for a few seconds. Deleting the ended "wish" works the same way: it leaves the list, Ended 1 → 0, and the note says "Offer deleted."</p>
+</div>
+
+<!-- ============ X5 AFTER — the ended offer's own page ============ -->
+<div class="board">
+  <p class="cap"><span class="tag">X5</span><span class="when after">AFTER</span>An ended offer's page — Delete at the top right</p>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>inflx.in/dashboard/products/offers/…</span></div>
+    <div class="wb">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>📦 Fulfillment</a><a>↩ Returns</a><a>₹ Conversions</a><a>◫ Wallet</a><a>⚙ Settings</a></nav>
+      <div class="main"><div class="ofx"><div class="page">
+        <div class="row between"><span class="link">← Offers</span><div class="row"><span class="btn btn-danger btn-sm ring">Delete</span></div></div>
+        <div class="hdr"><div><h3>wish</h3><div class="sub">Bundle · Pick-any · Pick any 2 from 2 for ₹1,000 · 2 Oct 2026 – 3 Oct 2026</div></div><span class="st ended">Ended</span></div>
+        <div class="grid3">
+          <div class="card"><span class="lbl">Pool</span><span class="big">2</span><span class="xs mut2">products · frozen</span></div>
+          <div class="card"><span class="lbl">Creators given this offer</span><span class="big">0</span><span class="xs mut2">You give offers to creators when you set their terms</span></div>
+          <div class="card"><span class="lbl">Live posts using it</span><span class="big">0</span><span class="xs mut2">Posts using this offer show here once INFLX approves them.</span></div>
+        </div>
+        <div class="card">
+          <h4>The pool</h4>
+          <div class="plist">
+            <div class="prow"><div class="t"><b>Black polo</b><span class="xs mut2">₹949</span></div></div>
+            <div class="prow"><div class="t"><b>Grey polo</b><span class="xs mut2">₹899</span></div></div>
+          </div>
+        </div>
+        <div class="hint">Name, type, numbers and pool can't be edited once published. Creators' posts already promise this deal. To change the deal, end it and build a new one.</div>
+      </div></div></div>
+    </div>
+  </div>
+  <div class="corner"><span class="lab">That corner on a Live or Scheduled offer, unchanged:</span><span class="ofx"><span class="row"><span class="btn btn-ghost btn-sm">Add products</span><span class="btn btn-ghost btn-sm">Remove products</span><span class="btn btn-danger btn-sm">End offer now</span></span></span><span>— no Delete there.</span></div>
+  <p class="note">Today an ended offer's page has nothing at the top right, only "← Offers". After: <b>Delete</b> sits where a live offer shows Add products, Remove products and End offer now. Delete opens the same box as X3 ("Delete "wish"?"); after <b>Delete offer</b> you're back on the Offers list with "Offer deleted." If you open a deleted offer's old link, the page says it can't be found.</p>
+</div>
+
+<!-- ============ X6 AFTER — the End offer now box ============ -->
+<div class="board">
+  <p class="cap"><span class="tag">X6</span><span class="when after">AFTER</span>End offer now on a live offer — one sentence changes so it stays true</p>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>inflx.in/dashboard/products/offers/…</span></div>
+    <div class="wb">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>📦 Fulfillment</a><a>↩ Returns</a><a>₹ Conversions</a><a>◫ Wallet</a><a>⚙ Settings</a></nav>
+      <div class="main"><div class="ofx"><div class="page">
+        <div class="row between"><span class="link">← Offers</span><div class="row"><span class="btn btn-ghost btn-sm">Add products</span><span class="btn btn-ghost btn-sm">Remove products</span><span class="btn btn-danger btn-sm">End offer now</span></div></div>
+        <div class="hdr"><div><h3>Salary day off</h3><div class="sub">BOGO · Buy one, get the same product free · max 1 free per order · 1 Oct 2026 – 6 Oct 2026</div></div><span class="st live">Live · 4 days left</span></div>
+        <div class="grid3">
+          <div class="card"><span class="lbl">Pool</span><span class="big">2</span><span class="xs mut2">products · can change until a creator has it</span></div>
+          <div class="card"><span class="lbl">Creators given this offer</span><span class="big">0</span><span class="xs mut2">You give offers to creators when you set their terms</span></div>
+          <div class="card"><span class="lbl">Live posts using it</span><span class="big">0</span><span class="xs mut2">Posts using this offer show here once INFLX approves them.</span></div>
+        </div>
+        <div class="card">
+          <h4>The pool</h4>
+          <div class="plist">
+            <div class="prow"><div class="t"><b>Blue polo</b><span class="xs mut2">₹899</span></div></div>
+            <div class="prow"><div class="t"><b>red t shirt</b><span class="xs mut2">₹500</span></div></div>
+          </div>
+        </div>
+        <div class="dimbg">
+          <div class="dlg">
+            <h4>End "Salary day off" now?</h4>
+            <div class="card nobox" style="gap:4px">
+              <span class="sm"><b>Every post using this offer leaves the shop.</b></span>
+              <span class="xs">Their photos and videos promise buy one, get the same product free · max 1 free per order, so they can't stay up at full price.</span>
+            </div>
+            <div class="hint">All 2 products become free right away. It stays in your list as Ended <span class="ring" style="border-radius:4px">until you delete it</span>, with its dates (1 Oct – 6 Oct).</div>
+            <div class="row" style="justify-content:flex-end"><span class="btn btn-ghost">Keep it running</span><span class="btn btn-danger">End offer now</span></div>
+          </div>
+        </div>
+      </div></div></div>
+    </div>
+  </div>
+  <div class="wording">
+    <div><b class="k">Today</b> All 2 products become free right away. It stays in your list as Ended, with its dates (1 Oct – 6 Oct).</div>
+    <div><b class="k">After</b> All 2 products become free right away. It stays in your list as Ended <mark>until you delete it</mark>, with its dates (1 Oct – 6 Oct).</div>
+  </div>
+  <p class="note">Nothing else in this box changes, and End offer now works exactly as today. Only "until you delete it" is added to the last sentence, because an ended offer can now be deleted.</p>
+</div>
+
+<!-- ============ X7 — what deleting does ============ -->
+<div class="board">
+  <p class="cap"><span class="tag">X7</span>What deleting does, for each kind of offer</p>
+  <table class="rules">
+    <thead><tr><th>The offer is</th><th>Where Delete shows</th><th>What deleting does</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="st draft">Draft</span><span class="sm2">Not published yet</span></td>
+        <td>On its row, beside Continue</td>
+        <td><b>Erased for good.</b> It was never published, so no creator had it, no post or order used it, and none of its products were held.<span class="sm2">Box: "Delete this draft?" · Note after: "Draft deleted."</span></td>
+      </tr>
+      <tr>
+        <td><span class="st ended">Ended</span><span class="sm2">You pressed End offer now, or its last day passed</span></td>
+        <td>On its row, beside Open — and at the top right of its own page</td>
+        <td><b>Off your lists.</b> It leaves your Offers list and its counts, its page says not found, and it no longer shows in your creator-terms note ("not shown, ended") or as a product's "last in offer" on Products without offers. <b>Its record is kept</b> for the creators who had it, their posts, orders, payments and INFLX. The days its products were held are freed, so a new offer on those products is never refused because of it.<span class="sm2">Box: "Delete "{name}"?" · Note after: "Offer deleted."</span></td>
+      </tr>
+      <tr>
+        <td><span class="st scheduled">Scheduled</span><span class="st live">Live</span></td>
+        <td class="no">Nowhere — no Delete</td>
+        <td><b>Not possible.</b> End it first (End offer now on its page), then delete it. If a delete reaches the server anyway, it answers: "This offer is still running. End it first, then you can delete it."</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="note"><b>Not in this change:</b> undo, a "Deleted offers" view, deleting a running offer, and editing a Scheduled offer (its name, type, numbers and dates stay frozen once published — rule 1.10). <b>No change for</b> creators, shoppers, the phone apps or INFLX admin.</p>
+</div>
+
+<p class="foot">features/offer-delete · board v1 · 3 Oct 2026 · rules v1.17 §1.9, §1.12 · decisions O1–O10 in 01-spec.md. Drawn from your screenshot of Listings › Offers: the offer names, types, statuses, the status counts and "wish" (Pick any 2 from 2 for ₹1,000, 2 Oct – 3 Oct, 0 creators) are yours; "Salary day off" and "Year end sale" dates are from your earlier screens. Other small details (the other deal lines, product counts, the draft dates and the two polo names in "wish") are examples.</p>
+</body>
+</html>

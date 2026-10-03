@@ -1,0 +1,31 @@
+{
+  "feature": "offer-delete",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 3 Oct 2026, with a screenshot of Listings › Offers: \"Here i need delete button...in two places ..one is in draft where i can able to delete the offer or edit offer if not in live.......next place is when offer is created and when we ended that offer...then only we should get delete option for this....pls check and make change\") — decisions O1–O10 in 01-spec.md taken under standing autonomy",
+  "approved_at": "2026-10-03T08:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated (standing autonomy): board drawn from the founder's screenshot and his two named places, alongside the build; the founder sees the board and the real page before any deploy",
+  "mockup_locked_at": "2026-10-03T08:00:00+05:30",
+  "mockup_final": "04-preview/mockups/offer-delete-mockups-v1.html",
+  "notes": "Rules v1.17 §1.9: drafts are erased; an ended offer (ended early or by date) can be deleted from the brand's lists — its record stays for creators, posts, orders, payments and INFLX (brand_offers.deleted_at, migration 201); Scheduled and Live cannot be deleted. Reverses v1.0 §1.9 / offer-builder-v2 board O1 question 3 for ended offers, at the founder's request. Website + server + migration 201; no phone, no OTA, no money. Production-impacting: explicit go before the migration and the push.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "at": "2026-10-03",
+    "backend": "tests/offer-delete.test.js 27/27; with offers-v2-flow, brand-offer, shopper-ordering, item17-wallet 107/107; two checks rewritten to the new rule (03-expected-outputs.md, Drift recorded)",
+    "backend_full_run": "vs the 2 Oct full run: 139 suites / 1871 tests / 1666 passed / 177 failed -> 140 / 1888 / 1683 / 177; 0 newly failing, 0 new tests failing (06-diff/backend-compare.txt). qa_all_green stays false on the pre-existing failures.",
+    "web": "qa/web/brand/offer-delete.spec.ts 17/17 (stubbed API; 51/51 repeated) on a clean next build of an isolated copy; walked on a local preview against a private scratch database (06-diff/after-*.jpg)",
+    "migration": "201_offer_deleted_at.sql (one nullable column, lock_timeout 5s) + scripts/run-201.js; applied on production 3 Oct 2026 11:08 IST on the founder's go (\"ok pls release\"): APPLIED, 4/4 OK, nothing moved",
+    "rules": "Docs/OFFER_TERMS_POSTS_RULES.md v1.17 (1.9, 1.12, change log)",
+    "final_check": "three independent read-only audits (data safety, the migration and runner, the website), each finding challenged: safe to release; the one blocking finding (no lock timeout) fixed before the run"
+  }
+}

@@ -157,7 +157,9 @@ describe('list / update / archive', () => {
     expect(v2.body.data.counts.draft).toBe(1);
   });
 
-  test("4: status can't be set by hand; 5: a draft is deleted outright (a published one is only ended)", async () => {
+  // offer-delete (rules v1.17 §1.9): a running offer is only ended; an ended one is hidden, not erased
+  // (tests/offer-delete.test.js). A draft is still deleted outright — now answered with mode 'erased'.
+  test("4: status can't be set by hand; 5: a draft is deleted outright (a running one is only ended)", async () => {
     const { token } = await seedBrand();
     const created = await request(app).post('/v1/brands/me/offers').set(auth(token)).send(discountBody());
     const id = created.body.data.offer.id;
@@ -167,6 +169,7 @@ describe('list / update / archive', () => {
     const del = await request(app).delete(`/v1/brands/me/offers/${id}`).set(auth(token));
     expect(del.status).toBe(200);
     expect(del.body.data.deleted).toBe(true);
+    expect(del.body.data.mode).toBe('erased');
     const { rows } = await query(`SELECT count(*)::int n FROM brand_offers WHERE id = $1`, [id]);
     expect(rows[0].n).toBe(0);
   });

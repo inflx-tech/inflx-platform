@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.16 · 1 October 2026 · living document**
+**Version 1.17 · 3 October 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -141,11 +141,26 @@ There are two kinds of gift:
 | No price checks | BOGO |
 | **Margin floor: not checked.** Deferred; discuss later. | — |
 
-### 1.9 Status and deleting
+### 1.9 Status and deleting (changed 3 Oct, v1.17)
 - **Draft** (not published, locks nothing) → **Scheduled** (published, start date not reached) →
-  **Live** → **Ended**.
-- Drafts can be deleted. A published offer can't be deleted, only **ended**, so sales history and
-  creators' records stay intact.
+  **Live** → **Ended** (ended early with **End offer now**, or ended by its end date).
+
+1. A **Draft** can be deleted from the Offers list. It is **erased**: a draft was never given,
+   posted or sold.
+2. An **Ended** offer — ended early with End offer now, or ended by its date — can be deleted, from
+   the Offers list and from its own page. It is **removed from the brand's lists**; its record stays
+   for the creators who had it, their posts, orders, payments and INFLX.
+   - "Removed from the brand's lists" means: it leaves the Offers list and its counts, its page
+     answers "not found", and it is left out of the brand's other offer hints (the "not shown,
+     ended" note when giving offers in creator terms; "last in offer …" on Products without offers).
+     The days its products were held are freed, so a new offer whose start is back-dated over them
+     is never refused naming it.
+   - Nothing a creator, shopper, order, the wallet or INFLX admin reads changes: she still sees it,
+     as Ended, in her terms and on her posts, with its earnings; orders and sales still name it.
+   - An ended offer no creator ever had is hidden the same way, not erased. There is no undo.
+3. A **Scheduled** or **Live** offer can't be deleted. **End it first.**
+4. Editing is unchanged: drafts through Continue; a published offer's name, type, numbers and dates
+   stay frozen (1.10).
 
 ### 1.10 Changing a published offer (changed 1 Oct, v1.14)
 Name, type, numbers and dates can't be changed once published. What can change depends on whether
@@ -176,11 +191,13 @@ offer.
 5. Shoppers who have already started paying keep the old price.
 
 ### 1.12 Brand screens for offers (website, Listings)
-- **Offers:** list with search, filters (type, status, dates), products count, creators count.
+- **Offers:** list with search, filters (type, status, dates), products count, creators count. A Draft
+  row has **Continue** and **Delete**; an Ended row has **Open** and **Delete**; a Scheduled or Live
+  row has only **Open** (1.9).
 - **Products without offers:** every published product not in any offer on a chosen date, with its next offer if one is scheduled.
 - **Products:** an **Offer** column and a product panel showing the current offer (until when) and next offer.
 - **Gift items:** the gift-only list (1.7).
-- **Offer page:** the deal, pool, creators given it, their posts and sales, plus "Add products", "Remove products" and "End offer now". Add and Remove are greyed out, with the reason, once the offer is given to a creator (1.10).
+- **Offer page:** the deal, pool, creators given it, their posts and sales, plus "Add products", "Remove products" and "End offer now". Add and Remove are greyed out, with the reason, once the offer is given to a creator (1.10). An Ended offer's page has **Delete** instead (1.9); End offer now's box says the offer stays in the list as Ended until it is deleted.
 
 ### 1.13 Removed from the old offer engine
 Whole-store offers · "Publish to store" and the store-direct path · "Pay at store / Online / Pre-book"
@@ -1086,3 +1103,4 @@ invoices · a "pay now" nudge for cash-on-delivery orders · map-based addresses
 | 2026-10-01 | 1.14 | Founder: a published offer needs "Add products", and products may change only while no creator has the offer. 1.10 rewritten: add and remove are allowed until the offer is given to a creator (an unsigned invitation counts), then both are greyed out with the reason; End offer now unchanged. This **reverses** v1.0's "a removed product leaves her posts": removal from an offer a creator has is no longer possible (2.8 row replaced). 1.4 and 1.12 aligned. Contract `features/offer-add-products`. |
 | 2026-10-01 | 1.15 | Founder: **the posting date is the last day to go live, not the day itself.** A post is in the shop as soon as INFLX approves it; an offer post is visible only while its offer is active (it waits for the offer's start, leaves at its end) (2.1, 4.1, 4.14, 5.12). Offers a brand may give: start on or before the posting date and end at least one day after it — an offer ending on the posting date, or starting the day after it, is no longer given (2.3). Products without offers: free of offers from the day the terms are sent, not from the posting date (2.4). Unchanged: invitations close 3 days before the date; the date is at least 7 days ahead; the minimum is counted by the date; late and Delayed after it. Contract `features/posting-date-last-day`. |
 | 2026-10-01 | 1.16 | Founder: the shopper's **Women / Men / Kids choice is a preference for ordering, never a filter** (5.12). Every live post is in her feed; the ones she shops for come first. Before, a shopper who chose only Women saw nothing while the one live post was a men's watch. Home circles and "more posts" follow the same rule. Contract `features/shop-for-preference`. |
+| 2026-10-03 | 1.17 | Founder: **Delete in two places.** A **Draft** is deleted from the Offers list and erased. An **Ended** offer (ended early or by its date) is deleted from the Offers list or its own page and **removed from the brand's lists** (the list and its counts, its page, the creator-terms "not shown, ended" note, "last in offer …" on Products without offers; the days its products were held are freed); its record stays for the creators who had it, their posts, orders, payments and INFLX. A **Scheduled** or **Live** offer can't be deleted: end it first. 1.9 rewritten, 1.12 aligned (Delete on Draft and Ended rows and on an Ended offer's page). This **partly reverses** v1.0 §1.9 ("a published offer can't be deleted, only ended") and question 3 of the `features/offer-builder-v2` board O1 (drafts only), for ended offers, at the founder's request of 3 Oct. Contract `features/offer-delete`. |

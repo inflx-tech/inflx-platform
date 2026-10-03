@@ -507,10 +507,12 @@ async function productsWithoutOffers(brandId, { day, q, node, price_min, price_m
           WHERE i.product_id = bp.id AND i.removed_at IS NULL AND NOT isempty(i.lock_days) AND lower(i.lock_days) > $2::date
           ORDER BY lower(i.lock_days) LIMIT 1) nx ON true
        LEFT JOIN LATERAL (
+         -- The last offer it was in. An offer the brand deleted (offer-delete) is never named here;
+         -- deleting also empties its held days, and this says so outright.
          SELECT o.name AS offer_name,
                 CASE WHEN o.status = 'ended' AND o.ended_at IS NOT NULL THEN (o.ended_at AT TIME ZONE 'Asia/Kolkata')::date
                      ELSE (upper(i.lock_days) - 1) END AS until
-           FROM offer_pool_items i JOIN brand_offers o ON o.id = i.offer_id
+           FROM offer_pool_items i JOIN brand_offers o ON o.id = i.offer_id AND o.deleted_at IS NULL
           WHERE i.product_id = bp.id AND i.removed_at IS NULL AND NOT isempty(i.lock_days) AND upper(i.lock_days) <= $2::date
           ORDER BY upper(i.lock_days) DESC LIMIT 1) ls ON true
       WHERE ${where.join(' AND ')}

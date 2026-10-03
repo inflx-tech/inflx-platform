@@ -280,15 +280,23 @@ describe('after publishing (checks 24, 25)', () => {
     expect((await H.line(B.token, id, { pool: 'buy', method: 'search', product_ids: [pid] })).status).toBe(409);
     expect((await H.read(B.token, id)).offer.display_status).toBe('scheduled');
   });
-  test('a draft can be deleted; a published offer can\'t', async () => {
+  // BUSINESS-RULE DRIFT, offer-delete (founder, 3 Oct 2026; rules v1.17 §1.9): was "a published offer
+  // can't be deleted" with "A published offer can't be deleted. End it instead." A Scheduled or Live
+  // offer is still refused, now with "End it first, then you can delete it."; an ENDED offer can be
+  // deleted and is hidden from the brand (tests/offer-delete.test.js).
+  test('a draft can be deleted; a scheduled offer can\'t — it must be ended first', async () => {
     const d = await H.draft(B.token, { offer_type: 'bogo' });
-    expect((await api.del(`/brands/me/offers/${d.id}`, B.token)).status).toBe(200);
+    const gone = await api.del(`/brands/me/offers/${d.id}`, B.token);
+    expect(gone.status).toBe(200);
+    expect(gone.body.data).toEqual({ deleted: true, mode: 'erased' });
     expect((await api.get(`/brands/me/offers/${d.id}`, B.token)).status).toBe(404);
     const pid = await H.prod(B.brandId, t.shirts, 'Undeletable', 999);
     const id = await H.ready(B.token, { ids: [pid], from: day(700), to: day(710) });
     const r = await api.del(`/brands/me/offers/${id}`, B.token);
     expect(r.status).toBe(409);
-    expect(r.body.error.message).toBe("A published offer can't be deleted. End it instead.");
+    expect(r.body.error.code).toBe('OFFER_LOCKED');
+    expect(r.body.error.message).toBe('This offer is still running. End it first, then you can delete it.');
+    expect((await H.read(B.token, id)).offer.display_status).toBe('scheduled');
   });
 });
 

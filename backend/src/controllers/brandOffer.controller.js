@@ -147,7 +147,7 @@ const getOfferAttachments = asyncHandler(async (req, res) => {
   if (!brandId) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows: own } = await db.query(
-    `SELECT id FROM brand_offers WHERE id = $1 AND brand_id = $2`,
+    `SELECT id FROM brand_offers WHERE id = $1 AND brand_id = $2 AND deleted_at IS NULL`,
     [req.params.id, brandId]
   );
   if (!own[0]) throw new AppError('NOT_FOUND', 'Offer not found', 404);
