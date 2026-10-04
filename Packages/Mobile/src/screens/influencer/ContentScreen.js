@@ -20,6 +20,12 @@
  * their own strip under the page (BottomBar), never over it, and the page is a FormScroll — the
  * link box she has just pasted into, with "Saving…" at its right end and its red line, stays in
  * view above the strip and the keypad. A stage with nothing to press has no strip at all.
+ *
+ * shopper-walk-fixes (W15): a video she adds gets a picture taken from it on her phone, right
+ * after the video itself is uploaded and confirmed (sendCover12), and its tile shows that picture
+ * under the play mark — here and on the brand's screen. A picture that cannot be made or sent is
+ * never an error: the video stays, with the dark tile it always had. The viewer's title is two
+ * lines: the deliverable, then which file.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Keyboard } from 'react-native';
@@ -37,7 +43,7 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, Row10, AmberBox10, GreenBox10, WaitBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FeeCard12, FileTile12, AddTile12, RowHead12, NoteLine12, RoundPill12, QuoteBox12, Line12, LinkBox12, useSaves12 } from '../../components/content/bits12';
+import { FeeCard12, FileTile12, AddTile12, RowHead12, NoteLine12, RoundPill12, QuoteBox12, Line12, LinkBox12, useSaves12, hasCover12, sendCover12 } from '../../components/content/bits12';
 import { SendSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { C12, MSG12, LIMITS12, day10 } from '../../components/content/copy12';
@@ -93,14 +99,15 @@ export default function ContentScreen({ navigation, route }) {
   }, [ciId, inLine]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  // Photo thumbnails: a 300-second signed URL each, fetched as the photos appear.
+  // Photo thumbnails: a 300-second signed URL each, fetched as the photos appear. A video that has
+  // a picture taken from it (W15) gets that PICTURE the same way (`cover`) — never the video itself.
   useEffect(() => {
     if (!c) return;
-    const photos = [];
-    for (const row of c.rows || []) for (const f of row.files || []) if (f.kind === 'photo' && !urls[f.id]) photos.push(f.id);
-    for (const row of c.rows || []) for (const pr of row.proofs || []) if (pr.screenshotFileId && !urls[pr.screenshotFileId]) photos.push(pr.screenshotFileId);
-    photos.slice(0, 20).forEach(async (id) => {
-      const r = await influencerApi.contentFileUrl(ciId, id);
+    const photos = [];                                  // [file id, the picture taken from a video?]
+    for (const row of c.rows || []) for (const f of row.files || []) if ((f.kind === 'photo' || hasCover12(f)) && !urls[f.id]) photos.push([f.id, hasCover12(f)]);
+    for (const row of c.rows || []) for (const pr of row.proofs || []) if (pr.screenshotFileId && !urls[pr.screenshotFileId]) photos.push([pr.screenshotFileId, false]);
+    photos.slice(0, 20).forEach(async ([id, cover]) => {
+      const r = await (cover ? influencerApi.contentFileUrl(ciId, id, true) : influencerApi.contentFileUrl(ciId, id));
       if (mounted.current && r && r.success) setUrls((u) => ({ ...u, [id]: r.data.view.url }));
     });
   }, [c]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -136,6 +143,11 @@ export default function ContentScreen({ navigation, route }) {
           const p = await influencerApi.contentSetProof(ciId, row.key, slot, { screenshotFileId: done.data.file.id });
           if (!p || !p.success) throw new Error(refuse(p));
         }
+        // W15 — a video: her phone takes a picture from it for its tile, on her side and the
+        // brand's. The video is uploaded and confirmed by now; whatever happens to the picture,
+        // the video stays and no red line is shown (sendCover12 never throws).
+        // eslint-disable-next-line no-await-in-loop
+        if (kind === 'video') await sendCover12({ api: influencerApi, put: uploadContentFile, ciId, fileId: u.data.upload.fileId, uri: a.uri });
       } catch (e) {
         if (mounted.current) setRowError((x) => ({ ...x, [row.key]: e.message }));
       } finally {

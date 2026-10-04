@@ -38,7 +38,8 @@ export const W17 = {
   locked: 'Locked in collaborations',
   lockedSub: (n) => (n ? plural(n, 'collaboration', 'collaborations') : 'Nothing locked'),
   sales: 'Sales money coming',
-  salesSub: (n) => (n ? `${plural(n, 'sale', 'sales')} in ${n === 1 ? 'its' : 'their'} return window` : 'No sales in a return window'),
+  // shopper-walk-fixes (W13): a sale that is coming may be not shipped, on its way, or in its return window.
+  salesSub: (n) => (n ? `${plural(n, 'sale', 'sales')} not added yet` : 'No sales waiting'),
   history: 'History',
   historySub: 'Everything in and out',
   brandDetails: 'Bank and business details',
@@ -50,7 +51,7 @@ export const W17 = {
   payments: 'Collaboration payments',
   paymentsSub: (n, next) => (n ? `${plural(n, 'collaboration', 'collaborations')}${next ? ` · next on ${next}` : ''}` : 'Nothing waiting'),
   commission: 'Commission',
-  commissionSub: (n) => (n ? `${plural(n, 'sale', 'sales')} in ${n === 1 ? 'its' : 'their'} return window` : 'No sales in a return window'),
+  commissionSub: (n) => (n ? `${plural(n, 'sale', 'sales')} not added yet` : 'No sales waiting'),
   payDetails: 'Payment details',
   payDetailsSub: (upi, bank) => `${upi ? 'UPI added' : 'UPI not added'} · ${bank ? 'bank added' : 'bank not added'}`,
 
@@ -90,9 +91,11 @@ export const W17 = {
   saleLine: (s, whose) => {
     const post = `${whose} post ${s.post && s.post.code ? s.post.code : ''}`.trim();
     if (s.state === 'cancelled') return `${post} · cancelled`;
+    if (s.state === 'returned') return `${post} · returned`;
     if (s.state === 'added') return `${post} · added ${dayMon(s.at)}`;
     if (s.state === 'cod_waiting') return `${post} · cash on delivery · waiting for delivery`;
     if (s.state === 'not_shipped') return `${post} · not shipped yet`;
+    if (s.state === 'waiting_delivery') return `${post} · on its way · waiting for delivery`;
     const cod = s.cashOnDelivery ? ` · cash on delivery · delivered ${dayMon(s.deliveredAt)}` : '';
     return `${post}${cod} · ${s.cashOnDelivery ? 'until' : 'return window until'} ${dayMon(s.windowUntil)}`;
   },
@@ -103,9 +106,11 @@ export const W17 = {
   yourShare: 'Your share',
   saleBox: (s) => {
     if (s.state === 'cancelled') return { tone: 'ended', text: 'This item was cancelled. Nothing is added for it.' };
+    if (s.state === 'returned') return { tone: 'ended', text: 'The shopper returned this item. Nothing is added for it.' };
     if (s.state === 'added') return { tone: 'active', text: `${inr(s.brandShare)} was added to your wallet on ${dayMon(s.at)}.` };
     if (s.state === 'cod_waiting') return { tone: 'waiting', text: 'Cash on delivery. Its return window starts when it is delivered.' };
-    if (s.state === 'not_shipped') return { tone: 'yourMove', text: `This order has not been shipped yet. Your ${inr(s.brandShare)} is added to your wallet once it ships.` };
+    if (s.state === 'not_shipped') return { tone: 'yourMove', text: `This order has not been shipped yet. Your ${inr(s.brandShare)} is added to your wallet after it is delivered and its return window closes.` };
+    if (s.state === 'waiting_delivery') return { tone: 'waiting', text: 'On its way to the shopper. Its return window starts when it is delivered.' };
     return { tone: 'waiting', text: `In its return window until ${dayMon(s.windowUntil)}. Your ${inr(s.brandShare)} is added to your wallet when it closes, if it isn't returned.` };
   },
   offer: 'Offer', paidBy: 'Paid by', status: 'Status',
@@ -117,9 +122,9 @@ export const W17 = {
   noSalesTitle: 'No sales yet',
   noSalesBody: 'Each item sold through a creator\'s post appears here with its three shares.',
   commissionTitle: 'Commission',
-  inWindow: 'In return window',
+  inWindow: 'Not added yet',
   addedSoFar: 'Added so far',
-  commissionNote: "Commission is added to your wallet when each sale's return window closes.",
+  commissionNote: 'Commission is added to your wallet after each sale is delivered and its return window closes.',
   noCommissionTitle: 'No commission yet',
   noCommissionBody: 'Each item sold through your posts appears here with your commission.',
 

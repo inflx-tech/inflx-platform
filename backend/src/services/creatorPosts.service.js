@@ -125,6 +125,12 @@ async function mediaR2Key(mediaId) {
   return rows[0] ? rows[0].r2_key : null;
 }
 
+/** shopper-walk-fixes (W15): the key of the picture taken from a video slide, or null. */
+async function coverR2Key(mediaId) {
+  const { rows } = await db.query(`SELECT cover_r2_key FROM post_media WHERE id = $1`, [mediaId]);
+  return rows[0] ? rows[0].cover_r2_key : null;
+}
+
 function mediaUrl(mediaId) {
   const base = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_PUBLIC_URL || '';
   return `${base}/v1/media/post/${mediaId}`;
@@ -394,6 +400,7 @@ module.exports = {
   pickerProducts,
   buildUploadUrl,
   mediaR2Key,
+  coverR2Key,
   mediaUrl,
   createPost,
   listMyPosts,

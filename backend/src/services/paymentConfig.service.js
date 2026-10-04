@@ -27,7 +27,7 @@ async function getConfig() {
   try {
     const { rows } = await db.query(
       `SELECT platform_fee_pct, tranche_1_pct, tranche_2_pct, tranche_3_pct,
-              tds_pct, agency_tds_pct, offer_expiry_hours, return_window_days,
+              tds_pct, agency_tds_pct, offer_expiry_hours, return_window_days, return_window_hours,
               min_withdrawal_inr, allow_commission_negotiation,
               gst_pct, tcs_pct, tcs_active, tcs_active_from_date,
               platform_gstin, platform_business_name, platform_business_address,
@@ -45,7 +45,11 @@ async function getConfig() {
         tdsPct:           parseFloat(rows[0].tds_pct),
         agencyTdsPct:     rows[0].agency_tds_pct != null ? parseFloat(rows[0].agency_tds_pct) : 5,
         offerExpiryHours: parseInt(rows[0].offer_expiry_hours, 10),
-        returnWindowDays: parseInt(rows[0].return_window_days, 10),
+        // shopper-walk-fixes (W13): the return window is kept in HOURS (migration 202) — the one
+        // platform number. returnWindowDays is the same length in days (it may be a fraction: 36
+        // hours is 1.5), for the few old readers; new code asks returnWindow.service.
+        returnWindowHours: parseInt(rows[0].return_window_hours, 10),
+        returnWindowDays: parseInt(rows[0].return_window_hours, 10) / 24,
         minWithdrawalInr: parseFloat(rows[0].min_withdrawal_inr),
         allowCommissionNegotiation: rows[0].allow_commission_negotiation !== false,
         // Wave 1 — tax + identity (migration 072)
@@ -86,6 +90,7 @@ async function getConfig() {
     tdsPct:           env.TDS_PCT            ?? 10,
     agencyTdsPct:     env.AGENCY_TDS_PCT     ?? 5,
     offerExpiryHours: env.OFFER_EXPIRY_HOURS ?? 48,
+    returnWindowHours: (env.RETURN_WINDOW_DAYS ?? 30) * 24,
     returnWindowDays: env.RETURN_WINDOW_DAYS ?? 30,
     minWithdrawalInr: 100,
     allowCommissionNegotiation: true,
@@ -116,9 +121,24 @@ async function getConfig() {
  * Busts the in-memory cache immediately.
  */
 async function updateConfig(fields, adminUserId) {
+  // shopper-walk-fixes (W13): the return window is ONE number, in hours. `return_window_hours` is
+  // the field to send (1 hour to 365 days); `return_window_days`, still sent by anything older, is
+  // turned into hours here. Either way BOTH columns are written — hours is the truth, days is the
+  // same length rounded up — so an old reader never sees a stale number.
+  fields = { ...fields };
+  const blank = (v) => v === undefined || v === null || v === '';
+  if (!blank(fields.return_window_hours) || !blank(fields.return_window_days)) {
+    const h = !blank(fields.return_window_hours) ? Number(fields.return_window_hours) : Number(fields.return_window_days) * 24;
+    if (!Number.isInteger(h) || h < 1 || h > 8760) {
+      throw new Error('The return window must be a whole number of hours, from 1 hour to 365 days');
+    }
+    fields.return_window_hours = h;
+    fields.return_window_days = Math.max(1, Math.ceil(h / 24));
+  }
+
   const allowed = [
     'platform_fee_pct', 'tranche_1_pct', 'tranche_2_pct', 'tranche_3_pct',
-    'tds_pct', 'offer_expiry_hours', 'return_window_days', 'min_withdrawal_inr',
+    'tds_pct', 'offer_expiry_hours', 'return_window_days', 'return_window_hours', 'min_withdrawal_inr',
     'allow_commission_negotiation',
     // Wave 1 — tax + identity (migration 072)
     'gst_pct', 'tcs_pct', 'tcs_active', 'tcs_active_from_date',
@@ -168,4 +188,7 @@ async function updateConfig(fields, adminUserId) {
   _cacheTime = 0;
 }
 
-module.exports = { getConfig, updateConfig };
+/** Tests only: forget the cached row (a test that writes the table directly must call this). */
+function _resetCache() { _cache = null; _cacheTime = 0; }
+
+module.exports = { getConfig, updateConfig, _resetCache };

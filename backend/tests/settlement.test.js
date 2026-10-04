@@ -39,6 +39,17 @@ async function seedTxn(brandId, { brandNet = 1000, fee = 200, paymentId = 'pay_t
      RETURNING id`,
     [followerId, brandId, brandNet, fee, fee, brandNet, paymentId, checkout ? 'online_order' : 'pay_at_store', checkoutId]
   );
+  // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a checkout sale's share is added
+  // only after DELIVERY, when its return window (counted from the delivery) has closed. So the seeded
+  // sale now carries what every real one has: its parcel — delivered, with the window behind it.
+  if (checkout) {
+    const { rows: [o] } = await query(
+      `INSERT INTO follower_orders (transaction_id, order_status, items_json, payment_method, checkout_id, brand_id, delivered_at)
+       VALUES ($1, 'delivered', '[]'::jsonb, 'online', $2, $3, now() - interval '9 days') RETURNING id`, [t.id, checkoutId, brandId]);
+    await query(
+      `UPDATE follower_transactions SET order_id = $2, created_at = now() - interval '10 days', return_window_ends_at = now() - interval '3 days' WHERE id = $1`,
+      [t.id, o.id]);
+  }
   return t.id;
 }
 const walletOf = async (brandId) => parseFloat((await query(`SELECT wallet_balance FROM brands WHERE id = $1`, [brandId])).rows[0].wallet_balance);
@@ -123,7 +134,10 @@ describe('settlement.service.settleCommerceTransaction', () => {
     expect(row).toEqual({ brand_settlement_status: 'pending', tcs_amount: null });
   });
 
-  test('resolveReturnWindowEndsAt uses the per-category window', async () => {
+  // ASSERTION DRIFT — shopper-walk-fixes W11 (founder, 4 Oct 2026): "this return window is fixed by our
+  // platform INFLX… same for all… not decided by individual business or brand". The category's own
+  // number is no longer read: the stamp is the ONE platform number (payment_config, in hours).
+  test('resolveReturnWindowEndsAt uses the ONE platform window, whatever the category row says', async () => {
     const { token } = await createBrandUser();
     const brand = await registerBrand(token);
     await query(`UPDATE brands SET category = 'restaurant' WHERE id = $1`, [brand.id]);
@@ -135,8 +149,11 @@ describe('settlement.service.settleCommerceTransaction', () => {
        ON CONFLICT (category_key) DO UPDATE SET return_window_days = 7`
     );
 
+    await query(`INSERT INTO payment_config (id, return_window_hours, return_window_days) VALUES (1, 36, 2)
+                 ON CONFLICT (id) DO UPDATE SET return_window_hours = 36, return_window_days = 2`);
+    require('../src/services/paymentConfig.service')._resetCache();
     const endsAt = await settlementService.resolveReturnWindowEndsAt(runner, brand.id);
-    const days = Math.round((endsAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
-    expect(days).toBe(7);
+    const hours = Math.round((endsAt.getTime() - Date.now()) / (60 * 60 * 1000));
+    expect(hours).toBe(36);                                                             // not the category's 7 days
   });
 });

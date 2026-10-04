@@ -27,11 +27,15 @@ async function run() {
        AND NOT EXISTS (
          SELECT 1 FROM follower_orders fo
           WHERE fo.transaction_id = ft.id AND fo.order_status = 'cancelled')
-       -- Item 17 (W4): a cash-on-delivery sale counts once it is DELIVERED; its return window then
-       -- runs from the delivery, the same length as an online sale's. Online sales are unchanged.
+       -- shopper-walk-fixes (W13, founder 4 Oct 2026): "after delivery sale commission to creator,
+       -- platform sale percentage, and money return to brand all should follow the time set in admin
+       -- for return window". So an order from the shopper checkout is released only once it is
+       -- DELIVERED, and its window runs FROM THE DELIVERY with the length stamped on the sale —
+       -- paid online or in cash alike. (Item 17 had this for cash only; an online sale was released
+       -- on its stamp once shipped.) An older cash order outside the checkout keeps its rule.
        AND NOT EXISTS (
          SELECT 1 FROM follower_orders fo2
-          WHERE fo2.id = ft.order_id AND fo2.payment_method = 'cod'
+          WHERE fo2.id = ft.order_id AND (fo2.payment_method = 'cod' OR fo2.checkout_id IS NOT NULL)
             AND NOT (fo2.order_status = 'delivered' AND fo2.delivered_at IS NOT NULL
                      AND fo2.delivered_at + (ft.return_window_ends_at - ft.created_at) <= NOW()))
        -- Item 17 (review): a shopper-checkout parcel still Confirmed/Packed can be cancelled and

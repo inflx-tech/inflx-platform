@@ -6,6 +6,12 @@
  *       paid, the post it came from.
  *   O16 Cancel — open until Shipped; a reason is required; deal items cancel together (warned); a
  *       free gift follows. O17 Cancelled — what happens to the money.
+ *
+ * shopper-walk-fixes (W14 · rules v1.18 §6.16) — Return. A delivered item inside INFLX's return
+ * window has a Return button on Order details, with until when; her return then shows there as a
+ * box (requested, approved, not accepted with INFLX's note, returned with the money). My orders has
+ * a "Returned" filter and says "Return requested" on the row. The screen she asks on is
+ * ReturnScreen.js. An item that went back is "Returned" — it never reads "Arrives by".
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, FlatList, Image, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
@@ -16,6 +22,8 @@ import { followerApi } from '../../../services/api';
 import { TopBar, Loading, Empty, Chip } from '../../../components/shop/bitsShop';
 import { K, b } from '../../../components/shop/orderBits';
 import { CO, dayLabel } from '../../../components/shop/copyOrder';
+import { CR, refundWords, untilLabel } from '../../../components/shop/copyReturn';
+import { ReturnBox } from './ReturnScreen';
 import { CS, inr } from '../../../components/shop/copyShop';
 import { fonts } from '../../../theme/tokens';
 
@@ -52,6 +60,9 @@ export function OrderPlacedScreen({ navigation, route }) {
 
 /* ───────────────────────────────────────────── O14 */
 
+/** An item that is no longer on its way: it has no "Arrives by", and Cancel is not what is closed. */
+const DONE = ['cancelled', 'delivered', 'returned'];
+
 export function OrdersScreen({ navigation }) {
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
@@ -70,7 +81,7 @@ export function OrdersScreen({ navigation }) {
       <View style={{ paddingHorizontal: 14 }}>
         <TextInput value={q} onChangeText={setQ} placeholder="Search your orders" style={st.search} testID="orders-search" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 10 }}>
-          {CO.filters.map(([k, label]) => <Chip key={k || 'all'} label={label} on={status === k} onPress={() => setStatus(k)} testID={`orders-filter-${k || 'all'}`} />)}
+          {[...CO.filters, CR.filter].map(([k, label]) => <Chip key={k || 'all'} label={label} on={status === k} onPress={() => setStatus(k)} testID={`orders-filter-${k || 'all'}`} />)}
         </ScrollView>
       </View>
       {items === null ? <Loading /> : !items.length ? <Empty title={CO.noOrders} sub={CO.noOrdersSub} testID="orders-empty" /> : (
@@ -84,7 +95,9 @@ export function OrdersScreen({ navigation }) {
                 {item.image_url ? <Image source={{ uri: item.image_url }} style={st.thumb} /> : <View style={st.thumb} />}
                 <View style={{ flex: 1 }}>
                   <Text style={[st.status, item.status === 'cancelled' && { color: K.danger }, item.status === 'delivered' && { color: K.ok }]}>
-                    {item.status_word}{item.status !== 'cancelled' && item.status !== 'delivered' && item.arrives_by ? ` · ${CO.arrivesBy(dayLabel(item.arrives_by))}` : ''}
+                    {item.status_word}{!DONE.includes(item.status) && item.arrives_by ? ` · ${CO.arrivesBy(dayLabel(item.arrives_by))}` : ''}
+                    {/* W14 — a return that is still being decided, or was not accepted, is said on the row. */}
+                    {item.return && item.status !== 'returned' ? ` · ${item.return.word}` : ''}
                   </Text>
                   <Text style={st.name} numberOfLines={1}>{item.name}</Text>
                   <Text style={st.meta}>{[item.colour, item.size].filter(Boolean).join(' · ')}{item.qty > 1 ? ` ×${item.qty}` : ''} · {item.brand.name}</Text>
@@ -137,11 +150,11 @@ export function OrderDetailScreen({ navigation, route }) {
             </View>
           ))}
         </View>
-        {d.refund ? (
-          <Text style={[st.refund, d.refund.status === 'failed' && { color: K.danger }]}>
-            {d.refund.status === 'issued' || d.refund.status === 'pending' ? CO.refundOnWay(inr(d.refund.amount)) : d.refund.status === 'not_needed' ? CO.noRefund : CO.refundFailed}
-          </Text>
+        {/* A returned item says what happened to its money inside its Return box, below. */}
+        {d.refund && d.status !== 'returned' ? (
+          <Text style={[st.refund, d.refund.status === 'failed' && { color: K.danger }]} testID="order-refund">{refundWords(d.refund, inr)}</Text>
         ) : null}
+        <ReturnBox back={d.return} />
         <View style={st.card}>
           <Text style={st.lab}>{CO.deliverTo}</Text>
           <Text style={st.name}>{a.name}</Text>
@@ -152,7 +165,16 @@ export function OrderDetailScreen({ navigation, route }) {
           <TouchableOpacity style={[b.secondary, { marginTop: 16, borderColor: K.danger }]} onPress={() => navigation.navigate('CancelItem', { lineId: d.id })} testID="order-cancel">
             <Text style={[b.secondaryText, { color: K.danger }]}>{CO.cancelItem}</Text>
           </TouchableOpacity>
-        ) : d.status !== 'cancelled' && d.status !== 'delivered' ? <Text style={st.hint}>{CO.cancelClosed}</Text> : null}
+        ) : d.can_return ? (
+          // W14 — delivered, and inside INFLX's return window: she can ask, and is told until when.
+          <>
+            <TouchableOpacity style={[b.secondary, { marginTop: 16 }]} onPress={() => navigation.navigate('ReturnItem', { lineId: d.id })} testID="order-return">
+              <Text style={b.secondaryText}>{CR.returnItem}</Text>
+            </TouchableOpacity>
+            <Text style={st.hint} testID="order-return-until">{CR.openUntil(untilLabel(d.return_until))}</Text>
+          </>
+        ) : d.return_closed ? <Text style={st.hint} testID="order-return-closed">{d.return_closed}</Text>
+          : !DONE.includes(d.status) ? <Text style={st.hint}>{CO.cancelClosed}</Text> : null}
         {/* "Need help" waits for INFLX's support contact (identity facts owed, §7); no address is invented. */}
       </ScrollView>
     </SafeAreaView>

@@ -137,22 +137,32 @@ export function Banner({ title, body, testID }) {
   );
 }
 
+/** `oneLine` on the main button: a label too long for the button ends with "…" — it never wraps. */
+const ONE_LINE = { ellipsizeMode: 'tail' };
+
 /**
  * `icon` is an optional MaterialCommunityIcons name drawn before the label, as the item 10
  * mockups do (a tick on "Confirm the shoot is done", a phone on a call). Additive — every
  * existing caller passes nothing and is unchanged.
+ *
+ * `oneLine` (shopper-walk-fixes, frame C2) — opt-in, for a label that carries a name of any
+ * length ("Send to Aveen fashion boutique and desiner studio"): one centred line with side
+ * padding, cut at the end with "…". The button never grows to a second line. A caller that does
+ * not pass it is drawn exactly as before.
  */
-export function PrimaryButton({ label, onPress, disabled, busy, busyLabel, icon, testID }) {
+export function PrimaryButton({ label, onPress, disabled, busy, busyLabel, icon, testID, oneLine }) {
   const slot = useContext(ButtonSlot);
   const off = disabled || busy;
   const row = slot === 'row';
   const main = slot === 'main';
+  const one = !!oneLine && !row;
   // One line only inside a ButtonRow. As an AnswerBar's main button the label is centred and
   // wraps in full, however many lines that takes: "Accept ₹12,000 · 1 reel, 2 stories, 1 YouTube
   // video" is the terms she is agreeing to, and a cap of two lines cut it off with "…" where,
   // before this build, it had always wrapped in full.
-  const lines = row ? 1 : undefined;
-  const fit = row ? st.rowText : main ? st.mainText : null;
+  const lines = row || one ? 1 : undefined;
+  const fit = row || one ? st.rowText : main ? st.mainText : null;
+  const cut = one ? ONE_LINE : null;
   return (
     <TouchableOpacity
       testID={testID}
@@ -161,20 +171,20 @@ export function PrimaryButton({ label, onPress, disabled, busy, busyLabel, icon,
       onPress={onPress}
       disabled={off}
       activeOpacity={0.85}
-      style={[st.primary, off && st.primaryOff, row && st.inRow, row && st.rowPad0, main && st.mainPad]}
+      style={[st.primary, off && st.primaryOff, row && st.inRow, row && st.rowPad0, (main || one) && st.mainPad]}
     >
       {busy ? (
         <View style={st.busyRow}>
           <ActivityIndicator color={T.ink} />
-          <Text numberOfLines={lines} style={[st.primaryText, { marginLeft: 8 }, fit]}>{busyLabel || 'Saving'}</Text>
+          <Text numberOfLines={lines} {...cut} style={[st.primaryText, { marginLeft: 8 }, fit]}>{busyLabel || 'Saving'}</Text>
         </View>
       ) : icon ? (
         <View style={st.busyRow}>
           <Icon name={icon} size={17} color={off ? T.disabledText : T.onPrimary} />
-          <Text numberOfLines={lines} style={[st.primaryText, off && st.primaryTextOff, { marginLeft: 8 }, fit]}>{label}</Text>
+          <Text numberOfLines={lines} {...cut} style={[st.primaryText, off && st.primaryTextOff, { marginLeft: 8 }, fit]}>{label}</Text>
         </View>
       ) : (
-        <Text numberOfLines={lines} style={[st.primaryText, off && st.primaryTextOff, fit]}>{label}</Text>
+        <Text numberOfLines={lines} {...cut} style={[st.primaryText, off && st.primaryTextOff, fit]}>{label}</Text>
       )}
     </TouchableOpacity>
   );

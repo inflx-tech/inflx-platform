@@ -1,0 +1,49 @@
+{
+  "feature": "shopper-walk-fixes",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (chat 4 Oct 2026: \"previously drawn screens are locked.....then start building....start build in sequence\")",
+  "approved_at": "2026-10-04T12:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 4 Oct 2026: \"previously drawn screens are locked\")",
+  "mockup_locked_at": "2026-10-04T12:00:00+05:30",
+  "mockup_final": "04-preview/mockups/shopper-walk-fixes-mockups-v1.html",
+  "notes": "The founder's walk of 3-4 Oct 2026: shopper app (video, products in a post, adding to the bag, deals in the bag), brand and creator Going live screens, the return window, and the shopper's Return. Findings: Docs/SHOPPER_AND_GOING_LIVE_WALK_REPORT_2026-10-03.md. Decisions W1-W15 in 01-spec.md; open points P2, P4, P5. Board v1 (17 frames) locked by the founder on 4 Oct 2026; the Return screens have no board by his instruction (\"no need to draw a screens now for return\"). BUILT 4 Oct 2026 (see build). Released on the founder's go (chat 4 Oct 2026: \"Yes pls go ahead and release\"): migrations 202 + 203 applied on production, then this commit; the deploy record follows in its own commit.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "live_setting_changes": [
+    {
+      "at": "2026-10-04",
+      "by": "founder (chat 4 Oct 2026: \"this return window is fixed by our platform INFLX..this is same for all..we keep this as 7 days for now..given to admin as a setting..check once and make it\")",
+      "what": "return window 30 -> 7 days: payment_config.return_window_days and categories.return_window_days on all 16 categories",
+      "how": "backend/scripts/set-return-window.js --days=7: --dry (17 numbers to change) -> --apply (APPLIED; 2/2 OK; nothing else moved: 18 stamped sales, 11 sent agreements, wallets) -> --dry (0 to change)",
+      "code": "none deployed; the code still reads the category number first, which is why every category carries 7 too",
+      "undo": "node scripts/set-return-window.js --days=30 --apply"
+    }
+  ],
+  "build": {
+    "at": "2026-10-04",
+    "waves": "server: return window in hours + release after delivery → shopper content, product details, video pictures → returns · website: admin + brand pages · phones: brand and creator screens, shopper screens (two parallel builds, each reviewed against the server) → shopper Return (last, no board) · local preview walk of the website",
+    "mobile": "2410/2410 (104 suites); was 2153/2153 (94 suites) before this contract",
+    "backend_new_suites": "shopper-walk-fixes-return-window 12, shopper-walk-fixes-shop 11, shopper-walk-fixes-returns 11 — all passing",
+    "backend_full_run": "vs the last stored full run (2 Oct, after ui-walk-fixes): 139 suites / 1871 tests / 1666 passed / 177 failed -> 143 / 1932 / 1727 / 177; 0 that passed before fail now, 0 new tests fail, the same 177 by name (06-diff/backend-compare.txt). qa_all_green stays false on the pre-existing failures.",
+    "migrations": "202_return_window_hours_and_video_covers.sql, 203_returns_on_order_lines.sql — rehearsed on a scratch database (dry, apply, re-apply); APPLIED on production 4 Oct 2026 12:46 IST before the commit (run-202-203.js --apply: 10/10 OK; nothing moved: 18 stamped sales, 5 order items, 0 returns, 11 sent agreements, wallets unchanged; return_window_hours = 168)",
+    "website": "walked in a LOCAL preview only (private scratch database): Admin › Money › Settings return window in hours/days, Admin › Returns request → approve → refunded (online and cash), reject needs a reason, Admin › Money › Sales, the brand wallet and order pages. Not opened on the live site.",
+    "found_and_fixed": [
+      "Admin › Returns hid Approve / Reject / Mark refunded from every admin (it read admin_role from the user stored at sign-in, which never carries it); it now asks /admin/me. The same fault on Admin › Brands fee editing and Outreach › Settings is NOT in this contract (flagged separately).",
+      "Wallet sentences still described the old timing; now \"N sales not added yet\" and \"after the order is delivered and its return window closes\" (website and phone).",
+      "The brand's order list read \"₹0 · Delivered\" for a fully returned parcel; it now reads \"Returned\".",
+      "My orders listed a returned item under Cancelled; it has its own Returned filter."
+    ],
+    "device": "NOT seen on a phone. Every \"walk owed\" row of 03-expected-outputs.md section D is open; no after-shots. Maestro not run.",
+    "no_new_app_build": "video pictures use react-native-compressor createVideoThumbnail and the add-to-bag vibration uses VIBRATE — both are inside the 30 Sep 2026 builds (checked in the built manifests / dex), so everything ships over the air"
+  }
+}

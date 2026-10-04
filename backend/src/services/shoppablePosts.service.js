@@ -42,6 +42,7 @@ const IMAGE = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'im
 const VIDEO = { 'video/mp4': 'mp4' };
 const MB = 1024 * 1024;
 const LIMIT_MB = { image: 10, video: 200 };
+const COVER_MB = 2;                      // a picture taken from a video (W15) — small on purpose
 const SELLING = ['conversion', 'hybrid'];
 const COLLAB_ON = ['contracted', 'active', 'completed'];
 const GROUPS = ['season', 'occasion', 'style', 'use'];
@@ -331,13 +332,15 @@ function offerWords(p) {
 async function mediaOf(postIds) {
   if (!postIds.length) return new Map();
   const { rows } = await db.query(
-    `SELECT id, post_id, slide_index, r2_key, mime, width, height, size_bytes, duration_s FROM post_media
+    `SELECT id, post_id, slide_index, r2_key, mime, width, height, size_bytes, duration_s, cover_r2_key FROM post_media
       WHERE post_id = ANY($1::uuid[]) ORDER BY post_id, slide_index`, [postIds]);
   const out = new Map();
   for (const m of rows) {
     const list = out.get(m.post_id) || [];
     list.push({ id: m.id, slide_index: m.slide_index, r2_key: m.r2_key, mime: m.mime, width: m.width, height: m.height,
-      size_bytes: m.size_bytes == null ? null : Number(m.size_bytes), duration_s: money(m.duration_s), url: mediaUrl(m.id) });
+      size_bytes: m.size_bytes == null ? null : Number(m.size_bytes), duration_s: money(m.duration_s), url: mediaUrl(m.id),
+      // W15: a picture taken from this video on her phone (null for a photo and for an older video).
+      cover_r2_key: m.cover_r2_key || null, cover_url: m.cover_r2_key ? coverUrl(m.id) : null });
     out.set(m.post_id, list);
   }
   return out;
@@ -346,6 +349,11 @@ async function mediaOf(postIds) {
 function mediaUrl(mediaId) {
   const base = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_PUBLIC_URL || '';
   return `${base}/v1/media/post/${mediaId}`;
+}
+/** The picture taken from a video slide (W15). Served like the slide itself. */
+function coverUrl(mediaId) {
+  const base = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_PUBLIC_URL || '';
+  return `${base}/v1/media/post/${mediaId}/cover`;
 }
 
 async function productsOf(postIds) {
@@ -641,9 +649,9 @@ async function update(influencerId, postId, patch) {
         for (let i = 0; i < media.length; i += 1) {
           const m = media[i];
           const { rows } = await tx.query(
-            `INSERT INTO post_media (post_id, slide_index, r2_key, mime, size_bytes, width, height, duration_s)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-            [p.id, i, m.r2_key, m.mime, m.size_bytes, m.width, m.height, m.duration_s]);
+            `INSERT INTO post_media (post_id, slide_index, r2_key, mime, size_bytes, width, height, duration_s, cover_r2_key)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+            [p.id, i, m.r2_key, m.mime, m.size_bytes, m.width, m.height, m.duration_s, m.cover_r2_key || null]);
           slides.push(rows[0].id);
         }
       } else {
@@ -717,7 +725,18 @@ async function checkMedia(influencerId, postId, raw, next) {
       if (!Number.isFinite(duration) || duration <= 0) throw bad(MSG.VIDEO_TOO_LONG, 'media');
       if (duration > MAX_VIDEO_S) throw bad(MSG.VIDEO_TOO_LONG, 'media');
     }
-    out.push({ r2_key: m.r2_key, mime, kind, size_bytes: landed.size, duration_s: duration,
+    // W15: the picture her phone took from this video. Her own key for this post, a JPEG that
+    // really landed, and small. A video without one is accepted exactly as before.
+    let cover = null;
+    if (kind === 'video' && m.cover_r2_key != null && m.cover_r2_key !== '') {
+      if (typeof m.cover_r2_key !== 'string' || !m.cover_r2_key.startsWith(prefix) || m.cover_r2_key === m.r2_key) throw bad(MSG.MEDIA_NOT_YOURS, 'media');
+      const pic = await storage.head(m.cover_r2_key);
+      if (!pic || !pic.size) throw bad(MSG.MEDIA_NOT_UPLOADED, 'media');
+      if (String(pic.contentType || '').split(';')[0].trim().toLowerCase() !== 'image/jpeg') throw bad(MSG.FILE_TYPE, 'media');
+      if (pic.size > COVER_MB * MB) throw bad(MSG.FILE_TOO_BIG(COVER_MB), 'media');
+      cover = m.cover_r2_key;
+    }
+    out.push({ r2_key: m.r2_key, mime, kind, size_bytes: landed.size, duration_s: duration, cover_r2_key: cover,
       width: Number.isInteger(m.width) ? m.width : null, height: Number.isInteger(m.height) ? m.height : null });
   }
   return out;
@@ -846,7 +865,7 @@ async function remove(influencerId, postId) {
   if (!['draft', 'rejected'].includes(p.status)) throw new AppError('POST_LOCKED', MSG.CANT_DELETE, 409);
   const media = (await mediaOf([p.id])).get(p.id) || [];
   await db.query(`DELETE FROM creator_posts WHERE id = $1 AND status IN ('draft', 'rejected')`, [p.id]);
-  for (const m of media) await storage.remove(m.r2_key);
+  for (const m of media) { await storage.remove(m.r2_key); if (m.cover_r2_key) await storage.remove(m.cover_r2_key); }
   return { deleted: true };
 }
 

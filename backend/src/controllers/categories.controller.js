@@ -90,9 +90,9 @@ const update = asyncHandler(async (req, res) => {
   if (errs.length) throw new AppError('VALIDATION_ERROR', errs.join('; '), 422);
 
   const allowed = ['name', 'label', 'path_a_pct', 'path_b_pct', 'path_c_pct',
-                   'active', 'sort_order', 'description',
-                   // Wave 1 — per-category commerce-commission return window
-                   'return_window_days'];
+                   'active', 'sort_order', 'description'];
+  // shopper-walk-fixes (W11): a category no longer has a return window of its own — it is ONE
+  // platform number (Admin › Money › Settings). A value sent here is ignored, not saved.
   const sets = [], params = [];
   for (const k of allowed) {
     if (req.body[k] !== undefined) {

@@ -11,8 +11,8 @@ import { moneyApi } from '../../../../../../lib/api';
 import { useLoad, inr, dayMon, dayTime, Head, Tiles, Tile, Tabs, Table, Chip, LoadFailed } from '../../../ui';
 
 const W_CHIP = { requested: ['wait', 'Waiting'], processed: ['ok', 'Processed'], could_not_process: ['no', 'Could not process'] };
-const SALE_STATE = (s) => (s.state === 'cancelled' ? ['ended', 'Cancelled'] : s.state === 'added' ? ['ok', `Added ${dayMon(s.at)}`]
-  : s.state === 'cod_waiting' ? ['wait', 'Cash · not delivered yet'] : s.state === 'not_shipped' ? ['move', 'Not shipped yet'] : ['wait', `Window until ${dayMon(s.windowUntil)}`]);
+const SALE_STATE = (s) => (s.state === 'cancelled' ? ['ended', 'Cancelled'] : s.state === 'returned' ? ['ended', 'Returned'] : s.state === 'added' ? ['ok', `Added ${dayMon(s.at)}`]
+  : s.state === 'cod_waiting' ? ['wait', 'Cash · not delivered yet'] : s.state === 'not_shipped' ? ['move', 'Not shipped yet'] : s.state === 'waiting_delivery' ? ['wait', 'On its way · not delivered yet'] : ['wait', `Window until ${dayMon(s.windowUntil)}`]);
 
 export default function MoneyPersonPage() {
   const { kind, id } = useParams();

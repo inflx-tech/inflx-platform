@@ -4,13 +4,17 @@
  * top, and one product pop-up per pick (photos, colours, sizes with stock, details) → Pick → the
  * pop-up closes → the card shows it picked → the next product. Every price on it comes from the
  * server (POST /follower/posts/:id/deal/price), the same engine that charges at Place order.
+ *
+ * shopper-walk-fixes: the bag icon with its count is in the top bar (O6), and the product pop-up
+ * shows the listing's details as the product page does — brand, category, every listed detail,
+ * returns, then the description (O3, board S4).
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../../services/api';
 import { TopBar, Loading, Empty, Chip } from '../../../components/shop/bitsShop';
-import { ProductPopup, StickyBar, K } from '../../../components/shop/orderBits';
+import { ProductPopup, StickyBar, BagButton, K } from '../../../components/shop/orderBits';
 import { CO, dayLabel } from '../../../components/shop/copyOrder';
 import { CS, inr } from '../../../components/shop/copyShop';
 import { fonts } from '../../../theme/tokens';
@@ -150,8 +154,8 @@ export default function DealScreen({ navigation, route }) {
     return [...list.filter((p) => !p.sold_out), ...list.filter((p) => p.sold_out)];
   }, [data, cat, sort]);
 
-  if (status === 'loading') return <SafeAreaView style={st.safe}><TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} /><Loading /></SafeAreaView>;
-  if (status === 'error' || !data) return <SafeAreaView style={st.safe}><TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} /><Empty title={CS.loadError} /></SafeAreaView>;
+  if (status === 'loading') return <SafeAreaView style={st.safe}><TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} right={<BagButton />} /><Loading /></SafeAreaView>;
+  if (status === 'error' || !data) return <SafeAreaView style={st.safe}><TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} right={<BagButton />} /><Empty title={CS.loadError} /></SafeAreaView>;
 
   const buys = picks.filter((l) => l.role !== 'gift');
   const unitCount = buys.reduce((s, l) => s + (l.qty || 1), 0);
@@ -170,7 +174,7 @@ export default function DealScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
-      <TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} />
+      <TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} right={<BagButton />} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 20 }} testID="deal-page">
         {/* The deal at the top */}
         <View style={st.head} testID="deal-head">
@@ -349,6 +353,7 @@ export default function DealScreen({ navigation, route }) {
         }}
         onPrimary={primary}
         onRemove={popup && popup.ref ? () => removePick(popup.ref) : null}
+        returnsLine={popup && popup.mode !== 'gift' && data.returns ? data.returns.line : null}
         testID="product-popup"
       />
     </SafeAreaView>

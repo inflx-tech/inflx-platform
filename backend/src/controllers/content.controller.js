@@ -24,14 +24,20 @@ const confirmUpload = asyncHandler(async (req, res) =>
   success(res, { file: await content.confirmUpload(req.params.ciId, creatorScope(req), req.params.fileId) }));
 const removeFile = asyncHandler(async (req, res) =>
   success(res, await content.removeFile(req.params.ciId, creatorScope(req), req.params.fileId)));
+// shopper-walk-fixes (W15): the picture her phone takes from a video she adds.
+const requestCoverUpload = asyncHandler(async (req, res) =>
+  success(res, { upload: await content.requestCoverUpload(req.params.ciId, creatorScope(req), req.params.fileId, req.body || {}) }));
+const confirmCover = asyncHandler(async (req, res) =>
+  success(res, { file: await content.confirmCover(req.params.ciId, creatorScope(req), req.params.fileId) }));
 
-/* ── G12 — view a file ── */
+/* ── G12 — view a file (or, with ?cover=1, the picture taken from a video — W15) ── */
+const wantsCover = (req) => String((req.query || {}).cover || '') === '1';
 const creatorFileUrl = asyncHandler(async (req, res) =>
-  success(res, { view: await content.fileUrl(req.params.ciId, creatorScope(req), req.params.fileId) }));
+  success(res, { view: await content.fileUrl(req.params.ciId, creatorScope(req), req.params.fileId, { cover: wantsCover(req) }) }));
 const brandFileUrl = asyncHandler(async (req, res) =>
-  success(res, { view: await content.fileUrl(req.params.ciId, brandScope(req), req.params.fileId) }));
+  success(res, { view: await content.fileUrl(req.params.ciId, brandScope(req), req.params.fileId, { cover: wantsCover(req) }) }));
 const adminFileUrl = asyncHandler(async (req, res) =>
-  success(res, { view: await content.fileUrl(req.params.ciId, adminScope(req), req.params.fileId) }));
+  success(res, { view: await content.fileUrl(req.params.ciId, adminScope(req), req.params.fileId, { cover: wantsCover(req) }) }));
 
 /* ── G1, G4–G11 — the flow (Phase 2c) ── */
 const flow = require('../services/contentFlow.service');
@@ -57,7 +63,7 @@ const probeConfirm = asyncHandler(async (req, res) => success(res, await probe.c
 
 module.exports = {
   brandScope, creatorScope, adminScope,
-  requestUpload, confirmUpload, removeFile,
+  requestUpload, confirmUpload, removeFile, requestCoverUpload, confirmCover,
   creatorFileUrl, brandFileUrl, adminFileUrl,
   probeStatus, probeUrl, probeConfirm,
   creatorRead, brandRead, caption, submit, setProof, clearProof, posted, creatorReport,

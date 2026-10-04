@@ -19,8 +19,9 @@ const ROWS = [
     desc: 'The least a brand or creator can ask to withdraw.' },
   { key: 'withdrawal_process_hours', where: 'platform', label: 'Withdrawals processed within', unit: 'hours',
     desc: 'What the person is told, and when a waiting request turns amber in Withdrawals.' },
-  { key: 'return_window_days', read: 'returnWindowDays', where: 'payment', label: 'Return window', unit: 'days', min: 1, max: 90,
-    desc: "How long a sale's shares wait before they are added to the wallets. Also set per category in Pricing." },
+  // shopper-walk-fixes (W11, W13): ONE number for the whole platform, kept in hours; typed in hours or days.
+  { key: 'return_window_hours', read: 'returnWindowHours', where: 'payment', label: 'Return window', unit: 'hours', hoursOrDays: true, min: 1, max: 8760,
+    desc: "Counted from delivery, the same for every brand and product. A shopper can ask to return within it; when it closes, the creator's commission, INFLX's share and the brand's money are added." },
   { key: 'campaign_fee_pct', where: 'platform', label: 'INFLX campaign fee', unit: '%',
     desc: 'Pay for Content only; charged to the brand when the money locks at its signature.' },
   { key: 'final_payment_wait_days', where: 'platform', label: 'Final payment waiting period', unit: 'days',
@@ -32,6 +33,7 @@ export default function MoneySettingsPage() {
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(null);
+  const [unit, setUnit] = useState('days');        // how the return window is being typed: hours | days
   const [loadError, setLoadError] = useState(false);
   // Changing a number needs the Settings permission (the server enforces it); everyone who can open
   // Money can read them. null = not known yet.
@@ -50,6 +52,13 @@ export default function MoneySettingsPage() {
     }
     setValues(v);
     setForm(Object.fromEntries(Object.entries(v).map(([k, x]) => [k, String(x.value)])));
+    // The return window shows in days when it is a whole number of days, otherwise in hours.
+    const rw = v.return_window_hours;
+    if (rw) {
+      const days = rw.value % 24 === 0 && rw.value !== 24;
+      setUnit(days ? 'days' : 'hours');
+      setForm((f) => ({ ...f, return_window_hours: String(days ? rw.value / 24 : rw.value) }));
+    }
   }, []);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -60,7 +69,13 @@ export default function MoneySettingsPage() {
 
   async function save(r) {
     const cur = values[r.key];
-    const n = Number(form[r.key]);
+    const typed = Number(form[r.key]);
+    // The return window is saved in hours whichever way it was typed.
+    const n = r.hoursOrDays && unit === 'days' ? typed * 24 : typed;
+    if (r.hoursOrDays && (form[r.key] === '' || !Number.isInteger(typed) || n < cur.min || n > cur.max)) {
+      setErrors((e) => ({ ...e, [r.key]: 'Enter a whole number, from 1 hour to 365 days.' }));
+      return;
+    }
     if (form[r.key] === '' || !Number.isFinite(n) || n < cur.min || n > cur.max || (r.where === 'platform' && !Number.isInteger(n))) {
       setErrors((e) => ({ ...e, [r.key]: `Enter a number between ${cur.min} and ${cur.max}.` }));
       return;
@@ -70,7 +85,7 @@ export default function MoneySettingsPage() {
     const res = r.where === 'platform' ? await adminApi.updatePlatformSettings({ [r.key]: n }) : await adminApi.updatePaymentConfig({ [r.key]: n });
     setSaving(null);
     if (!res.success) { setErrors((e) => ({ ...e, [r.key]: res.error?.message || 'That did not save.' })); return; }
-    show(`${r.label} is now ${n} ${r.unit === '₹' ? 'rupees' : r.unit === '%' ? 'per cent' : r.unit}.`);
+    show(r.hoursOrDays ? `${r.label} is now ${typed} ${typed === 1 ? unit.slice(0, -1) : unit}.` : `${r.label} is now ${n} ${r.unit === '₹' ? 'rupees' : r.unit === '%' ? 'per cent' : r.unit}.`);
     load();
   }
 
@@ -84,7 +99,9 @@ export default function MoneySettingsPage() {
       ) : null}
       <div className="bg-white rounded-xl border border-border">
         {!values ? <div className="p-8 text-center text-t3 text-sm">Loading…</div> : ROWS.filter((r) => values[r.key]).map((r) => {
-          const dirty = String(values[r.key].value) !== form[r.key];
+          const dirty = r.hoursOrDays
+            ? Number(form[r.key]) * (unit === 'days' ? 24 : 1) !== values[r.key].value
+            : String(values[r.key].value) !== form[r.key];
           return (
             <div key={r.key} className="px-4 py-3.5 border-b border-border">
               <div className="flex items-center justify-between gap-3">
@@ -92,7 +109,13 @@ export default function MoneySettingsPage() {
                 <div className="flex items-center gap-2">
                   <input type="number" className="w-24 border border-border rounded-lg px-2.5 py-1.5 text-sm text-right outline-none focus:border-t1" value={form[r.key]}
                     min={values[r.key].min} max={values[r.key].max} disabled={canEdit === false} onChange={(e) => setForm((f) => ({ ...f, [r.key]: e.target.value }))} />
-                  <span className="text-xs text-t3 w-10">{r.unit}</span>
+                  {r.hoursOrDays ? (
+                    <select className="border border-border rounded-lg px-2 py-1.5 text-xs text-t1 bg-white outline-none focus:border-t1" value={unit}
+                      disabled={canEdit === false} onChange={(e) => setUnit(e.target.value)} aria-label="Hours or days" data-testid="return-window-unit">
+                      <option value="hours">hours</option>
+                      <option value="days">days</option>
+                    </select>
+                  ) : <span className="text-xs text-t3 w-10">{r.unit}</span>}
                   <Btn onClick={() => save(r)} disabled={!dirty || saving === r.key || canEdit === false}>{saving === r.key ? 'Saving…' : 'Save'}</Btn>
                 </div>
               </div>

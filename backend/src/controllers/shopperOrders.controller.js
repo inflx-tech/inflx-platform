@@ -55,6 +55,9 @@ module.exports = {
   listOrders: ok(async (req) => orders.listOrders(await me(req), req.query || {})),
   lineDetail: ok(async (req) => orders.lineDetail(await me(req), req.params.id)),
   cancelPreview: ok(async (req) => orders.cancelPreview(await me(req), req.params.id)),
+  // shopper-walk-fixes (W14): the shopper's Return, on a delivered item inside INFLX's return window.
+  returnPreview: ok(async (req) => require('../services/shopperReturns.service').preview(await me(req), req.params.id)),
+  returnRequest: ok(async (req) => require('../services/shopperReturns.service').request({ followerId: await me(req), lineId: req.params.id, reason: (req.body || {}).reason, note: (req.body || {}).note })),
   cancel: ok(async (req) => orders.cancel({ actor: 'shopper', followerId: await me(req), lineId: req.params.id,
     reason: (req.body || {}).reason, note: (req.body || {}).note })),
 

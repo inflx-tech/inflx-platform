@@ -88,7 +88,7 @@ async function collabMoneyFor(where, params, conn = db) {
 
 const SALE_SQL = `
   SELECT ol.id, ol.name, ol.image_url, ol.colour, ol.size, ol.qty, ol.role, ol.paid_total, ol.commission, ol.commission_pct,
-         ol.platform_fee, ol.fee_pct, ol.brand_net, ol.status AS line_status, ol.created_at, ol.cancelled_at,
+         ol.platform_fee, ol.fee_pct, ol.brand_net, ol.status AS line_status, ol.created_at, ol.cancelled_at, ol.cancelled_by,
          ol.brand_id, ol.influencer_id, ol.campaign_influencer_id, ol.post_id,
          b.business_name AS brand_name, COALESCE(i.full_name, u.name) AS creator_name,
          cp.post_code, cp.caption, bo.name AS offer_name,
@@ -106,16 +106,26 @@ const SALE_SQL = `
     JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id
     LEFT JOIN brand_offers bo ON bo.id = ol.offer_id`;
 
-/** Where one sold item's money stands: cancelled · waiting for delivery (cash) · in its window · added. */
+/**
+ * Where one sold item's money stands:
+ *   cancelled · cod_waiting (cash, not delivered) · not_shipped · waiting_delivery · window · added.
+ *
+ * shopper-walk-fixes (W13, founder 4 Oct 2026): the return window runs FROM THE DELIVERY for every
+ * order, paid online or in cash, with the length stamped on the sale. So until it is delivered there
+ * is no date to show: it is waiting to be shipped, or waiting to be delivered.
+ */
 function saleState(s) {
-  if (s.line_status === 'cancelled') return { state: 'cancelled', until: null, at: s.cancelled_at };
+  // shopper-walk-fixes (W14): an item the shopper returned is a cancelled line whose cancelled_by is 'return'.
+  if (s.line_status === 'cancelled') return { state: s.cancelled_by === 'return' ? 'returned' : 'cancelled', until: null, at: s.cancelled_at };
   const cod = s.payment_method === 'cod';
-  if (cod && s.order_status !== 'delivered') return { state: 'cod_waiting', until: null, at: null };
-  let until = s.return_window_ends_at ? new Date(s.return_window_ends_at) : null;
-  if (cod && s.delivered_at && until) until = new Date(new Date(s.delivered_at).getTime() + (until.getTime() - new Date(s.tx_created_at).getTime()));
-  // An order still Confirmed or Packed can be cancelled, so the money jobs leave it alone. Once its
-  // window date has passed, the truthful thing to say is that it is waiting to be shipped.
-  if (['confirmed', 'packed'].includes(s.order_status) && until && until.getTime() <= Date.now()) return { state: 'not_shipped', until: null, at: null };
+  const delivered = s.order_status === 'delivered' && !!s.delivered_at;
+  if (!delivered) {
+    if (cod) return { state: 'cod_waiting', until: null, at: null };
+    if (['confirmed', 'packed'].includes(s.order_status)) return { state: 'not_shipped', until: null, at: null };
+    return { state: 'waiting_delivery', until: null, at: null };
+  }
+  const stamp = s.return_window_ends_at ? new Date(s.return_window_ends_at) : null;
+  const until = stamp ? new Date(new Date(s.delivered_at).getTime() + Math.max(0, stamp.getTime() - new Date(s.tx_created_at).getTime())) : null;
   return { state: 'window', until, at: null };
 }
 
@@ -124,7 +134,7 @@ function saleOut(s, side) {
   const brandAdded = s.brand_settlement_status === 'settled';
   const creatorAdded = !!s.commission_confirmed_at;
   const added = side === 'creator' ? creatorAdded : brandAdded;
-  const st = base.state === 'cancelled' ? base
+  const st = base.state === 'cancelled' || base.state === 'returned' ? base
     : added ? { state: 'added', until: null, at: side === 'creator' ? s.commission_confirmed_at : s.brand_settled_at } : base;
   const title = String(s.caption || '').split('\n').map((x) => x.trim()).find(Boolean) || s.offer_name || 'Post';
   const out = {
@@ -134,7 +144,7 @@ function saleOut(s, side) {
     cashOnDelivery: s.payment_method === 'cod', orderStatus: s.order_status, deliveredAt: s.delivered_at,
     state: st.state, windowUntil: st.until ? istDayOf(st.until) : null, at: st.at,
   };
-  const cancelled = st.state === 'cancelled';
+  const cancelled = st.state === 'cancelled' || st.state === 'returned';
   if (side === 'creator') {
     // Her commission alone; never the buyer, never the other shares (§17A).
     return { ...out, brandName: s.brand_name, commissionPct: r2(s.commission_pct), commission: cancelled ? 0 : r2(s.commission) };

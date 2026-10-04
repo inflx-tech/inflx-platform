@@ -67,7 +67,9 @@ describe('W1 · W2 — the Wallet tab', () => {
     r.getByText('₹9,000');             // locked in collaborations
     r.getByText('1 collaboration');
     r.getByText('₹2,719');             // sales money coming
-    r.getByText('1 sale in its return window');
+    // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's share is added after DELIVERY, when its
+    // return window closes, so a sale that is coming may not be in a window yet: "in their return window" → "not added yet".
+    r.getByText('1 sale not added yet');
 
     // the ledger is no longer printed on the tab: it is History, in her words
     expect(r.queryByText('Paid to Asha M.')).toBeNull();
@@ -81,7 +83,7 @@ describe('W1 · W2 — the Wallet tab', () => {
     await waitFor(() => r.getByTestId('brand-wallet'));
     expect(r.getByTestId('wallet-available-amount').props.children).toBe('₹0');
     r.getByText('Nothing locked');
-    r.getByText('No sales in a return window');
+    r.getByText('No sales waiting');                                       // same drift (W13)
   });
 
   it('still loads when her details fail — a wallet without that line is still a wallet', async () => {

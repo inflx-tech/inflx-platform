@@ -67,7 +67,7 @@ describe('BW1 · BW2 — the brand Wallet tab', () => {
     r.getByText('Available');
     expect(r.getByTestId('wallet-available-amount').props.children).toBe('₹48,200');
     r.getByText('Locked in collaborations'); r.getByText('3 collaborations'); r.getByText('₹21,875');
-    r.getByText('Sales money coming'); r.getByText('9 sales in their return window'); r.getByText('₹12,070');
+    r.getByText('Sales money coming'); r.getByText('9 sales not added yet');   /* ASSERTION DRIFT W13: was '9 sales in their return window' */ r.getByText('₹12,070');
     r.getByText('History'); r.getByText('Everything in and out');
     r.getByText('Bank and business details'); r.getByText('Bank account added · GST added');
     expect(r.queryByTestId('hold-box')).toBeNull();
@@ -212,7 +212,12 @@ describe('BW5 · BW6 — sales money', () => {
     r = render(<BrandWalletSaleScreen navigation={nav()} route={{ params: { sale: sale({ state: 'cod_waiting', cashOnDelivery: true, orderStatus: 'dispatched', deliveredAt: null }) } }} />);
     r.getByText('Cash on delivery. Its return window starts when it is delivered.'); r.getByText('Cash on delivery'); r.getByText('Shipped');
     r = render(<BrandWalletSaleScreen navigation={nav()} route={{ params: { sale: sale({ state: 'not_shipped', orderStatus: 'packed', deliveredAt: null, windowUntil: null }) } }} />);
-    r.getByText('This order has not been shipped yet. Your ₹2,719 is added to your wallet once it ships.'); r.getByText('Packed');
+    // shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's shares are added after DELIVERY, when its
+    // return window (counted from the delivery) closes — so the sentence no longer says "once it ships".
+    r.getByText('This order has not been shipped yet. Your ₹2,719 is added to your wallet after it is delivered and its return window closes.'); r.getByText('Packed');
+    // New state: shipped, on its way, not delivered yet.
+    r = render(<BrandWalletSaleScreen navigation={nav()} route={{ params: { sale: sale({ state: 'waiting_delivery', orderStatus: 'dispatched', deliveredAt: null, windowUntil: null }) } }} />);
+    r.getByText('On its way to the shopper. Its return window starts when it is delivered.'); r.getByText('Shipped');
   });
 });
 
@@ -388,7 +393,7 @@ describe('CW1 · CW2 — the creator Wallet tab', () => {
     expect(r.getByTestId('wallet-balance-amount').props.children).toBe('₹9,870');
     r.getByText('Still to come'); r.getByText('Collaboration payments and commission'); r.getByText('₹11,695');
     r.getByText('Collaboration payments'); r.getByText('2 collaborations · next on 31 Oct'); r.getByText('₹10,250');
-    r.getByText('Commission'); r.getByText('6 sales in their return window'); r.getByText('₹1,445');
+    r.getByText('Commission'); r.getByText('6 sales not added yet');   /* ASSERTION DRIFT W13: was '6 sales in their return window' */ r.getByText('₹1,445');
     r.getByText('Payment details'); r.getByText('UPI added · bank added');
     expect(flat(r)).not.toMatch(/tds|tax|simple view/i);
     fireEvent.press(r.getByTestId('wallet-withdraw')); expect(n.navigate).toHaveBeenLastCalledWith('CreatorWithdraw', {});
@@ -435,12 +440,13 @@ describe('CW3 · CW4 — still to come', () => {
     ] }));
     const r = render(<CreatorWalletCommissionScreen navigation={nav()} />);
     await waitFor(() => r.getByTestId('wallet-commission-list'));
-    r.getByText('₹1,445'); r.getByText('In return window'); r.getByText('₹2,130'); r.getByText('Added so far'); r.getByText('14');
+    r.getByText('₹1,445'); r.getByText('Not added yet');   /* ASSERTION DRIFT W13: was 'In return window' */ r.getByText('₹2,130'); r.getByText('Added so far'); r.getByText('14');
     r.getByText('Urban Threads · Diwali Edit · 10%'); r.getByText('Sri Lakshmi Silks · Winter Run · 12%');
     expect(r.getAllByText('Your post K7M2F9 · return window until 12 Oct')).toHaveLength(2); r.getByText('₹320'); r.getByText('₹96');
     r.getByText('Your post T9QW4D · added 28 Sep'); r.getByText('+ ₹88');
     r.getByText('Your post K7M2F9 · cancelled'); r.getByText('₹0');
-    r.getByText("Commission is added to your wallet when each sale's return window closes.");
+    // ASSERTION DRIFT — shopper-walk-fixes W13: commission is added after the sale is DELIVERED and its window closes.
+    r.getByText('Commission is added to your wallet after each sale is delivered and its return window closes.');
     expect(flat(r)).not.toMatch(/Shopper paid|INFLX's share|Your share/);
     expect(influencerApi.getWalletCommission).toHaveBeenLastCalledWith('all', 0);
     expect(r.queryByTestId('commission-more')).toBeNull();

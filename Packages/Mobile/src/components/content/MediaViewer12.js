@@ -42,8 +42,13 @@
  *   neither    everything else — the file and nothing else (the brand's Pay for Sale / Hybrid
  *              review, a package that is with the brand, a Story screenshot)
  *
+ * shopper-walk-fixes (frame B2): the title is two lines — the post, then the place and which file.
+ *
  * Props
- *   open       null (closed) or { label, files: [{ id, kind? }], index }
+ *   open       null (closed) or { title, place, files: [{ id, kind? }], index }
+ *                title   the first line, bold: the post ("This good offer · SHNCZW")
+ *                place   the second line's start: "Instagram reel" → "Instagram reel · 1 of 1"
+ *                label   a caller with ONE name (a deliverable): the label, then "1 of 3" under it
  *   fetchUrl   (fileId) => the API's answer: { success, data: { view: { url, kind, mime } } }
  *   onClose    close it
  *   noteOf     (file) => the note to show in amber above the button, if any
@@ -224,6 +229,11 @@ function ViewerBody({ open, fetchUrl, onClose, noteOf, onAddNote, onRemove, held
   const needsUpdate = video && !hasPlayer();
   const note = file && noteOf ? noteOf(file) : null;
   const many = files.length > 1;
+  // The title's two parts. A caller that names the post and the place gets "post" over
+  // "place · 1 of 1"; one that passes only `label` (Pay for Content: the deliverable's name) gets
+  // the label over "1 of 1". The place is never said twice.
+  const head = open.title || open.label || open.place || '';
+  const place = open.title ? open.place : null;
   // Where it starts is part of the source, so a renewed video opens AT that second (it never
   // shows 0:00 first). The object changes only when the link or the second does.
   const url = ready ? media.url : null;
@@ -240,9 +250,15 @@ function ViewerBody({ open, fetchUrl, onClose, noteOf, onAddNote, onRemove, held
           accessibilityLabel={C12.viewer.close} testID="viewer-close">
           <Icon name="close" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={s.title} numberOfLines={1} ellipsizeMode="middle" testID="viewer-title">
-          {C12.viewer.title(open.label || '', files.length ? idx + 1 : 0, files.length)}
-        </Text>
+        {/* B2 — two lines. The post (or the deliverable) in bold, cut at its END with "…"; under it
+            the place and which file. One line cut in the middle read "This good offer · SH…Instagram
+            reel · 1 of 1". */}
+        <View style={s.titles}>
+          <Text style={s.title} numberOfLines={1} ellipsizeMode="tail" testID="viewer-title">{head}</Text>
+          <Text style={s.which} numberOfLines={1} testID="viewer-which">
+            {C12.viewer.which(place, files.length ? idx + 1 : 0, files.length)}
+          </Text>
+        </View>
         {/* H2 — "sound". The player's bar has no such button, so it is the viewer's own; up here it
             cannot sit on top of the player's bar, and it does not hide when that bar does. */}
         {video && Video ? (
@@ -355,7 +371,9 @@ const s = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6 },
   close: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   sound: { marginRight: 0, marginLeft: 10 },
-  title: { flex: 1, fontFamily: fonts.sansBold, fontSize: 14, color: '#FFFFFF' },
+  titles: { flex: 1, minWidth: 0 },
+  title: { fontFamily: fonts.sansBold, fontSize: 14, lineHeight: 19, color: '#FFFFFF' },
+  which: { fontFamily: fonts.sansRegular, fontSize: 11.5, lineHeight: 16, color: 'rgba(255,255,255,0.7)' },
   media: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 8 },
   fill: { width: '100%', height: '100%' },
   spinner: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },

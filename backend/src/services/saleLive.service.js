@@ -50,7 +50,8 @@ async function postsOf(ciId, conn = db) {
             cp.removed_reason, cs.go_live_date, o.name AS offer_name, o.status AS offer_status, o.ends_on AS offer_ends_on,
             o.starts_on AS offer_starts_on,
             (SELECT pm.id FROM post_media pm WHERE pm.post_id = cp.id ORDER BY pm.slide_index LIMIT 1) AS cover_id,
-            (SELECT pm.mime FROM post_media pm WHERE pm.post_id = cp.id ORDER BY pm.slide_index LIMIT 1) AS cover_mime
+            (SELECT pm.mime FROM post_media pm WHERE pm.post_id = cp.id ORDER BY pm.slide_index LIMIT 1) AS cover_mime,
+            (SELECT pm.cover_r2_key FROM post_media pm WHERE pm.post_id = cp.id ORDER BY pm.slide_index LIMIT 1) AS cover_key
        FROM creator_posts cp
        JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
        JOIN campaign_sets cs ON cs.id = ci.set_id
@@ -76,7 +77,13 @@ function postOut(p, postingDate, today) {
     approvedAt: p.approved_at || null,
     late: !!(approvedDay && postingDate && approvedDay > postingDate),
     sharable: p.status === 'approved' && !!p.approved_at && state !== 'removed',
-    cover: p.cover_id ? { url: `${base}/v1/media/post/${p.cover_id}`, isVideo: String(p.cover_mime || '').startsWith('video/') } : null,
+    // shopper-walk-fixes (W15, board B1 / C1): `url` is always a PICTURE the row can draw — the
+    // photo itself, or the picture taken from the video. null for a video that has none (uploaded
+    // before her phone made one): the row then shows its dark tile with the play mark.
+    cover: p.cover_id ? (() => {
+      const isVideo = String(p.cover_mime || '').startsWith('video/');
+      return { url: isVideo ? (p.cover_key ? `${base}/v1/media/post/${p.cover_id}/cover` : null) : `${base}/v1/media/post/${p.cover_id}`, isVideo };
+    })() : null,
   };
 }
 

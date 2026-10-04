@@ -35,6 +35,7 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const notificationService = require('../services/notification.service');
 const { appendInfluencerLedger } = require('../services/ledger.service');
+const shopperReturns = require('../services/shopperReturns.service');
 
 const _round2 = (n) => parseFloat((parseFloat(n) || 0).toFixed(2));
 
@@ -59,9 +60,8 @@ const initiateReturn = asyncHandler(async (req, res) => {
   // Validate transaction ownership + fetch context for return-window check
   const { rows: txRows } = await db.query(
     `SELECT ft.id, ft.follower_id, ft.product_id AS tx_product_id, ft.created_at,
-            ft.transaction_type, ft.net_amount,
+            ft.transaction_type, ft.net_amount, ft.checkout_id, ft.return_window_ends_at,
             f.user_id AS follower_user_id,
-            bp.return_policy_days,
             fo.id AS order_id
        FROM follower_transactions ft
        JOIN followers f ON f.id = ft.follower_id
@@ -76,14 +76,16 @@ const initiateReturn = asyncHandler(async (req, res) => {
     throw new AppError('FORBIDDEN', 'Not your transaction', 403);
   }
 
-  // Return-window check: created_at + return_policy_days >= now
-  const returnDays = tx.return_policy_days || 0;
-  if (returnDays === 0) {
-    throw new AppError('VALIDATION_ERROR', 'This product is not eligible for returns', 422);
+  // shopper-walk-fixes (W11, W14; founder 4 Oct 2026): the return window is INFLX's — ONE platform
+  // number — and no longer the product's own "return days" (0 on every product; nobody ever set it).
+  //   · An order placed through a creator's post is returned ITEM BY ITEM, from My orders
+  //     (POST /follower/orders/lines/:id/return); this older request is not its door.
+  //   · An older sale (no parcel to deliver) keeps this request, inside the window stamped on it.
+  if (tx.checkout_id) {
+    throw new AppError('VALIDATION_ERROR', 'Return this item from My orders', 422);
   }
-  const windowEnds = new Date(new Date(tx.created_at).getTime() + returnDays * 24 * 60 * 60 * 1000);
-  if (Date.now() > windowEnds.getTime()) {
-    throw new AppError('VALIDATION_ERROR', `Return window has closed (${returnDays} days from purchase)`, 422);
+  if (!tx.return_window_ends_at || Date.now() > new Date(tx.return_window_ends_at).getTime()) {
+    throw new AppError('VALIDATION_ERROR', 'The return window has closed', 422);
   }
 
   // No active return already
@@ -237,12 +239,17 @@ const adminListReturns = asyncHandler(async (req, res) => {
     `SELECT fr.id, fr.transaction_id, fr.product_id, fr.variant_id, fr.reason, fr.reason_text,
             fr.return_status, fr.refund_amount, fr.admin_notes,
             fr.created_at, fr.reviewed_at, fr.refunded_at,
-            bp.name AS product_name, bp.image_url AS product_image_url,
-            pv.size AS variant_size, pv.color AS variant_color,
+            COALESCE(ol.name, bp.name) AS product_name, COALESCE(ol.image_url, bp.image_url) AS product_image_url,
+            COALESCE(ol.size, pv.size) AS variant_size, COALESCE(ol.colour, pv.color) AS variant_color,
             b.business_name AS brand_name, b.id AS brand_id,
             u.name AS follower_name, u.phone AS follower_phone,
-            ft.net_amount AS transaction_amount
+            -- W14: for an item of an order placed through a post, the amount is what was paid for THAT item
+            COALESCE(ol.paid_total, ft.net_amount) AS transaction_amount,
+            fr.order_line_id, fr.request_id, ol.qty AS line_qty, fo.payment_method,
+            (SELECT count(*)::int FROM follower_returns x WHERE x.request_id = fr.request_id) AS request_items
        FROM follower_returns fr
+       LEFT JOIN order_lines ol ON ol.id = fr.order_line_id
+       LEFT JOIN follower_orders fo ON fo.id = fr.order_id
        JOIN follower_transactions ft ON ft.id = fr.transaction_id
        JOIN brands b ON b.id = ft.brand_id
        JOIN followers f ON f.id = ft.follower_id
@@ -262,6 +269,11 @@ const adminListReturns = asyncHandler(async (req, res) => {
  */
 const adminApproveReturn = asyncHandler(async (req, res) => {
   const { refund_amount, admin_notes } = req.body;
+  // shopper-walk-fixes (W14): an item of an order placed through a post. Its refund is what was paid
+  // for the items of the request — never a typed amount — and everything returned together is approved together.
+  if (await shopperReturns.isLineReturn(req.params.id)) {
+    return success(res, await shopperReturns.decide(req.params.id, { approve: true, adminUserId: req.user.sub, notes: admin_notes }));
+  }
   if (!Number.isFinite(Number(refund_amount)) || Number(refund_amount) < 0) {
     throw new AppError('VALIDATION_ERROR', 'refund_amount must be a non-negative number', 422);
   }
@@ -291,6 +303,9 @@ const adminApproveReturn = asyncHandler(async (req, res) => {
  */
 const adminRejectReturn = asyncHandler(async (req, res) => {
   const { admin_notes } = req.body;
+  if (await shopperReturns.isLineReturn(req.params.id)) {
+    return success(res, await shopperReturns.decide(req.params.id, { approve: false, adminUserId: req.user.sub, notes: admin_notes }));
+  }
   if (!admin_notes || !admin_notes.trim()) {
     throw new AppError('VALIDATION_ERROR', 'admin_notes is required when rejecting', 422);
   }
@@ -319,6 +334,10 @@ const adminRejectReturn = asyncHandler(async (req, res) => {
  */
 const adminMarkRefunded = asyncHandler(async (req, res) => {
   const { razorpay_refund_id } = req.body;
+  // W14: the item is back — it is undone as a cancel undoes one, and an online payment is refunded here.
+  if (await shopperReturns.isLineReturn(req.params.id)) {
+    return success(res, await shopperReturns.complete(req.params.id, { adminUserId: req.user.sub }));
+  }
   const { rows } = await db.query(
     `UPDATE follower_returns
         SET return_status = 'refunded',

@@ -27,6 +27,10 @@ const LIMITS = {
 };
 const MAX_FILES_PER_ROW = 10;
 const SWEEP_AFTER_HOURS = 24;
+// shopper-walk-fixes (W15): a still picture taken from a video on her phone. Small on purpose.
+const COVER_MAX = MB;
+const COVER_MIME = 'image/jpeg';
+const coverKeyOf = (ciId, fileId) => `${storage.PREFIX}/${ciId}/${fileId}.cover.jpg`;
 
 const refuse = (code, message, status = 422, field = null) => { throw new AppError(code, message, status, field); };
 
@@ -246,9 +250,9 @@ async function removeFile(ciId, scope, fileId) {
       return null;
     }
     await client.query(`UPDATE content_files SET deleted_at = now() WHERE id = $1`, [f.id]);
-    return f.storage_key;
+    return [f.storage_key, f.cover_key];
   });
-  if (toDelete) await storage.remove(toDelete);
+  for (const key of toDelete || []) if (key) await storage.remove(key);   // the video, and the picture taken from it
   return { ok: true };
 }
 
@@ -260,7 +264,7 @@ async function removeFile(ciId, scope, fileId) {
  *   admin   — only once either side has reported to INFLX (approval Q12).
  * Everything else is 404 (checks 25, 26).
  */
-async function fileUrl(ciId, scope, fileId) {
+async function fileUrl(ciId, scope, fileId, { cover = false } = {}) {
   let cc;
   let g = null;
   if (scope.side === 'admin') {
@@ -285,6 +289,13 @@ async function fileUrl(ciId, scope, fileId) {
     if (!sent) refuse('NOT_FOUND', 'Not found', 404);
   }
   if (!storage.keyBelongsTo(f.storage_key, ciId)) refuse('NOT_FOUND', 'Not found', 404);
+  if (cover) {
+    // W15: the picture taken from this video. Whoever may see the video may see its picture —
+    // nobody else; the checks above have already been asked.
+    if (!f.cover_key || !storage.keyBelongsTo(f.cover_key, ciId)) refuse('NOT_FOUND', 'Not found', 404);
+    const c = await storage.viewUrl(f.cover_key, COVER_MIME);
+    return { fileId: f.id, kind: 'photo', mime: COVER_MIME, cover: true, ...c };
+  }
   const v = await storage.viewUrl(f.storage_key, f.mime);
   console.log(`[content] view url issued: file ${f.id} ci ${ciId} to ${scope.side} ${scope.userId || ''}`);
   return { fileId: f.id, kind: f.kind, mime: f.mime, ...v };
@@ -297,7 +308,7 @@ async function fileUrl(ciId, scope, fileId) {
  */
 async function sweep({ olderThanHours = SWEEP_AFTER_HOURS } = {}) {
   const { rows } = await db.query(
-    `SELECT f.id, f.storage_key
+    `SELECT f.id, f.storage_key, f.cover_key
        FROM content_files f
       WHERE f.verified_at IS NULL AND f.deleted_at IS NULL
         AND f.uploaded_at < now() - ($1 || ' hours')::interval
@@ -311,7 +322,7 @@ async function sweep({ olderThanHours = SWEEP_AFTER_HOURS } = {}) {
   for (const f of rows) {
     const { rowCount } = await db.query(
       `UPDATE content_files SET deleted_at = now() WHERE id = $1 AND verified_at IS NULL AND deleted_at IS NULL`, [f.id]);
-    if (rowCount) { await storage.remove(f.storage_key); deleted += 1; }
+    if (rowCount) { await storage.remove(f.storage_key); if (f.cover_key) await storage.remove(f.cover_key); deleted += 1; }
   }
   return { deleted };
 }
@@ -320,11 +331,58 @@ const fileOut = (f) => ({
   id: f.id, rowKey: f.row_key, purpose: f.purpose, kind: f.kind, mime: f.mime,
   sizeBytes: Number(f.size_bytes), durationS: f.duration_s != null ? Number(f.duration_s) : null,
   uploadedAt: f.uploaded_at, verified: !!f.verified_at,
+  // W15: a picture taken from this video exists (fetched with the file's own view link, ?cover=1).
+  hasCover: !!f.cover_key,
 });
+
+/* ───────────────────────────────────────────────────────────── a video's picture (W15) */
+
+/** Her own video on this collaboration, not deleted. Anything else is a 404. */
+async function ownVideo(ciId, scope, fileId) {
+  await contentGate.assertContentOpen(ciId, scope);
+  if (scope.side !== 'creator') refuse('NOT_FOUND', 'Not found', 404);
+  const cc = await contentRow(ciId);
+  if (!cc) refuse('FILE_NOT_FOUND', MSG.FILE_NOT_FOUND, 404);
+  const { rows: [f] } = await db.query(
+    `SELECT * FROM content_files WHERE id = $1 AND content_id = $2 AND deleted_at IS NULL`, [fileId, cc.id]);
+  if (!f || f.kind !== 'video' || !storage.keyBelongsTo(f.storage_key, ciId)) refuse('FILE_NOT_FOUND', MSG.FILE_NOT_FOUND, 404);
+  return f;
+}
+
+/**
+ * Ask to upload the picture her phone took from a video she has added. A JPEG of exactly
+ * `sizeBytes`, at most 1 MB; the server names the key. The video itself is untouched: a phone
+ * that cannot make a picture (an older app build) simply never calls this.
+ */
+async function requestCoverUpload(ciId, scope, fileId, body = {}) {
+  const f = await ownVideo(ciId, scope, fileId);
+  const size = Number(body.sizeBytes);
+  if (!Number.isInteger(size) || size < 1) refuse('FILE_WRONG_TYPE', MSG.FILE_WRONG_TYPE, 422, 'sizeBytes');
+  if (size > COVER_MAX) refuse('FILE_TOO_LARGE_PHOTO', MSG.FILE_TOO_LARGE_PHOTO, 422, 'sizeBytes');
+  return { fileId: f.id, ...(await storage.uploadUrl(coverKeyOf(ciId, f.id), COVER_MIME, size)) };
+}
+
+/** Storage is asked what landed; only a JPEG within the limit is kept and recorded on the file. */
+async function confirmCover(ciId, scope, fileId) {
+  const f = await ownVideo(ciId, scope, fileId);
+  const key = coverKeyOf(ciId, f.id);
+  const landed = await storage.head(key);
+  if (!landed) refuse('UPLOAD_MISSING', MSG.UPLOAD_MISSING, 422, 'fileId');
+  const typeOk = String(landed.contentType || '').split(';')[0].trim().toLowerCase() === COVER_MIME;
+  if (!typeOk || landed.size > COVER_MAX) {
+    await storage.remove(key);
+    refuse(typeOk ? 'FILE_TOO_LARGE_PHOTO' : 'FILE_WRONG_TYPE', typeOk ? MSG.FILE_TOO_LARGE_PHOTO : MSG.FILE_WRONG_TYPE, 422, 'fileId');
+  }
+  const { rows: [again] } = await db.query(
+    `UPDATE content_files SET cover_key = $2 WHERE id = $1 AND deleted_at IS NULL RETURNING *`, [f.id, key]);
+  if (!again) refuse('FILE_NOT_FOUND', MSG.FILE_NOT_FOUND, 404);
+  return fileOut(again);
+}
 
 module.exports = {
   LIMITS, MAX_FILES_PER_ROW,
   contentRow, ensureContent, roundsOf, stageOf, referencedFileIds,
   assertNotFrozen, assertDraftOpen,
   requestUpload, confirmUpload, removeFile, fileUrl, sweep, fileOut,
+  requestCoverUpload, confirmCover, COVER_MAX,
 };

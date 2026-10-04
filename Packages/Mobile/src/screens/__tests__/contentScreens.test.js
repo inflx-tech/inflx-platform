@@ -63,6 +63,12 @@ function content(over = {}) {
 const ok = (c) => Promise.resolve({ success: true, data: { content: c } });
 const her = (c) => { api.influencerApi.myContent.mockReturnValue(ok(c)); return render(<ContentScreen navigation={nav} route={HER} />); };
 const brand = (c) => { api.brandApi.content.mockReturnValue(ok(c)); return render(<BrandContentScreen navigation={nav} route={BRAND} />); };
+/** shopper-walk-fixes (frame B2): the viewer's title is two lines — the deliverable, then which file. */
+const titled = (r, head, which) => {
+  expect(r.getByTestId('viewer-title').props.children).toBe(head);
+  expect(r.getByTestId('viewer-which').props.children).toBe(which);
+  return true;
+};
 beforeEach(() => jest.clearAllMocks());
 
 /* ───────────────────────────── her screen */
@@ -409,7 +415,7 @@ describe('ui-walk-fixes H · one tap on a tile opens the file in the viewer — 
     expect(r.queryByTestId('media-viewer')).toBeNull();
     fireEvent.press(r.getByTestId('file-p2'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Instagram story · 2 of 2')).toBeTruthy();
+    titled(r, 'Instagram story', '2 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the deliverable, then which file)
     expect(viewerCalls(api.influencerApi.contentFileUrl, 'p2')).toBe(2);                          // a fresh one, not the thumbnail's
     expect(api.influencerApi.contentFileUrl).toHaveBeenLastCalledWith('ci1', 'p2');
     expect(r.queryByTestId('action-sheet')).toBeNull();                                           // no "View" menu in between
@@ -432,7 +438,7 @@ describe('ui-walk-fixes H · one tap on a tile opens the file in the viewer — 
     await waitFor(() => r.getByTestId('edit-row-reel'));
     fireEvent.press(r.getByTestId('file-v1'));
     await waitFor(() => r.getByTestId('viewer-needs-update'));           // a video, on a build without the player (31)
-    expect(r.getByText('Instagram reel · 1 of 1')).toBeTruthy();
+    titled(r, 'Instagram reel', '1 of 1'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the deliverable, then which file)
     expect(r.getByText('Update INFLX to play videos')).toBeTruthy();
     expect(r.getByTestId('viewer-note')).toBeTruthy();
     expect(openURL).not.toHaveBeenCalled();
@@ -447,7 +453,7 @@ describe('ui-walk-fixes H · one tap on a tile opens the file in the viewer — 
     await waitFor(() => r.getByTestId('with-them'));
     fireEvent.press(r.getByTestId('file-p1'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Instagram story · 1 of 2')).toBeTruthy();
+    titled(r, 'Instagram story', '1 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the deliverable, then which file)
     expect(r.queryByTestId('viewer-remove')).toBeNull();
     expect(r.queryByTestId('viewer-add-note')).toBeNull();
     expect(r.queryByTestId('viewer-actions')).toBeNull();
@@ -459,11 +465,11 @@ describe('ui-walk-fixes H · one tap on a tile opens the file in the viewer — 
     await waitFor(() => r.getByTestId('proof-row-story'));
     fireEvent.press(r.getByTestId('file-s2'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Instagram story · 2 of 2')).toBeTruthy();
+    titled(r, 'Instagram story', '2 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the deliverable, then which file)
     expect(api.influencerApi.contentFileUrl).toHaveBeenLastCalledWith('ci1', 's2');
     expect(r.queryByTestId('viewer-actions')).toBeNull();
     fireEvent.press(r.getByTestId('viewer-prev'));
-    await waitFor(() => r.getByText('Instagram story · 1 of 2'));
+    await waitFor(() => titled(r, 'Instagram story', '1 of 2')); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the deliverable, then which file)
     expect(api.influencerApi.contentFileUrl).toHaveBeenLastCalledWith('ci1', 's1');
     expect(openURL).not.toHaveBeenCalled();
   });
@@ -474,7 +480,7 @@ describe('ui-walk-fixes H · one tap on a tile opens the file in the viewer — 
     await waitFor(() => r.getByTestId('review-row-story'));
     fireEvent.press(r.getByTestId('file-p1'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Instagram story · 1 of 2')).toBeTruthy();
+    titled(r, 'Instagram story', '1 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the deliverable, then which file)
     expect(api.brandApi.contentFileUrl).toHaveBeenLastCalledWith('c1', 's1', 'ci1', 'p1');
     expect(r.queryByTestId('action-sheet')).toBeNull();
     expect(r.queryByTestId('viewer-remove')).toBeNull();
@@ -524,7 +530,7 @@ describe('ui-walk-fixes H · one tap on a tile opens the file in the viewer — 
     await waitFor(() => r.getByTestId('posted-row-story'));
     fireEvent.press(r.getByTestId('file-s1'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Instagram story · 1 of 2')).toBeTruthy();
+    titled(r, 'Instagram story', '1 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the deliverable, then which file)
     expect(api.brandApi.contentFileUrl).toHaveBeenLastCalledWith('c1', 's1', 'ci1', 's1');
     expect(r.queryByTestId('viewer-actions')).toBeNull();                 // a proof is not a file under review
     expect(openURL).not.toHaveBeenCalled();

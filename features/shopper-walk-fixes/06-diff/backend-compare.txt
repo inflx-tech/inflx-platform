@@ -1,0 +1,32 @@
+shopper-walk-fixes — full backend run, 4 Oct 2026 (private test database inflx_test_walk on the scratch Postgres, localhost:5546)
+Run: cd backend && npx jest --runInBand --silent --json — the whole suite, serially, 1,260 s, with every server change of this
+contract in the tree (return window in hours and release after delivery; shopper content, product details, video pictures;
+returns; the "Returned" filter of My orders). Compared by suite file + full test name with the last stored full run: 2 Oct 2026,
+after ui-walk-fixes (features/ui-walk-fixes/06-diff/backend-compare.txt). The offer-delete contract (3 Oct) sits between the two
+runs, so its suite and its two renamed tests appear below as well.
+
+before: suites 139 tests 1871 passed 1666 failed 177 pending 28
+after : suites 143 tests 1932 passed 1727 failed 177 pending 28
+
+passed before, failing now: 0
+new tests failing: 0
+failed before, passing now: 0
+failing before and now (same name): 177
+tests gone under their old name: 3
+    brand-offer.test.js :: list / update / archive 4: status can't be set by hand; 5: a draft is deleted outright (a published one is only ended)
+    settlement.test.js :: settlement.service.settleCommerceTransaction resolveReturnWindowEndsAt uses the per-category window
+    offers-v2-flow.test.js :: after publishing (checks 24, 25) a draft can be deleted; a published offer can't
+new test names: 64 {"brand-offer.test.js":1,"shopper-walk-fixes-returns.test.js":11,"offer-delete.test.js":27,"shopper-walk-fixes-shop.test.js":11,"shopper-walk-fixes-return-window.test.js":12,"settlement.test.js":1,"offers-v2-flow.test.js":1}
+suites added: shopper-walk-fixes-returns.test.js, offer-delete.test.js, shopper-walk-fixes-shop.test.js, shopper-walk-fixes-return-window.test.js
+suites that did not load: before collection-library.test.js · now collection-library.test.js
+
+Reading it
+- 0 tests that passed before fail now; 0 new tests fail; the 177 that failed before fail now under the same names
+  (the long-standing debt — qa_all_green stays false on it; nothing here was skipped, removed or weakened).
+- "tests gone under their old name: 3" — each was rewritten to a new rule and is counted again under "new test names":
+    settlement.test.js          "uses the per-category window" → the one platform window (this contract, W11)
+    brand-offer.test.js         draft delete wording            (offer-delete, 3 Oct)
+    offers-v2-flow.test.js      draft delete wording            (offer-delete, 3 Oct)
+- This contract's new suites: shopper-walk-fixes-return-window (12), shopper-walk-fixes-shop (11),
+  shopper-walk-fixes-returns (11) — 34 tests, all passing.
+- collection-library.test.js did not load before and does not load now (unchanged, not this contract).

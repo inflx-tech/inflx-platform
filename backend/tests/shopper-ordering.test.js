@@ -602,9 +602,14 @@ describe('orders, cancelling, the brand, the money jobs (C28–C35)', () => {
     await query(`UPDATE follower_transactions SET return_window_ends_at = now() - interval '1 minute' WHERE id = $1`, [tx.id]);
     // Item 17 (pre-deploy review): a sale's shares are added only once its parcel has shipped — while
     // it is Confirmed/Packed it can still be cancelled and refunded in full.
-    for (const body of [{ status: 'packed' }, { status: 'dispatched', courier_name: 'Delhivery', tracking_number: 'DL32' }]) {
+    // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's shares are added AFTER
+    // DELIVERY, when the return window counted from the delivery has closed — online exactly as cash.
+    // (Item 17 added an online sale once it had shipped and its stamp had passed.) Same scenario, new rule.
+    for (const body of [{ status: 'packed' }, { status: 'dispatched', courier_name: 'Delhivery', tracking_number: 'DL32' }, { status: 'delivered' }]) {
       expect((await api.patch(`/brands/me/orders/${tx.order_id}/status`, w.b.token, body)).status).toBe(200);
     }
+    await query(`UPDATE follower_orders SET delivered_at = now() - interval '40 days' WHERE id = $1`, [tx.order_id]);
+    await query(`UPDATE follower_transactions SET created_at = now() - interval '31 days' WHERE id = $1`, [tx.id]);
     const wallet0 = Number((await query(`SELECT wallet_balance FROM influencers WHERE id = $1`, [w.cr.influencerId])).rows[0].wallet_balance);
     await commissionConfirm.run();
     const wallet1 = Number((await query(`SELECT wallet_balance FROM influencers WHERE id = $1`, [w.cr.influencerId])).rows[0].wallet_balance);
@@ -656,9 +661,16 @@ describe('orders, cancelling, the brand, the money jobs (C28–C35)', () => {
     expect(await settlement.settleCommerceTransaction(dbm, tx2.id)).toEqual({ skipped: 'not_shipped' });
     // Item 17 (pre-deploy review): a sale's shares are added only once its parcel has shipped — while
     // it is Confirmed/Packed it can still be cancelled and refunded in full.
+    // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's shares are added AFTER
+    // DELIVERY, when the return window counted from the delivery has closed — online exactly as cash.
+    // (Item 17 added an online sale once it had shipped and its stamp had passed.) Same scenario, new rule.
     for (const body of [{ status: 'packed' }, { status: 'dispatched', courier_name: 'Delhivery', tracking_number: 'DL32' }]) {
       expect((await api.patch(`/brands/me/orders/${tx2.order_id}/status`, cod.w.b.token, body)).status).toBe(200);
     }
+    expect(await settlement.settleCommerceTransaction(dbm, tx2.id)).toEqual({ skipped: 'not_delivered' });
+    expect((await api.patch(`/brands/me/orders/${tx2.order_id}/status`, cod.w.b.token, { status: 'delivered' })).status).toBe(200);
+    expect(await settlement.settleCommerceTransaction(dbm, tx2.id)).toEqual({ skipped: 'window_open' });
+    await query(`UPDATE follower_orders SET delivered_at = now() - interval '40 days' WHERE id = $1`, [tx2.order_id]);
     const s2 = await settlement.settleCommerceTransaction(dbm, tx2.id);
     expect(s2.credited).toBe(Math.round((money(tx2.brand_net) - s2.tcs) * 100) / 100);
     expect(Math.round((await walletOf() - w1) * 100) / 100).toBe(s2.credited);

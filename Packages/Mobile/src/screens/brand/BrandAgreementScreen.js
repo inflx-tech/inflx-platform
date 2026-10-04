@@ -228,7 +228,7 @@ export default function BrandAgreementScreen({ navigation, route }) {
           {work.deliverablesWords ? <TermRow7 label="She posts" value={work.deliverablesWords} testID="deliverables-row" /> : null}
           {work.usageRights ? <TermRow7 label="You may reuse" value={work.usageRights.words} testID="usage-row" /> : null}
           {money.commissionAfterDays != null
-            ? <TermRow7 label="Commission paid" value={C7.creator.commissionPaid(money.commissionAfterDays)} />
+            ? <TermRow7 label="Commission paid" value={money.commissionPaidWords || C7.creator.commissionPaid(money.commissionAfterDays)} />
             : null}
         </Card7>
 

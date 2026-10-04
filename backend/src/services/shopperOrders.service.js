@@ -20,6 +20,8 @@ const txService = require('./transaction.service');
 const notificationService = require('./notification.service');
 const { appendInfluencerLedger } = require('./ledger.service');
 const brandProducts = require('./brandProducts.service');
+const productDetails = require('./productDetails.service');
+const returnWindow = require('./returnWindow.service');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const inr = rules.inr;
@@ -48,6 +50,8 @@ async function dealPage(postId, who = {}) {
   const leafIds = [...new Set([...ctx.products.values()].map((p) => p.category_node_id).filter(Boolean))];
   const { rows: leaves } = leafIds.length ? await db.query(`SELECT id, name FROM category_nodes WHERE id = ANY($1::uuid[])`, [leafIds]) : { rows: [] };
   const leafName = new Map(leaves.map((l) => [l.id, l.name]));
+  // shopper-walk-fixes (O3): everything the brand entered when listing, in one fixed order.
+  const [defs, paths] = await Promise.all([productDetails.definitions(), productDetails.categoryPaths(leafIds)]);
 
   const productOut = (p) => {
     const colours = pricing.choicesOf(p).map((c) => ({
@@ -63,6 +67,11 @@ async function dealPage(postId, who = {}) {
       category: p.category_node_id ? { id: p.category_node_id, name: leafName.get(p.category_node_id) || null } : null,
       colours, sold_out: soldOut,
       details: p.description || null,
+      // O3 (board S3, S4): the brand it is listed under, its category in words, and the listing's
+      // details as rows. Empty ones are left out; nothing is invented (no rating, no tax line).
+      brand_label: productDetails.brandLabelOf(p),
+      category_path: p.category_node_id ? paths.get(p.category_node_id) || null : null,
+      specs: productDetails.specsOf(p, defs),
       size_chart: (p.variants_json && (p.variants_json.size_chart || p.variants_json.sizeChart)) || null,
       set_qty: offer && offer.sub_type === 'fixed' ? (Number((cfg.quantities || {})[p.id]) || 1) : null,
     };
@@ -81,10 +90,14 @@ async function dealPage(postId, who = {}) {
     post: { id: card.id, code: card.code, title: card.title, creator: card.creator, brand: card.brand },
     offer: offer ? {
       id: offer.id, type: offer.offer_type, sub_type: offer.sub_type, config: cfg, ends_on: card.offer ? card.offer.ends_on : null,
-      line: rules.dealLine(offer, products.filter((p) => p.in_deal).length, gifts.length), how: card.offer ? card.offer.how : null,
+      // Said to the SHOPPER, with the real number of products and gifts (board table T).
+      line: rules.dealLine(offer, products.filter((p) => p.in_deal).length, gifts.length),
+      how: rules.shopperSays(offer, { buy: products.filter((p) => p.in_deal), gift: gifts }),
       badge: card.offer ? card.offer.badge : null,
     } : null,
     deal_page: !!offer && offer.offer_type !== 'discount',
+    // W11: INFLX's one return window, as the product page says it ("Within 7 days of delivery").
+    returns: await returnWindow.forShopper(),
     products, gifts,
     categories: leaves.map((l) => ({ id: l.id, name: l.name, count: products.filter((p) => p.category && p.category.id === l.id).length })),
   };
@@ -101,13 +114,17 @@ async function priceDeal(postId, rawLines) {
 
 /* ───────────────────────────────────────────── my orders (O13–O15) */
 
-function lineOut(r) {
+function lineOut(r, back = null) {
+  // shopper-walk-fixes (W14): an item that came back is a cancelled line whose `cancelled_by` is
+  // 'return'; the order screens call it Returned. `back` is what shopperReturns.decorate says of it.
+  const returned = r.status === 'cancelled' && r.cancelled_by === 'return';
   return {
+    ...(back || {}),
     id: r.id, order_id: r.order_id, checkout_id: r.checkout_id, post_id: r.post_id,
     name: r.name, image_url: r.image_url, colour: r.colour, size: r.size, qty: r.qty, role: r.role, deal_key: r.deal_key,
     paid: Number(r.paid_total), normal: Number(r.normal_total),
-    status: r.status === 'cancelled' ? 'cancelled' : r.order_status,
-    status_word: r.status === 'cancelled' ? 'Cancelled' : STATUS_WORD[r.order_status] || r.order_status,
+    status: returned ? 'returned' : r.status === 'cancelled' ? 'cancelled' : r.order_status,
+    status_word: returned ? 'Returned' : r.status === 'cancelled' ? 'Cancelled' : STATUS_WORD[r.order_status] || r.order_status,
     arrives_by: r.estimated_delivery_date, placed_at: r.created_at,
     brand: { id: r.brand_id, name: r.brand_name },
     creator: r.creator_name ? { id: r.influencer_id, name: r.creator_name } : null,
@@ -120,9 +137,11 @@ function lineOut(r) {
 const LINE_SQL = `
   SELECT l.*, o.order_status, o.estimated_delivery_date, o.payment_method, o.courier_name, o.tracking_number,
          o.packed_at, o.dispatched_at, o.out_for_delivery_at, o.delivered_at, o.cancelled_at AS parcel_cancelled_at,
-         o.address_snapshot, b.business_name AS brand_name, COALESCE(i.full_name, u.name) AS creator_name
+         o.address_snapshot, b.business_name AS brand_name, COALESCE(i.full_name, u.name) AS creator_name,
+         ft.created_at AS tx_created_at, ft.return_window_ends_at
     FROM order_lines l
     JOIN follower_orders o ON o.id = l.order_id
+    JOIN follower_transactions ft ON ft.id = l.transaction_id
     JOIN brands b ON b.id = l.brand_id
     JOIN influencers i ON i.id = l.influencer_id JOIN users u ON u.id = i.user_id`;
 
@@ -130,14 +149,18 @@ async function listOrders(followerId, { status = null, days = null, q = null, pa
   const where = ['l.follower_id = $1'];
   const params = [followerId];
   const add = (v) => { params.push(v); return `$${params.length}`; };
-  if (status === 'cancelled') where.push(`l.status = 'cancelled'`);
+  // W14: an item that came back is called Returned, so it is under "Returned", not under "Cancelled".
+  if (status === 'cancelled') where.push(`l.status = 'cancelled' AND l.cancelled_by IS DISTINCT FROM 'return'`);
+  else if (status === 'returned') where.push(`l.status = 'cancelled' AND l.cancelled_by = 'return'`);
   else if (status && STATUS_WORD[status]) where.push(`l.status = 'active' AND o.order_status = ${add(status)}::order_status`);
   if (Number(days) > 0) where.push(`l.created_at >= now() - make_interval(days => ${add(Math.min(3650, Number(days)))})`);
   if (q && String(q).trim()) where.push(`(l.name ILIKE ${add(`%${String(q).trim().slice(0, 60)}%`)} OR b.business_name ILIKE $${params.length})`);
   const lim = 20;
   const off = (Math.max(1, Number(page) || 1) - 1) * lim;
   const { rows } = await db.query(`${LINE_SQL} WHERE ${where.join(' AND ')} ORDER BY l.created_at DESC, l.id LIMIT ${lim + 1} OFFSET ${off}`, params);
-  return { items: rows.slice(0, lim).map(lineOut), more: rows.length > lim };
+  const page1 = rows.slice(0, lim);
+  const back = await require('./shopperReturns.service').decorate(page1);
+  return { items: page1.map((r) => lineOut(r, back.get(r.id))), more: rows.length > lim };
 }
 
 async function lineDetail(followerId, lineId) {
@@ -157,9 +180,11 @@ async function lineDetail(followerId, lineId) {
   const { rows: deal } = r.deal_key && TOGETHER.test(r.deal_key)
     ? await db.query(`SELECT id, name, size FROM order_lines WHERE transaction_id = $1 AND deal_key = $2 AND id <> $3`, [r.transaction_id, r.deal_key, r.id])
     : { rows: [] };
+  const back = (await require('./shopperReturns.service').decorate([r])).get(r.id);
+  const returned = r.status === 'cancelled' && r.cancelled_by === 'return';
   return {
-    ...lineOut(r),
-    timeline: r.status === 'cancelled' ? [...timeline.filter((t) => t.at), { status: 'cancelled', word: 'Cancelled', at: at('cancelled_at') }] : timeline,
+    ...lineOut(r, back),
+    timeline: r.status === 'cancelled' ? [...timeline.filter((t) => t.at), { status: returned ? 'returned' : 'cancelled', word: returned ? 'Returned' : 'Cancelled', at: at('cancelled_at') }] : timeline,
     courier: r.courier_name ? { name: r.courier_name, tracking: r.tracking_number } : null,
     address: r.address_snapshot,
     post: post[0] ? { id: post[0].id, code: post[0].post_code } : null,
@@ -365,6 +390,7 @@ async function brandParcels(brandId, { status = null, page = 1 } = {}) {
        FROM order_lines l JOIN creator_posts cp ON cp.id = l.post_id
        JOIN influencers i ON i.id = l.influencer_id JOIN users u ON u.id = i.user_id
       WHERE l.order_id = ANY($1::uuid[]) ORDER BY l.created_at, l.id`, [ids]) : { rows: [] };
+  const back = await returnsOfLines(lines.map((l) => l.id));
   return {
     parcels: parcels.slice(0, lim).map((p) => {
       const mine = lines.filter((l) => l.order_id === p.id);
@@ -378,6 +404,8 @@ async function brandParcels(brandId, { status = null, page = 1 } = {}) {
         items: mine.map((l) => ({
           id: l.id, name: l.name, image_url: l.image_url, colour: l.colour, size: l.size, qty: l.qty, role: l.role,
           status: l.status, cancel_reason: l.cancel_reason, cancelled_by: l.cancelled_by,
+          // W14: a return on this item — the brand sees it; INFLX decides it.
+          return: back.get(l.id) || null,
           post: { id: l.post_id, code: l.post_code }, creator: l.creator_name,
           money: { paid: Number(l.paid_total), creator_share: Number(l.commission), creator_pct: Number(l.commission_pct),
             inflx_share: Number(l.platform_fee), inflx_pct: Number(l.fee_pct), brand_share: Number(l.brand_net) },
@@ -388,6 +416,18 @@ async function brandParcels(brandId, { status = null, page = 1 } = {}) {
     }),
     more: parcels.length > lim,
   };
+}
+
+/** shopper-walk-fixes (W14): the latest return of each item, for the brand's parcels (read-only for the brand). */
+async function returnsOfLines(lineIds) {
+  const out = new Map();
+  if (!lineIds.length) return out;
+  const { rows } = await db.query(
+    `SELECT DISTINCT ON (order_line_id) order_line_id, return_status FROM follower_returns
+      WHERE order_line_id = ANY($1::uuid[]) ORDER BY order_line_id, created_at DESC, id`, [lineIds]);
+  const WORD = { requested: 'Return requested', approved: 'Return approved — collect it', received: 'Return received', rejected: 'Return not accepted', refunded: 'Returned' };
+  for (const r of rows) out.set(r.order_line_id, { status: r.return_status, word: WORD[r.return_status] || r.return_status });
+  return out;
 }
 
 function nextStatus(s) {
@@ -437,5 +477,5 @@ async function setParcelStatus({ brandId = null, orderId, status: st, order_stat
 
 module.exports = {
   REASONS, STATUS_WORD, dealPage, priceDeal, listOrders, lineDetail, checkoutDetail,
-  cancelPreview, cancel, brandParcels, setParcelStatus,
+  cancelPreview, cancel, cancelSet, brandParcels, setParcelStatus,
 };

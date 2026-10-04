@@ -125,6 +125,16 @@ async function ship(w, orderId) {
   }
 }
 
+/**
+ * shopper-walk-fixes (W13): a parcel that has already SHIPPED is delivered, `daysAgo` days ago — so its
+ * return window, which runs from the delivery, has closed when daysAgo is longer than the window.
+ */
+async function deliverShipped(w, orderId, daysAgo = 0) {
+  const r = await api.patch(`/brands/me/orders/${orderId}/status`, w.b.token, { status: 'delivered' });
+  if (r.status !== 200) throw new Error(`delivered: ${JSON.stringify(r.body)}`);
+  if (daysAgo) await query(`UPDATE follower_orders SET delivered_at = now() - ($2 || ' days')::interval WHERE id = $1`, [orderId, String(daysAgo)]);
+}
+
 /** The return window has closed for this sale. */
 const closeWindow = (txId) => query(
   `UPDATE follower_transactions SET created_at = now() - interval '31 days', return_window_ends_at = now() - interval '1 minute' WHERE id = $1`, [txId]);
@@ -144,4 +154,4 @@ const money = async (w) => (await query(
           (SELECT wallet_balance::float FROM influencers WHERE id = $2) AS her, (SELECT withdrawal_hold::float FROM influencers WHERE id = $2) AS her_hold,
           (SELECT pending_balance::float FROM influencers WHERE id = $2) AS her_pending`, [w.brandId, w.cr.influencerId])).rows[0];
 
-module.exports = { api, query, day, fresh, adminUser, saleWorld, order, closeWindow, deliver, ship, brandBank, creatorUpi, money, shopper, line };
+module.exports = { api, query, day, fresh, adminUser, saleWorld, order, closeWindow, deliver, deliverShipped, ship, brandBank, creatorUpi, money, shopper, line };

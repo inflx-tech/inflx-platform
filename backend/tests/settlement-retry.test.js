@@ -32,6 +32,15 @@ async function seedSettledTxn(brandId, { brandNet = 1000, fee = 200 } = {}) {
      RETURNING id`,
     [fr[0].id, brandId, brandNet, fee, fee, brandNet, co.id]
   );
+  // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's share is added only after
+  // DELIVERY, when its return window (counted from the delivery) has closed. So the seeded sale carries
+  // what every real one has: its parcel — delivered, with the window behind it. Same scenario otherwise.
+  const { rows: [o] } = await query(
+    `INSERT INTO follower_orders (transaction_id, order_status, items_json, payment_method, checkout_id, brand_id, delivered_at)
+     VALUES ($1, 'delivered', '[]'::jsonb, 'online', $2, $3, now() - interval '9 days') RETURNING id`, [t.id, co.id, brandId]);
+  await query(
+    `UPDATE follower_transactions SET order_id = $2, created_at = now() - interval '10 days', return_window_ends_at = now() - interval '3 days' WHERE id = $1`,
+    [t.id, o.id]);
   // Settled while the brand has NO linked account → the share is already in its wallet.
   await settlementService.settleCommerceTransaction({ query }, t.id);
   return t.id;

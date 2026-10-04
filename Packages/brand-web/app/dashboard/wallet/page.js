@@ -44,9 +44,11 @@ function nextLine(p) {
 function saleLine(s) {
   const post = `${firstName(s.creatorName)}'s post ${s.post?.code || ''}`.trim();
   if (s.state === 'cancelled') return `${post} · cancelled`;
+  if (s.state === 'returned') return `${post} · returned`;
   if (s.state === 'added') return `${post} · added ${dayMon(s.at)}`;
   if (s.state === 'cod_waiting') return `${post} · cash on delivery · waiting for delivery`;
   if (s.state === 'not_shipped') return `${post} · not shipped yet`;
+  if (s.state === 'waiting_delivery') return `${post} · on its way · waiting for delivery`;
   const cod = s.cashOnDelivery ? ` · cash on delivery · delivered ${dayMon(s.deliveredAt)}` : '';
   return `${post}${cod} · ${s.cashOnDelivery ? 'until' : 'return window until'} ${dayMon(s.windowUntil)}`;
 }
@@ -491,7 +493,7 @@ export default function WalletPage() {
             <div className="kpi">
               <div className="kpi-lbl">Sales money coming</div>
               <div className="kpi-v">{inr(fig.salesComing)}</div>
-              <div className="kpi-sub">{fig.salesComingCount ? `${fig.salesComingCount} sale${fig.salesComingCount === 1 ? '' : 's'} in ${fig.salesComingCount === 1 ? 'its' : 'their'} return window` : 'no sales in a return window'}</div>
+              <div className="kpi-sub">{fig.salesComingCount ? `${fig.salesComingCount} sale${fig.salesComingCount === 1 ? '' : 's'} not added yet` : 'no sales waiting'}</div>
             </div>
           </div>
 
@@ -614,7 +616,7 @@ export default function WalletPage() {
             <div className="card-head">
               <div>
                 <h3>Sales money</h3>
-                <div className="sh">Each item sold through a creator&apos;s post, split three ways. Your share is added to Available when its return window closes.</div>
+                <div className="sh">Each item sold through a creator&apos;s post, split three ways. Your share is added to Available after the item is delivered and its return window closes.</div>
               </div>
               <span className="count">{inr(sales?.totals?.coming)} coming · {inr(sales?.totals?.addedThisMonth)} added this month · {sales?.totals?.sales || 0} sales</span>
             </div>
@@ -728,7 +730,7 @@ export default function WalletPage() {
             <ul className="howr">
               <li><b>Add money</b> · it stays in Available until you sign an agreement.</li>
               <li><b>Locked</b> · signing a Pay for Content or Hybrid agreement locks the amount. It is paid to the creator in three parts: at signing, when you confirm it&apos;s live, and the final 50% on its date.</li>
-              <li><b>Sales money</b> · a shopper&apos;s payment comes to INFLX. Your share is added to Available when the return window closes. Cash-on-delivery orders count once delivered.</li>
+              <li><b>Sales money</b> · a shopper&apos;s payment comes to INFLX. Your share is added to Available after the order is delivered and its return window closes — the same for online and cash-on-delivery orders. A returned item adds nothing.</li>
               <li><b>Withdraw</b> · a request. The amount is on hold until INFLX pays it from its bank, within {opts?.processHours || 24} hours. One request at a time.</li>
             </ul>
           </div>

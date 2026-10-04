@@ -4,15 +4,22 @@
  * Remove · Move to Saved, Add more from this post; deal groups show as one (D11) with Edit deal.
  * O7 · When something changed (price, a sold-out size, an offer that ended) it says so before paying.
  * O8 · A guest fills the bag without signing in; Continue asks her to sign in, then carries on.
+ *
+ * shopper-walk-fixes · board G1, G2 (spec W2, W8) — a deal made of fixed pieces stays whole. A set,
+ * a bundle (pick any, mix & match) and buy one get one are ONE group: one tick in its header, each
+ * item with its colour and size and nothing to press, what the deal costs, Edit deal and Remove
+ * deal. No − 1 +, no Change, no Remove, no Move to Saved on a single item — raising one item of a
+ * set used to block the whole bag ("Sold only as the whole set"). Everything else — a plain
+ * discount, buy more save more, spend or buy for a gift, no offer — is exactly as it was.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { followerApi } from '../../../services/api';
 import { TopBar, Loading, Empty, Avatar, PrimaryBtn } from '../../../components/shop/bitsShop';
-import { MoneyRows, Notes, QtyStepper, ProductPopup, Sheet, K, b } from '../../../components/shop/orderBits';
+import { MoneyRows, Notes, QtyStepper, ProductPopup, Sheet, isLockedDeal, K, b } from '../../../components/shop/orderBits';
 import { CO } from '../../../components/shop/copyOrder';
 import { CS, inr } from '../../../components/shop/copyShop';
 import { loadBag, saveBag } from '../../../components/shop/bag';
@@ -25,8 +32,12 @@ export default function BagScreen({ navigation }) {
   const [lines, setLines] = useState(null);
   const [priced, setPriced] = useState(null);
   const [err, setErr] = useState(null);
-  const [change, setChange] = useState(null);   // { line, product }
+  const [change, setChange] = useState(null);   // { line, product, returns }
   const [askSignIn, setAskSignIn] = useState(false);
+  const whole = useRef(new Set());              // posts whose deal was seen to be one that stays whole
+  useEffect(() => {
+    for (const g of (priced ? priced.groups : [])) if (isLockedDeal(g.offer)) whole.current.add(g.post_id);
+  }, [priced]);
 
   const price = useCallback(async (ls) => {
     if (!ls.length) { setPriced(null); return; }
@@ -53,6 +64,25 @@ export default function BagScreen({ navigation }) {
   }
   const upd = (ref, patch) => write(lines.map((l) => (l.ref === ref ? { ...l, ...patch } : l)));
   const remove = (ref) => write(lines.filter((l) => l.ref !== ref));
+  // A deal that stays whole (G1, G2): one tick and one Remove for every line of its post.
+  const tickPost = (postId, on) => write(lines.map((l) => (l.post_id === postId ? { ...l, ticked: on } : l)));
+  const removeDeal = (postId) => write(lines.filter((l) => l.post_id !== postId));
+  /**
+   * Ticking an unticked item again. If it is one piece of a deal that stays whole, the whole deal
+   * comes back with it — one piece alone would break the set. An unticked deal is not priced, so
+   * when this screen has not seen the deal before, the post's deal data says what kind it is.
+   */
+  async function tickAgain(l) {
+    const mates = lines.some((x) => x.post_id === l.post_id && x.ref !== l.ref && x.ticked === false);
+    let together = whole.current.has(l.post_id);
+    if (!together && mates) {
+      let r = null;
+      try { r = await followerApi.deal(l.post_id); } catch { r = null; }
+      together = !!(r && r.success && r.data && isLockedDeal(r.data.offer));
+      if (together) whole.current.add(l.post_id);
+    }
+    if (together) tickPost(l.post_id, true); else upd(l.ref, { ticked: true });
+  }
   async function moveToSaved(l) {
     if (await isSignedIn()) await followerApi.saveProduct({ product_id: l.product_id, post_id: l.post_id });
     else await toggleSaveProductLocal({ product_id: l.product_id, post_id: l.post_id }, true);
@@ -63,7 +93,7 @@ export default function BagScreen({ navigation }) {
     if (!r || !r.success) { setErr(r && r.error ? r.error.message : CS.loadError); return; }
     if (r.data.deal_page) { editDeal(l.post_id); return; }
     const product = r.data.products.find((p) => p.id === l.product_id);
-    if (product) setChange({ line: l, product });
+    if (product) setChange({ line: l, product, returns: r.data.returns ? r.data.returns.line : null });
   }
   function editDeal(postId) {
     navigation.navigate('Deal', { postId, lines: lines.filter((l) => l.post_id === postId && l.ticked !== false), editing: true });
@@ -104,16 +134,63 @@ export default function BagScreen({ navigation }) {
           const mine = lines.filter((l) => l.post_id === g.post_id && l.ticked !== false);
           const isDeal = g.offer && g.offer.type && g.offer.type !== 'discount';
           const gifts = g.lines.filter((x) => x.role === 'gift');
+          const head = (
+            <>
+              <Avatar uri={g.creator && g.creator.avatar} name={g.creator ? g.creator.name : ''} size={30} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={st.gName} numberOfLines={1}>{[g.creator && g.creator.name, g.brand && g.brand.name].filter(Boolean).join(' · ')}</Text>
+                {g.offer && g.offer.line ? <Text style={st.gOffer}>{g.offer.line}</Text> : null}
+              </View>
+              {isDeal ? <Text style={st.edit} onPress={() => editDeal(g.post_id)} testID={`edit-deal-${g.post_id}`}>{CO.editDeal}</Text> : null}
+            </>
+          );
+          // G1, G2 — a deal made of fixed pieces: one group, one tick, nothing to press on an item.
+          if (isLockedDeal(g.offer)) {
+            const bogo = g.offer.sub_type === 'bogo';
+            return (
+              <View key={g.post_id} style={st.group} testID={`bag-group-${g.post_id}`}>
+                <View style={st.gHead}>
+                  <TouchableOpacity onPress={() => tickPost(g.post_id, false)} testID={`tick-group-${g.post_id}`}
+                    accessibilityRole="checkbox" accessibilityState={{ checked: true }} accessibilityLabel={CO.wholeDeal}>
+                    <Icon name="checkbox-marked" size={22} color={K.ink} />
+                  </TouchableOpacity>
+                  {head}
+                </View>
+                {mine.map((l) => {
+                  const p = pricedOf(l.ref) || {};
+                  const free = (p.role || l.role) === 'free';
+                  const about = [l.colour, l.size].filter(Boolean).join(' · ');
+                  return (
+                    <View key={l.ref} style={st.line} testID={`bag-line-${l.ref}`}>
+                      {p.image_url ? <Image source={{ uri: p.image_url }} style={st.thumb} /> : <View style={st.thumb} />}
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={st.name} numberOfLines={2}>{p.name || '…'}{free ? ` · ${CO.free}` : ''}</Text>
+                        <Text style={st.meta}>{[about, l.qty > 1 ? CO.times(l.qty) : null].filter(Boolean).join(' ')}</Text>
+                        {bogo ? (
+                          <Text style={[st.price, free && { color: K.ok }]} testID={`deal-price-${l.ref}`}>{free ? '₹0' : p.paid != null ? inr(p.paid) : ''}</Text>
+                        ) : null}
+                        <Notes problems={p.problems || []} notes={p.notes || []} />
+                      </View>
+                    </View>
+                  );
+                })}
+                <View style={st.dealSet} testID={`deal-whole-${g.post_id}`}>
+                  <Text style={st.dealSetTop}>
+                    {[g.progress && g.progress.text, inr(g.paid_total)].filter(Boolean).join(' · ')}
+                    {/* a pair costs what one costs: nothing to strike (G2). A set or a bundle shows what it would have cost. */}
+                    {!bogo && g.normal_total > g.paid_total ? <Text style={st.struck}>  {inr(g.normal_total)}</Text> : null}
+                  </Text>
+                  <Text style={st.dealSetLine}>{CO.dealWhole[g.offer.sub_type]}</Text>
+                </View>
+                {g.progress && g.progress.next ? <View style={st.nudge}><Text style={st.nudgeText}>{g.progress.next}</Text></View> : null}
+                <Notes problems={g.problems} />
+                <Text style={st.more} onPress={() => removeDeal(g.post_id)} testID={`remove-deal-${g.post_id}`}>{CO.removeDeal}</Text>
+              </View>
+            );
+          }
           return (
             <View key={g.post_id} style={st.group} testID={`bag-group-${g.post_id}`}>
-              <View style={st.gHead}>
-                <Avatar uri={g.creator && g.creator.avatar} name={g.creator ? g.creator.name : ''} size={30} />
-                <View style={{ flex: 1 }}>
-                  <Text style={st.gName}>{[g.creator && g.creator.name, g.brand && g.brand.name].filter(Boolean).join(' · ')}</Text>
-                  {g.offer && g.offer.line ? <Text style={st.gOffer}>{g.offer.line}</Text> : null}
-                </View>
-                {isDeal ? <Text style={st.edit} onPress={() => editDeal(g.post_id)} testID={`edit-deal-${g.post_id}`}>{CO.editDeal}</Text> : null}
-              </View>
+              <View style={st.gHead}>{head}</View>
               {mine.map((l) => {
                 const p = pricedOf(l.ref) || {};
                 return (
@@ -160,7 +237,7 @@ export default function BagScreen({ navigation }) {
           <View style={st.group} testID="bag-unticked">
             {unticked.map((l) => (
               <View key={l.ref} style={[st.line, { opacity: 0.7 }]}>
-                <TouchableOpacity onPress={() => upd(l.ref, { ticked: true })} testID={`tick-${l.ref}`} accessibilityRole="checkbox" accessibilityState={{ checked: false }}>
+                <TouchableOpacity onPress={() => tickAgain(l)} testID={`tick-${l.ref}`} accessibilityRole="checkbox" accessibilityState={{ checked: false }}>
                   <Icon name="checkbox-blank-outline" size={22} color={K.ink} />
                 </TouchableOpacity>
                 {l.image_url ? <Image source={{ uri: l.image_url }} style={st.thumb} /> : <View style={st.thumb} />}
@@ -192,6 +269,7 @@ export default function BagScreen({ navigation }) {
         onClose={() => setChange(null)}
         primaryLabel={() => CO.change}
         onPrimary={(sel) => { upd(change.line.ref, { colour: sel.colour, size: sel.size, qty: sel.qty || change.line.qty }); setChange(null); }}
+        returnsLine={change ? change.returns : null}
         testID="bag-change"
       />
       <Sheet visible={askSignIn} onClose={() => setAskSignIn(false)} testID="bag-sign-in">
@@ -222,6 +300,9 @@ const st = StyleSheet.create({
   acts: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, flexWrap: 'wrap' },
   act: { fontFamily: fonts.sansBold, fontSize: 12, color: K.ink, textDecorationLine: 'underline' },
   gift: { fontFamily: fonts.sansBold, fontSize: 12, color: K.ok, marginTop: 6 },
+  dealSet: { backgroundColor: K.surface, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginTop: 4, gap: 3 },
+  dealSetTop: { fontFamily: fonts.sansBold, fontSize: 13, color: K.ink },
+  dealSetLine: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: K.ink2, lineHeight: 16 },
   nudge: { backgroundColor: K.warnSoft, borderRadius: 10, padding: 9, marginTop: 8 },
   nudgeText: { fontFamily: fonts.sansBold, fontSize: 12, color: K.warn },
   more: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ink, textDecorationLine: 'underline', marginTop: 10 },

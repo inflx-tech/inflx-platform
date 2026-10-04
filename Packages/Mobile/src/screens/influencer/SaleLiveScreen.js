@@ -22,9 +22,19 @@
  * (BottomBar), never over it, and the page is a FormScroll — the caption or link box she is in,
  * with "Saving…" and its red line, stays in view above the strip and the keypad. A stage with
  * nothing to press has no strip at all.
+ *
+ * shopper-walk-fixes (frames B1, B2, C1, C2 — the founder's walk of 3–4 Oct 2026):
+ *   · every post row shows its picture, and every video she shares a picture taken from it — her
+ *     phone makes that picture right after the video is uploaded (sendCover12);
+ *   · the count reads "4 approved · ✓ Minimum 1 met" once the minimum is met (Progress14);
+ *   · an approved post that is not in the shop yet says from which day (postSub14);
+ *   · a row's chip says "1 file" / "No file yet"; the approved posts under her rows have a
+ *     heading; "Send to …" is one line; and a grey Send says which row still needs its file;
+ *   · the viewer is handed the post and the place as two parts (its title is two lines).
+ * Progress14, PostLine14 and postSub14 are the brand's too (BrandSaleLiveScreen).
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Keyboard } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
@@ -39,7 +49,7 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FileTile12, AddTile12, NoteLine12, RoundPill12, QuoteBox12, Line12, CountChip12, FeeCard12, LinkBox12, useSaves12 } from '../../components/content/bits12';
+import { FileTile12, AddTile12, NoteLine12, RoundPill12, QuoteBox12, Line12, CountChip12, FeeCard12, LinkBox12, useSaves12, VideoFace12, hasCover12, sendCover12 } from '../../components/content/bits12';
 import { SendSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { MSG12, LIMITS12 } from '../../components/content/copy12';
@@ -68,15 +78,22 @@ function Chip({ tone, text, testID }) {
   return <View style={[s.chip, { backgroundColor: c.bg }]} testID={testID}><Text style={[s.chipText, { color: c.fg }]}>{text}</Text></View>;
 }
 
-/** "1 of 2 approved", the bar, and one line under it (S4–S7). */
+/**
+ * "1 of 2 approved", the bar, and one line under it (S4–S7).
+ *
+ * shopper-walk-fixes (frames B1, C1): once the minimum is met it reads "4 approved" with
+ * "✓ Minimum 1 met" in green at the right — never "4 of 1 approved". While she is still short it
+ * is exactly as before. The bar is unchanged.
+ */
 export function Progress14({ p1, line, testID }) {
   if (!p1) return null;
   const pct = Math.min(100, (p1.approved / Math.max(1, p1.min)) * 100);
+  const met = p1.approved >= p1.min;
   return (
     <View style={s.progress} testID={testID || 'progress'}>
       <View style={s.progressTop}>
-        <Text style={s.progressBig}>{C14.progress(p1.approved, p1.min)}</Text>
-        <Text style={s.progressMin}>{C14.minimum(p1.min)}</Text>
+        <Text style={s.progressBig} testID="progress-count">{met ? C14.approvedCount(p1.approved) : C14.progress(p1.approved, p1.min)}</Text>
+        <Text style={met ? s.progressMet : s.progressMin} testID={met ? 'progress-met' : 'progress-min'}>{met ? C14.minimumMet(p1.min) : C14.minimum(p1.min)}</Text>
       </View>
       <View style={s.bar2}><View style={[s.bar2Fill, { width: `${pct}%` }]} /></View>
       {line ? <Text style={s.small}>{line}</Text> : null}
@@ -84,20 +101,54 @@ export function Progress14({ p1, line, testID }) {
   );
 }
 
-/** One shoppable post in Path 1's list. */
-export function PostLine14({ post, right, sub, testID }) {
+/**
+ * The small picture at the start of a post's row (shopper-walk-fixes W15 · frames B1, C1, C2).
+ * `cover.url` is always a PICTURE: the photo itself, or the picture taken from the video — then
+ * with a small play mark over it. A video that has no picture is the dark tile with the play
+ * mark; a post with no cover at all keeps the plain box.
+ */
+function Thumb14({ cover }) {
+  if (!cover || (!cover.url && !cover.isVideo)) return <View style={s.thumb} testID="post-thumb-plain" />;
+  return (
+    <View style={s.thumb} testID="post-thumb">
+      {cover.isVideo
+        ? <VideoFace12 url={cover.url} mark={14} />
+        : <Image source={{ uri: cover.url }} style={s.thumbImg} resizeMode="cover" testID="post-picture" />}
+    </View>
+  );
+}
+
+/**
+ * One shoppable post in Path 1's list. `sub` is the grey line under its code; `waiting` draws
+ * that line in the waiting blue, as the board draws "In the shop from 4 Oct" (frames B1, C1).
+ */
+export function PostLine14({ post, right, sub, waiting, testID }) {
   return (
     <View style={s.postLine} testID={testID || `post-${post.id}`}>
-      <View style={s.thumb} />
+      <Thumb14 cover={post.cover} />
       <View style={{ flex: 1 }}>
         <Text style={s.postTitle} numberOfLines={1}>{post.title}</Text>
         <Text style={s.code}>{post.code || (post.kind === 'price' ? 'Price post' : post.offerName || 'Offer post')}</Text>
-        {sub ? <Text style={s.small}>{sub}</Text> : null}
+        {sub ? <Text style={waiting ? s.subWaiting : s.small}>{sub}</Text> : null}
       </View>
       {right}
     </View>
   );
 }
+
+/**
+ * The line under a post in Path 1's list, on BOTH sides (frames B1, C1): a late one says when it
+ * was approved; one that is approved but not in the shop yet says from which day — its own
+ * offer's first day, else the posting date. `{ sub, waiting }` for PostLine14.
+ */
+export function postSub14(post, postingDate) {
+  if (post.late) return { sub: C14.approvedLate(post.approvedAt), waiting: false };
+  const from = post.state === 'approved' ? (post.goesLiveOn || postingDate) : null;
+  return from ? { sub: C14.inShopFrom(from), waiting: true } : { sub: null, waiting: false };
+}
+
+/** The places that are a video: a reel, a YouTube video, a YouTube Short. Every other row takes any file. */
+const VIDEO_PLACES = ['reel', 'youtube_video', 'youtube_short'];
 
 export default function SaleLiveScreen({ navigation, route }) {
   const { ciId } = route.params || {};
@@ -108,7 +159,7 @@ export default function SaleLiveScreen({ navigation, route }) {
   const [sheetError, setSheetError] = useState(null);
   const [uploads, setUploads] = useState({});
   const [rowError, setRowError] = useState({});
-  const [viewer, setViewer] = useState(null);           // the open file: { label, files, index, edit }
+  const [viewer, setViewer] = useState(null);           // the open file: { title, place, files, index, edit }
   const [urls, setUrls] = useState({});
   const mounted = useRef(true);
   // Board C: the toast is drawn in the box above the button strip, just above it.
@@ -130,15 +181,17 @@ export default function SaleLiveScreen({ navigation, route }) {
   }, [ciId, inLine]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // The tiles' small pictures: every photo and Story screenshot, and (W15) the picture taken from a
+  // video that has one — asked for as the PICTURE (`cover`), never as the video itself.
   useEffect(() => {
     if (!c) return;
-    const ids = [];
+    const ids = [];                                     // [file id, the picture taken from a video?]
     for (const row of c.rows || []) {
-      for (const f of row.files || []) if (f.kind === 'photo' && !urls[f.id]) ids.push(f.id);
-      for (const p of row.proofs || []) if (p.screenshotFileId && !urls[p.screenshotFileId]) ids.push(p.screenshotFileId);
+      for (const f of row.files || []) if ((f.kind === 'photo' || hasCover12(f)) && !urls[f.id]) ids.push([f.id, hasCover12(f)]);
+      for (const p of row.proofs || []) if (p.screenshotFileId && !urls[p.screenshotFileId]) ids.push([p.screenshotFileId, false]);
     }
-    ids.slice(0, 20).forEach(async (id) => {
-      const r = await influencerApi.contentFileUrl(ciId, id);
+    ids.slice(0, 20).forEach(async ([id, cover]) => {
+      const r = await (cover ? influencerApi.contentFileUrl(ciId, id, true) : influencerApi.contentFileUrl(ciId, id));
       if (mounted.current && r && r.success) setUrls((u) => ({ ...u, [id]: r.data.view.url }));
     });
   }, [c]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -182,6 +235,11 @@ export default function SaleLiveScreen({ navigation, route }) {
           const p = await influencerApi.contentSetProof(ciId, row.key, 1, { screenshotFileId: done.data.file.id });
           if (!p || !p.success) throw new Error(refuse(p));
         }
+        // W15 — a video: her phone takes a picture from it for its tile, on her side and the
+        // brand's. The video is uploaded and confirmed by now; whatever happens to the picture,
+        // the video stays and no red line is shown (sendCover12 never throws).
+        // eslint-disable-next-line no-await-in-loop
+        if (kind === 'video') await sendCover12({ api: influencerApi, put: uploadContentFile, ciId, fileId: u.data.upload.fileId, uri: a.uri });
       } catch (e) {
         if (mounted.current) setRowError((x) => ({ ...x, [row.key]: e.message }));
       } finally {
@@ -274,8 +332,10 @@ export default function SaleLiveScreen({ navigation, route }) {
   const sharable = p1 ? p1.posts.filter((p) => p.sharable) : [];
   const takenFor = (postId) => (c.rows || []).filter((r) => r.postId === postId).map((r) => r.type);
   const rowTitle = (row) => C14.rowLabel(row.post ? row.post.title : '', row.label);
+  /** The viewer's two title lines for a row's files (frame B2): the post, then the place. */
+  const named = (row) => ({ title: row.post ? row.post.title : '', place: row.label });
   /** Her Story screenshot (one per row here), opened in the viewer with nothing under it. */
-  const openShot = (row, proof) => setViewer({ label: rowTitle(row), files: [{ id: proof.screenshotFileId, kind: 'photo' }], index: 0 });
+  const openShot = (row, proof) => setViewer({ ...named(row), files: [{ id: proof.screenshotFileId, kind: 'photo' }], index: 0 });
   // J · U13 — the button and the one line under it, from the PACKAGE rows only (an outside row
   // never holds it back). A link box counts as soon as it has text (saved or not); a Story counts
   // when INFLX has its screenshot. The line, in this order: what is still missing › a link that
@@ -290,6 +350,18 @@ export default function SaleLiveScreen({ navigation, route }) {
   const postLine = linksLeft || shotsLeft ? C14.toGo(linksLeft, shotsLeft)
     : linkWrong ? C14.linkNeedsFixing : linkSaving ? C14.savingLink : null;
   const notShared = (c.notShared || []).filter((n) => !n.inPackage);
+  // C2 — "Send to …" while she is filling the package. It is grey until every row has its file
+  // (the server's `can.submit`) and while a file is still on its way up. When it is grey because
+  // a row has no file, the line under it names the FIRST such row — a row whose file is uploading
+  // right now is not one.
+  const sendOff = !c.can.submit || Object.keys(uploads).length > 0;
+  const needsFile = editing && sendOff ? pkg.find((row) => !(row.files || []).length && !pendingOf(row.key).length) : null;
+  const sendWhy = needsFile
+    ? (VIDEO_PLACES.includes(needsFile.type) ? C14.addVideoToSend(rowTitle(needsFile)) : C14.addFileToSend(rowTitle(needsFile)))
+    : null;
+  // The approved posts she can still add (each with its "+"), and whether they sit UNDER rows she
+  // already has — only then are they "another post, or another place" and get the heading.
+  const canAddMore = !!c.can.addRows && sharable.length > 0;
   const steps = (c.steps || []).map((st) => ({
     ...st,
     detail: st.key === 'shoot' && st.at ? day10(st.at) : st.key === 'posts' ? st.detail
@@ -336,9 +408,9 @@ export default function SaleLiveScreen({ navigation, route }) {
             {stage !== 'complete' ? (
               <Progress14 p1={p1} line={p1.inReview ? C14.withInflx(p1.inReview) : p1.short ? C14.moreToMin(p1.short) : null} />
             ) : null}
+            {/* C1 — an approved post that is not in the shop yet says from which day, as the brand's screen does. */}
             {p1.posts.map((p) => (
-              <PostLine14 key={p.id} post={p}
-                sub={p.late ? C14.approvedLate(p.approvedAt) : null}
+              <PostLine14 key={p.id} post={p} {...postSub14(p, c.postingDate)}
                 right={p.late ? <Chip tone="yourMove" text={C14.late} /> : <Chip tone={STATE_TONE[p.state]} text={C14.postState[p.state] || p.state} testID={`post-state-${p.id}`} />} />
             ))}
             {stage !== 'complete' ? (
@@ -369,11 +441,12 @@ export default function SaleLiveScreen({ navigation, route }) {
             ) : <Text style={s.small}>{C14.openWhy(brand)}</Text>}
             {pkg.map((row) => (
               <View key={row.key} style={s.row} testID={`row-${row.key}`}>
-                <View style={s.rowHead}><Text style={s.rowLabel}>{rowTitle(row)}</Text><CountChip12 have={row.files.length} need={1} /></View>
+                {/* C2 — the chip says what the row has: "1 file", "2 files", "No file yet" (it read "1 of 1" / "0 of 1"). */}
+                <View style={s.rowHead}><Text style={s.rowLabel}>{rowTitle(row)}</Text><CountChip12 have={row.files.length} need={1} text={C14.files(row.files.length)} /></View>
                 <View style={s.tiles}>
                   {row.files.map((f, i) => (
                     <FileTile12 key={f.id} file={f} url={urls[f.id]} note={f.pinnedNote}
-                      onPress={() => setViewer({ label: rowTitle(row), files: row.files, index: i, edit: true })} />
+                      onPress={() => setViewer({ ...named(row), files: row.files, index: i, edit: true })} />
                   ))}
                   {pendingOf(row.key).map(([id, u]) => <FileTile12 key={id} progress={u.progress} />)}
                   {row.files.length + pendingOf(row.key).length < 10 ? <AddTile12 onPress={() => addFiles(row)} testID={`add-${row.key}`} /> : null}
@@ -387,7 +460,9 @@ export default function SaleLiveScreen({ navigation, route }) {
                 {c.can.removeRow ? <TextButton label={C14.removeRow} onPress={() => removeRow(row)} testID={`remove-${row.key}`} /> : null}
               </View>
             ))}
-            {c.can.addRows ? sharable.map((p) => (
+            {/* C2 — under the rows she already has, the same posts again read as a repeat; the heading says what the list is for. */}
+            {canAddMore && pkg.length ? <Text style={s.listHead} testID="share-another">{C14.shareAnother}</Text> : null}
+            {canAddMore ? sharable.map((p) => (
               <PostLine14 key={p.id} post={p} testID={`sharable-${p.id}`}
                 right={<TouchableOpacity style={s.plus} onPress={() => { setSheetError(null); setSheet({ dest: p, outside: false }); }} accessibilityLabel={C14.addPostOrPlace} testID={`add-place-${p.id}`}><Text style={s.plusText}>+</Text></TouchableOpacity>} />
             )) : null}
@@ -401,8 +476,8 @@ export default function SaleLiveScreen({ navigation, route }) {
             <RoundPill12 round={c.round} />
             {pkg.map((row) => (
               <View key={row.key} style={s.row}>
-                <View style={s.rowHead}><Text style={s.rowLabel}>{rowTitle(row)}</Text><CountChip12 have={row.files.length} need={1} /></View>
-                <View style={s.tiles}>{row.files.map((f, i) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => setViewer({ label: rowTitle(row), files: row.files, index: i })} />)}</View>
+                <View style={s.rowHead}><Text style={s.rowLabel}>{rowTitle(row)}</Text><CountChip12 have={row.files.length} need={1} text={C14.files(row.files.length)} /></View>
+                <View style={s.tiles}>{row.files.map((f, i) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => setViewer({ ...named(row), files: row.files, index: i })} />)}</View>
               </View>
             ))}
             <Text style={s.small}>{C14.lockedWhile}</Text>
@@ -512,9 +587,12 @@ export default function SaleLiveScreen({ navigation, route }) {
       <BottomBar testID="sale-actions">
         {editing ? (
           <>
-            <PrimaryButton label={stage === 'changes' ? C14.sendChanges : C14.sendTo(brand)} disabled={!c.can.submit || Object.keys(uploads).length > 0}
-              onPress={openSend} testID="send" />
-            <Text style={s.hint}>{!pkg.length ? C14.noRowsBody : stage === 'changes' && c.round ? C14.lastRoundHint(c.round.allowed) : ''}</Text>
+            {/* C2 — one centred line however long the brand's name is: it ends with "…", it never wraps. */}
+            <PrimaryButton label={stage === 'changes' ? C14.sendChanges : C14.sendTo(brand)} disabled={sendOff}
+              onPress={openSend} oneLine testID="send" />
+            {sendWhy
+              ? <Text style={s.why} testID="send-why">{sendWhy}</Text>
+              : <Text style={s.hint} testID="send-hint">{!pkg.length ? C14.noRowsBody : stage === 'changes' && c.round ? C14.lastRoundHint(c.round.allowed) : ''}</Text>}
           </>
         ) : null}
         {stage === 'approved' && !c.frozen ? (
@@ -552,6 +630,9 @@ const s = StyleSheet.create({
   small: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 17, marginTop: 4 },
   h: { fontFamily: fonts.sansBold, fontSize: 14, color: T.ink, marginVertical: 8 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, textAlign: 'center' },
+  // C2 — why Send is grey: hers to act on, so it is in the "your move" amber, not the hint's grey.
+  why: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: T.state.yourMove.fg, lineHeight: 17, textAlign: 'center' },
+  listHead: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, paddingTop: 4 },
   pathCard: { borderRadius: 14, borderWidth: 1, borderColor: T.border, padding: 14, marginBottom: 12, backgroundColor: '#FFFFFF', gap: 8 },
   pathHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pathTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: T.ink },
@@ -560,10 +641,14 @@ const s = StyleSheet.create({
   progressTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   progressBig: { fontFamily: fonts.sansBold, fontSize: 14.5, color: T.ink },
   progressMin: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink2 },
+  progressMet: { fontFamily: fonts.sansBold, fontSize: 11.5, color: T.state.active.fg },
   bar2: { height: 6, borderRadius: 99, backgroundColor: '#E5E4DE', overflow: 'hidden' },
   bar2Fill: { height: 6, backgroundColor: T.state.active.fg },
   postLine: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border },
-  thumb: { width: 40, height: 48, borderRadius: 9, backgroundColor: T.surface },
+  thumb: { width: 40, height: 48, borderRadius: 9, backgroundColor: T.surface, overflow: 'hidden' },
+  thumbImg: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
+  // "In the shop from 4 Oct": the small line's size, in the waiting blue (frames B1, C1).
+  subWaiting: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.state.waiting.fg, lineHeight: 17, marginTop: 4 },
   postTitle: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink },
   code: { fontFamily: fonts.sansRegular, fontSize: 11, color: T.ink2, letterSpacing: 0.4 },
   chip: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },

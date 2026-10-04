@@ -61,10 +61,12 @@ it('records seconds watched when it leaves the screen, finishing, replaying and 
   now.mockRestore();
 });
 
+// shopper-walk-fixes V1: the pause layer is no longer on every video (in a feed it swallowed the tap
+// that opens Play) — Play asks for it with `tapToPause`, so this render now passes it as Play does.
 it('in Play: tap to pause (recorded), and the sound button turns sound on and off (recorded)', () => {
   _setPlayerForTests(FakeVideo);
   const onSound = jest.fn();
-  const { getByTestId } = render(<ShopVideo post={POST} height={400} active surface="play" muted soundToggle onSoundChange={onSound} />);
+  const { getByTestId } = render(<ShopVideo post={POST} height={400} active surface="play" muted soundToggle tapToPause onSoundChange={onSound} />);
   fireEvent.press(getByTestId('video-sound-v1'));
   expect(lastProps.muted).toBe(false);
   expect(track).toHaveBeenCalledWith('sound_on', 'v1', 'play');

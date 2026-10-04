@@ -370,7 +370,8 @@ export const brandApi = {
   contentChanges:    (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/changes`, body),
   contentConfirmLive: (c, s2, ciId, amount) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/confirm-live`, { amount }),
   contentReport:     (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/report`, body),
-  contentFileUrl:    (c, s2, ciId, fileId) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/files/${fileId}/url`),
+  // shopper-walk-fixes (W15): `cover` asks for the picture taken from a video (`?cover=1`), never the video.
+  contentFileUrl:    (c, s2, ciId, fileId, cover) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/files/${fileId}/url${cover ? '?cover=1' : ''}`),
 
   // ── Item 8 · the pitches a brand receives. Contract: features/item8-pitch ─
   // Accepting creates a pool entry and nothing else, which is why there is no
@@ -679,7 +680,12 @@ export const influencerApi = {
   contentUploadUrl:   (id, body) => api.post(`/influencers/me/invitations/${id}/content/files/upload-url`, body),
   contentConfirmFile: (id, fileId) => api.post(`/influencers/me/invitations/${id}/content/files/${fileId}/confirm`),
   contentRemoveFile:  (id, fileId) => api.delete(`/influencers/me/invitations/${id}/content/files/${fileId}`),
-  contentFileUrl:     (id, fileId) => api.get(`/influencers/me/invitations/${id}/content/files/${fileId}/url`),
+  // shopper-walk-fixes (W15): `cover` asks for the picture taken from a video (`?cover=1`), never the video.
+  contentFileUrl:     (id, fileId, cover) => api.get(`/influencers/me/invitations/${id}/content/files/${fileId}/url${cover ? '?cover=1' : ''}`),
+  // The picture her phone took from a video she has added: ask (a JPEG of exactly sizeBytes, at
+  // most 1 MB), PUT it with uploadContentFile, then confirm. The video itself is never touched.
+  contentCoverUrl:     (id, fileId, sizeBytes) => api.post(`/influencers/me/invitations/${id}/content/files/${fileId}/cover-url`, { sizeBytes }),
+  contentConfirmCover: (id, fileId) => api.post(`/influencers/me/invitations/${id}/content/files/${fileId}/cover`, {}),
   // ── Item 14 · Pay for Sale going live: the rows she names on item 12's step. Contract: features/item14-sale-going-live ──
   saleAddRows:        (id, postId, types) => api.post(`/influencers/me/invitations/${id}/content/social-rows`, { postId, types }),
   saleRemoveRow:      (id, rowKey) => api.delete(`/influencers/me/invitations/${id}/content/social-rows/${rowKey}`),
@@ -987,6 +993,9 @@ export const followerApi = {
   orderLine: (id) => api.get(`/follower/orders/lines/${id}`),
   cancelPreview: (id) => api.get(`/follower/orders/lines/${id}/cancel`),
   cancelLine: (id, body) => api.post(`/follower/orders/lines/${id}/cancel`, body),
+  // shopper-walk-fixes (W14): Return — what goes back and until when; then she asks, and INFLX decides.
+  returnPreview: (id) => api.get(`/follower/orders/lines/${id}/return`),
+  returnLine: (id, body) => api.post(`/follower/orders/lines/${id}/return`, body),
   addresses: () => api.get('/follower/addresses'),
   addAddress: (body) => api.post('/follower/addresses', body),
   updateAddress: (id, body) => api.patch(`/follower/addresses/${id}`, body),

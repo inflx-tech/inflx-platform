@@ -11,6 +11,10 @@
  * ui-walk-fixes (board C, rule 1): the button strip is part of the column, under the page
  * (BottomBar) — it used to float over the page's last lines. The page lost the 190 of empty
  * space that only existed to scroll clear of it, and the toast sits just above the strip.
+ *
+ * shopper-walk-fixes (frames B1, B2): each post row shows its picture and each video to check the
+ * picture taken from it (they were grey squares and black tiles); the count reads "4 approved ·
+ * ✓ Minimum 1 met" once the minimum is met; the viewer's title is the post over the place.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
@@ -27,12 +31,12 @@ import { FormArea } from '../../components/shell/FormScroll';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, MoveBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FileTile12, RoundPill12, History12, LinkLine12, Line12, FeeCard12 } from '../../components/content/bits12';
+import { FileTile12, RoundPill12, History12, LinkLine12, Line12, FeeCard12, hasCover12 } from '../../components/content/bits12';
 import { ChangesSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { ReportSheet14 } from '../../components/sale/sheets14';
 import { C14, day10, rupees } from '../../components/sale/copy14';
-import { Progress14, PostLine14 } from '../influencer/SaleLiveScreen';
+import { Progress14, PostLine14, postSub14 } from '../influencer/SaleLiveScreen';
 
 const STATE_TONE = { live: 'active', approved: 'waiting', in_review: 'waiting', sent_back: 'yourMove', removed: 'ended', draft: 'ended' };
 function Chip({ tone, text, testID }) {
@@ -48,7 +52,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
   const [busy, setBusy] = useState(false);
   const [sheetError, setSheetError] = useState(null);
   const [urls, setUrls] = useState({});
-  const [viewer, setViewer] = useState(null);           // the open file: { label, files, index }
+  const [viewer, setViewer] = useState(null);           // the open file: { title, place, files, index }
   const mounted = useRef(true);
   const { toast, show } = useToast({ inFlow: true });
   useRouteToast(navigation, route, show);
@@ -64,15 +68,17 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
   }, [campaignId, setId, ciId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // The tiles' small pictures: every photo and Story screenshot, and (W15) the picture taken from a
+  // video that has one — asked for as the PICTURE (`cover`), never as the video itself.
   useEffect(() => {
     if (!c) return;
-    const ids = [];
+    const ids = [];                                     // [file id, the picture taken from a video?]
     for (const row of c.rows || []) {
-      for (const f of row.files || []) if (f.kind === 'photo' && !urls[f.id]) ids.push(f.id);
-      for (const p of row.proofs || []) if (p.screenshotFileId && !urls[p.screenshotFileId]) ids.push(p.screenshotFileId);
+      for (const f of row.files || []) if ((f.kind === 'photo' || hasCover12(f)) && !urls[f.id]) ids.push([f.id, hasCover12(f)]);
+      for (const p of row.proofs || []) if (p.screenshotFileId && !urls[p.screenshotFileId]) ids.push([p.screenshotFileId, false]);
     }
-    ids.slice(0, 24).forEach(async (id) => {
-      const r = await brandApi.contentFileUrl(campaignId, setId, ciId, id);
+    ids.slice(0, 24).forEach(async ([id, cover]) => {
+      const r = await (cover ? brandApi.contentFileUrl(campaignId, setId, ciId, id, true) : brandApi.contentFileUrl(campaignId, setId, ciId, id));
       if (mounted.current && r && r.success) setUrls((u) => ({ ...u, [id]: r.data.view.url }));
     });
   }, [c]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -104,7 +110,10 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
   const last = c.rounds && c.rounds.length ? c.rounds[c.rounds.length - 1] : null;
   const pkg = (c.rows || []).filter((r) => !r.outside);
   const outsideRows = (c.rows || []).filter((r) => r.outside);
-  const rowTitle = (row) => C14.rowLabel(row.post ? `${row.post.title}${row.post.code ? ` · ${row.post.code}` : ''}` : '', row.label);
+  const postTitle = (row) => (row.post ? `${row.post.title}${row.post.code ? ` · ${row.post.code}` : ''}` : '');
+  const rowTitle = (row) => C14.rowLabel(postTitle(row), row.label);
+  /** The viewer's two title lines for a row's files (frame B2): "This good offer · SHNCZW", then the place. */
+  const named = (row) => ({ title: postTitle(row), place: row.label });
   const reportKinds = [
     ...(c.can.reportRoundsUsed ? ['rounds_used'] : []),
     ...(c.can.reportNotPosted ? ['not_posted'] : []),
@@ -115,7 +124,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
     const proof = (row.proofs || [])[0] || {};
     if (row.isStory) {
       return proof.screenshotFileId
-        ? <View style={s.tiles}><FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} onPress={() => setViewer({ label: rowTitle(row), files: [{ id: proof.screenshotFileId, kind: 'photo' }], index: 0 })} /></View>
+        ? <View style={s.tiles}><FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} onPress={() => setViewer({ ...named(row), files: [{ id: proof.screenshotFileId, kind: 'photo' }], index: 0 })} /></View>
         : null;
     }
     return <LinkLine12 url={proof.url} testID={`link-${row.key}`} />;
@@ -164,8 +173,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
             {p1.posts.filter((p) => p.counts).map((p) => {
               const ns = (c.notShared || []).find((n) => n.postId === p.id);
               return (
-                <PostLine14 key={p.id} post={p}
-                  sub={p.late ? C14.approvedLate(p.approvedAt) : p.state === 'approved' && (p.goesLiveOn || c.postingDate) ? C14.inShopFrom(p.goesLiveOn || c.postingDate) : null}
+                <PostLine14 key={p.id} post={p} {...postSub14(p, c.postingDate)}
                   right={ns ? <Chip tone="yourMove" text={C14.notSharedYet} /> : p.late ? <Chip tone="yourMove" text={C14.late} /> : <Chip tone={STATE_TONE[p.state]} text={C14.postState[p.state] || p.state} />} />
               );
             })}
@@ -198,7 +206,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
             {pkg.map((row) => (
               <View key={row.key} style={s.row} testID={`review-row-${row.key}`}>
                 <Text style={s.rowLabel}>{rowTitle(row)}</Text>
-                <View style={s.tiles}>{row.files.map((f, i) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => setViewer({ label: rowTitle(row), files: row.files, index: i })} />)}</View>
+                <View style={s.tiles}>{row.files.map((f, i) => <FileTile12 key={f.id} file={f} url={urls[f.id]} onPress={() => setViewer({ ...named(row), files: row.files, index: i })} />)}</View>
                 {row.caption ? <Text style={s.para}>{row.caption}</Text> : null}
               </View>
             ))}

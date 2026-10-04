@@ -66,6 +66,12 @@ const opened = { approved: 1, short: 1, open: true, inReview: 1, posts: [post('p
 const ok = (c) => Promise.resolve({ success: true, data: { content: c } });
 const her = (c) => { api.influencerApi.myContent.mockReturnValue(ok(c)); return render(<SaleLiveScreen navigation={nav} route={HER} />); };
 const brand = (c) => { api.brandApi.content.mockReturnValue(ok(c)); return render(<BrandSaleLiveScreen navigation={nav} route={BRAND} />); };
+/** shopper-walk-fixes (frame B2): the viewer's title is two lines — the post, then the place and which file. */
+const titled = (r, head, which) => {
+  expect(r.getByTestId('viewer-title').props.children).toBe(head);
+  expect(r.getByTestId('viewer-which').props.children).toBe(which);
+  return true;
+};
 beforeEach(() => jest.clearAllMocks());
 
 describe('SaleLiveScreen (her)', () => {
@@ -333,7 +339,7 @@ describe('ui-walk-fixes H · Pay for Sale / Hybrid: one tap on a tile opens the 
     await waitFor(() => r.getByTestId('row-s1'));
     fireEvent.press(r.getByTestId('file-f2'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Festive Sarees · Instagram post · 2 of 2')).toBeTruthy();
+    titled(r, 'Festive Sarees', 'Instagram post · 2 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the post, then the place and which file)
     expect(api.influencerApi.contentFileUrl).toHaveBeenLastCalledWith('ci1', 'f2');
     expect(r.queryByTestId('action-sheet')).toBeNull();                   // no "View" menu in between
     expect(r.queryByText('View')).toBeNull();
@@ -352,7 +358,7 @@ describe('ui-walk-fixes H · Pay for Sale / Hybrid: one tap on a tile opens the 
     await waitFor(() => r.getByTestId('with-them'));
     fireEvent.press(r.getByTestId('file-f2'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Festive Sarees · Instagram post · 1 of 1')).toBeTruthy();
+    titled(r, 'Festive Sarees', 'Instagram post · 1 of 1'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the post, then the place and which file)
     expect(r.queryByTestId('viewer-actions')).toBeNull();
     expect(r.queryByTestId('viewer-prev')).toBeNull();                    // one file: no arrows
     expect(openURL).not.toHaveBeenCalled();
@@ -365,7 +371,7 @@ describe('ui-walk-fixes H · Pay for Sale / Hybrid: one tap on a tile opens the 
     await waitFor(() => r.getByTestId('proof-row-s2'));
     fireEvent.press(r.getByTestId('file-sh1'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Festive Sarees · Instagram story · 1 of 1')).toBeTruthy();
+    titled(r, 'Festive Sarees', 'Instagram story · 1 of 1'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the post, then the place and which file)
     expect(api.influencerApi.contentFileUrl).toHaveBeenLastCalledWith('ci1', 'sh1');
     expect(r.queryByTestId('viewer-actions')).toBeNull();
     fireEvent.press(r.getByTestId('viewer-close'));
@@ -385,7 +391,7 @@ describe('ui-walk-fixes H · Pay for Sale / Hybrid: one tap on a tile opens the 
     await waitFor(() => r.getByTestId('review'));
     fireEvent.press(r.getByTestId('file-f2'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Festive Sarees · K7M2F9 · Instagram reel · 2 of 2')).toBeTruthy();
+    titled(r, 'Festive Sarees · K7M2F9', 'Instagram reel · 2 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the post, then the place and which file)
     expect(api.brandApi.contentFileUrl).toHaveBeenLastCalledWith('c1', 's1', 'ci1', 'f2');
     expect(r.queryByTestId('viewer-add-note')).toBeNull();                // although it can still ask for changes
     expect(r.queryByTestId('viewer-remove')).toBeNull();
@@ -405,7 +411,7 @@ describe('ui-walk-fixes H · Pay for Sale / Hybrid: one tap on a tile opens the 
     await waitFor(() => r.getByTestId('posted-row-s2'));
     fireEvent.press(r.getByTestId('file-sh1'));
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByText('Festive Sarees · K7M2F9 · Instagram story · 1 of 1')).toBeTruthy();
+    titled(r, 'Festive Sarees · K7M2F9', 'Instagram story · 1 of 1'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the post, then the place and which file)
     expect(api.brandApi.contentFileUrl).toHaveBeenLastCalledWith('c1', 's1', 'ci1', 'sh1');
     expect(r.queryByTestId('viewer-actions')).toBeNull();
     expect(openURL).not.toHaveBeenCalled();

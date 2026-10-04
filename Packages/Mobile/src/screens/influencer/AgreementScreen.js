@@ -122,7 +122,7 @@ export default function AgreementScreen({ navigation, route }) {
             <>
               <MoneyRow7 label={C7.creator.commission} value={C7.creator.commissionOn(money.commissionPct)} strong testID="commission-row" />
               {money.commissionAfterDays != null
-                ? <MoneyRow7 label="Commission paid" value={C7.creator.commissionPaid(money.commissionAfterDays)} testID="commission-when" />
+                ? <MoneyRow7 label="Commission paid" value={money.commissionPaidWords || C7.creator.commissionPaid(money.commissionAfterDays)} testID="commission-when" />
                 : null}
             </>
           ) : null}

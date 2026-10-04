@@ -33,8 +33,11 @@ export const CS = {
   noVideosSub: 'Creators’ videos play here, one after another.',
   retry: 'Try again',
   loadError: "Couldn't load. Check your connection.",
-  // F3 Shop this post
-  shopTitle: 'Shop this post',
+  // F3 Shop this post → "Products in this post" (shopper-walk-fixes · board S1, S2). The button on a
+  // post still reads "Shop this post"; only the sheet it opens has the new name.
+  shopTitle: 'Products in this post',
+  sheetWho: (n, first, brand) => [`${n} item${n === 1 ? '' : 's'}`, first, brand].filter(Boolean).join(' · '),
+  close: 'Close',
   noCodeNeeded: (name) => `No code needed. Buying here pays ${name} her commission.`,
   heartKeepsOffer: 'The ♡ saves the product with this post, so it keeps this offer.',
   // shopper-ordering: buying happens from a post (Shop this post → Add). A product collection keeps the

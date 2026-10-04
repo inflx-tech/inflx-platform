@@ -45,6 +45,10 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 export const MB = 1024 * 1024;
 export const LIMITS12 = { 'image/jpeg': 10 * MB, 'image/png': 10 * MB, 'video/mp4': 200 * MB };
+/** shopper-walk-fixes (W15): the picture taken from a shared video — a JPEG of at most 1 MB (the server's limit). */
+export const COVER_MAX_12 = 1 * MB;
+/** …and how long its upload may take. The video's own 45 minutes would hold her row for a small picture that is optional. */
+export const COVER_PUT_MS_12 = 30 * 1000;
 
 /** "0:28" — a video's duration badge. */
 export function duration12(s) {
@@ -120,7 +124,9 @@ export const C12 = {
   // One tap on a tile opens the file inside the app; the small "View" menu is gone. "Add a note"
   // and "Remove" (the words above and below) are the buttons under the file.
   viewer: {
-    title: (label, n, m) => `${label} · ${n} of ${m}`,
+    // shopper-walk-fixes (frame B2): the title is TWO lines. The first is the post (or the
+    // deliverable); this is the second — the place, when the caller names one, and which file.
+    which: (place, n, m) => (place ? `${place} · ${n} of ${m}` : `${n} of ${m}`),
     couldntLoad: "Couldn't load this file",
     tryAgain: 'Try again',
     // The shopper app's sentence, the same words (one string, components/shop/copyShop.js).

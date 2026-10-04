@@ -121,7 +121,7 @@ async function render(contract) {
   if (s.money.commissionPct != null) {
     row('Commission', `${s.money.commissionPct}% on what she sells`);
     if (s.money.commissionAfterDays != null) {
-      row('Commission paid', `After the ${s.money.commissionAfterDays}-day return window`);
+      row('Commission paid', s.money.commissionPaidWords || `After the ${s.money.commissionAfterDays}-day return window`);
     }
   }
 

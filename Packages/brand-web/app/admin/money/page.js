@@ -15,7 +15,7 @@ const PARTS = [
   ['brandAvailable', 'Brand wallets, available', '#1D5FBF'],
   ['creatorAvailable', 'Creator wallets, available', '#0E7490'],
   ['lockedInCollaborations', 'Locked in collaborations', '#6A3FC6'],
-  ['salesInReturnWindow', 'Sales in return window', '#1A7A3D'],
+  ['salesInReturnWindow', 'Sales not added yet', '#1A7A3D'],
   ['onHoldForWithdrawals', 'On hold for withdrawals', '#B04600'],
 ];
 
@@ -51,7 +51,7 @@ export default function MoneyOverviewPage() {
         <LinkTile href="/admin/money/withdrawals" label="Withdrawals waiting" value={inr(w.amount)} note={`${w.count} request${w.count === 1 ? '' : 's'}`} />
         <Tile label="INFLX earned · this month" value={inr(o.earnings.thisMonth)}
           note={`campaign fees ${inr(o.earnings.campaignFeesThisMonth)} · sales ${inr(o.earnings.salesFeesThisMonth)}`} />
-        <Tile label="Earnings still in return window" value={inr(o.earnings.inReturnWindow)} note="becomes earned as windows close" />
+        <Tile label="Earnings on sales not added yet" value={inr(o.earnings.inReturnWindow)} note="earned after delivery, as return windows close" />
       </Tiles>
 
       <div className="bg-white rounded-xl border border-border p-4 mb-4">

@@ -496,23 +496,15 @@ async function computeL3OnFollowerTxn(args) {
  * @param {pg.Client} [client]  optional db client
  * @returns {Promise<number>}   days to hold (positive integer)
  */
-async function getReturnWindowForCategory(categoryKey, client = db) {
-  if (categoryKey) {
-    try {
-      const { rows } = await client.query(
-        `SELECT return_window_days FROM categories
-          WHERE category_key = $1 AND active = true
-          LIMIT 1`,
-        [_normalizeCategoryKey(categoryKey)]
-      );
-      const days = rows[0]?.return_window_days;
-      if (days != null) return parseInt(days, 10);
-    } catch (err) {
-      // pre-M073: column doesn't exist → fall through to global
-    }
-  }
+async function getReturnWindowForCategory(categoryKey, client = db) { // eslint-disable-line no-unused-vars
+  // shopper-walk-fixes (W11, founder 4 Oct 2026): the return window is ONE platform number — "fixed
+  // by our platform… same for all… not decided by individual business or brand". The category's own
+  // number (categories.return_window_days) is no longer read; the argument is kept only so an old
+  // caller still works. The length is in days and may be a fraction (36 hours → 1.5); code that
+  // stamps a sale asks returnWindow.service, which works in hours.
   const cfg = await paymentConfigSvc.getConfig();
-  return parseInt(cfg.returnWindowDays ?? 30, 10);
+  const days = Number(cfg.returnWindowDays);
+  return Number.isFinite(days) && days > 0 ? days : 30;
 }
 
 module.exports = {

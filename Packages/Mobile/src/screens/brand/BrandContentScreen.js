@@ -15,6 +15,10 @@
  * ui-walk-fixes (board C, rule 1): the button strip is part of the column, under the page
  * (BottomBar) — it used to float over the page's last lines. The page lost the 190 of empty
  * space that only existed to scroll clear of it, and the toast sits just above the strip.
+ *
+ * shopper-walk-fixes (W15): a video to check shows the picture taken from it under the play mark
+ * (it was a black tile); one without a picture keeps the dark tile. The viewer's title is two
+ * lines: the deliverable, then which file.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
@@ -31,7 +35,7 @@ import { FormArea } from '../../components/shell/FormScroll';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, MoveBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FeeCard12, FileTile12, RowHead12, NoteLine12, RoundPill12, History12, LinkLine12, Record12, Line12 } from '../../components/content/bits12';
+import { FeeCard12, FileTile12, RowHead12, NoteLine12, RoundPill12, History12, LinkLine12, Record12, Line12, hasCover12 } from '../../components/content/bits12';
 import { ChangesSheet12, NoteSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { C12, day10 } from '../../components/content/copy12';
@@ -62,15 +66,17 @@ export default function BrandContentScreen({ navigation, route }) {
   }, [campaignId, setId, ciId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // The tiles' small pictures: every photo and Story screenshot, and (W15) the picture taken from a
+  // video that has one — asked for as the PICTURE (`cover`), never as the video itself.
   useEffect(() => {
     if (!c) return;
-    const ids = [];
+    const ids = [];                                     // [file id, the picture taken from a video?]
     for (const row of c.rows || []) {
-      for (const f of row.files || []) if (f.kind === 'photo' && !urls[f.id]) ids.push(f.id);
-      for (const p of row.proofs || []) if (p.screenshotFileId && !urls[p.screenshotFileId]) ids.push(p.screenshotFileId);
+      for (const f of row.files || []) if ((f.kind === 'photo' || hasCover12(f)) && !urls[f.id]) ids.push([f.id, hasCover12(f)]);
+      for (const p of row.proofs || []) if (p.screenshotFileId && !urls[p.screenshotFileId]) ids.push([p.screenshotFileId, false]);
     }
-    ids.slice(0, 24).forEach(async (id) => {
-      const r = await brandApi.contentFileUrl(campaignId, setId, ciId, id);
+    ids.slice(0, 24).forEach(async ([id, cover]) => {
+      const r = await (cover ? brandApi.contentFileUrl(campaignId, setId, ciId, id, true) : brandApi.contentFileUrl(campaignId, setId, ciId, id));
       if (mounted.current && r && r.success) setUrls((u) => ({ ...u, [id]: r.data.view.url }));
     });
   }, [c]); // eslint-disable-line react-hooks/exhaustive-deps

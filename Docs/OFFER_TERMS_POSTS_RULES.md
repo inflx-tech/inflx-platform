@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.17 · 3 October 2026 · living document**
+**Version 1.18 · 4 October 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -1061,10 +1061,40 @@ Example, with today's settings: a fashion brand, a creator on 10%, the fashion P
 - **INFLX admin:** everything, including the settings (COD limit, COD fee, delivery fee) and every order's money.
 
 ### 6.15 Not in this step
-Returns and exchanges (next discussion) · pay at store (O5) · courier booking and live tracking (Shiprocket) ·
+Exchanges (returns were added on 4 Oct — 6.16) · pay at store (O5) · courier booking and live tracking (Shiprocket) ·
 invoices · a "pay now" nudge for cash-on-delivery orders · map-based addresses.
 
 ---
+
+### 6.16 The return window, and returning an item (added 4 Oct, v1.18)
+
+Founder, 4 Oct 2026. Contract `features/shopper-walk-fixes` (W11, W13, W14).
+
+**One window, set by INFLX.**
+- The return window is INFLX's: one number for the whole platform. No category, brand or product has its own.
+- INFLX's admin sets it in **hours or days** (1 hour to 365 days) in one place: Admin › Money › Settings › Return window. It is 7 days now.
+- A sale is stamped with the window in force when it is made. Changing the number never moves a sale already made.
+
+**After delivery, everything follows that window.**
+- The window runs **from the delivery**, for every order, paid online or in cash.
+- Until it is delivered nothing is added to anyone. When the window closes — within the hour — the creator's commission is added to her wallet, the brand's money is added to its wallet, and INFLX's share counts as earned.
+- This replaces item 17's rule for online orders (added once shipped, the window counted from the order). Cash on delivery already worked this way.
+- A new agreement says it in the same unit: "After the 7-day return window", "After the 24-hour return window". A sent agreement keeps its words.
+
+**Returning an item.**
+- When: a delivered item, inside its window. Not before delivery; not after the window has closed.
+- What: an item. A deal's items go back together and a gift follows what earned it — the same items a cancel takes (6.12).
+- How: My orders → the item → Return → a reason (the size doesn't fit · it arrived damaged · it isn't as shown · I changed my mind · other, with a note) → confirm.
+- Who decides: **INFLX** (Admin › Returns): approve, or reject with a note she is shown; then "refunded" once the item is back with the store. The brand sees the return and is told; it does not decide.
+- While a return is open, that sale's three shares wait, even past the window.
+- Refunded: the item is undone exactly as a cancelled item is (6.12, 6.13) — its stock goes back, the creator's commission leaves her pending earnings, INFLX's share is not taken, the brand is not paid for it. An online payment is refunded to where it came from. A cash-on-delivery order is paid back by INFLX by hand.
+- Rejected: nothing changes; the shares are added when the window closes. One answer per item.
+
+**In the bag, a deal made of fixed pieces stays whole** (the 30 Sep board's D11, now enforced).
+- A set, a bundle (pick any, mix & match) and buy one get one: one group, one tick, no − 1 + and no Remove on a single item; Edit deal and Remove deal.
+- A plain discount, buy more save more, and spend or buy for a gift keep − 1 +: buying more is the offer.
+
+**After Add to bag** she stays shopping: a short vibration, the button reads "Go to bag" for about a second, then she is back exactly where she was. The bag icon with its count is on every page she browses.
 
 ## 7. Open items (owed by the founder)
 
@@ -1104,3 +1134,4 @@ invoices · a "pay now" nudge for cash-on-delivery orders · map-based addresses
 | 2026-10-01 | 1.15 | Founder: **the posting date is the last day to go live, not the day itself.** A post is in the shop as soon as INFLX approves it; an offer post is visible only while its offer is active (it waits for the offer's start, leaves at its end) (2.1, 4.1, 4.14, 5.12). Offers a brand may give: start on or before the posting date and end at least one day after it — an offer ending on the posting date, or starting the day after it, is no longer given (2.3). Products without offers: free of offers from the day the terms are sent, not from the posting date (2.4). Unchanged: invitations close 3 days before the date; the date is at least 7 days ahead; the minimum is counted by the date; late and Delayed after it. Contract `features/posting-date-last-day`. |
 | 2026-10-01 | 1.16 | Founder: the shopper's **Women / Men / Kids choice is a preference for ordering, never a filter** (5.12). Every live post is in her feed; the ones she shops for come first. Before, a shopper who chose only Women saw nothing while the one live post was a men's watch. Home circles and "more posts" follow the same rule. Contract `features/shop-for-preference`. |
 | 2026-10-03 | 1.17 | Founder: **Delete in two places.** A **Draft** is deleted from the Offers list and erased. An **Ended** offer (ended early or by its date) is deleted from the Offers list or its own page and **removed from the brand's lists** (the list and its counts, its page, the creator-terms "not shown, ended" note, "last in offer …" on Products without offers; the days its products were held are freed); its record stays for the creators who had it, their posts, orders, payments and INFLX. A **Scheduled** or **Live** offer can't be deleted: end it first. 1.9 rewritten, 1.12 aligned (Delete on Draft and Ended rows and on an Ended offer's page). This **partly reverses** v1.0 §1.9 ("a published offer can't be deleted, only ended") and question 3 of the `features/offer-builder-v2` board O1 (drafts only), for ended offers, at the founder's request of 3 Oct. Contract `features/offer-delete`. |
+| 2026-10-04 | 1.18 | Founder, from his walk of 3–4 Oct (contract `features/shopper-walk-fixes`, board locked 4 Oct). **The return window is INFLX's, one number for the whole platform, set by the admin in hours or days (7 days now); after delivery the creator's commission, INFLX's share and the brand's money all follow it** — this replaces item 17's rule for online orders (added once shipped, counted from the order); the money jobs run hourly; the per-category and per-product return numbers are no longer read. **A shopper can return a delivered item inside the window**; INFLX approves or rejects and marks it refunded; a deal goes back together; an open return holds the sale's shares (new 6.16). In the bag a set, a bundle and buy one get one stay whole (no − 1 + on one item). After Add to bag: vibration, "Go to bag" for a second, back where she was; the bag icon on every browsing page. A feed video opens full screen on a tap; the playing video switches the moment the swipe lands (5.5, 5.7 unchanged in words — the app now does what they say). "Products in this post" is a grid with a product page showing the listing's details; a discount post never shows "Build your deal"; the deal's sentence is said to the shopper. A video carries a picture taken from it on the creator's phone. |

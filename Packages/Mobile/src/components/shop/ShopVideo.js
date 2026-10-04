@@ -9,6 +9,14 @@
  *
  * Recorded (5.14): 'watch' (seconds watched when it stops), 'complete', 'replay', 'pause',
  * 'sound_on' / 'sound_off', and 'buffer' for every pause to load (the Cloudflare Stream signal).
+ *
+ * shopper-walk-fixes:
+ *   V1  In a feed the video never takes the tap: the card under it opens the video full screen.
+ *       A pause layer used to lie over the player on every screen and swallowed that tap (only on
+ *       phones that have the player, which is why jest never saw it). Tap-to-pause is now asked
+ *       for (`tapToPause`), and only Play asks.
+ *   V3  The still that stands for a video is a picture taken from the video itself
+ *       (`media[0].cover_url`); only when there is none, the first product's photo as before.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
@@ -22,6 +30,13 @@ import { hasPlayer, getPlayer } from '../../utils/videoPlayer';
 // creator file viewer can ask the same question without importing shopper code. It is ONE check
 // with ONE answer; this file still hands out `hasPlayer` and the test seam, as it always did.
 export { hasPlayer, _setPlayerForTests } from '../../utils/videoPlayer';
+
+/** The picture that stands for a video post (V3): its own, else the first product's photo. */
+export function videoStill(post) {
+  const media = post && post.media && post.media[0];
+  if (media && media.cover_url) return media.cover_url;
+  return (post && post.products && post.products[0] && post.products[0].image_url) || null;
+}
 
 function Placeholder({ poster, height, compact }) {
   return (
@@ -38,8 +53,8 @@ function Placeholder({ poster, height, compact }) {
   );
 }
 
-export default function ShopVideo({ post, height, active = false, muted: mutedIn = true, surface = 'home', compact, onSoundChange, soundToggle }) {
-  const poster = (post.products && post.products[0] && post.products[0].image_url) || null;
+export default function ShopVideo({ post, height, active = false, muted: mutedIn = true, surface = 'home', compact, onSoundChange, soundToggle, tapToPause = false }) {
+  const poster = videoStill(post);
   const media = (post.media || [])[0];
   const [paused, setPaused] = useState(false);          // her own tap-to-pause
   const [muted, setMuted] = useState(mutedIn);
@@ -80,8 +95,12 @@ export default function ShopVideo({ post, height, active = false, muted: mutedIn
     if (onSoundChange) onSoundChange(!next);
   }
 
+  // In a feed nothing here may take a touch (V1): the whole block is transparent to touches, so
+  // the tap lands on the card and the card opens Play. Play asks for the pause layer and the
+  // sound button, and there the block takes touches as before.
+  const takesTouches = tapToPause || !!soundToggle;
   return (
-    <View style={{ height, backgroundColor: '#111' }} testID={`video-${post.id}`}>
+    <View style={{ height, backgroundColor: '#111' }} testID={`video-${post.id}`} pointerEvents={takesTouches ? 'auto' : 'none'}>
       <Video
         source={{ uri: media.url }}
         style={StyleSheet.absoluteFill}
@@ -110,9 +129,11 @@ export default function ShopVideo({ post, height, active = false, muted: mutedIn
         }}
         testID={`player-${post.id}`}
       />
-      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={tapPause} testID={`video-tap-${post.id}`}>
-        {paused ? <View style={[st.center, { flex: 1 }]}><View style={st.playMark}><Icon name="play" size={24} color="#fff" /></View></View> : null}
-      </TouchableOpacity>
+      {tapToPause ? (
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={tapPause} testID={`video-tap-${post.id}`}>
+          {paused ? <View style={[st.center, { flex: 1 }]}><View style={st.playMark}><Icon name="play" size={24} color="#fff" /></View></View> : null}
+        </TouchableOpacity>
+      ) : null}
       {soundToggle ? (
         <TouchableOpacity style={st.sound} onPress={tapSound} testID={`video-sound-${post.id}`} accessibilityLabel={muted ? 'Sound off' : 'Sound on'}>
           <Icon name={muted ? 'volume-off' : 'volume-high'} size={18} color="#fff" />

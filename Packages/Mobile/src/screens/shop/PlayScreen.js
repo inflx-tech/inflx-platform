@@ -4,8 +4,11 @@
  *
  * The ▶ tab, and any video tapped in the feed (it goes first). Each video shows the creator and
  * brand (their stores), the offer, Shop this video, and like · comment · share · save. Until the
- * Play Store build brings the player, a video shows its product photo with "Update INFLX to play
+ * Play Store build brings the player, a video shows its picture with "Update INFLX to play
  * videos" (VideoView) — the order, the actions and the recording already work.
+ *
+ * shopper-walk-fixes · board V2: the video that plays changes the moment a swipe lands (useAutoplay);
+ * a tap pauses here and only here; and the bag with its count sits beside the sound button.
  */
 import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
@@ -14,6 +17,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { followerApi } from '../../services/api';
 import { CS, fmtCount } from '../../components/shop/copyShop';
 import { VideoView, ShopSheet, SignInSheet, Loading, Empty, usePostActions, C } from '../../components/shop/bitsShop';
+import { BagButton } from '../../components/shop/orderBits';
+import { hasPlayer } from '../../components/shop/ShopVideo';
 import { useShopNav } from '../../components/shop/useShopNav';
 import { useAutoplay } from '../../components/shop/useAutoplay';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,7 +32,9 @@ function Reel({ post, height, nav, index, active, sound, onSound }) {
   const n = post.products ? post.products.length : 0;
   return (
     <View style={{ height, backgroundColor: C.dark }} testID={`reel-${post.id}`}>
-      <VideoView post={post} height={height} active={active} muted={!sound} surface="play" soundToggle onSoundChange={onSound} />
+      <VideoView post={post} height={height} active={active} muted={!sound} surface="play" soundToggle tapToPause onSoundChange={onSound} />
+      {/* The bag beside the sound button (which only a phone with the player draws). */}
+      <View style={[st.bag, { right: hasPlayer() ? 56 : 12 }]} testID={`reel-bag-${post.id}`}><BagButton overlay="dark" /></View>
       <View style={st.rail}>
         <TouchableOpacity onPress={a.like} style={st.railBtn} testID={`reel-like-${post.id}`}><View style={st.railIc}><Icon name={a.liked ? 'heart' : 'heart-outline'} size={22} color={a.liked ? '#FF5A5A' : '#fff'} /></View><Text style={st.railN}>{fmtCount(a.likes)}</Text></TouchableOpacity>
         <TouchableOpacity onPress={() => nav.openComments(post)} style={st.railBtn}><View style={st.railIc}><Icon name="comment-outline" size={21} color="#fff" /></View><Text style={st.railN}>{fmtCount(post.counts ? post.counts.comments : 0)}</Text></TouchableOpacity>
@@ -126,6 +133,7 @@ export default function PlayScreen({ navigation, route }) {
 
 const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.dark },
+  bag: { position: 'absolute', top: 12 },
   rail: { position: 'absolute', right: 10, bottom: 130, gap: 14, alignItems: 'center' },
   railBtn: { alignItems: 'center', gap: 2 },
   railIc: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },

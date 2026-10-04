@@ -81,7 +81,9 @@ const listMine = asyncHandler(async (req, res) => {
 // GET /v1/media/post/:id — PUBLIC redirect to a fresh presigned GET (same
 // stable-URL pattern as /v1/media/assets/:id).
 const servePostMedia = asyncHandler(async (req, res) => {
-  const key = await creatorPosts.mediaR2Key(req.params.id);
+  // shopper-walk-fixes (W15): /cover is the picture taken from a video slide — same rules, same door.
+  const cover = req.params.what === 'cover';
+  const key = cover ? await creatorPosts.coverR2Key(req.params.id) : await creatorPosts.mediaR2Key(req.params.id);
   if (!key) throw new AppError('NOT_FOUND', 'media not found', 404);
   // shoppable-posts-v2: new posts upload through the signed, size-locked path (posts/<creator>/<post>/<file>),
   // so they are read back through it too.
@@ -94,7 +96,7 @@ const servePostMedia = asyncHandler(async (req, res) => {
       `SELECT pm.mime FROM post_media pm JOIN creator_posts cp ON cp.id = pm.post_id
         WHERE pm.id = $1 AND cp.v2 AND cp.status = 'approved' AND cp.post_code IS NOT NULL`, [req.params.id]);
     if (rows[0]) {
-      const v = await content.sharedViewUrl(key, rows[0].mime);
+      const v = await content.sharedViewUrl(key, cover ? 'image/jpeg' : rows[0].mime);
       url = v.url;
       res.set('Cache-Control', `public, max-age=${Math.floor(v.maxAge / 2)}`);
     } else {

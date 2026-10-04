@@ -6,7 +6,8 @@
  *               an empty ring for later — the step line's vocabulary (prompt §8). Her fee alone
  *               (Q1); the campaign fee is its own line, on the brand's card only.
  *   FileTile12  square-ish, rounded; a photo shows itself, a video shows a play mark and its
- *               duration badge; an upload in flight shows its percentage.
+ *               duration badge — over the picture taken from it when it has one (shopper-walk-fixes
+ *               W15: VideoFace12, hasCover12, sendCover12); an upload in flight shows its percentage.
  *   CountChip12 "n of m" — grey while short, green when met.
  *   RoundPill12 "ROUND 1 OF 2", "· LAST", "ROUNDS USED" (Q8), item 6's pill look.
  *   QuoteBox12, History12, LinkLine12, Record12, Line12.
@@ -28,7 +29,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { FieldError } from '../settings/primitives';
 import { Row10 } from '../shoot/bits10';
-import { C12, rupees5, duration12, day10 } from './copy12';
+import { makeVideoPicture } from '../../utils/videoPrep';
+import { C12, rupees5, duration12, day10, COVER_MAX_12, COVER_PUT_MS_12 } from './copy12';
 
 /* ── the fee card ─────────────────────────────────────────────────────────── */
 
@@ -72,6 +74,42 @@ export function FeeCard12({ money, side, testID }) {
 
 /* ── files ────────────────────────────────────────────────────────────────── */
 
+/**
+ * shopper-walk-fixes (W15 · frames B1, C1–C3) — what stands for a VIDEO wherever a small picture
+ * of one is drawn: the picture taken from it, a play mark over it, and its length when given.
+ * A video with no picture (uploaded before 4 Oct 2026, or from an app build that cannot make one)
+ * is the dark tile with the same play mark — never an empty box, and the same dark tile is what
+ * shows while the picture is on its way or if it will not draw.
+ *
+ * It FILLS the box it is put in: the caller's box gives the size, the corners and
+ * `overflow: 'hidden'`. It takes no touches — the box around it does.
+ *
+ *   url        the PICTURE's address (never the video's)        durationS  seconds, or null
+ *   mark       the play mark's size: 22 on a tile, 14 on a post row's small picture
+ */
+export function VideoFace12({ url, durationS, mark = 22, testID }) {
+  // Over a picture the mark sits on a soft dark disc, so it reads on a pale frame too.
+  const disc = Math.round(mark * 1.6);
+  return (
+    <View style={t.face} pointerEvents="none" testID={testID || 'video-face'}>
+      {url ? <Image source={{ uri: url }} style={t.img} resizeMode="cover" testID="video-picture" /> : null}
+      <View style={url ? [t.markDisc, { width: disc, height: disc, borderRadius: disc / 2 }] : null} testID="play-mark">
+        <Icon name="play" size={mark} color="#FFFFFF" />
+      </View>
+      {durationS != null ? (
+        <View style={t.badge} testID="duration-badge"><Text style={t.badgeText}>{duration12(durationS)}</Text></View>
+      ) : null}
+    </View>
+  );
+}
+
+/** A shared video that has a picture taken from it — the tile asks for that picture, never for the video. */
+export const hasCover12 = (file) => !!(file && file.kind === 'video' && file.hasCover);
+
+/**
+ * `url` is always a PICTURE: the photo itself, or — for a video with `hasCover` — the picture taken
+ * from it (asked for with `?cover=1`). A video's own address is never drawn here.
+ */
 export function FileTile12({ file, url, progress, note, onPress, testID }) {
   const video = file ? file.kind === 'video' : false;
   const uploading = progress != null;
@@ -79,17 +117,39 @@ export function FileTile12({ file, url, progress, note, onPress, testID }) {
     <TouchableOpacity style={[t.tile, video && t.tileVideo]} onPress={onPress} disabled={!onPress || uploading}
       activeOpacity={0.8} accessibilityRole="button" testID={testID || (file ? `file-${file.id}` : 'file-uploading')}>
       {!video && url ? <Image source={{ uri: url }} style={t.img} resizeMode="cover" /> : null}
-      {video ? <Icon name="play" size={22} color="#FFFFFF" /> : null}
+      {video ? <VideoFace12 url={hasCover12(file) ? url : null} durationS={file.durationS} /> : null}
       {!video && !url && !uploading ? <Icon name="image-outline" size={20} color={T.ink3} /> : null}
-      {video && file.durationS != null ? (
-        <View style={t.badge} testID="duration-badge"><Text style={t.badgeText}>{duration12(file.durationS)}</Text></View>
-      ) : null}
       {uploading ? (
         <View style={t.progress} testID="upload-progress"><Text style={t.progressText}>{C12.uploading(progress)}</Text></View>
       ) : null}
       {note ? <View style={t.noteDot} testID="note-dot" /> : null}
     </TouchableOpacity>
   );
+}
+
+/**
+ * shopper-walk-fixes (W15) — the picture her phone takes from a video she has just shared with the
+ * brand (Going live path 2, Pay for Content): made on the phone, then cover-url → PUT → cover.
+ *
+ * It runs AFTER the video is uploaded and confirmed, so nothing here may undo that or put a red
+ * line on her row: a phone that cannot make the picture, a refusal, a lost signal — each ends
+ * quietly with `false`, and the video keeps its dark tile. It never throws. The picture's own
+ * upload is given 30 seconds, not the video's 45 minutes: it is small, and her row waits for it.
+ *
+ *   api   the creator's calls (contentCoverUrl, contentConfirmCover)   put   uploadContentFile
+ */
+export async function sendCover12({ api, put, ciId, fileId, uri }) {
+  try {
+    const picture = await makeVideoPicture(uri, { maxBytes: COVER_MAX_12 });
+    if (!picture) return false;
+    const asked = await api.contentCoverUrl(ciId, fileId, picture.size);
+    if (!asked || !asked.success) return false;
+    await put(asked.data.upload, picture.uri, { timeoutMs: COVER_PUT_MS_12 });
+    const done = await api.contentConfirmCover(ciId, fileId);
+    return !!(done && done.success);
+  } catch (_) {
+    return false;
+  }
 }
 
 export function AddTile12({ onPress, disabled, testID }) {
@@ -102,12 +162,16 @@ export function AddTile12({ onPress, disabled, testID }) {
   );
 }
 
-export function CountChip12({ have, need, testID }) {
+/**
+ * `text` (shopper-walk-fixes, frame C2) — the caller's own words in place of "n of m": Going live
+ * says "1 file" / "No file yet" on a row she is filling. Green when met, grey when short, as ever.
+ */
+export function CountChip12({ have, need, text, testID }) {
   const met = have >= need;
   const c = met ? T.state.active : T.state.ended;
   return (
     <View style={[t.chip, { backgroundColor: c.bg }]} testID={testID || `count-${met ? 'met' : 'short'}`}>
-      <Text style={[t.chipText, { color: c.fg }]}>{C12.countOf(have, need)}</Text>
+      <Text style={[t.chipText, { color: c.fg }]}>{text != null ? text : C12.countOf(have, need)}</Text>
     </View>
   );
 }
@@ -476,6 +540,9 @@ export const t = StyleSheet.create({
   tile: { width: 76, height: 76, borderRadius: 12, backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginRight: 8, marginBottom: 8 },
   tileVideo: { backgroundColor: T.ink, borderColor: T.ink },
   img: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
+  // A video's face: the dark tile, with the picture taken from it laid over when there is one.
+  face: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: T.ink },
+  markDisc: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
   badge: { position: 'absolute', right: 5, bottom: 5, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
   badgeText: { fontFamily: fonts.sansBold, fontSize: 10, color: '#FFFFFF' },
   progress: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.85)', alignItems: 'center', justifyContent: 'center' },

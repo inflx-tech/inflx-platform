@@ -61,8 +61,9 @@ function startAllJobs() {
   const tz = env.CRON_TIMEZONE || 'Asia/Kolkata';
   console.log(`[JOBS] Starting all cron jobs (timezone: ${tz})`);
 
-  // commission-confirm — 00:01 IST daily
-  cron.schedule('1 0 * * *', commissionConfirmJob.run, { timezone: tz });
+  // commission-confirm — HOURLY at :01 (shopper-walk-fixes W13: INFLX's admin may set the return
+  // window in hours, so the money is released within the hour its window closes; it was 00:01 daily).
+  cron.schedule('1 * * * *', commissionConfirmJob.run, { timezone: tz });
 
   // tranche-3-release — hourly (Wave 1 of Tax/Settlement Roadmap).
   // The exact release time-of-day is honored via the SQL predicate in
@@ -118,7 +119,8 @@ function startAllJobs() {
   // commerce share only AFTER the order return window has closed (deferred from
   // sale time). Runs just after commission-confirm (00:01) so both honour the
   // same window boundary on the same tick.
-  cron.schedule('5 0 * * *', commerceSettlementJob.run, { timezone: tz });
+  // shopper-walk-fixes (W13): hourly at :06 now, for the same reason as commission-confirm above.
+  cron.schedule('6 * * * *', commerceSettlementJob.run, { timezone: tz });
 
   // post-performance (follower-app-v2) — hourly at :17; the learning feed's "how it performs" dial.
   cron.schedule('17 * * * *', () => postPerformanceJob.run(), { timezone: tz });

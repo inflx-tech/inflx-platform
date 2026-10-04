@@ -190,7 +190,7 @@ export default function FulfillmentPage() {
         <span className="cnt-chip">{orders.length} order{orders.length === 1 ? '' : 's'}</span>
         <h1>Order Fulfillment</h1>
         <div className="rule" />
-        <div className="sub">Pack, ship and track orders from creators&apos; posts. Each item shows the post it came from and how its money splits. You&apos;re paid your share after the return window closes.</div>
+        <div className="sub">Pack, ship and track orders from creators&apos; posts. Each item shows the post it came from and how its money splits. Your share is added to your wallet after delivery, when the return window closes.</div>
       </div>
 
       <div className="chip-row">
@@ -210,6 +210,10 @@ export default function FulfillmentPage() {
         const cancelled = o.status === 'cancelled';
         const items = Array.isArray(o.items) ? o.items : [];
         const live = items.filter((it) => it.status === 'active');
+        // shopper-walk-fixes (W14): every item went back → the parcel reads "Returned"; a return INFLX is
+        // still deciding is said on the row.
+        const returnedAll = items.length > 0 && items.every((it) => it.status === 'cancelled' && it.cancelled_by === 'return');
+        const returnOpen = items.some((it) => it.status === 'active' && it.return && ['requested', 'approved', 'received'].includes(it.return.status));
         const itemLabel = items.length ? `${items.length} item${items.length > 1 ? 's' : ''}` : '—';
         const s = ship[o.id] || {};
         const to = o.ship_to || {};
@@ -221,10 +225,12 @@ export default function FulfillmentPage() {
               <span className="oc-badge">📦 ORDER</span>
               <div style={{ minWidth: 0 }}>
                 <div className="oc-name">{to.name || 'Customer'}{o.payment_method === 'cod' ? ' · Cash on delivery' : ''}</div>
-                <div className="oc-meta">{itemLabel} · {fmtRel(o.placed_at)}{o.courier?.tracking ? ` · AWB ${o.courier.tracking}` : ''}</div>
+                <div className="oc-meta">{itemLabel} · {fmtRel(o.placed_at)}{o.courier?.tracking ? ` · AWB ${o.courier.tracking}` : ''}{returnOpen ? ' · return requested' : ''}</div>
               </div>
               <div className="oc-amt">{fmtMoney(o.money?.paid ?? 0)}</div>
-              <span className={`pill ${o.status}`}>● {o.status_word || String(o.status || '').replace(/_/g, ' ')}</span>
+              {returnedAll
+                ? <span className="pill cancelled">● Returned</span>
+                : <span className={`pill ${o.status}`}>● {o.status_word || String(o.status || '').replace(/_/g, ' ')}</span>}
             </button>
 
             {isOpen && (
@@ -240,12 +246,16 @@ export default function FulfillmentPage() {
                     <div key={it.id} className={`it${it.status === 'cancelled' ? ' x' : ''}`}>
                       <div>
                         <div className="it-n">{it.name}{it.role === 'gift' ? ' · free gift' : it.role === 'free' ? ' · free (BOGO)' : ''}</div>
-                        <div className="it-m">{[it.colour, it.size, `×${it.qty}`].filter(Boolean).join(' · ')} · from {it.creator}'s post {it.post?.code || ''}{it.status === 'cancelled' ? ` · cancelled by ${it.cancelled_by}: ${it.cancel_reason}` : ''}</div>
+                        <div className="it-m">{[it.colour, it.size, `×${it.qty}`].filter(Boolean).join(' · ')} · from {it.creator}'s post {it.post?.code || ''}{it.status === 'cancelled' ? (it.cancelled_by === 'return' ? ` · returned by the shopper: ${it.cancel_reason}` : ` · cancelled by ${it.cancelled_by}: ${it.cancel_reason}`) : ''}</div>
+                        {/* shopper-walk-fixes (W14): a return on this item. The brand sees it; INFLX decides it. */}
+                        {it.status === 'active' && it.return ? <div className="it-m" style={{ fontWeight: 700 }}>{it.return.word}{it.return.status === 'requested' ? ' · INFLX is deciding. Nothing is added to your wallet for it meanwhile.' : ''}</div> : null}
                         {it.status === 'active' && canCancel && <button className="xbtn" disabled={busy === o.id} onClick={() => cancelItem(o, it)}>Can&apos;t send this · cancel</button>}
                       </div>
                       <div className="it-r">
                         <b>{fmtShare(it.money.paid)}</b>
-                        {it.money.paid > 0 && <div>creator {fmtShare(it.money.creator_share)} ({it.money.creator_pct}%) · INFLX {fmtShare(it.money.inflx_share)} ({it.money.inflx_pct}%) · you {fmtShare(it.money.brand_share)}</div>}
+                        {/* A cancelled or returned item pays nobody: its split is not shown as if it did. */}
+                        {it.status !== 'active' && it.money.paid > 0 && <div>{it.cancelled_by === 'return' ? 'returned' : 'cancelled'} · nothing is paid for it</div>}
+                        {it.status === 'active' && it.money.paid > 0 && <div>creator {fmtShare(it.money.creator_share)} ({it.money.creator_pct}%) · INFLX {fmtShare(it.money.inflx_share)} ({it.money.inflx_pct}%) · you {fmtShare(it.money.brand_share)}</div>}
                       </div>
                     </div>
                   ))}
@@ -314,7 +324,9 @@ export default function FulfillmentPage() {
                     )}
                   </div>
                 )}
-                {o.status === 'delivered' && <div className="term">✓ Delivered. Commission releases after the return window.</div>}
+                {o.status === 'delivered' && (returnedAll
+                  ? <div className="term">Returned by the shopper. Nothing is added to your wallet for it; its stock is back.</div>
+                  : <div className="term">✓ Delivered. Your share is added to your wallet when the return window closes.</div>)}
               </div>
             )}
           </div>

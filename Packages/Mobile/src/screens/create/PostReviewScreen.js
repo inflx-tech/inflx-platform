@@ -10,6 +10,9 @@
  * scroller spent that tap closing the keypad). The strip was already part of the column here (the
  * Create tab's Footer never floated), so nothing else changes. The strip of pictures keeps its
  * own sideways scroller.
+ *
+ * shopper-walk-fixes (W15 · frame C3): a video in that strip shows the picture taken from it, with
+ * the play mark and its length, and a tap plays it. It was a bare "▶" on an empty tile.
  */
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
@@ -20,6 +23,9 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { CP } from '../../components/create/copyCreate';
 import { Footer, ErrorLine, useDraft, s as b } from '../../components/create/bitsCreate';
+import { VideoFace12 } from '../../components/content/bits12';
+import MediaViewer12 from '../../components/content/MediaViewer12';
+import { slideFiles, slideLink } from './PostMediaScreen';
 
 function Fact({ label, value, note, onEdit, testID }) {
   return (
@@ -40,6 +46,7 @@ export default function PostReviewScreen({ navigation, route }) {
   const [caption, setCaption] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [viewer, setViewer] = useState(null);           // a video she tapped: { label, files, index }
   useEffect(() => { if (post) setCaption(post.caption || ''); }, [post]);
 
   async function send() {
@@ -61,12 +68,20 @@ export default function PostReviewScreen({ navigation, route }) {
         <>
           <FormScroll contentContainerStyle={{ padding: 16 }} testID="post-review-scroll">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              {post.media.map((m, i) => (
+              {post.media.map((m, i) => (post.media_kind === 'image' ? (
                 <View key={m.id} style={r.slide}>
-                  {post.media_kind === 'image' ? <Image source={{ uri: m.url }} style={r.img} /> : <Text style={r.video}>▶</Text>}
+                  <Image source={{ uri: m.url }} style={r.img} />
                   <Text style={r.n}>{i + 1}</Text>
                 </View>
-              ))}
+              ) : (
+                // C3 — a video shows the picture taken from it, the play mark and its length (it was
+                // a bare "▶"); with no picture, the dark tile. A tap plays it.
+                <TouchableOpacity key={m.id} style={r.slide} activeOpacity={0.8} testID={`review-slide-${i}`}
+                  onPress={() => setViewer({ label: CP.video, files: slideFiles(post.media), index: i })}>
+                  <VideoFace12 url={m.cover_url || null} durationS={m.duration_s} />
+                  <Text style={r.n}>{i + 1}</Text>
+                </TouchableOpacity>
+              )))}
             </ScrollView>
             {fix ? <TouchableOpacity onPress={() => go('PostMedia')} testID="edit-media"><Text style={r.edit}>{CP.edit} · {CP.mediaTitle}</Text></TouchableOpacity> : null}
             <Text style={b.label}>{CP.caption}</Text>
@@ -85,6 +100,7 @@ export default function PostReviewScreen({ navigation, route }) {
           <Footer label={fix ? CP.sendAgain : CP.send} disabled={busy} busy={busy} onPress={send} testID="send" />
         </>
       )}
+      <MediaViewer12 open={viewer} fetchUrl={slideLink(post ? post.media : [])} onClose={() => setViewer(null)} />
     </View>
   );
 }
@@ -92,7 +108,6 @@ export default function PostReviewScreen({ navigation, route }) {
 const r = StyleSheet.create({
   slide: { width: 110, height: 138, borderRadius: 10, backgroundColor: T.surface, marginRight: 8, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   img: { width: '100%', height: '100%' },
-  video: { fontSize: 26, color: T.ink2 },
   n: { position: 'absolute', left: 6, top: 6, fontFamily: fonts.sansBold, fontSize: 11, color: T.bg, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 8, paddingHorizontal: 5, overflow: 'hidden' },
   caption: { borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 10, minHeight: 80, textAlignVertical: 'top', fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink },
   fact: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.border },

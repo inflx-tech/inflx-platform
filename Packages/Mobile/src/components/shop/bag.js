@@ -64,6 +64,19 @@ export async function loadBag() {
   return lines;
 }
 
+/**
+ * Her bag's lines, read without touching the bag icon's count (shopper-walk-fixes: "Products in
+ * this post" reads them each time it opens, to say "✓ In your bag"). A read that fails here must
+ * not blank the count on every screen, so nothing is told to the icons.
+ */
+export async function peekBag() {
+  if (await isSignedIn()) {
+    const r = await followerApi.getBag();
+    return r && r.success ? clean(r.data.lines) : [];
+  }
+  return readLocal();
+}
+
 /** Replaces the whole bag. Returns the lines as saved. */
 export async function saveBag(lines) {
   const merged = mergeLines(lines);

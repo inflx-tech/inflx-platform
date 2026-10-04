@@ -274,7 +274,12 @@ async function buildSnapshot(ctx, client = db) {
       split: money.split,
       splitPct: money.splitPct,
       // Pay for Sale and Hybrid: when commission actually reaches her.
-      commissionAfterDays: selling ? Number(cfg.returnWindowDays) : null,
+      // shopper-walk-fixes (W13): the return window is in hours now (INFLX's admin may set hours or
+      // days). The sentence is written here, once, and stamped with the agreement; the day count is
+      // kept (rounded up) for a phone that has not updated yet.
+      commissionAfterDays: selling ? Math.max(1, Math.ceil(Number(cfg.returnWindowHours) / 24)) : null,
+      commissionAfterHours: selling ? Number(cfg.returnWindowHours) : null,
+      commissionPaidWords: selling ? `After the ${require('./returnWindow.service').adjective(cfg.returnWindowHours)} return window` : null,
     },
 
     // ---- the work -----------------------------------------------------

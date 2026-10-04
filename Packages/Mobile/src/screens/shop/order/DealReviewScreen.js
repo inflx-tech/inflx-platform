@@ -2,13 +2,19 @@
  * D4 · Review your deal (every offer) — each item with its colour and size (Change, Remove), the
  * gift if any, what she pays and saves, then Add to bag or Buy now. Buy now never changes the bag
  * (6.5). Coming from the bag's Edit deal, Add to bag replaces that post's items (D11).
+ *
+ * shopper-walk-fixes · board S7 (spec W3, W10) — Add to bag no longer opens the Bag. It adds, the
+ * phone gives one short vibration, the button reads "Go to bag ›" for about a second, and then
+ * this review and the deal page under it both close: she is on the post (or the video) she came
+ * from, or — when the deal was opened from the Bag's Edit deal — back in the Bag. The bag icon
+ * with its count is in the top bar. Buy now is unchanged.
  */
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../../services/api';
 import { TopBar, Loading } from '../../../components/shop/bitsShop';
-import { MoneyRows, Notes, K, b } from '../../../components/shop/orderBits';
+import { MoneyRows, Notes, BagButton, AddedLine, AddToBagButton, useAdded, closePages, inFront, K, b } from '../../../components/shop/orderBits';
 import { CO } from '../../../components/shop/copyOrder';
 import { inr } from '../../../components/shop/copyShop';
 import { addToBag, replacePost } from '../../../components/shop/bag';
@@ -23,6 +29,9 @@ export default function DealReviewScreen({ navigation, route }) {
   const [g, setG] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  // The review and the deal page it was opened from: both close (W10). If she has gone to another
+  // page meanwhile (the bag icon, say) nothing is closed under her; the button stays "Go to bag ›".
+  const flash = useAdded(() => { if (inFront(navigation)) closePages(navigation, 2); });
 
   useEffect(() => {
     let alive = true;
@@ -42,21 +51,29 @@ export default function DealReviewScreen({ navigation, route }) {
     try {
       const withPost = plain(lines).map((l) => ({ ...l, post_id: postId }));
       if (editing) await replacePost(postId, withPost); else await addToBag(withPost);
-      navigation.navigate('Bag');
+      flash.start();
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
+  // "Go to bag ›" in that second: the two pages close and the Bag opens. Opened from the Bag's
+  // Edit deal, closing them IS the Bag.
+  function goToBag() {
+    flash.stop();
+    closePages(navigation, 2);
+    if (!editing) navigation.navigate('Bag');
+  }
   async function buyNow() {
+    flash.stop();
     const withPost = plain(lines).map((l) => ({ ...l, post_id: postId }));
     const go = () => navigation.navigate('Checkout', { lines: withPost, buyNow: true });
     if (await isSignedIn()) go(); else navigation.navigate('FollowerLogin', { onDone: go });
   }
 
-  if (!g) return <SafeAreaView style={st.safe}><TopBar title={CO.yourDeal} onBack={() => navigation.goBack()} /><Loading /></SafeAreaView>;
+  if (!g) return <SafeAreaView style={st.safe}><TopBar title={CO.yourDeal} onBack={() => navigation.goBack()} right={<BagButton />} /><Loading /></SafeAreaView>;
   const items = g.lines.filter((l) => l.role !== 'gift');
   const gifts = g.lines.filter((l) => l.role === 'gift');
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
-      <TopBar title={CO.yourDeal} onBack={() => navigation.goBack()} />
+      <TopBar title={CO.yourDeal} onBack={() => navigation.goBack()} right={<BagButton />} />
       <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 24 }} testID="deal-review">
         {g.offer ? (
           <View style={st.head}>
@@ -97,12 +114,14 @@ export default function DealReviewScreen({ navigation, route }) {
         {err ? <Text style={b.problem}>{err}</Text> : null}
       </ScrollView>
       <View style={st.bar}>
-        <TouchableOpacity style={[b.secondary, { flex: 1 }, (!g.buyable || busy) && b.primaryDis]} disabled={!g.buyable || busy} onPress={buyNow} testID="review-buy-now">
-          <Text style={b.secondaryText}>{CO.buyNow}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[b.primary, { flex: 1, marginTop: 0 }, (!g.buyable || busy) && b.primaryDis]} disabled={!g.buyable || busy} onPress={toBag} testID="review-add-to-bag">
-          <Text style={b.primaryText}>{CO.addToBag}</Text>
-        </TouchableOpacity>
+        {flash.added ? <AddedLine /> : null}
+        <View style={st.btnRow}>
+          <TouchableOpacity style={[b.secondary, { flex: 1 }, (!g.buyable || busy) && b.primaryDis]} disabled={!g.buyable || busy} onPress={buyNow} testID="review-buy-now">
+            <Text style={b.secondaryText}>{CO.buyNow}</Text>
+          </TouchableOpacity>
+          <AddToBagButton added={flash.added} disabled={!g.buyable || busy} onAdd={toBag} onGoToBag={goToBag}
+            testID="review-add-to-bag" style={{ flex: 1, marginTop: 0 }} />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -120,5 +139,6 @@ const st = StyleSheet.create({
   struck: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: K.ink3, textDecorationLine: 'line-through' },
   act: { fontFamily: fonts.sansBold, fontSize: 12, color: K.ink, textDecorationLine: 'underline' },
   save: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ok, marginTop: 8, textAlign: 'right' },
-  bar: { flexDirection: 'row', gap: 10, padding: 14, borderTopWidth: 1, borderTopColor: K.border },
+  bar: { padding: 14, borderTopWidth: 1, borderTopColor: K.border, gap: 8 },
+  btnRow: { flexDirection: 'row', gap: 10 },
 });

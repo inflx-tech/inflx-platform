@@ -49,11 +49,8 @@ const FIELDS = [
     note: 'Offers auto-expire after this many hours if influencer does not respond.',
     type: 'number', min: 12, max: 168, step: 1, suffix: 'h',
   },
-  {
-    key: 'return_window_days', label: 'Default Commission Return Window (days)',
-    note: 'Global fallback when no per-category window is set. Edit per-category at /admin/pricing/categories.',
-    type: 'number', min: 0, max: 90, step: 1, suffix: 'd',
-  },
+  // shopper-walk-fixes (W11, W13): the return window is set in ONE place — Money › Settings — in
+  // hours or days. It is no longer a field here (this page only knew whole days).
   {
     key: 'attribution_window_days', label: 'Creator Attribution Window (days)',
     note: 'After a follower clicks/buys via a creator, later organic buys from the same brand keep crediting that creator for this many days (e.g. 30 / 15 / 1).',
@@ -85,7 +82,6 @@ function cfgToForm(cfg) {
     tranche_3_pct:      cfg.tranche3Pct,
     tds_pct:            cfg.tdsPct,
     offer_expiry_hours: cfg.offerExpiryHours,
-    return_window_days: cfg.returnWindowDays,
     attribution_window_days: cfg.attributionWindowDays,
     delivery_ref_km: cfg.deliveryRefKm,
     delivery_ref_days: cfg.deliveryRefDays,

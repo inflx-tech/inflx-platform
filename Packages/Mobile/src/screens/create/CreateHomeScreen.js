@@ -5,9 +5,12 @@
  * post-links-codes (L1): three cards — Create shoppable post, Create collection, My store and
  * collection links — and each post row carries its code, with Share from approval and Stats once live.
  * Contract: features/shoppable-posts-v2 · features/post-links-codes · rules §4.1, §4.10, §4.14
+ *
+ * shopper-walk-fixes (W15): each post row starts with the post's own picture (PostCover) — it was
+ * an empty box. The same row is used on "Your posts" (MyPostsScreen).
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Modal, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
@@ -16,7 +19,26 @@ import { PrimaryButton } from '../../components/settings/primitives';
 import { CL } from '../../components/create/copyLinks';
 import { CP } from '../../components/create/copyCreate';
 import { StateChip, ChoiceCard, initialsOf, routeFor, s as b } from '../../components/create/bitsCreate';
+import { VideoFace12 } from '../../components/content/bits12';
 import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
+
+/**
+ * The small picture at the start of a post's row (shopper-walk-fixes W15): the post's first slide.
+ * A photo is itself; a video is the picture taken from it with a play mark — or, when it has
+ * none, the dark tile with the play mark. A post with no slide yet keeps the plain box.
+ */
+export function PostCover({ post }) {
+  const first = ((post && post.media) || [])[0];
+  if (!first) return <View style={h.cover} testID="post-cover-plain" />;
+  const video = String(first.mime || '').toLowerCase().startsWith('video/') || (!first.mime && post.media_kind === 'video');
+  return (
+    <View style={h.cover} testID="post-cover">
+      {video
+        ? <VideoFace12 url={first.cover_url || null} mark={14} />
+        : first.url ? <Image source={{ uri: first.url }} style={h.coverImg} resizeMode="cover" testID="post-picture" /> : null}
+    </View>
+  );
+}
 
 export function PostRow({ post, onPress, testID }) {
   const line = post.state === 'draft'
@@ -26,7 +48,7 @@ export function PostRow({ post, onPress, testID }) {
       : post.kind === 'offer' && post.offer ? CP.offerRow(post.offer) : CP.priceRow;
   return (
     <TouchableOpacity style={h.post} onPress={onPress} testID={testID || `post-${post.id}`}>
-      <View style={h.cover} />
+      <PostCover post={post} />
       <View style={{ flex: 1 }}>
         <Text style={h.postTitle} numberOfLines={1}>{post.title}</Text>
         <Text style={h.postLine} numberOfLines={2}>{line}{post.state === 'draft' || post.state === 'in_review' ? '' : ` · ${post.sales_words}`}</Text>
@@ -47,7 +69,7 @@ export function LinkPostRow({ post, onOpen, onShare, onStats }) {
   const canShare = (post.state === 'approved' || post.state === 'live') && !!post.code;
   return (
     <TouchableOpacity style={h.post} onPress={onOpen} testID={`post-${post.id}`}>
-      <View style={h.cover} />
+      <PostCover post={post} />
       <View style={{ flex: 1 }}>
         <Text style={h.postTitle} numberOfLines={1}>{post.title}</Text>
         <Text style={h.postLine} numberOfLines={2}>{line}</Text>
@@ -188,7 +210,8 @@ const h = StyleSheet.create({
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
   link: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.ink2, marginTop: 4 },
   post: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.border },
-  cover: { width: 44, height: 56, borderRadius: 8, backgroundColor: T.surface, marginRight: 10 },
+  cover: { width: 44, height: 56, borderRadius: 8, backgroundColor: T.surface, marginRight: 10, overflow: 'hidden' },
+  coverImg: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   postTitle: { fontFamily: fonts.sansBold, fontSize: 13.5, color: T.ink },
   postLine: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, marginTop: 2, marginRight: 8 },
   collections: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 14, padding: 12, marginTop: 16 },

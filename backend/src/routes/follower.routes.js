@@ -99,6 +99,8 @@ router.get('/orders', ...followerAuth, orderCtrl.listOrders);               // O
 router.get('/orders/lines/:id', ...followerAuth, orderCtrl.lineDetail);     // O15
 router.get('/orders/lines/:id/cancel', ...followerAuth, orderCtrl.cancelPreview); // O16
 router.post('/orders/lines/:id/cancel', ...followerAuth, orderCtrl.cancel); // O16 → O17
+router.get('/orders/lines/:id/return', ...followerAuth, orderCtrl.returnPreview);  // W14 — what a return takes, and until when
+router.post('/orders/lines/:id/return', ...followerAuth, orderCtrl.returnRequest); // W14 — she asks; INFLX decides
 
 // ── Reviews (after an order; kept for checkout) ──────────────────────────────
 router.get('/reviews', ...anyone, reviewCtrl.listBrandReviews);

@@ -16,33 +16,28 @@
  * account; otherwise the tax figures are still recorded and razorpay_transfer_id
  * stays null for a later retry. In RAZORPAY_MOCK mode the transfer is synthetic.
  *
- * Also resolves the per-category commission-release window
- * (return_window_ends_at) so commission release honours the admin-set
- * per-category window instead of a flat 30 days.
+ * Also stamps a sale's return window (return_window_ends_at). Since shopper-walk-fixes (W11, W13;
+ * founder, 4 Oct 2026) that is ONE platform number, in hours, set by INFLX's admin — no category,
+ * brand or product has one of its own — and a delivered order's window runs from its delivery.
  *
- * Contract: features/wave3-commerce-settlement-engine/.
+ * Contract: features/wave3-commerce-settlement-engine/ · features/shopper-walk-fixes.
  */
 
 const taxService     = require('./tax.service');
-const pricingService = require('./pricing.service');
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 function _round2(n) { return parseFloat((parseFloat(n) || 0).toFixed(2)); }
 
 /**
- * Per-category commission-release window end (replaces the flat 30-day timer).
- * @param {object} runner   pg pool/client
- * @param {string} brandId
+ * The stamp for a sale made now (the old name is kept for its many callers).
+ * @param {object} runner   kept for the old signature; not used
+ * @param {string} brandId  kept for the old signature; not used
  * @returns {Promise<Date>}
  */
-async function resolveReturnWindowEndsAt(runner, brandId) {
-  let category = null;
-  try {
-    const { rows } = await runner.query(`SELECT category FROM brands WHERE id = $1`, [brandId]);
-    category = rows[0]?.category || null;
-  } catch (_) { /* fall back to global window */ }
-  const days = await pricingService.getReturnWindowForCategory(category, runner);
-  return new Date(Date.now() + days * DAY_MS);
+async function resolveReturnWindowEndsAt(runner, brandId) { // eslint-disable-line no-unused-vars
+  // shopper-walk-fixes (W11, W13): one platform number, in hours — no brand or category has its
+  // own. This is the STAMP (made now + the window in force); for a delivered order the window is
+  // counted from the delivery with this same length (returnWindow.service · closesAt).
+  return require('./returnWindow.service').stampFor(new Date());
 }
 
 /**
@@ -73,7 +68,8 @@ async function settleCommerceTransaction(runner, transactionId) {
       `SELECT ft.id, ft.brand_id, ft.brand_net, ft.brand_net_reversed, ft.marketplace_fee_amount,
               ft.tcs_amount, ft.brand_settlement_status, ft.status, ft.checkout_id,
               COALESCE(ft.platform_fee_reversed, 0) AS platform_fee_reversed,
-              b.tcs_applicable, fo.order_status
+              b.tcs_applicable, fo.order_status, fo.delivered_at,
+              (fo.delivered_at + (ft.return_window_ends_at - ft.created_at) <= now()) AS window_closed
          FROM follower_transactions ft
          JOIN brands b ON b.id = ft.brand_id
          LEFT JOIN follower_orders fo ON fo.id = ft.order_id
@@ -92,6 +88,11 @@ async function settleCommerceTransaction(runner, transactionId) {
     // A parcel that is still Confirmed or Packed can still be cancelled and refunded in full, so its
     // share is not added yet. (cancel() takes this same row FOR UPDATE, so the two cannot interleave.)
     if (['confirmed', 'packed'].includes(t.order_status)) return { skipped: 'not_shipped' };
+    // shopper-walk-fixes (W13): the share is added only after DELIVERY, when the return window —
+    // counted from the delivery, with the length stamped on the sale — has closed. The job asks the
+    // same thing in SQL; it is asked again here because wallet money can be withdrawn.
+    if (t.order_status !== 'delivered' || !t.delivered_at) return { skipped: 'not_delivered' };
+    if (t.window_closed !== true) return { skipped: 'window_open' };
 
     // The Brand's NET-OF-CANCELS-AND-RETURNS share (a reversed item is never credited).
     const brandNet      = _round2(Math.max(0, _round2(t.brand_net) - _round2(t.brand_net_reversed)));

@@ -62,8 +62,10 @@ const DEAL_DATA = (sub, extra = {}) => ({
   gifts: [], categories: [],
   ...extra,
 });
+// shopper-walk-fixes: the group's offer carries `sub_type` as the server sends it (BUILD_API §1) —
+// the bag reads it to know a deal that stays whole.
 const GROUP = (over = {}) => ({
-  post_id: 'p2', creator: { name: 'Sneha' }, brand: { id: 'b2', name: 'Urban Threads' }, offer: { type: 'bundle', line: 'Any 2 jeans for ₹2,999' },
+  post_id: 'p2', creator: { name: 'Sneha' }, brand: { id: 'b2', name: 'Urban Threads' }, offer: { type: 'bundle', sub_type: 'pick_any', line: 'Any 2 jeans for ₹2,999' },
   progress: { text: 'Set complete · you save ₹1,299', done: true }, gift: null, problems: [], buyable: true,
   normal_total: 4298, paid_total: 2999, savings: 1299, gift_value: 0,
   lines: [], ...over,
@@ -75,7 +77,8 @@ describe('Shop this post with Add (O1, O2) and Build your deal (D1)', () => {
   it('a simple post: Add opens the size sheet; the chosen size goes to the bag with its post', async () => {
     followerApi.deal.mockResolvedValue(ok({ ...DEAL_DATA('percentage'), deal_page: false, offer: null,
       products: [{ id: 'pr1', name: 'Mangalagiri cotton saree', price: 1200, shopper_price: 960, images: [], colours: SIZES }] }));
-    const { getByTestId, getByText, findByTestId } = render(<ShopSheet post={SIMPLE_POST} visible onClose={jest.fn()} surface="home" />);
+    const onClose = jest.fn();
+    const { getByTestId, getByText, findByTestId } = render(<ShopSheet post={SIMPLE_POST} visible onClose={onClose} surface="home" />);
     await waitFor(() => expect(followerApi.deal).toHaveBeenCalledWith('p1'));
     fireEvent.press(getByTestId('shop-add-pr1'));
     await findByTestId('size-sheet');
@@ -86,6 +89,12 @@ describe('Shop this post with Add (O1, O2) and Build your deal (D1)', () => {
     await act(async () => { fireEvent.press(getByTestId('size-sheet-add')); });
     const bag = JSON.parse(await AsyncStorage.getItem('inflx_bag_v1'));
     expect(bag).toEqual([expect.objectContaining({ post_id: 'p1', product_id: 'pr1', colour: 'Blue', size: '32', qty: 1, role: 'buy', ticked: true })]);
+    // shopper-walk-fixes S5, S6 (O6): the add no longer leaves her on the sheet. The button reads
+    // "Go to bag ›" for about a second, then the size sheet and the sheet close by themselves (it
+    // used to drop back to the list with "✓ In your bag · 32" at once). The line is there when
+    // the sheet is open again — here the test's parent keeps it open.
+    getByText('✓ Added to your bag'); getByTestId('size-sheet-add-go');
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1), { timeout: 3000 });
     await findByTestId('in-bag-pr1');
     getByText('✓ In your bag · 32');
     getByTestId('go-to-bag');
@@ -206,24 +215,32 @@ describe('the review (D4) and the bag (O6, O8)', () => {
     expect(n.navigate).toHaveBeenCalledWith('FollowerLogin', expect.objectContaining({ onDone: expect.any(Function) }));
     await act(async () => { fireEvent.press(getByTestId('review-add-to-bag')); });
     expect(JSON.parse(await AsyncStorage.getItem('inflx_bag_v1')).map((l) => [l.post_id, l.product_id])).toEqual([['p2', 'l511'], ['p2', 'wr']]);
-    expect(n.navigate).toHaveBeenCalledWith('Bag');
+    // shopper-walk-fixes S7 (O6): Add to bag no longer opens the Bag (she pressed Back three times
+    // to keep shopping). "Go to bag ›" for about a second, then the review and the deal page close.
+    expect(n.navigate).not.toHaveBeenCalledWith('Bag');
+    getByText('Go to bag ›');
+    await waitFor(() => expect(n.goBack).toHaveBeenCalledTimes(2), { timeout: 3000 });
+    expect(n.navigate).not.toHaveBeenCalledWith('Bag');
   });
 
-  it('O6: grouped by post with its deal and Edit deal; unticking keeps an item; a guest is asked to sign in at Continue', async () => {
+  it('O6: grouped by post with its deal and Edit deal; unticking keeps the deal in the bag; a guest is asked to sign in at Continue', async () => {
     await AsyncStorage.setItem('inflx_bag_v1', JSON.stringify(LINES.map((l) => ({ ...l, post_id: 'p2', ticked: true }))));
     followerApi.bagPrice.mockResolvedValue(ok({ groups: [GROUP({ lines: [
       { ref: 'a', name: "Levi's 511 Slim", role: 'buy', paid_total: 1604, normal_total: 2299, problems: [], notes: [] },
       { ref: 'b', name: 'Wrangler Regular', role: 'buy', paid_total: 1395, normal_total: 1999, problems: [], notes: [{ code: 'price_changed', text: 'Price changed from ₹1,899' }] }] })],
     unticked: [], items_normal: 4298, savings: 1299, items_total: 2999, buyable: true }));
     const n = nav();
-    const { getByTestId, getByText, findByTestId } = render(<Bag navigation={n} />);
+    const { getByTestId, getByText, findByTestId, queryByTestId } = render(<Bag navigation={n} />);
     await findByTestId('bag-group-p2');
     getByText('Any 2 jeans for ₹2,999'); getByText('Price changed from ₹1,899');
     getByText('Continue · ₹2,999');
     fireEvent.press(getByTestId('edit-deal-p2'));
     expect(n.navigate).toHaveBeenCalledWith('Deal', expect.objectContaining({ postId: 'p2', editing: true }));
-    await act(async () => { fireEvent.press(getByTestId('tick-b')); });
-    expect(JSON.parse(await AsyncStorage.getItem('inflx_bag_v1')).find((l) => l.ref === 'b').ticked).toBe(false);
+    // shopper-walk-fixes G1 (O7): a bundle stays whole — there is ONE tick, on the group, and it
+    // unticks both items (it was a tick per item: `tick-b` unticked the Wrangler alone).
+    expect(queryByTestId('tick-b')).toBeNull();
+    await act(async () => { fireEvent.press(getByTestId('tick-group-p2')); });
+    expect(JSON.parse(await AsyncStorage.getItem('inflx_bag_v1')).map((l) => [l.ref, l.ticked])).toEqual([['a', false], ['b', false]]);
     await act(async () => { fireEvent.press(getByTestId('bag-continue')); });
     await findByTestId('bag-sign-in');
     getByText('Sign in to place your order');

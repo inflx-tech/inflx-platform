@@ -6,8 +6,13 @@
  * commenting need sign-in; saving and following work for guests and stay on the phone (5.2).
  * Ordering (shopper-ordering, v1.13 §6): Shop this post has Add (a simple post → the size sheet,
  * O1/O2) or Build your deal (a deal post → its deal page, D1); the bag sits in the top bar.
+ *
+ * shopper-walk-fixes (board V1, V3, S1, S2, S5): a video in a feed never takes the tap; a tile of a
+ * video shows the video's own picture; the sheet is "Products in this post" — a grid of three with
+ * a bag icon on each product (quick add) and the photo opening the product page; "Build your deal"
+ * is decided by the server's `deal_page`, never guessed.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Image, FlatList, Modal, ScrollView, Share, StyleSheet, Dimensions,
   ActivityIndicator, Pressable,
@@ -17,14 +22,16 @@ import { followerApi } from '../../services/api';
 import { track } from '../../services/events';
 import { CS, inr, initialsOf, fmtCount } from './copyShop';
 import { shopStore, isSignedIn, toggleSavePostLocal, toggleSaveProductLocal } from './shopStore';
-import ShopVideo from './ShopVideo';
-import { BagButton, SizeSheet, useNavSafe } from './orderBits';
-import { CO } from './copyOrder';
-import { addToBag, subscribeBagCount } from './bag';
+import ShopVideo, { videoStill } from './ShopVideo';
+import { BagButton, SizeSheet, useAdded, useNavSafe } from './orderBits';
+import { CO, dayLabel } from './copyOrder';
+import { addToBag, peekBag, subscribeBagCount } from './bag';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export const C = { ...T, ink: '#1A1A17', dark: '#111111' };
 const W = Dimensions.get('window').width;
+const H = Dimensions.get('window').height;
+const TILE3 = Math.floor((W - 28 - 16) / 3);        // a grid of three inside the sheet (S1)
 
 /* ───────────────────────────────────────────── top bar */
 
@@ -88,7 +95,7 @@ export function CircleRow({ label, items, square, onPress, testIDPrefix }) {
 /* ───────────────────────────────────────────── media */
 
 /**
- * A post's video (4.7): the player on phones with the new app build, otherwise the product photo
+ * A post's video (4.7): the player on phones with the new app build, otherwise the video's picture
  * with "Update INFLX to play videos" — see ShopVideo.
  */
 export function VideoView(props) {
@@ -98,6 +105,8 @@ export function VideoView(props) {
 function Slides({ post, width, height, active, surface }) {
   const [i, setI] = useState(0);
   const media = post.media || [];
+  // V1: in a feed the video is only shown — no pause layer, no sound button — so a tap anywhere on
+  // it reaches the card, and the card opens it full screen in Play.
   if (post.media_kind === 'video') return <VideoView post={post} height={height} active={active} surface={surface} muted />;
   if (media.length <= 1) {
     return media[0] ? <Image source={{ uri: media[0].url }} style={{ width, height, backgroundColor: '#E9E8E2' }} resizeMode="cover" />
@@ -215,21 +224,88 @@ export function PostCard({ post, surface, position, onOpen, onShop, onComments, 
   );
 }
 
-/* ───────────────────────────────────────────── F3 Shop this post */
+/* ───────────────────────────────────────────── F3 Products in this post (S1, S2) */
+
+/**
+ * Does this post open a deal page ("Build your deal")? The server says (`deal_page`); a discount or
+ * price post never does. Once the deal data has arrived, it is the one that says. An older server
+ * answer has no `deal_page`: then it is a deal only when `offer.kind` names one — never guessed
+ * from `offer.type`, which is a display name ("Discount") and made every discount post flash
+ * "Build your deal" until the deal data came (O1).
+ */
+export function isDealPost(post, deal) {
+  if (deal) return !!deal.deal_page;
+  if (!post) return false;
+  if (typeof post.deal_page === 'boolean') return post.deal_page;
+  return !!(post.offer && post.offer.kind) && post.offer.kind !== 'discount';
+}
+
+/**
+ * The ♡ on a product: it is kept with its post, so it keeps the post's offer (5.8). A guest's stays
+ * on the phone. Resolves false when her account could not keep it, so the heart can go back.
+ */
+export async function heartProduct(postId, productId, on, surface) {
+  track(on ? 'save_product' : 'unsave_product', postId, surface, { product_id: productId });
+  if (await isSignedIn()) {
+    const res = on ? await followerApi.saveProduct({ product_id: productId, post_id: postId }) : await followerApi.unsaveProduct(productId);
+    return !!(res && res.success);
+  }
+  await toggleSaveProductLocal({ product_id: productId, post_id: postId }, on);
+  return true;
+}
+
+/** One product of the grid: the photo opens its page; the heart saves it; the bag icon adds it. */
+function ProductTile({ p, saved, inBagSize, onOpen, onHeart, onBag }) {
+  return (
+    <View style={s.pt} testID={`shop-tile-${p.id}`}>
+      <View>
+        <TouchableOpacity onPress={onOpen} activeOpacity={0.9} testID={`shop-product-${p.id}`} accessibilityLabel={p.name}>
+          {p.image_url ? <Image source={{ uri: p.image_url }} style={s.ptImg} resizeMode="cover" /> : <View style={s.ptImg} />}
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onHeart} style={s.ptHeart} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} testID={`shop-heart-${p.id}`}
+          accessibilityState={{ selected: !!saved }} accessibilityLabel={saved ? CO.savedProduct : CO.saveProduct}>
+          <Icon name={saved ? 'heart' : 'heart-outline'} size={16} color={saved ? '#C42B2B' : C.ink} />
+        </TouchableOpacity>
+        {p.in_stock ? (
+          <TouchableOpacity onPress={onBag} style={s.ptBag} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} testID={`shop-add-${p.id}`}
+            accessibilityRole="button" accessibilityLabel={CO.addProduct(p.name)}>
+            <Icon name="shopping-outline" size={15} color={C.ink} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
+      <Text style={s.ptName} numberOfLines={2}>{p.name}</Text>
+      <Text style={s.ptPrice}>
+        <Text style={{ fontFamily: fonts.sansBold, color: C.ink }}>{inr(p.shopper_price)}</Text>
+        {p.struck ? <Text style={s.struck}>  {inr(p.price)}</Text> : null}
+      </Text>
+      {!p.in_stock ? <Text style={s.oos}>{CS.outOfStock}</Text> : null}
+      {inBagSize !== undefined ? <Text style={s.inBag} testID={`in-bag-${p.id}`}>{CO.inYourBag(inBagSize)}</Text> : null}
+    </View>
+  );
+}
 
 export function ShopSheet({ post, visible, onClose, surface }) {
   const nav = useNavSafe();
   const [hearts, setHearts] = useState({});
   const [deal, setDeal] = useState(null);           // the deal page's data: colours, sizes, stock (D1, O1)
-  const [sizing, setSizing] = useState(null);       // the product in the size sheet (O1)
-  const [inBag, setInBag] = useState({});           // product id → size just added (O2)
+  const [dealFailed, setDealFailed] = useState(false);
+  const [sizing, setSizing] = useState(null);       // the id of the product in the size sheet (O1)
+  const [inBag, setInBag] = useState({});           // product id → the size of it in her bag (O2)
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [away, setAway] = useState(false);          // her product page is open over this screen (O3)
+  const awayRef = useRef(false);
+  const close = useRef(onClose);
+  close.current = onClose;
+  // O6: a second after the add, if she did nothing, the size sheet and this sheet both close and
+  // she is on the post she was on.
+  const flash = useAdded(() => { flash.reset(); setSizing(null); close.current(); });
   useEffect(() => subscribeBagCount(setCount), []);
   useEffect(() => {
-    if (!post) return;
+    if (!post) return undefined;
     let alive = true;
-    setDeal(null); setInBag({});
+    setDeal(null); setDealFailed(false); setInBag({});
+    awayRef.current = false; setAway(false);
     (async () => {
       const on = {};
       if (await isSignedIn()) for (const id of (post.mine && post.mine.saved_products) || []) on[id] = true;
@@ -239,89 +315,127 @@ export function ShopSheet({ post, visible, onClose, surface }) {
       }
       if (alive) setHearts(on);
     })();
-    if (visible && followerApi.deal) {
-      followerApi.deal(post.id).then((r) => { if (alive && r && r.success) setDeal(r.data); }).catch(() => {});
+    if (visible) {
+      if (followerApi.deal) {
+        followerApi.deal(post.id)
+          .then((r) => { if (!alive) return; if (r && r.success) setDeal(r.data); else setDealFailed(true); })
+          .catch(() => { if (alive) setDealFailed(true); });
+      }
+      // An add closes this sheet now, so "✓ In your bag" is read from her bag each time it opens.
+      (async () => {
+        const mine = {};
+        for (const l of await peekBag()) if (l.post_id === post.id && l.product_id && l.role !== 'gift') mine[l.product_id] = l.size || '';
+        if (alive) setInBag((m) => ({ ...mine, ...m }));
+      })().catch(() => {});
     }
     return () => { alive = false; };
   }, [post, visible]);
+  // She left the product page some way other than Back (an order placed, say): nothing stays open.
+  useEffect(() => {
+    if (!nav || typeof nav.addListener !== 'function') return undefined;
+    return nav.addListener('focus', () => {
+      if (!awayRef.current) return;
+      awayRef.current = false; setAway(false);
+      close.current();
+    });
+  }, [nav]);
 
   if (!post) return null;
   async function heart(p) {
     const on = !hearts[p.id];
     setHearts((h) => ({ ...h, [p.id]: on }));
-    track(on ? 'save_product' : 'unsave_product', post.id, surface, { product_id: p.id });
-    if (await isSignedIn()) {
-      const res = on ? await followerApi.saveProduct({ product_id: p.id, post_id: post.id }) : await followerApi.unsaveProduct(p.id);
-      if (!res || !res.success) setHearts((h) => ({ ...h, [p.id]: !on }));
-    } else {
-      await toggleSaveProductLocal({ product_id: p.id, post_id: post.id }, on);
-    }
+    if (!(await heartProduct(post.id, p.id, on, surface))) setHearts((h) => ({ ...h, [p.id]: !on }));
   }
   const first = post.creator ? post.creator.name.split(' ')[0] : '';
-  const isDeal = !!(deal ? deal.deal_page : (post.offer && post.offer.type && post.offer.type !== 'discount'));
+  const isDeal = isDealPost(post, deal);
+  const offer = (deal && deal.offer) || post.offer || null;
+  const dealLine = offer ? offer.line || offer.deal || null : null;
+  const dealHow = offer ? offer.how || null : null;
+  const dealTill = offer && offer.ends_on ? CO.till(dayLabel(offer.ends_on).replace(/^\w+, /, '')) : null;
   const full = (p) => (deal && deal.products.find((x) => x.id === p.id)) || { ...p, colours: [], images: [p.image_url] };
+  const sized = sizing ? post.products.find((p) => p.id === sizing) : null;
+  const sizingProduct = sized ? full(sized) : null;
   function openDeal(startProductId) {
     onClose();
     if (nav) nav.navigate('Deal', { postId: post.id, start: startProductId || null });
   }
+  // The bag icon on a product: a deal post opens its deal page with that product started; any
+  // other post opens the size sheet (the quick add).
   function add(p) {
     track('tap_product', post.id, surface, { product_id: p.id });
-    if (isDeal) openDeal(p.id); else setSizing(full(p));
+    if (isDeal) openDeal(p.id); else setSizing(p.id);
+  }
+  // The photo: the product's own page (S3, S4). This sheet steps aside without being closed, so
+  // Back brings her to it, open, on the page she came from.
+  function openProduct(p) {
+    track('tap_product', post.id, surface, { product_id: p.id });
+    if (!nav) return;
+    awayRef.current = true; setAway(true);
+    nav.navigate('ShopProduct', {
+      postId: post.id, productId: p.id, post, data: deal, surface, saved: !!hearts[p.id],
+      onHeart: (on) => setHearts((h) => ({ ...h, [p.id]: !!on })),
+      onBack: () => { awayRef.current = false; setAway(false); },
+      onDone: () => { awayRef.current = false; setAway(false); close.current(); },
+    });
+  }
+  function closeSizing() {
+    if (flash.added) { flash.reset(); setSizing(null); onClose(); return; }      // already added: nothing left open
+    setSizing(null);
   }
   async function addSized(sel) {
+    const p = sizingProduct;
     setBusy(true);
     try {
-      await addToBag([{ post_id: post.id, product_id: sizing.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: sizing.price }]);
-      track('add_to_bag', post.id, surface, { product_id: sizing.id });
-      setInBag((m) => ({ ...m, [sizing.id]: sel.size || '' }));
-      setSizing(null);
+      await addToBag([{ post_id: post.id, product_id: p.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: p.price }]);
+      track('add_to_bag', post.id, surface, { product_id: p.id });
+      setInBag((m) => ({ ...m, [p.id]: sel.size || '' }));
+      flash.start();
     } finally { setBusy(false); }
   }
+  function goToBag() {
+    flash.reset(); setSizing(null); onClose();
+    if (nav) nav.navigate('Bag');
+  }
   async function buyNow(sel) {
-    const lines = [{ post_id: post.id, product_id: sizing.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: sizing.price }];
-    setSizing(null); onClose();
+    const p = sizingProduct;
+    const lines = [{ post_id: post.id, product_id: p.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: p.price }];
+    flash.reset(); setSizing(null); onClose();
     if (!nav) return;
     const go = () => nav.navigate('Checkout', { lines, buyNow: true });
     if (await isSignedIn()) go(); else nav.navigate('FollowerLogin', { onDone: go });
   }
   return (
     <>
-      <Modal visible={visible && !sizing} transparent animationType="slide" onRequestClose={onClose}>
+      <Modal visible={visible && !sizing && !away} transparent animationType="slide" onRequestClose={onClose}>
         <Pressable style={s.dim} onPress={onClose} testID="shop-sheet-dim">
           <Pressable style={s.sheet} onPress={() => {}} testID="shop-sheet">
             <View style={s.grab} />
-            <View style={[s.rowBetween]}>
+            <View style={s.rowBetween}>
               <Text style={s.sheetTitle}>{CS.shopTitle}</Text>
-              {post.offer && post.offer.line ? <View style={s.chipOk}><Text style={s.chipOkText}>{post.offer.line}</Text></View> : null}
+              <TouchableOpacity onPress={onClose} style={s.xBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} testID="shop-sheet-close"
+                accessibilityRole="button" accessibilityLabel={CS.close}>
+                <Icon name="close" size={18} color={C.ink2} />
+              </TouchableOpacity>
             </View>
-            <Text style={s.mut}>{[post.creator && post.creator.name, post.brand && post.brand.name].filter(Boolean).join(' · ')}</Text>
-            {isDeal && deal ? (
+            <View style={s.rowBetween}>
+              <Text style={[s.mut, s.oneLine]} numberOfLines={1} ellipsizeMode="tail" testID="shop-sheet-who">
+                {CS.sheetWho(post.products.length, first, post.brand && post.brand.name)}
+              </Text>
+              {!isDeal && post.offer && post.offer.line ? <View style={s.chipOk}><Text style={s.chipOkText}>{post.offer.line}</Text></View> : null}
+            </View>
+            {isDeal && (dealLine || dealHow) ? (
               <View style={s.dealBox} testID="deal-intro">
-                {deal.offer && deal.offer.how ? <Text style={s.dealHow}>{deal.offer.how}</Text> : null}
-                <Text style={s.mut}>{CO.dealCounts(deal.products.length, deal.gifts.length)}</Text>
+                {dealLine ? <Text style={s.dealLine}>{dealLine}</Text> : null}
+                {dealHow || dealTill ? <Text style={s.dealHow}>{[dealHow, dealTill].filter(Boolean).join(' ')}</Text> : null}
               </View>
             ) : null}
-            <ScrollView style={{ maxHeight: 340 }}>
-              {post.products.map((p) => (
-                <TouchableOpacity key={p.id} style={s.pline} onPress={() => add(p)} activeOpacity={0.9} testID={`shop-product-${p.id}`}>
-                  {p.image_url ? <Image source={{ uri: p.image_url }} style={s.pthumb} /> : <View style={s.pthumb} />}
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={s.pname} numberOfLines={2}>{p.name}</Text>
-                    <Text style={s.pprice}>
-                      <Text style={{ fontFamily: fonts.sansBold, color: C.ink }}>{inr(p.shopper_price)}</Text>
-                      {p.struck ? <Text style={s.struck}>  {inr(p.price)}</Text> : null}
-                    </Text>
-                    {!p.in_stock ? <Text style={s.oos}>{CS.outOfStock}</Text> : null}
-                    {inBag[p.id] !== undefined ? <Text style={s.inBag} testID={`in-bag-${p.id}`}>{CO.inYourBag(inBag[p.id])}</Text> : null}
-                  </View>
-                  <TouchableOpacity onPress={() => heart(p)} style={s.heartBtn} testID={`shop-heart-${p.id}`} accessibilityState={{ selected: !!hearts[p.id] }} accessibilityLabel={hearts[p.id] ? 'Saved with this post' : 'Save with this post'}>
-                    <Icon name={hearts[p.id] ? 'heart' : 'heart-outline'} size={22} color={hearts[p.id] ? '#C42B2B' : C.ink} />
-                  </TouchableOpacity>
-                  {p.in_stock ? (
-                    <TouchableOpacity onPress={() => add(p)} style={s.addBtn} testID={`shop-add-${p.id}`}><Text style={s.addText}>{CO.add}</Text></TouchableOpacity>
-                  ) : null}
-                </TouchableOpacity>
-              ))}
+            <ScrollView style={{ maxHeight: Math.round(H * 0.46) }}>
+              <View style={s.g3} testID="shop-grid">
+                {post.products.map((p) => (
+                  <ProductTile key={p.id} p={p} saved={!!hearts[p.id]} inBagSize={inBag[p.id]}
+                    onOpen={() => openProduct(p)} onHeart={() => heart(p)} onBag={() => add(p)} />
+                ))}
+              </View>
             </ScrollView>
             {post.gift_line ? <Text style={s.giftLine}>{post.gift_line}</Text> : null}
             {!isDeal && post.offer && post.offer.how ? <Text style={s.hint}>{post.offer.how}</Text> : null}
@@ -331,7 +445,9 @@ export function ShopSheet({ post, visible, onClose, surface }) {
           </Pressable>
         </Pressable>
       </Modal>
-      <SizeSheet post={post} product={sizing} visible={!!sizing} onClose={() => setSizing(null)} onAdd={addSized} onBuyNow={buyNow} busy={busy} />
+      {/* The sizes come with the deal data: until it has arrived nothing can be added without one. */}
+      <SizeSheet post={post} product={sizingProduct} visible={!!sizingProduct} onClose={closeSizing} onAdd={addSized} onBuyNow={buyNow}
+        busy={busy} waiting={!deal && !dealFailed} problem={!deal && dealFailed ? CS.loadError : null} added={flash.added} onGoToBag={goToBag} />
     </>
   );
 }
@@ -364,11 +480,17 @@ export function PrimaryBtn({ label, onPress, disabled, testID, secondary }) {
 
 /* ───────────────────────────────────────────── 2 × 2 tiles (F7, F9) */
 
+/**
+ * One post in a grid. A photo post shows its photo. A video post shows a picture taken from the
+ * video itself (V3), with the ▶ mark; only a video that has none shows its first product's photo.
+ */
 export function Tile({ post, onPress, testID }) {
-  const img = post.media_kind === 'image' && post.media[0] ? post.media[0].url : (post.products[0] ? post.products[0].image_url : null);
+  const media = (post.media || [])[0];
+  const img = post.media_kind === 'video' ? videoStill(post)
+    : media ? media.url : (post.products && post.products[0] ? post.products[0].image_url : null);
   return (
     <TouchableOpacity style={s.tile} onPress={onPress} testID={testID}>
-      {img ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
+      {img ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" testID={testID ? `${testID}-img` : undefined} /> : null}
       {post.media_kind === 'video' ? <View style={s.tileVid}><Icon name="play" size={12} color="#fff" /></View> : null}
       {post.offer && post.offer.badge ? <View style={s.tileBadge}><Text style={s.tileBadgeText} numberOfLines={1}>{post.offer.badge}</Text></View>
         : post.facets && post.facets.price_band ? <View style={s.tileBadge}><Text style={s.tileBadgeText} numberOfLines={1}>{post.facets.price_band}</Text></View> : null}
@@ -416,11 +538,22 @@ export function Chip({ label, on, onPress, testID }) {
 }
 
 export const s = StyleSheet.create({
-  dealBox: { backgroundColor: '#FFF3C4', borderRadius: 12, padding: 10, marginTop: 8, marginBottom: 4 },
-  dealHow: { fontFamily: fonts.sansBold, fontSize: 12.5, color: '#6B5A00', marginBottom: 2 },
-  addBtn: { borderWidth: 1.5, borderColor: '#1A1A17', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, marginLeft: 4 },
-  addText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: '#1A1A17' },
-  inBag: { fontFamily: fonts.sansBold, fontSize: 11.5, color: '#1A7A3D', marginTop: 3 },
+  // S2: the deal and how it works, said to the shopper, above the grid.
+  dealBox: { backgroundColor: T.primarySoft, borderRadius: 14, padding: 10, gap: 3 },
+  dealLine: { fontFamily: fonts.sansBold, fontSize: 14, color: C.ink },
+  dealHow: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: C.ink2, lineHeight: 16 },
+  inBag: { fontFamily: fonts.sansBold, fontSize: 10.5, color: '#1A7A3D', marginTop: 1 },
+  // S1: a grid of three — large photo (4:5), the heart top-right, the round bag button bottom-right.
+  xBtn: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  oneLine: { flex: 1, minWidth: 0 },
+  g3: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 12 },
+  pt: { width: TILE3, gap: 2 },
+  ptImg: { width: TILE3, height: Math.round(TILE3 * 1.25), borderRadius: 10, backgroundColor: '#EFEFEA' },
+  ptHeart: { position: 'absolute', right: 5, top: 5, width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.88)', alignItems: 'center', justifyContent: 'center' },
+  ptBag: { position: 'absolute', right: 5, bottom: 5, width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+    elevation: 3, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
+  ptName: { fontFamily: fonts.sansBold, fontSize: 11.5, lineHeight: 14.5, color: C.ink, marginTop: 2 },
+  ptPrice: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: C.ink2 },
   center: { alignItems: 'center', justifyContent: 'center' },
   top: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 14, backgroundColor: '#fff' },
   wordmark: { flex: 1, fontFamily: fonts.sansBold, fontSize: 18, letterSpacing: -0.4, color: C.ink },

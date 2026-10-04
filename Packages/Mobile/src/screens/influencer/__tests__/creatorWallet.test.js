@@ -66,7 +66,9 @@ describe('the creator wallet', () => {
     await waitFor(() => r.getByTestId('creator-wallet'));
     expect(r.getByTestId('wallet-balance-amount').props.children).toBe('₹0');
     r.getByText('Nothing waiting');
-    r.getByText('No sales in a return window');
+    // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's share is added after DELIVERY, when its
+    // return window closes, so a sale that is coming may not be in a window yet: "in their return window" → "not added yet".
+    r.getByText('No sales waiting');
   });
 
   it('commission on the way is its own figure, counted by the sales still in their return window', async () => {
@@ -75,7 +77,7 @@ describe('the creator wallet', () => {
     const r = render(<CreatorWalletScreen navigation={nav()} route={{ params: {} }} />);
     await waitFor(() => r.getByTestId('wallet-commission'));
     expect(r.getByTestId('wallet-commission-value').props.children).toBe('₹1,250');
-    r.getByText('4 sales in their return window');
+    r.getByText('4 sales not added yet');                                  // same drift (W13)
   });
 });
 

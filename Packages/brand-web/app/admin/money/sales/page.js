@@ -12,10 +12,13 @@ import { useLoad, inr, dayMon, Head, Tiles, Tile, Tabs, Table, Chip, LoadFailed 
 const first = (n) => String(n || '').trim().split(/\s+/)[0] || '';
 function state(s) {
   if (s.state === 'cancelled') return ['ended', 'Cancelled'];
+  if (s.state === 'returned') return ['ended', 'Returned'];
   if (s.state === 'added') return ['ok', `Added ${dayMon(s.at)}`];
   if (s.state === 'cod_waiting') return ['wait', 'Cash on delivery · not delivered yet'];
   if (s.state === 'not_shipped') return ['move', 'Not shipped yet'];
-  return ['wait', s.cashOnDelivery ? `Delivered ${dayMon(s.deliveredAt)} · until ${dayMon(s.windowUntil)}` : `Window until ${dayMon(s.windowUntil)}`];
+  if (s.state === 'waiting_delivery') return ['wait', 'On its way · not delivered yet'];
+  // The return window runs from the delivery for every order (cash or online).
+  return ['wait', `Delivered ${dayMon(s.deliveredAt)} · until ${dayMon(s.windowUntil)}`];
 }
 
 export default function MoneySalesPage() {
@@ -46,7 +49,7 @@ export default function MoneySalesPage() {
           <Tile label="To INFLX" value={inr(m.toInflx)} />
         </Tiles>
       ) : null}
-      <Tabs value={filter} onChange={setFilter} options={[['all', 'All'], ['coming', 'In return window'], ['added', 'Added to wallets'], ['cancelled', 'Cancelled'], ['cod', 'Cash on delivery']]} />
+      <Tabs value={filter} onChange={setFilter} options={[['all', 'All'], ['coming', 'Not added yet'], ['added', 'Added to wallets'], ['cancelled', 'Cancelled'], ['cod', 'Cash on delivery']]} />
       {error ? <LoadFailed onRetry={reload} what="the sales" /> : (
         <Table loading={loading} empty={filter === 'all' ? 'No sales yet.' : 'No sales match this filter.'}
           heads={[['Item'], ['Brand · creator'], ['Paid', 1], ['Brand', 1], ['Creator', 1], ['INFLX', 1], ['State']]} rows={rows} />

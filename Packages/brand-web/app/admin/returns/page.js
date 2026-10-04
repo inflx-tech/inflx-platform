@@ -1,12 +1,16 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { adminApi, getStoredUser, fmtMoney } from '../../../lib/api';
+import { adminApi, fmtMoney } from '../../../lib/api';
 
 // Returns workflow admin UI (G-4). Reuses the existing admin returns
-// endpoints (queue + approve/reject/mark-refunded). Gated server-side by
-// requireAnyAdminRole; we additionally hide action buttons unless the admin
-// has an actioning role (reviewer/finance/superadmin) — read-only roles see
-// the queue but no buttons.
+// endpoints (queue + approve/reject/mark-refunded). The server lets a
+// superadmin, or an admin holding the Returns permission, both read and decide;
+// the buttons show for exactly those people (asked from /admin/me).
+//
+// shopper-walk-fixes (W14): a return of an item ordered through a creator's post (`order_line_id`
+// is set) is decided here the same way, with three differences the server enforces: the refund is
+// what was paid for the item (never a typed amount); items returned together are approved, rejected
+// and refunded together; and "Mark refunded" itself undoes the item and sends an online payment back.
 
 const TABS = [
   { key: 'requested', label: 'Requested' },
@@ -53,10 +57,15 @@ export default function AdminReturnsPage() {
   const [refundId, setRefundId] = useState('');
   const [processing, setProcessing] = useState(false);
 
-  const user = typeof window !== 'undefined' ? getStoredUser() : null;
-  // Read-only admin roles can view the queue but not action it. The server
-  // gate is requireAnyAdminRole; reviewer/finance/superadmin all action here.
-  const canAction = ['reviewer', 'finance', 'superadmin'].includes(user?.admin_role);
+  // Who may decide a return: the server's own rule (a superadmin, or the Returns permission).
+  // shopper-walk-fixes: this used to read `admin_role` off the user kept at sign-in — which never
+  // carries it — so Approve, Reject and Mark refunded were hidden from every admin.
+  const [canAction, setCanAction] = useState(false);
+  useEffect(() => {
+    adminApi.getMe().then((res) => {
+      if (res.success) setCanAction(res.data?.admin_role === 'superadmin' || (Array.isArray(res.data?.capabilities) && res.data.capabilities.includes('returns')));
+    });
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,9 +102,13 @@ export default function AdminReturnsPage() {
     }
     setProcessing(false);
     if (res.success || res.ok) {
+      const rf = res.data?.refund;
       showToast(
         modal.action === 'approve' ? 'Return approved' :
         modal.action === 'reject'  ? 'Return rejected' :
+        rf?.status === 'issued'    ? `Refunded ${fmtMoney(rf.amount)} to the shopper` :
+        rf?.status === 'manual'    ? `Returned. Pay ${fmtMoney(rf.amount)} to the shopper by hand (cash order)` :
+        rf?.status === 'failed'    ? `Returned, but the refund of ${fmtMoney(rf.amount)} FAILED — send it from Razorpay` :
                                      'Marked refunded'
       );
       setModal(null);
@@ -159,7 +172,7 @@ export default function AdminReturnsPage() {
                   <div className="w-9 h-9 rounded-lg bg-surface2 flex items-center justify-center text-t3 text-xs flex-shrink-0">▤</div>
                 )}
                 <div className="min-w-0">
-                  <div className="text-xs font-medium text-t1 truncate">{r.product_name || 'Item'}</div>
+                  <div className="text-xs font-medium text-t1 truncate">{r.product_name || 'Item'}{r.line_qty > 1 ? ` ×${r.line_qty}` : ''}</div>
                   <div className="text-[10px] text-t3 truncate">{r.brand_name}{(r.variant_size || r.variant_color) ? ` · ${[r.variant_size, r.variant_color].filter(Boolean).join(' / ')}` : ''}</div>
                 </div>
               </div>
@@ -174,6 +187,7 @@ export default function AdminReturnsPage() {
               <div className="font-display text-xs">
                 <div className="font-bold text-t1">{fmtMoney(r.transaction_amount)}</div>
                 {r.refund_amount != null && <div className="text-[10px] text-teal-deep">↳ {fmtMoney(r.refund_amount)}</div>}
+                {r.order_line_id && <div className="text-[10px] text-t3">{r.payment_method === 'cod' ? 'Cash on delivery' : 'Paid online'}{r.request_items > 1 ? ` · ${r.request_items} items together` : ''}</div>}
               </div>
               {/* Status */}
               <div><StatusBadge status={r.return_status} /></div>
@@ -228,13 +242,22 @@ export default function AdminReturnsPage() {
 
             {modal.action === 'approve' && (
               <>
-                <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-2">Refund Amount (₹)</label>
-                <input
-                  type="number" min="0" step="0.01"
-                  value={refundAmount}
-                  onChange={e => setRefundAmount(e.target.value)}
-                  className="w-full border-2 border-border2 rounded-xl p-2.5 text-sm text-t1 outline-none focus:border-gold mb-3"
-                />
+                {modal.ret.order_line_id ? (
+                  <p className="text-xs text-t2 mb-3">
+                    The refund is what was paid for {modal.ret.request_items > 1 ? `these ${modal.ret.request_items} items, returned together` : 'this item'}.
+                    Approving tells the shopper and the store; the store collects it. Nothing is refunded until you mark it refunded.
+                  </p>
+                ) : (
+                  <>
+                    <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-2">Refund Amount (₹)</label>
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={refundAmount}
+                      onChange={e => setRefundAmount(e.target.value)}
+                      className="w-full border-2 border-border2 rounded-xl p-2.5 text-sm text-t1 outline-none focus:border-gold mb-3"
+                    />
+                  </>
+                )}
                 <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-2">Notes (optional)</label>
                 <textarea
                   value={adminNotes}
@@ -259,7 +282,15 @@ export default function AdminReturnsPage() {
               </div>
             )}
 
-            {modal.action === 'refund' && (
+            {modal.action === 'refund' && modal.ret.order_line_id && (
+              <p className="text-xs text-t2 mb-4">
+                Do this once the item is back with the store. It takes the item off the order, puts its stock back, takes the creator&apos;s commission out of her pending earnings, and adds nothing to the store&apos;s wallet for it.{' '}
+                {modal.ret.payment_method === 'cod'
+                  ? 'The shopper paid cash on delivery: after this, pay the refund to them by hand.'
+                  : 'The refund goes back to the shopper\'s original payment method now.'}
+              </p>
+            )}
+            {modal.action === 'refund' && !modal.ret.order_line_id && (
               <div className="mb-4">
                 <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-2">Razorpay Refund ID (optional)</label>
                 <input

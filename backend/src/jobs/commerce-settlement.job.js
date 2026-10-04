@@ -46,11 +46,12 @@ async function run() {
         AND fo.order_status IS DISTINCT FROM 'packed'
         AND ft.return_window_ends_at IS NOT NULL
         AND ft.return_window_ends_at <= NOW()
-        -- Item 17 (W4): a cash-on-delivery sale counts once it is DELIVERED, and its return window
-        -- then runs from the delivery, the same length as an online sale's.
-        AND (fo.payment_method IS DISTINCT FROM 'cod'
-             OR (fo.order_status = 'delivered' AND fo.delivered_at IS NOT NULL
-                 AND fo.delivered_at + (ft.return_window_ends_at - ft.created_at) <= NOW()))
+        -- shopper-walk-fixes (W13, founder 4 Oct 2026): the brand's share — and with it INFLX's own,
+        -- which counts as earned at this settlement — is added only AFTER DELIVERY: the return window
+        -- runs from the delivery, with the length stamped on the sale, for an online payment exactly
+        -- as for cash. (Item 17 had this for cash only.)
+        AND fo.order_status = 'delivered' AND fo.delivered_at IS NOT NULL
+        AND fo.delivered_at + (ft.return_window_ends_at - ft.created_at) <= NOW()
         AND NOT EXISTS (
           SELECT 1 FROM follower_returns fr
            WHERE fr.transaction_id = ft.id

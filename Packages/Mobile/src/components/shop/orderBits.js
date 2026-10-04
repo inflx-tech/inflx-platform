@@ -3,10 +3,14 @@
  * colour and size choices, the product pop-up, the size sheet, the sticky bar, price rows.
  *
  * Prices on these parts always come from the server's answer (R5); the phone only shows them.
+ *
+ * shopper-walk-fixes (board S3–S7, V2, G1–G2) adds: the bag icon over a video or a photo, the
+ * listing's details block, the second after Add to bag (one vibration, "Go to bag ›", then back
+ * where she was), and which deals stay whole in the bag.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Image, Modal, ScrollView, Pressable, StyleSheet, Dimensions, Linking,
+  View, Text, TouchableOpacity, Image, Modal, ScrollView, Pressable, StyleSheet, Dimensions, Linking, Vibration, ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
@@ -29,17 +33,127 @@ export function useNavSafe() {
 
 /* ───────────────────────────────────────────── the bag icon (O2: on every screen's top bar) */
 
-export function BagButton({ dark }) {
+const MARK_MS = 2500;      // how long the icon stays marked after the count went up (S6)
+
+/**
+ * The bag icon with its count, on every page she browses. In a top bar it is as it always was;
+ * `overlay` puts it on a picture: 'dark' over a video (Play, V2), 'light' over a product photo (S3).
+ * When the count goes up the icon is marked for a moment (S6), so she sees where her item went
+ * on the page she is returned to.
+ */
+export function BagButton({ dark, overlay, style }) {
   const nav = useNavSafe();
   const [n, setN] = useState(0);
-  useEffect(() => subscribeBagCount(setN), []);
+  const [up, setUp] = useState(false);
+  const last = useRef(null);
+  const timer = useRef(null);
+  useEffect(() => {
+    const off = subscribeBagCount((v) => {
+      if (last.current !== null && v > last.current) {
+        setUp(true);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => { timer.current = null; setUp(false); }, MARK_MS);
+      }
+      last.current = v;
+      setN(v);
+    });
+    return () => { off(); if (timer.current) clearTimeout(timer.current); timer.current = null; };
+  }, []);
+  const onDark = !!dark || overlay === 'dark';
   return (
-    <TouchableOpacity onPress={() => nav && nav.navigate('Bag')} style={[b.ic, dark && b.icDark]} accessibilityLabel={`Bag, ${n} items`} testID="open-bag">
-      <Icon name="shopping-outline" size={19} color={dark ? '#fff' : K.ink} />
-      {n > 0 ? <View style={b.badge}><Text style={b.badgeText} testID="bag-count">{n > 99 ? '99' : n}</Text></View> : null}
+    <TouchableOpacity onPress={() => nav && nav.navigate('Bag')} accessibilityLabel={`Bag, ${n} items`} testID="open-bag"
+      style={[b.ic, dark && b.icDark, overlay === 'dark' && b.icOnVideo, overlay === 'light' && b.icOnPhoto, up && (onDark ? b.icUpDark : b.icUp), style]}>
+      <Icon name="shopping-outline" size={19} color={onDark ? '#fff' : K.ink} />
+      {n > 0 ? (
+        <View style={[b.badge, overlay && b.badgeOver]}>
+          <Text style={[b.badgeText, overlay && b.badgeOverText]} testID="bag-count">{n > 99 ? '99' : n}</Text>
+        </View>
+      ) : null}
     </TouchableOpacity>
   );
 }
+
+/* ───────────────────────────────────────────── the second after Add to bag (S5, S6, S7) */
+
+export const ADDED_MS = 1100;
+
+/**
+ * Add to bag worked: one short vibration, and for about a second the main button is a black
+ * "Go to bag ›". If she does nothing, `onReturn` runs — it closes what was opened for the add, so
+ * she is exactly where she was. The timer never outlives the screen.
+ *
+ *   start()  the add succeeded            stop()   she chose something else; no return
+ *   reset()  back to "Add to bag"
+ */
+export function useAdded(onReturn) {
+  const [added, setAdded] = useState(false);
+  const timer = useRef(null);
+  const then = useRef(onReturn);
+  then.current = onReturn;
+  const stop = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }, []);
+  useEffect(() => stop, [stop]);
+  const start = useCallback(() => {
+    try { Vibration.vibrate(40); } catch { /* no motor, or not allowed: the words still say it */ }
+    setAdded(true);
+    stop();
+    timer.current = setTimeout(() => { timer.current = null; if (then.current) then.current(); }, ADDED_MS);
+  }, [stop]);
+  const reset = useCallback(() => { stop(); setAdded(false); }, [stop]);
+  return { added, start, stop, reset };
+}
+
+/** "✓ Added to your bag", with the mark that says the phone just buzzed. */
+export function AddedLine({ testID = 'added-line' }) {
+  return (
+    <View style={b.buzz} testID={testID}>
+      <Icon name="vibrate" size={15} color={K.ink2} />
+      <Text style={b.buzzText}>{CO.addedLine}</Text>
+    </View>
+  );
+}
+
+/**
+ * The main button of an add. For the second after it worked it is a black "Go to bag ›"
+ * (black = done, the mono rule); otherwise the yellow "Add to bag".
+ */
+export function AddToBagButton({ added, disabled, label = CO.addToBag, onAdd, onGoToBag, testID = 'add-to-bag', style }) {
+  if (added) {
+    return (
+      <TouchableOpacity onPress={onGoToBag} style={[b.primary, b.go, style]} testID={`${testID}-go`} accessibilityRole="button">
+        <Text style={[b.primaryText, b.goText]}>{CO.goToBagNow}</Text>
+      </TouchableOpacity>
+    );
+  }
+  return (
+    <TouchableOpacity disabled={disabled} onPress={onAdd} style={[b.primary, style, disabled && b.primaryDis]} testID={testID}
+      accessibilityRole="button" accessibilityState={{ disabled: !!disabled }}>
+      <Text style={[b.primaryText, disabled && { color: T.disabledText }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+/** Closes the pages that were opened for an add, however many (the review and its deal page: 2). */
+export function closePages(navigation, count = 1) {
+  if (!navigation) return;
+  if (typeof navigation.pop === 'function') { navigation.pop(count); return; }
+  for (let i = 0; i < count; i += 1) navigation.goBack();
+}
+
+/** False only when this screen is known to be behind another one (she went elsewhere meanwhile). */
+export const inFront = (navigation) => !(navigation && typeof navigation.isFocused === 'function' && !navigation.isFocused());
+
+/* ───────────────────────────────────────────── deals that stay whole in the bag (G1, G2) */
+
+/**
+ * A deal made of fixed pieces: the set, the bundle (pick any, mix & match), buy one get one. In
+ * the bag it is one group — no − 1 +, no single Remove — and it changes only through Edit deal.
+ * A plain discount, buy more save more, spend or buy for a gift, and no offer, are not locked.
+ */
+export const LOCKED_DEALS = ['fixed', 'pick_any', 'mix_match', 'bogo'];
+export const isLockedDeal = (offer) => !!offer && LOCKED_DEALS.includes(offer.sub_type);
 
 /* ───────────────────────────────────────────── colour and size */
 
@@ -121,17 +235,74 @@ export function Sheet({ visible, onClose, children, testID, tall }) {
   );
 }
 
-function Photos({ images, height = 260 }) {
+/**
+ * A product's photos, to swipe. In a pop-up they are a rounded card with the count top-left when
+ * there is more than one; `page` is the product page's gallery (S3): edge to edge, the count
+ * bottom-right, always shown ("1 / 1").
+ */
+export function Photos({ images, height = 260, width = W - 28, page = false, testID = 'photos' }) {
   const list = (images || []).filter(Boolean);
   const [i, setI] = useState(0);
-  if (!list.length) return <View style={[b.photo, { height }]} />;
+  const first = list[0] || null;
+  useEffect(() => { setI(0); }, [first, list.length]);     // another colour's photos start at the first
+  if (!list.length) return <View style={[b.photo, page && b.photoPage, { width, height }]} testID={`${testID}-none`} />;
+  const at = Math.min(i, list.length - 1);
   return (
-    <View>
-      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => setI(Math.round(e.nativeEvent.contentOffset.x / (W - 28)))}>
-        {list.map((u) => <Image key={u} source={{ uri: u }} style={[b.photo, { width: W - 28, height }]} resizeMode="cover" />)}
+    <View testID={testID}>
+      <ScrollView key={`${first}-${list.length}`} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => setI(Math.round(e.nativeEvent.contentOffset.x / width))} testID={`${testID}-swipe`}>
+        {list.map((u, k) => <Image key={`${u}-${k}`} source={{ uri: u }} style={[b.photo, page && b.photoPage, { width, height }]} resizeMode="cover" testID={`${testID}-${k}`} />)}
       </ScrollView>
-      {list.length > 1 ? <View style={b.pager}><Text style={b.pagerText}>{`${i + 1} / ${list.length}`}</Text></View> : null}
+      {list.length > 1 || page ? (
+        <View style={[b.pager, page ? b.pagerPage : b.pagerCard]}><Text style={b.pagerText} testID={`${testID}-count`}>{CO.photoCount(at + 1, list.length)}</Text></View>
+      ) : null}
+    </View>
+  );
+}
+
+/* ───────────────────────────────────────────── the listing's details (S3, S4) */
+
+const said = (v) => (v == null ? '' : String(v).trim());
+
+/**
+ * What the brand entered when listing the product, in one fixed order: Brand, Category, then every
+ * detail the server sends (already ordered), then Returns — INFLX's one rule. A row with nothing
+ * to say is left out. Nothing is invented: no rating, no reviews, no MRP, no tax line.
+ */
+export function detailRows(product, returnsLine) {
+  const specs = product && Array.isArray(product.specs) ? product.specs : [];
+  return [
+    { key: 'brand', label: CO.brandRow, value: product ? product.brand_label : null },
+    { key: 'category', label: CO.categoryRow, value: product ? product.category_path : null },
+    ...specs.map((x, k) => ({ key: `spec-${k}`, label: x && x.label, value: x && x.value })),
+    { key: 'returns', label: CO.returnsRow, value: returnsLine },
+  ].map((r) => ({ key: r.key, label: said(r.label), value: said(r.value) })).filter((r) => r.label && r.value);
+}
+
+/** "Product details" (the rows above) and "Description". Either heading shows only with something under it. */
+export function ProductDetails({ product, returnsLine, testID = 'details' }) {
+  const rows = detailRows(product, returnsLine);
+  const about = said(product && product.details);
+  if (!rows.length && !about) return null;
+  return (
+    <View testID={testID}>
+      {rows.length ? (
+        <>
+          <Text style={b.sech}>{CO.productDetails}</Text>
+          {rows.map((r) => (
+            <View key={r.key} style={b.kv} testID={`${testID}-row-${r.key}`}>
+              <Text style={b.kvLabel}>{r.label}</Text>
+              <Text style={b.kvValue}>{r.value}</Text>
+            </View>
+          ))}
+        </>
+      ) : null}
+      {about ? (
+        <>
+          <Text style={b.sech}>{CO.description}</Text>
+          <Text style={b.desc} testID={`${testID}-description`}>{about}</Text>
+        </>
+      ) : null}
     </View>
   );
 }
@@ -139,9 +310,10 @@ function Photos({ images, height = 260 }) {
 /**
  * The product pop-up (P2, V2, K2, K5, G4): photos, price, what picking it does in the deal, colours,
  * sizes with stock, size chart, details, quantity where it applies. Nothing is picked without its
- * colour and size (6.5).
+ * colour and size (6.5). The details are the same block the product page shows (S4): brand,
+ * category, every listed detail, returns (`returnsLine`), then the description.
  */
-export function ProductPopup({ product, visible, onClose, effect, price, struck, allowQty, initial, primaryLabel, onPrimary, onRemove, header, testID = 'product-popup' }) {
+export function ProductPopup({ product, visible, onClose, effect, price, struck, allowQty, initial, primaryLabel, onPrimary, onRemove, header, returnsLine, testID = 'product-popup' }) {
   const [sel, setSel] = useState({ colour: null, size: null });
   const [qty, setQty] = useState(1);
   useEffect(() => {
@@ -169,7 +341,7 @@ export function ProductPopup({ product, visible, onClose, effect, price, struck,
         </View>
         {effect ? <View style={b.effect}><Text style={b.effectText}>{effect}</Text></View> : null}
         <ChoicePicker product={product} value={sel} onChange={setSel} testIDPrefix={testID} />
-        {product.details ? <Text style={b.details}><Text style={{ fontFamily: fonts.sansBold }}>{CO.details} · </Text>{product.details}</Text> : null}
+        <ProductDetails product={product} returnsLine={returnsLine} testID={`${testID}-details`} />
         {allowQty ? (
           <View style={[b.rowBetween, { marginTop: 12 }]}>
             <Text style={b.lab}>{CO.quantity}</Text>
@@ -186,7 +358,7 @@ export function ProductPopup({ product, visible, onClose, effect, price, struck,
   );
 }
 
-function firstColour(product) {
+export function firstColour(product) {
   const c = (product.colours || []).find((x) => (x.sizes || []).length);
   return c ? c.colour : null;
 }
@@ -250,10 +422,17 @@ export function Notes({ problems = [], notes = [] }) {
 
 /* ───────────────────────────────────────────── O1 · the size sheet for a simple post */
 
-export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, busy }) {
+/**
+ * The quick add (the bag icon on a product). `added` is the second after Add to bag worked (S5):
+ * the green line, and the main button a black "Go to bag ›" that opens the bag (`onGoToBag`).
+ * The sizes come with the deal data: while they are on their way (`waiting`), or could not be
+ * fetched (`problem`), nothing can be added — a product is never put in the bag without its size.
+ */
+export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, busy: working, waiting = false, problem = null, added = false, onGoToBag }) {
   const [sel, setSel] = useState({ colour: null, size: null });
   useEffect(() => { if (visible) setSel({ colour: null, size: null }); }, [visible, product && product.id]);
   if (!product) return null;
+  const busy = !!working || waiting || !!problem;
   const needs = hasChoices(product);
   const ready = !needs || !!sel.size;
   const pick = () => ({ colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size });
@@ -268,13 +447,15 @@ export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, bu
         </View>
       </View>
       <ChoicePicker product={product} value={sel} onChange={setSel} testIDPrefix="size-sheet" />
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+      {waiting ? <ActivityIndicator color={K.ink} style={{ marginTop: 12 }} testID="size-sheet-waiting" /> : null}
+      {problem ? <Text style={b.problem} testID="size-sheet-problem">{problem}</Text> : null}
+      {added ? <View style={{ marginTop: 12 }}><AddedLine /></View> : null}
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: added ? 8 : 14 }}>
         <TouchableOpacity disabled={!ready || busy} onPress={() => onBuyNow(pick())} style={[b.secondary, { flex: 1 }, (!ready || busy) && b.primaryDis]} testID="size-sheet-buy">
           <Text style={b.secondaryText}>{CO.buyNow}</Text>
         </TouchableOpacity>
-        <TouchableOpacity disabled={!ready || busy} onPress={() => onAdd(pick())} style={[b.primary, { flex: 1, marginTop: 0 }, (!ready || busy) && b.primaryDis]} testID="size-sheet-add">
-          <Text style={[b.primaryText, (!ready || busy) && { color: T.disabledText }]}>{ready ? CO.addToBag : CO.chooseSize}</Text>
-        </TouchableOpacity>
+        <AddToBagButton added={added} disabled={!ready || busy} label={ready ? CO.addToBag : CO.chooseSize}
+          onAdd={() => onAdd(pick())} onGoToBag={onGoToBag} testID="size-sheet-add" style={{ flex: 1, marginTop: 0 }} />
       </View>
     </Sheet>
   );
@@ -283,8 +464,21 @@ export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, bu
 export const b = StyleSheet.create({
   ic: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F3EE', marginLeft: 6 },
   icDark: { backgroundColor: '#222' },
+  // Over a video (Play, beside the sound button) and over a product photo (the product page).
+  icOnVideo: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.45)', marginLeft: 0 },
+  icOnPhoto: { backgroundColor: 'rgba(255,255,255,0.96)', marginLeft: 0 },
+  // The count just went up (S6): a ring for a moment.
+  icUp: { borderWidth: 1.5, borderColor: K.ink },
+  icUpDark: { borderWidth: 1.5, borderColor: T.primary },
   badge: { position: 'absolute', top: -3, right: -3, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: K.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
   badgeText: { fontFamily: fonts.sansBold, fontSize: 9.5, color: '#fff' },
+  // On a picture the count is the board's yellow with dark figures: a black one is lost on a video.
+  badgeOver: { backgroundColor: T.primary },
+  badgeOverText: { color: T.onPrimary },
+  buzz: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  buzzText: { fontFamily: fonts.sansBold, fontSize: 12, color: K.ok },
+  go: { backgroundColor: K.ink },
+  goText: { color: '#fff' },
   lab: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ink, marginTop: 10, marginBottom: 6 },
   link: { fontFamily: fonts.sansBold, fontSize: 12, color: K.ink, textDecorationLine: 'underline', marginTop: 10 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -304,15 +498,22 @@ export const b = StyleSheet.create({
   sheet: { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 14, paddingBottom: 22, maxHeight: '88%' },
   grab: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDDCD5', marginBottom: 10 },
   photo: { width: '100%', borderRadius: 14, backgroundColor: '#EDECE6' },
-  pager: { position: 'absolute', top: 10, left: 10, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  photoPage: { borderRadius: 0 },
+  pager: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  pagerCard: { top: 10, left: 10 },
+  pagerPage: { bottom: 10, right: 10 },
   pagerText: { fontFamily: fonts.sansBold, fontSize: 10.5, color: '#fff' },
+  sech: { fontFamily: fonts.sansBold, fontSize: 13.5, color: K.ink, marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: K.border, marginBottom: 8 },
+  kv: { flexDirection: 'row', gap: 10, paddingVertical: 3 },
+  kvLabel: { width: 92, fontFamily: fonts.sansRegular, fontSize: 12.5, color: K.ink2 },
+  kvValue: { flex: 1, fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: K.ink },
+  desc: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: K.ink2, lineHeight: 19 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
   pname: { fontFamily: fonts.sansBold, fontSize: 15, color: K.ink, flexShrink: 1 },
   price: { fontFamily: fonts.sansBold, fontSize: 15, color: K.ink },
   struck: { fontFamily: fonts.sansRegular, fontSize: 12, color: K.ink3, textDecorationLine: 'line-through' },
   effect: { backgroundColor: K.warnSoft, borderRadius: 10, padding: 9, marginTop: 8 },
   effectText: { fontFamily: fonts.sansBold, fontSize: 12, color: K.warn },
-  details: { fontFamily: fonts.sansRegular, fontSize: 12, color: K.ink2, marginTop: 12, lineHeight: 17 },
   primary: { backgroundColor: T.primary, borderRadius: 14, height: 50, alignItems: 'center', justifyContent: 'center', marginTop: 12, paddingHorizontal: 12 },
   primaryDis: { backgroundColor: T.disabledBg },
   primaryText: { fontFamily: fonts.sansBold, fontSize: 14.5, color: T.onPrimary },

@@ -31,6 +31,9 @@ export const C14 = {
   path1WhoBrand: 'INFLX checks',
   progress: (a, m) => `${a} of ${m} approved`,
   minimum: (m) => `Minimum ${m} · set by INFLX`,
+  // shopper-walk-fixes (frames B1, C1): once the minimum is met the count stops reading "4 of 1".
+  approvedCount: (a) => `${a} approved`,
+  minimumMet: (m) => `✓ Minimum ${m} met`,
   moreToMin: (n) => `${plural(n, 'more', 'more')} to reach the minimum.`,
   withInflx: (n) => `${plural(n, 'post is', 'posts are')} with INFLX for review.`,
   shortBy: (n) => `Short of the minimum by ${n}. No penalty; it completes once it is met.`,
@@ -69,6 +72,14 @@ export const C14 = {
   removeRow: 'Take this out',
   noRowsYet: 'Nothing to send yet',
   noRowsBody: 'Pick an approved post and where you will share it.',
+  // shopper-walk-fixes (frame C2) — what she'll share, made readable:
+  // a row's chip while she fills it and while the brand reviews it ("1 of 1" said nothing);
+  files: (n) => (n ? plural(n, 'file', 'files') : 'No file yet'),
+  // the heading over the approved posts she can still add, under the rows she already has;
+  shareAnother: 'Share another post, or another place',
+  // and, under a grey Send, the first row that still needs its file.
+  addVideoToSend: (row) => `Add the video for "${row}" to send.`,
+  addFileToSend: (row) => `Add the file for "${row}" to send.`,
 
   // Changes (S12, S13)
   theyAsked: (brand, d) => `${brand} asked for changes · ${day10(d)}`,

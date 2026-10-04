@@ -470,6 +470,35 @@ function shopperHow(offer, pool) {
 }
 
 /**
+ * The same ten deals, said TO THE SHOPPER (shopper-walk-fixes · board table T; founder, 3 Oct 2026:
+ * "it looks like this is saying to creator… not related to shopper or customer who is buying").
+ * `shopperHow` above is the creator's sentence ("They buy… from your post") and stays hers; the
+ * shopper app shows this one — on "Products in this post" and at the top of the deal page.
+ */
+function shopperSays(offer, pool) {
+  const c = normaliseConfig(offer.sub_type, offer.offer_config_json);
+  const n = ((pool && pool.buy) || []).length;
+  const g = ((pool && pool.gift) || []).length;
+  const count = c.gift_count || 1;
+  const tiers = () => c.tiers.map((t) => (offer.sub_type === 'quantity' ? `buy ${t.at}` : `spend ${inr(t.at)}`)
+    + ` → ${c.reward === 'amount' ? `${inr(t.value)} off` : pctOff(t.value)}`).join(', ');
+  const gift = g > 1 ? `choose ${count} free gift${count > 1 ? 's' : ''} from ${g}` : 'get the gift free';
+  switch (offer.sub_type) {
+    case 'percentage': return `Every product in this post is ${pctText(c.pct)} off${c.max_off ? ` (at most ${inr(c.max_off)} off an item)` : ''}.`;
+    case 'flat': return `Every product in this post is ${inr(c.amount)} off.`;
+    case 'bogo': return 'Buy any product in this post and get the same one free, in any size or colour.';
+    case 'quantity': return `The more you buy from this post, the more you save: ${tiers()}. Only the highest one applies.`;
+    case 'value': return `The more you spend on this post's products, the more you save: ${tiers()}. Only the highest one applies.`;
+    case 'pick_any':
+    case 'mix_match': return `Pick any ${c.pick} of these ${n} products and pay ${inr(c.price)} for them together.`;
+    case 'fixed': return `Buy the whole set for ${inr(c.price)}. You only choose size and colour.`;
+    case 'spend': return `Spend ${inr(c.min_spend)} on these products and ${gift}.`;
+    case 'buy_x': return `Buy ${c.buy_qty} of these products and ${gift}.`;
+    default: return '';
+  }
+}
+
+/**
  * What she earns on one example purchase (founder Q3: "worked out on the offer's example price,
  * labelled You earn"). Commission is on what the shopper pays (rules M3).
  * @returns { pays, earns, line } or null when there's nothing to work it out on.
@@ -502,7 +531,7 @@ function exampleEarning(offer, pool, commissionPct) {
 }
 
 module.exports = {
-  creatorDeal, shopperHow, exampleEarning,
+  creatorDeal, shopperHow, shopperSays, exampleEarning,
   SUB_TYPES, TYPES, TYPE_LABEL, SUB_LABEL, MAX_TIERS,
   typeLabel, isValidSubType, normaliseConfig, numberProblems,
   dealLine, discountedPrice, displayStatus,

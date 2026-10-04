@@ -120,6 +120,7 @@ router.use('/influencers', shoppablePostsRoutes); // shoppable-posts-v2: Create 
 router.use('/influencers', creatorPostsRoutes);   // /me/post-scope + /me/posts*
 router.use('/admin/posts', adminPostsRoutes);     // moderation queue
 router.get('/media/post/:id', creatorPostsController.servePostMedia);   // public slide serve
+router.get('/media/post/:id/:what(cover)', creatorPostsController.servePostMedia);   // W15 — the picture taken from a video slide
 
 // ── Creator imagery: brand approval + display source (Phase 7a, mig 136-137) ──
 router.use('/brands/me', brandCreatorImagesRoutes);        // /brands/me/creator-images + /products/:id/image-source

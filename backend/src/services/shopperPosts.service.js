@@ -281,13 +281,22 @@ function card(p, { creator, brand, counts, mine, liveAt }) {
     share_url: `https://${linkHost()}/p/${p.code}`,
     creator, brand,
     media_kind: p.media_kind, media_layout: p.media_layout, tag_style: p.tag_style,
-    media: p.media.map((m) => ({ id: m.id, url: m.url, mime: m.mime, width: m.width, height: m.height, duration_s: m.duration_s })),
+    // shopper-walk-fixes (W15): cover_url is a picture taken from a video (null for a photo, and for
+    // a video uploaded before the creator's phone made one).
+    media: p.media.map((m) => ({ id: m.id, url: m.url, mime: m.mime, width: m.width, height: m.height, duration_s: m.duration_s, cover_url: m.cover_url || null })),
     offer: shaped ? {
-      id: p.offer_id, type: p.offer ? p.offer.type : null, sub_type: shaped.sub_type,
+      // `type` is the offer type's display name ("Discount", "BOGO"…) and always was; `kind` is the
+      // type itself (discount | bogo | volume | bundle | free_gift), for anything that must decide.
+      id: p.offer_id, type: p.offer ? p.offer.type : null, kind: shaped.offer_type || null, sub_type: shaped.sub_type,
       badge: badgeOf(shaped), line: appliedLine(shaped), deal: p.offer ? p.offer.deal : null,
       ends_on: p.offer ? p.offer.ends_on : null,
-      how: rules.shopperHow(shaped, { buy: products }),
+      // Said to the SHOPPER (board table T). The creator's own sentence is rules.shopperHow.
+      how: rules.shopperSays(shaped, { buy: products }),
     } : null,
+    // shopper-walk-fixes (O1): whether this post opens a deal page — decided HERE, once. A plain
+    // discount or a price post never does. (The phone used to guess from `offer.type`, which is a
+    // display name, so every discount post flashed "Build your deal" until the deal data arrived.)
+    deal_page: !!shaped && !!shaped.offer_type && shaped.offer_type !== 'discount',
     gift_line: null,
     products,
     counts, mine,

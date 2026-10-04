@@ -303,7 +303,10 @@ describe('a post as the shopper sees it (checks 12–14)', () => {
     const b = (await get(`/follower/posts/${bp}`)).body.data;
     expect(b.offer).toMatchObject({ badge: 'ANY 2 FOR ₹2,999', line: 'Any 2 for ₹2,999' });
     expect(b.products.every((p) => p.shopper_price === p.price && !p.struck)).toBe(true);
-    expect(b.offer.how).toMatch(/pick any 2/);
+    // ASSERTION DRIFT — shopper-walk-fixes O5 (founder, 3 Oct 2026): the sentence a shopper reads is
+    // now said TO her ("Pick any 2 of these…"), not the creator's ("They pick any 2… from your post").
+    expect(b.offer.how).toMatch(/^Pick any 2 of these \d+ products and pay ₹2,999 for them together\.$/);
+    expect(b.offer.how).not.toMatch(/\bthey\b|your post/i);
   });
 
   test('an approved post\'s media link is the same every time and cacheable; a draft\'s stays private (4.7)', async () => {

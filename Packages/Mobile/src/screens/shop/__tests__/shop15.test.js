@@ -149,7 +149,10 @@ describe('F3 Shop this post', () => {
     await waitFor(() => getByTestId('post-shop-p1'));
     fireEvent.press(getByTestId('post-shop-p1'));
     getByTestId('shop-sheet');
-    getByText('20% off applied'); getByText('Priya · Sri Lakshmi Silks');
+    // shopper-walk-fixes S1: the sheet is "Products in this post" and its line under the title is
+    // "N items · creator's first name · brand" (it was "Priya · Sri Lakshmi Silks").
+    getByText('Products in this post');
+    getByText('20% off applied'); getByText('2 items · Priya · Sri Lakshmi Silks');
     getByText('Mangalagiri cotton saree'); getByText('₹960'); getByText('  ₹1,200');
     getByText('Chanderi saree'); getByText('₹1,440');
     getByText('No code needed. Buying here pays Priya her commission. The ♡ saves the product with this post, so it keeps this offer.');

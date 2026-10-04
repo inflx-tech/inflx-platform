@@ -30,3 +30,43 @@ export async function prepareVideo(asset, { onProgress } = {}) {
     return original;
   }
 }
+
+/** A picture too heavy for its limit is made again no larger than this, at this quality. */
+export const PICTURE = { maxSize: 1280, quality: 0.8 };
+
+/**
+ * shopper-walk-fixes (W15 · frames B1, C1–C3) — a picture taken from a video, on her phone, so
+ * every small tile and row that stands for the video can show it instead of a black box.
+ *
+ * `{ uri, size, mime: 'image/jpeg' }`, or null. Null is an answer, never an error:
+ * an older app build (no compressor inside), a video the phone cannot read, a picture still over
+ * `maxBytes` — the caller uploads the video exactly as before and it simply has no picture.
+ * Nothing here may ever stop a video being uploaded, so nothing here throws.
+ *
+ * `size` is the FILE's real length, read back with getFileSize. On Android the thumbnail call's
+ * own `size` is the picture's size in memory (width × height × 4), not the JPEG's — and the upload
+ * link is signed for an exact length, so that number would have storage refuse the file.
+ *
+ * `maxBytes` is the server's limit for where the picture is going. A frame of a 4K video is over
+ * it; that one is made again at 1280 with the same module's image call, and dropped if it is
+ * still too heavy.
+ */
+export async function makeVideoPicture(videoUri, { maxBytes } = {}) {
+  if (!videoUri || !hasCompressor()) return null;
+  try {
+    const lib = require('react-native-compressor');
+    if (typeof lib.createVideoThumbnail !== 'function' || typeof lib.getFileSize !== 'function') return null;
+    const made = await lib.createVideoThumbnail(videoUri);
+    let uri = made && made.path;
+    if (!uri) return null;
+    let size = Number(await lib.getFileSize(uri));
+    if (maxBytes && size > maxBytes && lib.Image && typeof lib.Image.compress === 'function') {
+      uri = await lib.Image.compress(uri, { compressionMethod: 'manual', maxWidth: PICTURE.maxSize, maxHeight: PICTURE.maxSize, quality: PICTURE.quality, output: 'jpg' });
+      size = uri ? Number(await lib.getFileSize(uri)) : NaN;
+    }
+    if (!uri || !Number.isInteger(size) || size <= 0 || (maxBytes && size > maxBytes)) return null;
+    return { uri, size, mime: 'image/jpeg' };
+  } catch (_) {
+    return null;
+  }
+}

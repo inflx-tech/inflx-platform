@@ -21,6 +21,7 @@ import BrandStoreScreen from '../screens/shop/BrandStoreScreen';
 import BrandOffersScreen from '../screens/shop/BrandOffersScreen';
 import OfferPostsScreen from '../screens/shop/OfferPostsScreen';
 import SearchScreen from '../screens/shop/SearchScreen';
+import ProductScreen from '../screens/shop/ProductScreen';
 import EditProfileScreen from '../screens/follower/EditProfileScreen';
 import FollowerLoginScreen from '../screens/follower/FollowerLoginScreen';
 import LegalListScreen from '../screens/legal/LegalListScreen';
@@ -35,6 +36,7 @@ import OrderPlacedScreen from '../screens/shop/order/OrderPlacedScreen';
 import OrdersScreen from '../screens/shop/order/OrdersScreen';
 import OrderDetailScreen from '../screens/shop/order/OrderDetailScreen';
 import CancelScreen from '../screens/shop/order/CancelScreen';
+import ReturnScreen from '../screens/shop/order/ReturnScreen';
 
 /**
  * The shopper app (follower-app-v2 · boards F1–F13 · rules v1.7 §5.1).
@@ -102,6 +104,8 @@ export default function FollowerNavigator() {
       {/* Legal — shoppers get the shopper document set. */}
       <Stack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'shopper' }} />
       <Stack.Screen name="LegalDocument" component={LegalDocumentScreen} />
+      {/* The product page (shopper-walk-fixes · board S3, S4): a product's photo in "Products in this post" opens it. */}
+      <Stack.Screen name="ShopProduct" component={ProductScreen} />
       {/* Ordering (shopper-ordering · board O1–O17, D1, P/B/V/K/G, D4, D11) */}
       <Stack.Screen name="Deal" component={DealScreen} />
       <Stack.Screen name="DealReview" component={DealReviewScreen} />
@@ -113,6 +117,8 @@ export default function FollowerNavigator() {
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <Stack.Screen name="CancelItem" component={CancelScreen} />
+      {/* Return (shopper-walk-fixes W14): a delivered item, inside INFLX's return window. */}
+      <Stack.Screen name="ReturnItem" component={ReturnScreen} />
     </Stack.Navigator>
   );
 }

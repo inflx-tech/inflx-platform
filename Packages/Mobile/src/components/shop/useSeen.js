@@ -5,18 +5,19 @@
  *           (this is what "never repeat" counts, 5.12)
  *   time    when it leaves the screen, how long it stayed → 'dwell' with dwell_ms (10 s, 30 s…)
  *
- * Wire the returned props into a FlatList. Nothing here ever blocks or breaks the screen.
+ * The one-second rule is for COUNTING only. React Native holds back every change under a config
+ * with `minimumViewTime` — a post leaving as much as a post arriving — so nothing that must happen
+ * at once (which video plays) may hang on this callback: that has its own, in useAutoplay
+ * (shopper-walk-fixes · V2). Nothing here ever blocks or breaks the screen.
  */
 import { useEffect, useRef } from 'react';
 import { track } from '../../services/events';
 
 export const SEEN_CONFIG = { itemVisiblePercentThreshold: 50, minimumViewTime: 1000 };
 
-export function useSeen(surface, onVisibleChange) {
+export function useSeen(surface) {
   const since = useRef(new Map());     // post id → when it became visible
   const seen = useRef(new Set());
-  const report = useRef(onVisibleChange);
-  report.current = onVisibleChange;
 
   const onViewableItemsChanged = useRef(({ changed }) => {
     const now = Date.now();
@@ -32,7 +33,6 @@ export function useSeen(surface, onVisibleChange) {
         if (ms >= 1000) track('dwell', id, surface, { dwell_ms: ms, position: c.index });
       }
     }
-    if (report.current) report.current(new Set(since.current.keys()));
   }).current;
 
   useEffect(() => () => {

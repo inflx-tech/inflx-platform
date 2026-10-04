@@ -45,6 +45,12 @@ const link = (url, more = {}) => Promise.resolve({ success: true, data: { view: 
 const photo = (id) => ({ id, kind: 'photo' });
 const video = (id) => ({ id, kind: 'video', durationS: 28 });
 const open = (over = {}) => ({ label: 'Instagram post', files: [photo('p1'), photo('p2')], index: 0, ...over });
+/** shopper-walk-fixes (frame B2): the title's two lines — what it is, and under it the place (if named) and which file. */
+const titled = (r, head, which) => {
+  expect(r.getByTestId('viewer-title').props.children).toBe(head);
+  expect(r.getByTestId('viewer-which').props.children).toBe(which);
+  return true;
+};
 
 let errors;
 let openURL;
@@ -78,7 +84,7 @@ describe('H3, H1 · it opens on a spinner, then the photo, whole, inside the app
     const onClose = jest.fn();
     const r = render(<MediaViewer12 open={open()} fetchUrl={fetchUrl} onClose={onClose} />);
     expect(r.getByTestId('viewer-loading')).toBeTruthy();
-    expect(r.getByText('Instagram post · 1 of 2')).toBeTruthy();
+    titled(r, 'Instagram post', '1 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the name, then which file)
     fireEvent.press(r.getByTestId('viewer-close'));
     expect(onClose).toHaveBeenCalledTimes(1);
     await act(async () => { answer({ success: true, data: { view: { url: 'https://r2/p1', kind: 'photo', mime: 'image/jpeg' } } }); });
@@ -122,11 +128,11 @@ describe('H3, H1 · it opens on a spinner, then the photo, whole, inside the app
 });
 
 describe('H1 · the title, and stepping through the row', () => {
-  it('"{row label} · {n} of {m}"; the arrow with nothing that way is faded and does nothing', async () => {
+  it('the row label, and "{n} of {m}" under it; the arrow with nothing that way is faded and does nothing', async () => {
     const fetchUrl = jest.fn((id) => link(`https://r2/${id}`, { kind: 'photo' }));
     const r = render(<MediaViewer12 open={open()} fetchUrl={fetchUrl} onClose={() => {}} />);
     await waitFor(() => r.getByTestId('viewer-photo'));
-    expect(r.getByTestId('viewer-title').props.children).toBe('Instagram post · 1 of 2');
+    titled(r, 'Instagram post', '1 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the name, then which file)
     expect(r.getByTestId('viewer-prev').props.accessibilityState).toEqual({ disabled: true });
     expect(StyleSheet.flatten(r.getByTestId('viewer-prev').props.style).opacity).toBe(0.35);
     expect(r.getByTestId('viewer-next').props.accessibilityState).toEqual({ disabled: false });
@@ -135,26 +141,71 @@ describe('H1 · the title, and stepping through the row', () => {
 
     fireEvent.press(r.getByTestId('viewer-next'));
     await waitFor(() => expect(r.getByTestId('viewer-photo').props.source.uri).toBe('https://r2/p2'));
-    expect(r.getByText('Instagram post · 2 of 2')).toBeTruthy();
+    titled(r, 'Instagram post', '2 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the name, then which file)
     expect(fetchUrl).toHaveBeenLastCalledWith('p2');               // its own fresh link
     expect(r.getByTestId('viewer-next').props.accessibilityState).toEqual({ disabled: true });
     fireEvent.press(r.getByTestId('viewer-prev'));
-    await waitFor(() => r.getByText('Instagram post · 1 of 2'));
+    await waitFor(() => titled(r, 'Instagram post', '1 of 2')); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the name, then which file)
     expect(fetchUrl).toHaveBeenCalledTimes(3);
   });
 
   it('it opens at the tile that was tapped', async () => {
     const fetchUrl = jest.fn((id) => link(`https://r2/${id}`));
     const r = render(<MediaViewer12 open={open({ index: 1 })} fetchUrl={fetchUrl} onClose={() => {}} />);
-    await waitFor(() => r.getByText('Instagram post · 2 of 2'));
+    await waitFor(() => titled(r, 'Instagram post', '2 of 2')); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the name, then which file)
     expect(fetchUrl).toHaveBeenCalledWith('p2');
   });
 
   it('a row with one file shows no arrows', async () => {
     const r = render(<MediaViewer12 open={open({ label: 'Instagram reel', files: [photo('p1')] })} fetchUrl={() => link('https://r2/p1')} onClose={() => {}} />);
-    await waitFor(() => r.getByText('Instagram reel · 1 of 1'));
+    await waitFor(() => titled(r, 'Instagram reel', '1 of 1')); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the name, then which file)
     expect(r.queryByTestId('viewer-prev')).toBeNull();
     expect(r.queryByTestId('viewer-next')).toBeNull();
+  });
+});
+
+/* shopper-walk-fixes · frame B2 — "This good offer · SH…Instagram reel · 1 of 1" was one line cut
+ * in the middle. The title is two lines: the post, then the place and which file. */
+describe('shopper-walk-fixes B2 · the title is two lines', () => {
+  const flat = (el) => StyleSheet.flatten(el.props.style);
+
+  it('a caller that names the post and the place: the post in bold, cut at its END; under it the place and which file', async () => {
+    const fetchUrl = jest.fn((id) => link(`https://r2/${id}`, { kind: 'photo' }));
+    const r = render(<MediaViewer12 open={{ title: 'This good offer · SHNCZW', place: 'Instagram reel', files: [photo('p1'), photo('p2')], index: 0 }} fetchUrl={fetchUrl} onClose={() => {}} />);
+    await waitFor(() => r.getByTestId('viewer-photo'));
+    titled(r, 'This good offer · SHNCZW', 'Instagram reel · 1 of 2');
+    const head = r.getByTestId('viewer-title');
+    expect(head.props.numberOfLines).toBe(1);
+    expect(head.props.ellipsizeMode).toBe('tail');                  // "…" at the end — never in the middle of it
+    expect(flat(head).fontFamily).toBe(require('../../../theme/tokens').fonts.sansBold);
+    expect(r.getByTestId('viewer-which').props.numberOfLines).toBe(1);
+    expect(r.queryByText(/This good offer.*Instagram reel/)).toBeNull();   // never one run-on line again
+    fireEvent.press(r.getByTestId('viewer-next'));
+    await waitFor(() => titled(r, 'This good offer · SHNCZW', 'Instagram reel · 2 of 2'));
+  });
+
+  it('a caller that still passes only `label` keeps working: the label, and "1 of 1" under it', async () => {
+    const r = render(<MediaViewer12 open={{ label: 'Instagram reel', files: [photo('p1')], index: 0 }} fetchUrl={() => link('https://r2/p1')} onClose={() => {}} />);
+    await waitFor(() => r.getByTestId('viewer-photo'));
+    titled(r, 'Instagram reel', '1 of 1');
+  });
+
+  it('Pay for Content: the deliverable\'s name, and "2 of 3" under it', async () => {
+    const r = render(<MediaViewer12 open={{ label: 'Instagram story', files: [photo('p1'), photo('p2'), photo('p3')], index: 1 }} fetchUrl={(id) => link(`https://r2/${id}`)} onClose={() => {}} />);
+    await waitFor(() => r.getByTestId('viewer-photo'));
+    titled(r, 'Instagram story', '2 of 3');
+  });
+
+  it('a row whose post has no name: the place is the title, and is not said twice', async () => {
+    const r = render(<MediaViewer12 open={{ title: '', place: 'Instagram reel', files: [photo('p1')], index: 0 }} fetchUrl={() => link('https://r2/p1')} onClose={() => {}} />);
+    await waitFor(() => r.getByTestId('viewer-photo'));
+    titled(r, 'Instagram reel', '1 of 1');
+  });
+
+  it('the words of the second line', () => {
+    expect(C12.viewer.which('Instagram reel', 1, 1)).toBe('Instagram reel · 1 of 1');
+    expect(C12.viewer.which(null, 2, 3)).toBe('2 of 3');
+    expect(C12.viewer.which('', 2, 3)).toBe('2 of 3');
   });
 });
 
@@ -212,7 +263,7 @@ describe('H2 · a video plays inside the app', () => {
     expect(lastProps.playInBackground).toBe(false);
     expect(lastProps.bufferConfig).toBeUndefined();                 // no cacheSizeMB — a private video is never stored
     expect(lastProps.source.shouldCache).toBeUndefined();
-    expect(r.getByText('Instagram reel · 1 of 1')).toBeTruthy();
+    titled(r, 'Instagram reel', '1 of 1'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the name, then which file)
     expect(r.getByTestId('viewer-loading')).toBeTruthy();
     act(() => { lastProps.onLoad({ duration: 28, currentTime: 0 }); });
     expect(r.queryByTestId('viewer-loading')).toBeNull();
@@ -409,7 +460,7 @@ describe('32 · the 5-minute link dies mid-play: a fresh one, and on from the sa
     await act(async () => { jest.advanceTimersByTime(800); });
     expect(fetchUrl.mock.calls.map((c) => c[0])).toEqual(['v1', 'v2']);   // no late link for the file she left
     expect(lastProps.source).toEqual({ uri: 'https://r2/v2' });
-    expect(r.getByText('Instagram reel · 2 of 2')).toBeTruthy();
+    titled(r, 'Instagram reel', '2 of 2'); // ASSERTION DRIFT — shopper-walk-fixes B2: the title is two lines (the name, then which file)
   });
 });
 

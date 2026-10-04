@@ -129,9 +129,12 @@ describe('item 17 · sales money (checks 4, 5)', () => {
     const s = (await api.get('/brands/me/wallet/sales', w.b.token)).body.data;
     expect(s.totals).toMatchObject({ coming: num(ln.brand_net), comingCount: 1, added: 0, sales: 1 });
     expect(s.sales).toHaveLength(1);
-    expect(s.sales[0]).toMatchObject({ id: ln.id, state: 'window', paid: num(ln.paid_total), creatorShare: num(ln.commission), inflxShare: num(ln.platform_fee), brandShare: num(ln.brand_net), creatorFirst: 'Priya' });
+    // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): the return window runs from the
+    // DELIVERY, so a sale just made has no window date yet — it is waiting to be shipped. (Item 17
+    // showed 'window' with a date counted from the order.) Same sale, same shares.
+    expect(s.sales[0]).toMatchObject({ id: ln.id, state: 'not_shipped', paid: num(ln.paid_total), creatorShare: num(ln.commission), inflxShare: num(ln.platform_fee), brandShare: num(ln.brand_net), creatorFirst: 'Priya' });
     expect(num(s.sales[0].creatorShare + s.sales[0].inflxShare + s.sales[0].brandShare)).toBe(s.sales[0].paid);
-    expect(s.sales[0].windowUntil).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(s.sales[0].windowUntil).toBeNull();
     const one = await api.get(`/brands/me/wallet/sales/${ln.id}`, w.b.token);
     expect(one.body.data.sale).toMatchObject({ id: ln.id, brandShare: num(ln.brand_net) });
     const other = await W.saleWorld();
@@ -139,7 +142,8 @@ describe('item 17 · sales money (checks 4, 5)', () => {
 
     const c = (await api.get('/influencers/me/wallet/commission', w.cr.token)).body.data;
     expect(c.totals).toMatchObject({ inWindow: num(ln.commission), added: 0, sales: 1 });
-    expect(c.sales[0]).toMatchObject({ id: ln.id, commission: num(ln.commission), commissionPct: 10, state: 'window' });
+    // shopper-walk-fixes W13: the window runs from the delivery, so a sale just made is "not shipped yet".
+    expect(c.sales[0]).toMatchObject({ id: ln.id, commission: num(ln.commission), commissionPct: 10, state: 'not_shipped' });
     for (const k of ['paid', 'brandShare', 'inflxShare', 'creatorShare', 'feePct']) expect(c.sales[0]).not.toHaveProperty(k);
     expect(JSON.stringify(c)).not.toMatch(/Anusha/);                                     // never who bought
     const fig = (await api.get('/influencers/me/wallet', w.cr.token)).body.data.figures;
@@ -161,6 +165,13 @@ describe('item 17 · sales money (checks 4, 5)', () => {
     expect(await settlement.settleCommerceTransaction(null, o.tx.id)).toEqual({ skipped: 'not_shipped' });
     expect((await api.get('/brands/me/wallet/sales', w.b.token)).body.data.sales[0]).toMatchObject({ state: 'not_shipped', windowUntil: null });
     await W.ship(w, o.parcel.id);
+    // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's shares are added AFTER
+    // DELIVERY, when the return window counted from the delivery has closed — online exactly as cash.
+    // (Item 17 added an online sale once it had shipped and its stamp had passed.) Same scenario, new rule.
+    await settlementJob.run(); await commissionConfirm.run();
+    expect(await W.money(w)).toMatchObject({ brand: m0.brand, her: m0.her });           // shipped is not enough
+    expect((await api.get('/brands/me/wallet/sales', w.b.token)).body.data.sales[0]).toMatchObject({ state: 'waiting_delivery', windowUntil: null });
+    await W.deliverShipped(w, o.parcel.id, 40);                                        // delivered, and its window has closed
     await settlementJob.run(); await commissionConfirm.run();
     const m1 = await W.money(w);
     expect(num(m1.brand - m0.brand)).toBe(num(ln.brand_net));
@@ -196,6 +207,10 @@ describe('item 17 · sales money (checks 4, 5)', () => {
     const m0 = await W.money(w);
     await W.ship(w, o.parcel.id);                                                        // the kept item goes out
     await W.closeWindow(o.tx.id);
+    // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's shares are added AFTER
+    // DELIVERY, when the return window counted from the delivery has closed — online exactly as cash.
+    // (Item 17 added an online sale once it had shipped and its stamp had passed.) Same scenario, new rule.
+    await W.deliverShipped(w, o.parcel.id, 40);
     await settlementJob.run(); await commissionConfirm.run();
     const m1 = await W.money(w);
     expect(num(m1.brand - m0.brand)).toBe(num(kept.brand_net));
@@ -232,9 +247,13 @@ describe('item 17 · sales money (checks 4, 5)', () => {
     const o = await W.order(w, [0]);
     await W.ship(w, o.parcel.id);
     await W.closeWindow(o.tx.id);
+    // ASSERTION DRIFT — shopper-walk-fixes W13 (founder, 4 Oct 2026): a sale's shares are added AFTER
+    // DELIVERY, when the return window counted from the delivery has closed — online exactly as cash.
+    // (Item 17 added an online sale once it had shipped and its stamp had passed.) Same scenario, new rule.
+    await W.deliverShipped(w, o.parcel.id, 40);
     await settlementJob.run(); await commissionConfirm.run();
     const m = await W.money(w);
-    // shipped: the ordinary rule already refuses a cancel
+    // shipped (and now delivered): the ordinary rule already refuses a cancel
     const shipped = await api.post(`/follower/orders/lines/${o.lines[0].id}/cancel`, o.sh.token, { reason: 'Found a better price' });
     expect(shipped.status).toBe(409);
     expect(err(shipped).message).not.toMatch(/already been settled/);
@@ -788,7 +807,8 @@ describe('item 17 · inputs that used to reach the database as they came', () =>
     const walletRead = require('../src/services/walletRead.service');
     // 11 Oct 20:00 UTC is 12 Oct 01:30 in India: the window closes on the 12th.
     const row = { id: 'x', name: 'Item', qty: 1, role: 'buy', paid_total: 100, commission: 10, platform_fee: 5, brand_net: 85, commission_pct: 10, fee_pct: 5,
-      line_status: 'active', created_at: new Date(), payment_method: 'online', order_status: 'dispatched', return_window_ends_at: '2099-10-11T20:00:00.000Z',
+      // shopper-walk-fixes W13: the date is the DELIVERY plus the stamped length (30 days here).
+      line_status: 'active', created_at: new Date(), payment_method: 'online', order_status: 'delivered', delivered_at: '2099-09-11T20:00:00.000Z', return_window_ends_at: '2099-10-11T20:00:00.000Z',
       tx_created_at: '2099-09-11T20:00:00.000Z', brand_settlement_status: 'pending', commission_confirmed_at: null, caption: 'A post' };
     expect(walletRead.saleOut(row, 'brand')).toMatchObject({ state: 'window', windowUntil: '2099-10-12' });
     const o = (await api.get(`${M}/overview`, admin.token)).body.data;

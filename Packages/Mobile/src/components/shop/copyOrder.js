@@ -1,10 +1,11 @@
 /**
  * Every sentence on the ordering screens, in one place — the words of the locked board.
  * Contract: features/shopper-ordering · board shopper-ordering-mockups-final.html · rules v1.13 §6
+ * Plus features/shopper-walk-fixes (board S1–S7, G1–G2): the product page, the second after
+ * Add to bag, and a deal that stays whole in the bag.
  */
 export const CO = {
   // O1, O2 — simple posts
-  add: 'Add',
   addToBag: 'Add to bag',
   buyNow: 'Buy now',
   goToBag: (n) => `Go to bag · ${n}`,
@@ -15,10 +16,26 @@ export const CO = {
   onlyLeft: (n) => `Only ${n} left`,
   chooseSize: 'Choose a size',
   addedToBag: 'Added to your bag',
+  // shopper-walk-fixes · S5–S7: the second after Add to bag
+  addedLine: '✓ Added to your bag',
+  goToBagNow: 'Go to bag ›',
+  // shopper-walk-fixes · S1–S4: products in a post, and the product page
+  addProduct: (name) => `Add ${name} to bag`,
+  saveProduct: 'Save with this post',
+  savedProduct: 'Saved with this post',
+  photoCount: (i, n) => `${i} / ${n}`,
+  productDetails: 'Product details',
+  description: 'Description',
+  brandRow: 'Brand',
+  categoryRow: 'Category',
+  returnsRow: 'Returns',
+  soldBy: (brand, first) => [brand ? `Sold by ${brand}` : null, first ? `from ${first}'s post` : null].filter(Boolean).join(' · '),
+  productGone: 'This product is no longer in this post.',
   // D1 — a deal post
   buildDeal: 'Build your deal',
   dealCounts: (p, g) => `${p} product${p === 1 ? '' : 's'}${g ? ` · ${g} gift${g === 1 ? '' : 's'}` : ''}`,
   tillDate: (d) => `till ${d}`,
+  till: (d) => `Till ${d}.`,
   // P1–P3 — picking
   tapToChoose: 'Tap to choose',
   picked: (c, s) => `✓ Picked${[c, s].filter(Boolean).length ? ` · ${[c, s].filter(Boolean).join(' · ')}` : ''}`,
@@ -27,7 +44,6 @@ export const CO = {
   remove: 'Remove',
   change: 'Change',
   quantity: 'Quantity',
-  details: 'Details',
   nothingPicked: 'Nothing picked yet',
   reviewDeal: 'Review your deal',
   soldOut: 'Sold out',
@@ -74,6 +90,16 @@ export const CO = {
   bagEmpty: 'Your bag is empty',
   bagEmptySub: 'Add from a post and it waits here.',
   editDeal: 'Edit deal',
+  // shopper-walk-fixes · G1, G2: a deal made of fixed pieces stays whole (set, bundle, buy one get one)
+  removeDeal: 'Remove deal',
+  wholeDeal: 'The whole deal',
+  dealWhole: {
+    fixed: 'Sold as a set. To change a size, or to buy two sets, tap Edit deal.',
+    pick_any: 'A bundle is bought together. To change it, tap Edit deal.',
+    mix_match: 'A bundle is bought together. To change it, tap Edit deal.',
+    bogo: 'To add another pair, tap Edit deal.',
+  },
+  times: (n) => `×${n}`,
   addMore: '+ Add more from this post',
   moveToSaved: 'Move to Saved',
   unticked: "Unticked items stay in the bag and don't go to checkout. Deals are worked out on the ticked items.",

@@ -84,7 +84,9 @@ export default function PostScreen({ navigation, route }) {
         keyExtractor={(p) => p.id}
         ListHeaderComponent={(
           <View style={{ paddingBottom: 14 }}>
-            <PostCard post={post} surface="post" position={0} onOpen={() => {}} onShop={nav.openShop} onComments={nav.openComments}
+            {/* The opened post is already open: a tap on its photo does nothing. A VIDEO opened here
+                (from the bag's "Add more", a saved product, an order) goes full screen like any other (V1). */}
+            <PostCard post={post} surface="post" position={0} onOpen={(p) => { if (p && p.media_kind === 'video') nav.openPost(p); }} onShop={nav.openShop} onComments={nav.openComments}
               onCreator={nav.openCreator} onBrand={nav.openBrand} onNeedSignIn={nav.needSignIn} />
           </View>
         )}

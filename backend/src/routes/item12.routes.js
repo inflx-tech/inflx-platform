@@ -31,6 +31,8 @@ router.post  (`${C}/report`,                 ...creator, ctrl.creatorReport);   
 router.post  (`${C}/files/upload-url`,      ...creator, ctrl.requestUpload);   // G2a
 router.post  (`${C}/files/:fileId/confirm`, ...creator, ctrl.confirmUpload);   // G2b
 router.delete(`${C}/files/:fileId`,         ...creator, ctrl.removeFile);      // G3
+router.post  (`${C}/files/:fileId/cover-url`, ...creator, ctrl.requestCoverUpload); // W15 — a video's picture
+router.post  (`${C}/files/:fileId/cover`,     ...creator, ctrl.confirmCover);       // W15
 router.get   (`${C}/files/:fileId/url`,     ...creator, ctrl.creatorFileUrl);  // G12
 
 // ── Brand ────────────────────────────────────────────────────────────────────
