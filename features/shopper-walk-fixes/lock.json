@@ -45,5 +45,23 @@
     ],
     "device": "NOT seen on a phone. Every \"walk owed\" row of 03-expected-outputs.md section D is open; no after-shots. Maestro not run.",
     "no_new_app_build": "video pictures use react-native-compressor createVideoThumbnail and the add-to-bag vibration uses VIBRATE — both are inside the 30 Sep 2026 builds (checked in the built manifests / dex), so everything ships over the air"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-04",
+    "by": "founder go (chat 4 Oct 2026: \"Yes pls go ahead and release\")",
+    "migration": "202 + 203 applied FIRST, 12:46 IST: --dry (target the production pooler; all seven shapes absent) → --apply (APPLIED both; 10/10 OK; nothing moved: return_window_days 7, 18 stamped sales, 10 commissions added, 5 order items, 0 returns, 5 post media, 7 content files, 11 sent agreements, wallets and pending unchanged; return_window_hours = 168)",
+    "commit": "4b94de7a (pushed 8ab753b2..4b94de7a; gov-check OK: 93 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 119 files staged by path, nothing of another window)",
+    "render": "PROVED from outside by a new public route: GET /v1/media/post/<uuid>/cover answered \"Route … not found\" on the old server and \"media not found\" (the handler) on the new one, within about two minutes of the push. (The first probe, a shopper route, was not a valid test: every /v1/follower path answers 401 without a session.) Then read as a guest: POST /v1/follower/feed sends deal_page (false on the discount post, true on bundle / volume / BOGO), the shopper-voiced sentence and media[].cover_url; GET /v1/follower/posts/<id>/deal sends returns \"Within 7 days of delivery\", brand_label, category_path and specs.",
+    "vercel": "PROVED by content: the live page chunks of inflx.in/dashboard/wallet (\"not added yet\"), /dashboard/fulfillment (\"Returned by the shopper…\"), admin.inflx.in/admin/money/settings (the hours/days chooser) and /admin/returns carry this release's sentences.",
+    "ota": {
+      "brand": 242,
+      "influencer": 231,
+      "follower": 233,
+      "native_runtime": "3",
+      "note": "published one at a time after the server was proved live, from the committed tree (phone tree clean, otaUpdater untouched, release bundle so the local api-overrides file is ignored): brand 242 at 12:51 IST, influencer 231, follower 233; the three manifests read back and each bundle carries this release (same bundle hash)."
+    },
+    "money": "none moved. On live the two shopper-checkout sales (both made 4 Oct 08:27–08:30 IST, not yet shipped) now wait for delivery; they were stamped before the 7-day change and keep their stamped 30-day window, as the rule says (a change never moves a sale already made). 16 older sales are not from the shopper checkout and follow their stamped date as before.",
+    "live_data_read": "product details on live listings: 32 of 62 products have at least one detail row (e.g. Fit, Neck, Sleeve, Fabric / Material, Care); the rest carry only brand, category, colour and size because that is all their listing holds. The 5 videos already live have no picture (P4).",
+    "pending": "the founder's device walk of every \"walk owed\" row (03-expected-outputs.md section D), the admin pages opened on live, after-shots, Maestro. release.released stays false until then."
   }
 }

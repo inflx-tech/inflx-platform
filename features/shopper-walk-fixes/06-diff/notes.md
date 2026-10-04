@@ -22,6 +22,32 @@ Return's words.
   to release and walk after. Everything "walk owed" below is still owed.
 - This file existing is what the release gate (Rule 4) looks for. **It is not the diff sign-off.**
 
+## After the release (4 Oct 2026, read on live — nothing written)
+
+- Server live about two minutes after the push (a new public route answered). Website live (its page
+  files carry this release's sentences). App updates: brand 242, creator 231, shopper 233.
+- The live guest feed sends "Build your deal: no" on the discount post and "yes" on the bundle, the
+  buy-more and the buy-one-get-one posts; the sentences are said to the shopper; the returns line reads
+  "Within 7 days of delivery".
+- Listing details reach the product page for the products that have them: 32 of the 62 live products
+  have at least one detail (Fit, Neck, Sleeve, Fabric, Care…). The other 30 show only brand, category,
+  colour and size, because that is all their listing holds — not a fault.
+- The two orders placed on the morning of 4 Oct (before the window was set to 7 days) carry the old
+  30-day window and keep it, as the rule says. New orders get 7 days. Neither is shipped yet, so
+  nothing is due.
+- No money moved.
+
+## What to check at the walk
+
+Shopper app: tap a feed video (opens full screen); swipe in Play (sound stops at once); open
+"Products in this post" on a discount post (no "Build your deal") and on a deal post; open a product
+page; Add to bag (buzz → "Go to bag ›" → back where she was); the bag with a set or bundle in it (one
+tick, no − 1 +); My orders → a delivered item → Return.
+Creator app: add a video to a post and to Going live (a picture appears on its tile); the count line;
+the Send button with a long brand name.
+Brand app: Going live review (pictures, count, two-line viewer title); wallet wording.
+Admin (live site): Money › Settings → Return window in hours / days; Returns → Approve / Reject show.
+
 ## What was implemented
 
 **Server**
