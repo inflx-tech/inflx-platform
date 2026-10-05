@@ -42,7 +42,7 @@ import { followerApi } from '../../services/api';
 import { track } from '../../services/events';
 import { TopBar, Loading, Empty, heartProduct, s as bs } from '../../components/shop/bitsShop';
 import {
-  BagButton, Photos, ChoicePicker, ProductDetails, AddedLine, AddToBagButton, useAdded, hasChoices, firstColour, inFront, priceFor, K, b,
+  BagButton, Photos, ChoicePicker, ProductDetails, AddedLine, AddToBagButton, useAdded, hasChoices, firstColour, inFront, priceFor, alonePriceFor, K, b,
 } from '../../components/shop/orderBits';
 import { CO } from '../../components/shop/copyOrder';
 import { CS, inr } from '../../components/shop/copyShop';
@@ -158,7 +158,8 @@ export default function ProductScreen({ navigation, route }) {
   const first = creator && creator.name ? creator.name.split(' ')[0] : '';
   // shopper-app-fixes (F10): a size that has its own price shows it once she chooses that size —
   // what she pays after the offer, as the server worked it out. Before a size is chosen: the product's own.
-  const { pays, normal, seen } = priceFor(product, sel);
+  // Bought alone from an offer post, the price is what ONE costs on its own — the server's answer.
+  const { pays, normal, seen } = alone ? alonePriceFor(product, sel) : priceFor(product, sel);
   const lower = Number(pays) < Number(normal);
   const chip = !isDeal && lower ? ((post && post.offer && post.offer.line) || (data.offer && data.offer.line) || null) : null;
   const counts = isDeal && product.in_deal && data.offer && data.offer.line ? CO.countsToward(data.offer.line) : null;

@@ -19,6 +19,7 @@ Each row is proved by a test (named in the last column) or is owed to the founde
 | CS10 | The deal data and the post card of each kind of post | `buy_alone` as CS2 on a deal post; false on a discount or price post (no deal page there) |
 | CS11 | Review order (Buy now) with one item of a bundle post | priced at its normal price; the order's line has no deal key and the creator's share is her % of that price |
 | CS12 | A brand saves a draft Bundle · Fixed with `pieces_alone: true`, then publishes | the published offer keeps it; the shopper's sentence for the set adds that a piece can also be bought alone |
+| CS13 | The deal data of a deal post | every product and every size says `alone_price`: what ONE unit costs bought on its own, asked of the price engine itself — the normal price for a bundle, a set, buy one get one and a gift offer; the first step's price when a buy-more ladder starts at "buy 1" (₹699 → ₹629 at 10%). The bag, asked for that one unit, charges the same amount. Not sent on a plain discount post |
 
 ### Phone (shopper app)
 | ID | Screen | Then | Test |
@@ -36,6 +37,7 @@ Each row is proved by a test (named in the last column) or is owed to the founde
 | CP11 | Bag, four items of "any 3" | the deal block holds the three the server put in the set; the fourth is an ordinary row under it; Remove deal takes out the three only | same |
 | CP12 | Bag, buy one get one, or an unopened set | exactly as before (one whole group) | the existing bag tests |
 | CP13 | Saved, a product that can still be bought (C7) | tapping it opens its product page; "Open post ›" still opens the post | `shopperDealOrdersAlone.test.js` |
+| CP14 | "Buy this alone · ₹X", the price above it, and the size sheet's price | the server's `alone_price` (the chosen size's; the product's before a size is chosen), with the normal price struck when it is lower; the bag is still told the size's normal price; a server that sends none: the price shown before | same |
 
 ### Brand website
 | ID | Then | Proof |

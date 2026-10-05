@@ -145,6 +145,29 @@ describe('the price engine, items outside a completed deal (CS3–CS9)', () => {
     expect(g.alone_nudge).toBeNull();
   });
 
+  test('CS13 what ONE unit costs alone is the engine\'s own answer: the normal price — unless the ladder starts at "buy 1"', () => {
+    // a bundle, a set (opened or not), buy one get one: the normal price
+    expect(engine.aloneUnitPrice(BUNDLE(), 'jeans', 1999)).toBe(1999);
+    expect(engine.aloneUnitPrice(SET(true), 'red', 500)).toBe(500);
+    expect(engine.aloneUnitPrice(SET(false), 'red', 500)).toBe(500);
+    expect(engine.aloneUnitPrice(ctx('bogo', { max_free: 2 }, [prod('tee', 599)], ['tee']), 'tee', 599)).toBe(599);
+    // buy more save more: nothing at one unit when the ladder starts at 2 …
+    const from2 = ctx('quantity', { reward: 'pct', tiers: [{ at: 2, value: 20 }, { at: 3, value: 30 }] }, [prod('tee', 699)], ['tee']);
+    expect(engine.aloneUnitPrice(from2, 'tee', 699)).toBe(699);
+    // … and the first step's saving when it starts at 1 (the founder's own ladder: Buy 1 → 10% · Buy 2 → 20% · Buy 3 → 30%)
+    const from1 = ctx('quantity', { reward: 'pct', tiers: [{ at: 1, value: 10 }, { at: 2, value: 20 }, { at: 3, value: 30 }] }, [prod('tee', 699)], ['tee']);
+    expect(engine.aloneUnitPrice(from1, 'tee', 699)).toBe(629);
+    expect(engine.priceGroup(from1, [{ product_id: 'tee' }]).paid_total).toBe(629);      // the same engine, the same amount
+    // a size with its own normal price is priced on that price
+    expect(engine.aloneUnitPrice(from1, 'tee', 899)).toBe(809);
+    // by value: ₹2,000 reaches "spend ₹2,000 → 10%"; ₹1,999 does not
+    const byValue = ctx('value', { reward: 'pct', tiers: [{ at: 2000, value: 10 }] }, [prod('coat', 2000)], ['coat']);
+    expect(engine.aloneUnitPrice(byValue, 'coat', 2000)).toBe(1800);
+    expect(engine.aloneUnitPrice(byValue, 'coat', 1999)).toBe(1999);
+    // a product the post does not have: its own price, nothing invented
+    expect(engine.aloneUnitPrice(BUNDLE(), 'nope', 123)).toBe(123);
+  });
+
   test('buy more save more and a plain discount say `alone` and need no nudge of this kind (their own progress is the nudge)', () => {
     const v = engine.priceGroup(ctx('quantity', { reward: 'pct', tiers: [{ at: 2, value: 20 }] }, [prod('a', 1000), prod('b', 1000)], ['a', 'b']), [{ product_id: 'a' }]);
     expect(v.offer.alone).toBe(true);
@@ -166,6 +189,7 @@ function offerOf(b, kind, ids) {
     case 'discount': return H.ready(b.token, { ...base, type: 'discount', sub: 'percentage', cfg: { pct: 20 } });
     case 'pick3': return H.ready(b.token, { ...base, type: 'bundle', sub: 'pick_any', cfg: { pick: 3, price: 2999 } });
     case 'quantity': return H.ready(b.token, { ...base, type: 'volume', sub: 'quantity', cfg: { reward: 'pct', tiers: [{ at: 2, value: 20 }] } });
+    case 'ladder1': return H.ready(b.token, { ...base, type: 'volume', sub: 'quantity', cfg: { reward: 'pct', tiers: [{ at: 1, value: 10 }, { at: 2, value: 20 }, { at: 3, value: 30 }] } });
     case 'bogo': return H.ready(b.token, { ...base, type: 'bogo', sub: 'bogo', cfg: { max_free: 2 } });
     case 'set': return H.ready(b.token, { ...base, type: 'bundle', sub: 'fixed', cfg: { price: 3500 } });
     case 'set_open': return H.ready(b.token, { ...base, type: 'bundle', sub: 'fixed', cfg: { price: 3500, pieces_alone: true } });
@@ -243,7 +267,7 @@ describe('on live posts (CS10–CS12)', () => {
     settings._resetCache();
     t = await H.tree();
     admin = await createAdminUser();
-    for (const kind of ['pick3', 'quantity', 'bogo', 'set', 'set_open', 'discount']) W[kind] = await world(kind);
+    for (const kind of ['pick3', 'quantity', 'bogo', 'set', 'set_open', 'discount', 'ladder1']) W[kind] = await world(kind);
   });
 
   test('CS10 the deal data and the post card say whether one product can be bought alone', async () => {
@@ -309,6 +333,27 @@ describe('on live posts (CS10–CS12)', () => {
     // an unopened set's piece cannot be ordered
     const no = await api.post('/follower/checkout/review', sh.token, { address_id: addr, lines: [line(W.set, 0)], payment_method: 'cod' });
     expect(no.status === 200 ? no.body.data.buyable : false).toBe(false);
+  });
+
+  test('CS13 the deal data says what one unit costs alone — per product and per size — and the bag charges exactly that', async () => {
+    // a bundle: the normal price
+    for (const p of (await dealOf(W.pick3)).products) expect([p.name, p.alone_price]).toEqual([p.name, p.price]);
+    // a ladder that starts at "buy 1": 10% off one unit (₹1,399 → ₹1,259), also on a size with its own price
+    const w = W.ladder1;
+    await query(`UPDATE brand_products SET variants_json = $2::jsonb WHERE id = $1`,
+      [w.ids[2], JSON.stringify({ colors: [{ color: 'Blue', images: [], sizes: [{ size: 'M', stock: 5 }, { size: 'XL', stock: 5, price: 2199 }] }] })]);
+    const d = await dealOf(w);
+    expect(d.buy_alone).toBe(true);
+    const byId = new Map(d.products.map((p) => [p.id, p]));
+    expect([byId.get(w.ids[0]).price, byId.get(w.ids[0]).alone_price]).toEqual([1399, 1259]);
+    expect(byId.get(w.ids[0]).shopper_price).toBe(1399);                 // unchanged: the card's price is as it was
+    const sizes = byId.get(w.ids[2]).colours[0].sizes;
+    expect(sizes.map((s) => [s.size, s.price, s.alone_price])).toEqual([['M', 1999, 1799], ['XL', 2199, 1979]]);
+    // the bag, asked for that one unit, charges the same amounts
+    expect((await bagPrice([line(w, 0)])).items_total).toBe(1259);
+    expect((await bagPrice([line(w, 2, { colour: 'Blue', size: 'XL' })])).items_total).toBe(1979);
+    // a plain discount sends no `alone_price`: its `shopper_price` already is the price of one
+    for (const p of (await dealOf(W.discount)).products) expect('alone_price' in p).toBe(false);
   });
 
   test('CS12 the brand\'s switch is saved with a draft set, kept at publish, and frozen with the other numbers', async () => {

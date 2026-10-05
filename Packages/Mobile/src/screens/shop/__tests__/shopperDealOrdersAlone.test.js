@@ -174,6 +174,61 @@ describe('B1 · the product page on a bundle post', () => {
   });
 });
 
+describe('"Buy this alone · ₹X" says what one really costs', () => {
+  // The founder's own buy-more ladder starts at "Buy 1 → 10%": one tee alone is ₹629, not ₹699.
+  const LADDER = { id: 'o-v', type: 'volume', sub_type: 'quantity', config: { tiers: [{ at: 1, value: 10 }, { at: 2, value: 20 }, { at: 3, value: 30 }] },
+    line: 'Buy 1 → 10% · Buy 2 → 20% · Buy 3 → 30%', how: '' };
+  const TEE = () => product('tee', 'Classic Striped Henley Tee', 699, [{ colour: 'Blue', images: [], sizes: [
+    { size: 'M', price: 699, shopper_price: 699, alone_price: 629, left: null, sold_out: false },
+    { size: 'XL', price: 899, shopper_price: 899, alone_price: 809, left: null, sold_out: false }] }], { alone_price: 629 });
+  const data = () => BUNDLE_DATA({ offer: LADDER, products: [TEE()] });
+
+  it('before a size is chosen: the product\'s own alone price, with its normal price struck', async () => {
+    const r = open({ postId: 'p-any3', productId: 'tee', data: data() });
+    await r.findByTestId('product-page');
+    expect(r.getByTestId('product-buy-alone').props.children).toBe('Buy this alone · ₹629');
+    expect(said(r.getByTestId('product-price'))).toBe('₹629  ₹699');
+  });
+
+  it('a size with its own price says that size\'s alone price — and the bag is told the size\'s normal price, as always', async () => {
+    const r = open({ postId: 'p-any3', productId: 'tee', data: data() });
+    await r.findByTestId('product-page');
+    fireEvent.press(r.getByTestId('product-size-XL'));
+    expect(r.getByTestId('product-buy-alone').props.children).toBe('Buy this alone · ₹809');
+    expect(said(r.getByTestId('product-price'))).toBe('₹809  ₹899');
+    await act(async () => { fireEvent.press(r.getByTestId('product-add')); });
+    await waitFor(async () => expect(await bagNow()).toHaveLength(1));
+    expect((await bagNow())[0]).toMatchObject({ product_id: 'tee', size: 'XL', price_seen: 899 });
+  });
+
+  it('the size sheet in "Products in this post" says the same', async () => {
+    followerApi.deal.mockResolvedValue(ok(data()));
+    mockNav = nav();
+    const post = BUNDLE_POST({ offer: { ...BUNDLE_POST().offer, kind: 'volume', sub_type: 'quantity', line: LADDER.line }, products: [tile(TEE())] });
+    const r = render(<ShopSheet post={post} visible onClose={jest.fn()} surface="post" />);
+    await r.findByTestId('shop-sheet');
+    await waitFor(() => expect(followerApi.deal).toHaveBeenCalled());
+    await act(async () => { fireEvent.press(r.getByTestId('shop-add-tee')); });
+    await r.findByTestId('size-sheet');
+    expect(said(r.getByTestId('size-sheet-price'))).toBe('₹629  ₹699');
+    fireEvent.press(r.getByTestId('size-sheet-size-XL'));
+    expect(said(r.getByTestId('size-sheet-price'))).toBe('₹809  ₹899');
+  });
+
+  it('a server that sends no alone price: the price it always showed', async () => {
+    const r = open({ postId: 'p-any3', productId: 'jeans', data: BUNDLE_DATA() });      // no `alone_price` anywhere
+    await r.findByTestId('product-page');
+    expect(r.getByTestId('product-buy-alone').props.children).toBe('Buy this alone · ₹1,999');
+    expect(said(r.getByTestId('product-price'))).toBe('₹1,999');
+  });
+
+  it('a post where a product cannot be bought alone never uses it (buy one get one)', async () => {
+    const r = open({ postId: 'p-any3', productId: 'tee', data: BUNDLE_DATA({ offer: BOGO_OFFER, buy_alone: false, products: [TEE()] }) });
+    await r.findByTestId('product-page');
+    expect(said(r.getByTestId('product-price'))).toBe('₹699');
+  });
+});
+
 describe('B2 · the product page on a buy-one-get-one post', () => {
   it('CP4 no "alone": the line about the free one, and one button, "Get this offer"', async () => {
     const r = open({ postId: 'p-any3', productId: 'jeans', data: BUNDLE_DATA({ offer: BOGO_OFFER, buy_alone: false }) });

@@ -208,6 +208,20 @@ export function priceFor(product, sel) {
   return { pays: own, normal: product.price, seen };
 }
 
+/**
+ * shopper-deal-orders (B1, B4): the price of ONE of this product bought on its own from an offer
+ * post — the server's `alone_price` (the chosen size's, or the product's before a size is chosen).
+ * It is the normal price for most offers; a buy-more ladder that starts at "buy 1" already lowers
+ * it. From a server that sends none, it is what `priceFor` says. `normal` and `seen` are priceFor's.
+ */
+export function alonePriceFor(product, sel) {
+  const base = priceFor(product, sel);
+  if (!product) return base;
+  const s = chosenSize(product, sel);
+  const own = s ? s.alone_price : product.alone_price;
+  return own == null ? base : { ...base, pays: Number(own) };
+}
+
 export function ChoicePicker({ product, value, onChange, testIDPrefix = 'pick' }) {
   const colours = (product && product.colours) || [];
   const withSizes = colours.filter((c) => (c.sizes || []).length);
@@ -504,7 +518,8 @@ export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, bu
   const busy = !!working || waiting || !!problem || gone;
   const needs = hasChoices(product);
   const ready = !needs || !!sel.size;
-  const pf = priceFor(product, sel);
+  // With `offerLink` the sheet sells this one product on its own from an offer post (B4).
+  const pf = offerLink ? alonePriceFor(product, sel) : priceFor(product, sel);
   const pick = () => ({ colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size, price_seen: pf.seen });
   async function add() {
     setFailed(null);

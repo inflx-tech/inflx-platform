@@ -29,7 +29,8 @@
       "seen": "the website switch, in the local preview on a private database. Nothing on a phone.",
       "released": false,
       "go": "founder (chat 5 Oct 2026: \"pls relese this part\")",
-      "pre_release": "the whole phone suite (115 suites / 2687) and this part's server suites run once more on the exact tree released, all passing"
+      "pre_release": "the whole phone suite (115 suites / 2687) and this part's server suites run once more on the exact tree released, all passing",
+      "alone_price": "added after the first push, before the app update: the live check showed the founder's buy-more ladder starts at \"Buy 1 → 10%\", so one unit alone costs less than its normal price. The server sends alone_price (the engine's answer for one unit) and the product page and size sheet show it. Tests: server 19/19, phone 28+20; 10 more changes put back one at a time, each caught; phone whole suite 2692/2692; the seven server suites that read the deal data 167/167."
     }
   }
 }

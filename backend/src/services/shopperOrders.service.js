@@ -53,6 +53,10 @@ async function dealPage(postId, who = {}) {
   // shopper-walk-fixes (O3): everything the brand entered when listing, in one fixed order.
   const [defs, paths] = await Promise.all([productDetails.definitions(), productDetails.categoryPaths(leafIds)]);
 
+  // shopper-deal-orders (B1, B4): on a deal post, what one unit costs bought on its own — the
+  // engine's own answer, per size. Not sent for a plain discount (`shopper_price` already is it).
+  const isDealPost = !!offer && offer.offer_type !== 'discount';
+  const alone = (p, normal) => (isDealPost && !p.gift_only ? { alone_price: pricing.aloneUnitPrice(ctx, p.id, normal) } : {});
   const productOut = (p) => {
     const colours = pricing.choicesOf(p).map((c) => ({
       colour: c.colour, images: c.images,
@@ -61,7 +65,7 @@ async function dealPage(postId, who = {}) {
       sizes: c.sizes.map((s) => {
         const normal = s.price || Number(p.price);
         const off = offer && offer.offer_type === 'discount' ? rules.discountedPrice(offer, normal) : null;
-        return { size: s.size, price: normal, shopper_price: off ? off.pays : normal,
+        return { size: s.size, price: normal, shopper_price: off ? off.pays : normal, ...alone(p, normal),
           left: s.stock != null && s.stock <= 3 ? Math.max(0, s.stock) : null, sold_out: s.stock != null && s.stock <= 0 };
       }),
     }));
@@ -69,6 +73,7 @@ async function dealPage(postId, who = {}) {
     const discounted = offer && offer.offer_type === 'discount' ? rules.discountedPrice(offer, p.price) : null;
     return {
       id: p.id, name: p.name, price: Number(p.price), shopper_price: discounted ? discounted.pays : Number(p.price),
+      ...alone(p, Number(p.price)),
       images: brandProducts.allImages(p), image_url: p.image_url,
       in_deal: !!offer && (!ctx.buyPool || ctx.buyPool.has(p.id)),
       category: p.category_node_id ? { id: p.category_node_id, name: leafName.get(p.category_node_id) || null } : null,

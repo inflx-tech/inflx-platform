@@ -382,6 +382,22 @@ function priceGroup(ctx, input) {
   };
 }
 
+/**
+ * shopper-deal-orders (B1, B4): what ONE unit of a product costs when it is the only thing she has
+ * from the post — the amount "Buy this alone · ₹X" must say. Asked of the engine itself, so it is
+ * what the bag and Place order will charge. It is the normal price for a bundle, a set, buy one get
+ * one and a gift offer; a buy-more ladder whose first step is "buy 1" already lowers it.
+ * `normal` is that unit's own normal price in rupees (a size can have its own).
+ */
+function aloneUnitPrice(ctx, productId, normal) {
+  const p = ctx.products.get(productId);
+  if (!p) return Number(normal);
+  const one = new Map([[productId, { ...p, price: Number(normal), variants_json: null, stock: null, on_sale: true }]]);
+  const g = priceGroup({ ...ctx, live: true, products: one }, [{ product_id: productId, qty: 1 }]);
+  const l = g.lines.find((x) => x.role !== 'gift' && x.product_id === productId);
+  return l && !l.problems.length ? l.paid_total : Number(normal);
+}
+
 /* ───────────────────────────────────────────── what the engine needs, from the database */
 
 /** INFLX's rate for a sale through a creator's post (6.13): the brand's own rate, else its category's Path B. */
@@ -513,5 +529,5 @@ async function priceLines(lines, conn = db) {
 }
 
 module.exports = {
-  MAX_QTY, priceGroup, priceLines, loadContexts, splitPaid, shareByWeight, choicesOf, variantOf, P, R,
+  MAX_QTY, priceGroup, priceLines, loadContexts, splitPaid, shareByWeight, choicesOf, variantOf, aloneUnitPrice, P, R,
 };

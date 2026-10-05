@@ -35,6 +35,7 @@ Nothing of part C has been seen on a phone. The website switch was seen in the l
 - **"Change" on an item bought alone** opens the size-and-colour pop-up (as for any single item). On a buy-more or gift deal it still opens the deal page, as before.
 - **The header of a bag group with nothing in a deal yet (B5)** has no offer line and no "Edit deal"; the offer is in the nudge.
 - **The nudge for a set whose pieces are sold alone** is not on the board: "Take the whole set of 3 and pay ₹5,000 · See offer ›".
+- **"Buy this alone · ₹X" says what one really costs, which is not always the normal price.** Found at the live check after the server was released, before the app update went out: the founder's own buy-more post has a ladder that starts at "Buy 1 → 10%", so one Henley tee alone costs ₹629 — and the label would have said ₹699. The server now sends `alone_price` (the price engine's own answer for one unit, per product and per size) and the product page and the size sheet show it, with the normal price struck. For a bundle, a set and a gift offer it is the normal price, as the rule says.
 - **On the board the example's prices (₹1,299 / ₹1,499 / ₹1,999) would not pass the builder's own check** for a pick-any bundle (the costliest may be at most 1.5 × the cheapest). They are an illustration; nothing in the build depends on them.
 
 ### What was changed
@@ -44,10 +45,10 @@ Nothing of part C has been seen on a phone. The website switch was seen in the l
 - **Rules** — `Docs/OFFER_TERMS_POSTS_RULES.md` v1.19 (§6.2–6.6 and the change log).
 
 ### Tests (5 Oct 2026)
-- Server, this part: `backend/tests/shopper-deal-orders.test.js` — 17/17 (the engine alone, then real posts of each kind through the real API, an order placed for one item of a bundle post).
-- Phone, this part: `shopperDealOrdersAlone.test.js` 23/23, `shopperDealOrdersBag.test.js` 20/20.
-- Each change was put back to the old behaviour one at a time (25 in all: 16 on the phone, 9 on the server) and a test failed every time.
-- Phone, whole suite: 115 suites, 2,687 tests, all passing (was 113 / 2,644).
+- Server, this part: `backend/tests/shopper-deal-orders.test.js` — 19/19 (the engine alone, then real posts of each kind through the real API, an order placed for one item of a bundle post).
+- Phone, this part: `shopperDealOrdersAlone.test.js` 28/28, `shopperDealOrdersBag.test.js` 20/20.
+- Each change was put back to the old behaviour one at a time (35 in all: 21 on the phone, 14 on the server) and a test failed every time.
+- Phone, whole suite: 115 suites, 2,692 tests, all passing (was 113 / 2,644).
 - Server, whole suite: see `backend-compare.txt`.
 - One existing test moved to the new rule: `offers-v2-rules.test.js` "stray fields are dropped" now expects a set's numbers to carry `pieces_alone: false` (03-expected-outputs.md, drift table).
 - Brand website: seen in the local preview on a private database — the switch off on a new Bundle · Fixed draft; switched on, the review step reads "Pieces alone · A piece can also be bought alone, at its normal price"; after Publish the offer's page reads "A piece can also be bought alone, at its normal price."
