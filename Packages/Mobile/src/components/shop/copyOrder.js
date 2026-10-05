@@ -195,6 +195,9 @@ export const CO = {
     ['delivered', 'Delivered'], ['cancelled', 'Cancelled']],
   track: 'Track',
   cancelItem: 'Cancel',
+  // shopper-deal-orders · O1–O4: a deal is ordered, cancelled and returned as one
+  cancelDeal: 'Cancel deal',
+  dealFrom: (creator, brand) => [creator, brand].filter(Boolean).join(' · '),
   needHelp: 'Need help',
   courier: (name, t) => `${name} · ${t}`,
   paid: 'Paid',

@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.19 · 5 October 2026 · living document**
+**Version 1.20 · 5 October 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -1002,6 +1002,13 @@ bag (her picks are already in it). Where a product can be bought alone (6.2), **
 ### 6.11 My orders and tracking (O14, O15)
 - **My orders:** each item with its status, arrival date and **Track · Cancel · Need help**, newest first, with search
   and filters (status, time).
+- **A deal is one (v1.20, founder 5 Oct 2026).** The items of a **set**, of a **bundle's set**, of a **buy-one-get-one
+  pair**, and the items a **buy-more saving applied to**, are **one card** in My orders: the deal's words ("Any 3 for
+  ₹2,999", "Buy 1 get 1"), its items, one status, what the deal cost. Tapping it opens **the deal's page**: every item
+  with colour and size, what was paid for the deal, one timeline, the address, the post, and **one** button —
+  **Cancel deal** before it ships, **Return deal** once delivered. A plain-discount item, an item bought alone (6.2),
+  and a gift offer's items and gift each stay their own, as before. A filter or a search that matches one item of a
+  deal brings the whole deal.
 - **Statuses:** Confirmed → Packed → Shipped → Out for delivery → Delivered; or Cancelled.
 - **Order detail:** the timeline with dates, the courier and tracking number once shipped, the address, the price
   paid for this item, the payment method, and the post it came from.
@@ -1010,8 +1017,10 @@ bag (her picks are already in it). Where a product can be bought alone (6.2), **
 - **She can cancel any item until the brand marks it Shipped.**
 - **Reasons:** Incorrect size ordered · Not needed any more · Ordered by mistake · Want a different style or colour ·
   Delivery is taking too long · Found a better price · Other (write a note). A reason is required.
-- **Deal items cancel together.** Cancelling one item of a BOGO pair, a bundle set or a volume deal cancels the other
-  items of that deal too, after the warning: "This is part of Any 2 for ₹2,999. Cancelling cancels both."
+- **Deal items cancel together.** A BOGO pair, a bundle set, a set and a volume deal are cancelled as one: the screen
+  is **Cancel deal** — the deal's words, who it is from, its items, the reason, and the refund of the whole deal, said
+  once and up front (v1.20; before, it was opened from one item with the warning "This is part of a deal. Cancelling
+  cancels N items together"). Nothing in the rule changed: they always went together.
 - **A free gift follows what earned it.** If the cancel leaves the post's items below the gift's threshold, the gift
   is cancelled too.
 - **The brand can cancel** an item it can't send (for example, out of stock), with a reason; the shopper is told and
@@ -1163,3 +1172,4 @@ Founder, 4 Oct 2026. Contract `features/shopper-walk-fixes` (W11, W13, W14).
 | 2026-10-03 | 1.17 | Founder: **Delete in two places.** A **Draft** is deleted from the Offers list and erased. An **Ended** offer (ended early or by its date) is deleted from the Offers list or its own page and **removed from the brand's lists** (the list and its counts, its page, the creator-terms "not shown, ended" note, "last in offer …" on Products without offers; the days its products were held are freed); its record stays for the creators who had it, their posts, orders, payments and INFLX. A **Scheduled** or **Live** offer can't be deleted: end it first. 1.9 rewritten, 1.12 aligned (Delete on Draft and Ended rows and on an Ended offer's page). This **partly reverses** v1.0 §1.9 ("a published offer can't be deleted, only ended") and question 3 of the `features/offer-builder-v2` board O1 (drafts only), for ended offers, at the founder's request of 3 Oct. Contract `features/offer-delete`. |
 | 2026-10-04 | 1.18 | Founder, from his walk of 3–4 Oct (contract `features/shopper-walk-fixes`, board locked 4 Oct). **The return window is INFLX's, one number for the whole platform, set by the admin in hours or days (7 days now); after delivery the creator's commission, INFLX's share and the brand's money all follow it** — this replaces item 17's rule for online orders (added once shipped, counted from the order); the money jobs run hourly; the per-category and per-product return numbers are no longer read. **A shopper can return a delivered item inside the window**; INFLX approves or rejects and marks it refunded; a deal goes back together; an open return holds the sale's shares (new 6.16). In the bag a set, a bundle and buy one get one stay whole (no − 1 + on one item). After Add to bag: vibration, "Go to bag" for a second, back where she was; the bag icon on every browsing page. A feed video opens full screen on a tap; the playing video switches the moment the swipe lands (5.5, 5.7 unchanged in words — the app now does what they say). "Products in this post" is a grid with a product page showing the listing's details; a discount post never shows "Build your deal"; the deal's sentence is said to the shopper. A video carries a picture taken from it on the creator's phone. |
 | 2026-10-05 | 1.19 | Founder, 5 Oct 2026 (contract `features/shopper-deal-orders`, part C; board locked 5 Oct): **one item of an offer can be bought alone, at its normal price; the offer's price applies only when the offer is completed.** This **reverses** 6.5's "a deal item is never added alone" for bundles (pick any, mix & match), buy more save more and gift offers. **Not for buy one get one. A set stays whole unless its brand switches on "Pieces can also be bought alone"** — a new number of a Bundle · Fixed offer, off by default, set in the draft and frozen at publish like the others. The product page of an offer post has two choices ("Buy this alone · ₹X" with Buy now and Add to bag, and "In an offer: … · See offer ›"); the bag icon in "Products in this post" adds the product alone; in the bag an item bought alone is an ordinary row with a nudge, and **when her items from one post complete the offer it applies by itself**. A saved product opens its product page. 6.2, 6.3, 6.4, 6.5, 6.6. No change to what any deal costs, to commission, or to INFLX's share. |
+| 2026-10-05 | 1.20 | Founder, 5 Oct 2026 (contract `features/shopper-deal-orders`, part A; board O1–O4): **My orders shows a deal as one.** A set, a bundle's set, a buy-one-get-one pair and the items a buy-more saving applied to are one card, one page, one **Cancel deal**, one **Return deal**; a plain-discount item, an item bought alone and a gift offer's items stay their own. 6.11, 6.12. Nothing about money, refunds or what cancels together changes — it is how the same orders are shown and named. ("Return or replace" comes with part B.) |

@@ -8,12 +8,55 @@ The round is built in three parts (01-spec.md §6). This file is added to as eac
 | Part | Built | Released |
 |---|---|---|
 | C — buying one item of an offer alone (B1–B7) | **yes**, 5 Oct 2026 | **LIVE 5 Oct 2026** on his go ("pls relese this part"): commits `783b2bd9` + `ba579bc5`, shopper app update **236** (brand 242, creator 231 not touched); no migration |
-| A — My orders by deal (O1–O4) | no | — |
+| A — My orders by deal (O1–O4) | **yes**, 5 Oct 2026 | **on his go of 5 Oct 2026** ("Ok pls release part 2") — server and shopper app update; no migration |
 | B — replace one item / refund its share (R1–R10) | no | — |
 
 Nothing of part C has been seen on a phone. The website switch was seen in the local preview, and its words are in the live website's scripts. The live server was read as a guest after each push: every post says whether a product can be bought alone, and what one costs alone equals what the bag charges for it.
 
 **For the walk:** the live shop has no bundle ("any 2 for ₹…") post today — only a set, a buy-more post, a buy-one-get-one post and a 20% discount. The buy-more post shows "Buy this alone" now; to see the bundle screens (B1, B5, B6) a bundle offer and a post on it are needed.
+
+## Part A — My orders shows a deal as one
+
+### Before → after, screen by screen
+| Frame | Before | After |
+|---|---|---|
+| O1 · My orders | Every item its own row, also the three items of one deal; nothing said they belong together. | A deal is **one card**: its status and date ("Delivered" + the day; "Shipped" + "Arrives by …"), the deal's words, its items with colour and size (a pair says what the paid one cost and "Free"), the brand, what the deal cost. A plain-discount item keeps its own row, now with its normal price struck beside what it cost. |
+| O2 · the deal's page, before it ships | Order details was one item's page; its button read "Cancel". | Any item of a deal opens **the deal**: "Akshaya · Aveen…" and the deal's words, every item, "Paid ₹2,999 · UPI, cards, net banking" (the deal's amount, not one item's), one timeline, the address, "See the post · from Akshaya's post", and one button, **Cancel deal**. |
+| O3 · Cancel deal | "Cancel", opened from one item, with the warning "This is part of a deal. Cancelling cancels 3 items together." and the button "Cancel item". | Titled **Cancel deal**: the deal's words, who it is from, its items with colour and size, the same seven reasons, "Refund of ₹2,999 to your original payment method in 5–7 working days", the button **Cancel deal**. No warning — the page itself says it. |
+| O4 · the deal's page, after delivery | Each delivered item had its own "Return". | One button, **Return deal**, with until when. The Return screen is titled "Return deal" and lists the deal's items. |
+
+### Where the build departs from the board's first words — and why
+- **O4's button reads "Return deal", not "Return or replace".** Replacing one item is part B and is not built; a button that promised it would be untrue. It becomes "Return or replace" when part B is released.
+- **Buy more save more is one card too** (my note E1, shown on the board's table and not overruled): the items the saving applied to. Its card's words are the offer's ladder ("Buy 2 → 20% · Buy 3 → 30%").
+- **A gift offer's items and its gift are each their own card**, as before; the gift still follows what earned it when that is cancelled (the old warning stays for that case).
+- **The single item's row is the row it was**, plus the struck normal price the board shows. It was not redrawn as a card: nothing about it changes.
+- **An app not yet updated** asks for My orders the old way and gets every item on its own, exactly as before — the server answers cards only when asked "by deal".
+- **20 cards a page**, not 20 items: a deal is never split across two pages.
+
+### What was changed
+- **Server** — `offerRules.js` (`orderDealWords`), `shopperOrders.service.js` (`listCards` behind `GET /follower/orders?by=deal`; `deal` on order details and on the cancel preview; `delivered_at`), `shopperReturns.service.js` (`deal` on the return preview). Read-only: nothing about cancelling, returning or money changed. No migration.
+- **Shopper app** — `order/OrderScreens.js` (My orders, Order details, Cancel), `order/ReturnScreen.js`, `copyOrder.js`, `copyReturn.js`, `services/api.js` (My orders is asked for by deal).
+- **Rules** — v1.20 (§6.11, §6.12).
+
+### Tests (5 Oct 2026)
+- Server, this part: `backend/tests/shopper-deal-orders-orders.test.js` — 16/16: real orders through live posts of each kind (a bundle, a pair, a discount item, a buy-more deal, one item bought alone, a gift offer), 23 cards across two pages, the deal's page, Cancel deal and Return deal.
+- Phone, this part: `shopperDealOrdersOrders.test.js` 20/20, `ordersByDeal.test.js` 4/4.
+- 30 changes were put back or broken one at a time (13 on the server, 17 on the phone) and a test failed every time. One was not caught at first — "an item in no deal still gets a deal" — because no test had a gift offer's order; that test was added (AS4) and it is caught now.
+- Phone, whole suite: 117 suites, 2,716 tests, all passing.
+- Server, whole suite: 146 suites / 1,988 tests — 0 tests that passed before fail now, the same 177 old failures. One of this part's own new tests failed in that run through a flaw in its fixture (it named a line by its place, and lines placed together are ordered by a random id); corrected and run four more times, 35/35 each (`backend-compare.txt`, part A).
+
+### What to check at the walk (after release; close the app fully and open it twice first)
+- Order a set (or a buy-one-get-one pair) → My orders shows it as one card with the deal's words. A discount item ordered the same day is its own row.
+- Tap the card → the deal's page: all items, what was paid for the deal, **Cancel deal**.
+- Cancel deal → the deal's items, a reason, the refund of the whole deal → all of them are cancelled together.
+- After the brand marks one delivered → the deal's page has **Return deal** with until when.
+
+### Release, when the founder says go (production-impacting — never silent)
+1. Commit by path, push (the server redeploys; the website is not changed). No migration.
+2. The server's part is behind sign-in and cannot be read from outside — the proving click is My orders on the phone.
+3. Publish the shopper app update only.
+
+Undo: revert the commit and push; publish the previous shopper bundle (236).
 
 ## Part C — one item of an offer can be bought alone
 

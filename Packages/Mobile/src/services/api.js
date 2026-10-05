@@ -1103,7 +1103,9 @@ export const followerApi = {
   // shopper-app-fixes (F1): she cancelled the online payment, or it failed — release what was held for it.
   abandonCheckout: (id) => api.post(`/follower/checkout/${id}/abandon`, {}),
   checkout: (id) => api.get(`/follower/checkouts/${id}`),
-  orders: (params) => api.get(`/follower/orders${q(params)}`),
+  // shopper-deal-orders (A1): asked "by deal", the server answers cards — one per deal. A server that
+  // does not know the word answers every item on its own, and My orders shows them so.
+  orders: (params) => api.get(`/follower/orders${q({ ...(params || {}), by: 'deal' })}`),
   orderLine: (id) => api.get(`/follower/orders/lines/${id}`),
   cancelPreview: (id) => api.get(`/follower/orders/lines/${id}/cancel`),
   cancelLine: (id, body) => api.post(`/follower/orders/lines/${id}/cancel`, body),

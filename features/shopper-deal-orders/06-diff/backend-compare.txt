@@ -19,3 +19,27 @@ Reading it
 - The same 177 old failures, by name (the long-standing debt — qa_all_green stays false on it; nothing was skipped, removed or weakened).
 - "failed before, passing now: 1" is the wallet check that failed by chance in the last run (a random id contained the letters "fee"); it was corrected then and passes.
 - One existing test was moved to the new rule: offers-v2-rules "stray fields are dropped" (03-expected-outputs.md, drift table).
+
+── part A, 5 Oct 2026: My orders shows a deal as one ──
+Compared with the run above (after part C).
+before: suites 145 tests 1970 passed 1765 failed 177 pending 28
+after : suites 146 tests 1988 passed 1782 failed 178 pending 28
+
+passed before, failing now: 0
+new tests failing: 1
+    shopper-deal-orders-orders.test.js :: My orders, by deal (AS1–AS6, AS9) AS6 a search for one item's name brings the whole deal's card; a filter that matches none brings nothing
+failed before, passing now: 0
+failing before and now (same name): 177
+tests gone under their old name: 0
+new test names: 18 {"shopper-deal-orders-orders.test.js":16,"shopper-deal-orders.test.js":2}
+suites added: shopper-deal-orders-orders.test.js
+suites that did not load: before collection-library.test.js · now collection-library.test.js
+
+Reading part A
+- 0 tests that passed before fail now; the same 177 old failures by name.
+- "new tests failing: 1" was this part's own new test AS6 (a search for one item's name brings the whole deal's card).
+  Classified: a flaw in the test's fixture, not a product fault. It named "the second line of the bundle", but lines placed
+  together are told apart only by a random id, so in this run that line was the product she had ALSO ordered alone, and the
+  search rightly found two cards. The test now names the product itself. Nothing was weakened: it still expects exactly one
+  card, the bundle, with all three items. Run four times over with part C's suite afterwards: 35/35 each time.
+- This part's other 15 new tests, and part C's 2 added for the alone price, pass.

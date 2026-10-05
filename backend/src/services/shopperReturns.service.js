@@ -136,8 +136,10 @@ async function preview(followerId, lineId) {
   const e = refuseUnless(line, last);
   const set = await require('./shopperOrders.service').cancelSet(db, line, { lock: false });
   const paid = set.reduce((s, l) => s + P(l.paid_total), 0);
+  const head = await require('./shopperOrders.service').dealHead(line);      // shopper-deal-orders (A): the deal's words, who it is from
   return {
-    lines: set.map((l) => ({ id: l.id, name: l.name, size: l.size, colour: l.colour, role: l.role })),
+    lines: set.map((l) => ({ id: l.id, name: l.name, size: l.size, colour: l.colour, qty: l.qty, image_url: l.image_url, role: l.role })),
+    deal: head ? { line: head.line, creator: head.creator, brand: head.brand } : null,
     warning: set.length > 1 ? `This is part of a deal. Returning it returns ${set.length} items together.` : null,
     until: e.until.toISOString(), window: windowWords(line),
     refund: line.payment_method === 'cod'

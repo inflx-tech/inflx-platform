@@ -13,6 +13,14 @@
  * a "Returned" filter and says "Return requested" on the row. The screen she asks on is
  * ReturnScreen.js. An item that went back is "Returned" — it never reads "Arrives by".
  *
+ * shopper-deal-orders (board O1–O4 · the founder's rule D1) — a deal is ONE. A set, a bundle, a
+ * buy-one-get-one pair and the items a buy-more saving applied to are one card in My orders (the
+ * deal's words, its items, one status, what the deal cost), one page (every item, what was paid for
+ * the deal, one timeline) with one button — "Cancel deal" before it ships, "Return deal" once
+ * delivered — and Cancel names the deal and its items. Which items are one deal, and every word and
+ * amount, are the server's (`card`, `deal`, `lines`). A plain-discount item, and one bought alone,
+ * are as they were. From a server that sends no cards every item is on its own, as before.
+ *
  * shopper-app-fixes:
  *   N3  Order details: cash on delivery reads "To pay ₹X on delivery" until the parcel is
  *       delivered, and "Paid ₹X · Cash on delivery" after. Online is unchanged.
@@ -82,6 +90,45 @@ export function OrderPlacedScreen({ navigation, route }) {
 
 /** An item that is no longer on its way: it has no "Arrives by", and Cancel is not what is closed. */
 const DONE = ['cancelled', 'delivered', 'returned'];
+
+/** The items of a card (its deal's, or itself), each: photo, name, colour · size — a pair says what each cost. */
+function DealItems({ lines, pair, prefix }) {
+  return lines.map((l) => (
+    <View key={l.id} style={st.mini} testID={`${prefix}-${l.id}`}>
+      {l.image_url ? <Image source={{ uri: l.image_url }} style={st.miniThumb} /> : <View style={st.miniThumb} />}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={st.miniName} numberOfLines={1}>{l.role === 'gift' ? CO.freeGift(l.name) : l.name}</Text>
+        <Text style={st.meta}>
+          {[[l.colour, l.size].filter(Boolean).join(' · '), l.qty > 1 ? `×${l.qty}` : null].filter(Boolean).join(' ')}
+          {pair ? <Text style={l.role === 'free' ? st.free : null}>{`${l.colour || l.size ? ' · ' : ''}${l.role === 'free' ? CO.free : inr(l.paid)}`}</Text> : null}
+        </Text>
+      </View>
+    </View>
+  ));
+}
+const isPair = (deal) => !!deal && /^pair-/.test(String(deal.key || ''));
+
+/** O1 — one deal, one card: status and date, the deal's words, its items, the brand and what the deal cost. */
+function DealCard({ item, onPress }) {
+  const when = item.status === 'delivered' && item.delivered_at ? dayLabel(item.delivered_at)
+    : !DONE.includes(item.status) && item.arrives_by ? CO.arrivesBy(dayLabel(item.arrives_by)) : '';
+  return (
+    <TouchableOpacity style={st.card} onPress={onPress} testID={`order-${item.id}`}>
+      <View style={st.cardTop}>
+        <Text style={[st.status, item.status === 'cancelled' && { color: K.danger }, item.status === 'delivered' && { color: K.ok }]} testID={`order-status-${item.id}`}>
+          {item.status_word}{item.return && item.status !== 'returned' ? ` · ${item.return.word}` : ''}
+        </Text>
+        {when ? <Text style={st.meta} testID={`order-when-${item.id}`}>{when}</Text> : null}
+      </View>
+      {item.deal && item.deal.line ? <View style={[b.effect, { marginTop: 6, marginBottom: 2 }]} testID={`order-deal-${item.id}`}><Text style={b.effectText}>{item.deal.line}</Text></View> : null}
+      <DealItems lines={item.lines} pair={isPair(item.deal)} prefix="order-item" />
+      <View style={st.cardFoot}>
+        <Text style={[st.meta, { flex: 1 }]} numberOfLines={1}>{item.brand ? item.brand.name : ''}</Text>
+        <Text style={st.name} testID={`order-paid-${item.id}`}>{inr(item.paid)}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 /** The next page's rows after the ones shown; a row already shown (the list moved meanwhile) is not repeated. */
 const joined = (have, next) => { const ids = new Set(have.map((x) => x.id)); return [...have, ...(next || []).filter((x) => !ids.has(x.id))]; };
@@ -184,7 +231,9 @@ export function OrdersScreen({ navigation }) {
           onEndReachedThreshold={0.5}
           ListFooterComponent={adding ? <ActivityIndicator color={K.ink} style={{ marginVertical: 12 }} testID="orders-more" />
             : moreFailed ? <Text style={st.moreFailed} onPress={next} testID="orders-more-retry">{CS.loadError} <Text style={st.act}>{CS.retry}</Text></Text> : null}
-          renderItem={({ item }) => (
+          renderItem={({ item }) => (item.card === 'deal' && Array.isArray(item.lines) && item.lines.length ? (
+            <DealCard item={item} onPress={() => navigation.navigate('OrderDetail', { lineId: item.id })} />
+          ) : (
             <TouchableOpacity style={st.card} onPress={() => navigation.navigate('OrderDetail', { lineId: item.id })} testID={`order-${item.id}`}>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 {item.image_url ? <Image source={{ uri: item.image_url }} style={st.thumb} /> : <View style={st.thumb} />}
@@ -196,11 +245,15 @@ export function OrdersScreen({ navigation }) {
                   </Text>
                   <Text style={st.name} numberOfLines={1}>{item.name}</Text>
                   <Text style={st.meta}>{[item.colour, item.size].filter(Boolean).join(' · ')}{item.qty > 1 ? ` ×${item.qty}` : ''} · {item.brand.name}</Text>
-                  <Text style={st.meta}>{item.role === 'gift' ? CO.free : inr(item.paid)}</Text>
+                  <Text style={st.meta} testID={`order-paid-${item.id}`}>
+                    {item.role === 'gift' ? CO.free : inr(item.paid)}
+                    {/* O1 — an item that cost less than its normal price says so (a plain discount). */}
+                    {item.role === 'buy' && Number(item.normal) > Number(item.paid) ? <Text style={st.struck}>  {inr(item.normal)}</Text> : null}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>
-          )}
+          ))}
         />
       )}
     </SafeAreaView>
@@ -242,10 +295,24 @@ export function OrderDetailScreen({ navigation, route }) {
   if (d === null) return <SafeAreaView style={st.safe}><TopBar onBack={() => navigation.goBack()} /><Loading /></SafeAreaView>;
   if (d === false) return <SafeAreaView style={st.safe}><TopBar onBack={() => navigation.goBack()} /><Empty title={CS.loadError} action={CS.retry} onAction={() => { setD(null); load(); }} testID="order-detail-failed" /></SafeAreaView>;
   const a = d.address || {};
+  // O2, O4 — any item of a deal opens the deal: every item, and what was paid for the DEAL.
+  const deal = d.deal && Array.isArray(d.deal.lines) && d.deal.lines.length ? d.deal : null;
+  const whole = deal ? { ...d, role: 'buy', paid: deal.paid } : d;        // the money line speaks of the deal
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
       <TopBar title={d.status_word} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 30 }} testID="order-detail">
+        {deal ? (
+          <View style={st.card} testID="order-deal">
+            <Text style={st.name} numberOfLines={1} testID="order-deal-from">{CO.dealFrom(d.creator ? d.creator.name.split(' ')[0] : null, d.brand ? d.brand.name : null)}</Text>
+            {deal.line ? <Text style={st.meta} testID="order-deal-line">{deal.line}</Text> : null}
+            <DealItems lines={deal.lines} pair={isPair(deal)} prefix="order-deal-item" />
+            <View style={st.dealPaid}>
+              <Text style={st.dealPaidText} testID="order-money">{moneyLine(whole)}</Text>
+              {parcelLine(whole) ? <Text style={st.meta} testID="order-parcel-pay">{parcelLine(whole)}</Text> : null}
+            </View>
+          </View>
+        ) : (
         <View style={[st.card, { flexDirection: 'row', gap: 10 }]}>
           {d.image_url ? <Image source={{ uri: d.image_url }} style={st.thumb} /> : <View style={st.thumb} />}
           <View style={{ flex: 1 }}>
@@ -255,6 +322,7 @@ export function OrderDetailScreen({ navigation, route }) {
             {parcelLine(d) ? <Text style={st.meta} testID="order-parcel-pay">{parcelLine(d)}</Text> : null}
           </View>
         </View>
+        )}
         <View style={st.card} testID="timeline">
           {d.timeline.map((t, i) => (
             <View key={t.status} style={st.tl}>
@@ -280,13 +348,13 @@ export function OrderDetailScreen({ navigation, route }) {
         {d.post ? <Text style={st.act} onPress={() => navigation.navigate('Post', { postId: d.post.id })} testID="order-post">{CO.viewPost}{d.creator ? ` · ${CO.fromPost(d.creator.name.split(' ')[0])}` : ''}</Text> : null}
         {d.can_cancel ? (
           <TouchableOpacity style={[b.secondary, { marginTop: 16, borderColor: K.danger }]} onPress={() => navigation.navigate('CancelItem', { lineId: d.id })} testID="order-cancel">
-            <Text style={[b.secondaryText, { color: K.danger }]}>{CO.cancelItem}</Text>
+            <Text style={[b.secondaryText, { color: K.danger }]}>{deal ? CO.cancelDeal : CO.cancelItem}</Text>
           </TouchableOpacity>
         ) : d.can_return ? (
           // W14 — delivered, and inside INFLX's return window: she can ask, and is told until when.
           <>
             <TouchableOpacity style={[b.secondary, { marginTop: 16 }]} onPress={() => navigation.navigate('ReturnItem', { lineId: d.id })} testID="order-return">
-              <Text style={b.secondaryText}>{CR.returnItem}</Text>
+              <Text style={b.secondaryText}>{deal ? CR.returnDeal : CR.returnItem}</Text>
             </TouchableOpacity>
             <Text style={st.hint} testID="order-return-until">{CR.openUntil(untilLabel(d.return_until))}</Text>
           </>
@@ -344,11 +412,25 @@ export function CancelScreen({ navigation, route }) {
   }
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
-      <TopBar title={CO.cancelTitle} onBack={() => navigation.goBack()} />
+      <TopBar title={pv && pv.deal ? CO.cancelDeal : CO.cancelTitle} onBack={() => navigation.goBack()} />
       {!pv ? (err ? <Empty title={err} action={offline ? CS.retry : undefined} onAction={offline ? read : undefined} testID="cancel-failed" /> : <Loading />) : (
         <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 30 }} testID="cancel">
-          {pv.warning ? <View style={st.warn}><Text style={st.warnText}>⚠ {pv.warning}</Text></View> : null}
-          {pv.lines.map((l) => <Text key={l.id} style={st.name}>{l.role === 'gift' ? CO.freeGift(l.name) : l.name}{l.size ? ` · ${l.size}` : ''}</Text>)}
+          {pv.deal ? (
+            // O3 — Cancel deal: the deal's words, who it is from, its items. It is said once, up front,
+            // so there is no "this is part of a deal" warning.
+            <View testID="cancel-deal">
+              <View style={st.dealHead}>
+                {pv.deal.line ? <Text style={st.name} testID="cancel-deal-line">{pv.deal.line}</Text> : null}
+                <Text style={st.meta} numberOfLines={1} testID="cancel-deal-from">{CO.dealFrom(pv.deal.creator, pv.deal.brand)}</Text>
+              </View>
+              <DealItems lines={pv.lines} pair={false} prefix="cancel-item" />
+            </View>
+          ) : (
+            <>
+              {pv.warning ? <View style={st.warn}><Text style={st.warnText}>⚠ {pv.warning}</Text></View> : null}
+              {pv.lines.map((l) => <Text key={l.id} style={st.name}>{l.role === 'gift' ? CO.freeGift(l.name) : l.name}{l.size ? ` · ${l.size}` : ''}</Text>)}
+            </>
+          )}
           <Text style={[st.lab, { marginTop: 14 }]}>{CO.why}</Text>
           {pv.reasons.map((r) => (
             <TouchableOpacity key={r} style={st.reason} onPress={() => setReason(r)} testID={`reason-${r}`} accessibilityRole="radio" accessibilityState={{ checked: reason === r }}>
@@ -364,7 +446,7 @@ export function CancelScreen({ navigation, route }) {
           {err ? <Text style={b.problem}>{err}</Text> : null}
           <TouchableOpacity style={[b.primary, (!reason || (reason === 'Other' && !note.trim()) || busy) && b.primaryDis]}
             disabled={!reason || (reason === 'Other' && !note.trim()) || busy} onPress={go} testID="confirm-cancel">
-            <Text style={b.primaryText}>{CO.confirmCancel}</Text>
+            <Text style={b.primaryText}>{pv.deal ? CO.cancelDeal : CO.confirmCancel}</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -382,6 +464,16 @@ const st = StyleSheet.create({
   meta: { fontFamily: fonts.sansRegular, fontSize: 12, color: K.ink2, marginTop: 2 },
   status: { fontFamily: fonts.sansBold, fontSize: 12, color: K.ink },
   thumb: { width: 54, height: 66, borderRadius: 9, backgroundColor: '#EDECE6' },
+  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  cardFoot: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F1F0EB' },
+  mini: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  miniThumb: { width: 38, height: 46, borderRadius: 7, backgroundColor: '#EDECE6' },
+  miniName: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ink },
+  free: { fontFamily: fonts.sansBold, color: K.ok },
+  struck: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: K.ink3, textDecorationLine: 'line-through' },
+  dealPaid: { backgroundColor: K.surface, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginTop: 10 },
+  dealPaidText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ink },
+  dealHead: { backgroundColor: K.surface, borderRadius: 12, padding: 10, marginBottom: 2 },
   search: { borderWidth: 1.5, borderColor: K.border, borderRadius: 12, paddingHorizontal: 12, minHeight: 44, fontFamily: fonts.sansRegular, fontSize: 14, color: K.ink, marginTop: 6 },
   tl: { flexDirection: 'row', gap: 10, paddingVertical: 6 },
   dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#E1E0DA', marginTop: 3 },

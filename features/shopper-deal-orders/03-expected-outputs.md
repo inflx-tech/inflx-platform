@@ -61,7 +61,7 @@ B1–B6 on a phone with a real bundle post; B7 on the website.
 | AS1 | She ordered a bundle ("any 3"), a buy-one-get-one pair and a plain-discount item | `GET /follower/orders?by=deal` answers three cards: the bundle (its three items, the deal's words, one status, what the deal cost), the pair (the paid one and the free one), the single item on its own |
 | AS2 | The same orders, asked the old way (no `by=deal`) | every item on its own, exactly as before — an app not yet updated loses nothing |
 | AS3 | A buy-more-save-more order that reached a tier | one card for the items the saving applied to |
-| AS4 | A gift offer's order | each item its own card; the gift is shown with the item list of its order's card and follows it, as today |
+| AS4 | A gift offer's order | each item its own card, and the gift its own, as today — no card is a "deal"; the gift still follows what earned it when that is cancelled |
 | AS5 | 25 cards, one of them a deal whose items would straddle a page of 20 | page 1 has 20 whole cards, page 2 the rest; no deal is split and no card repeats |
 | AS6 | A filter (Cancelled, Returned, Delivered…) or a search for one item's name | the whole deal's card when any of its items matches |
 | AS7 | Order details asked for any item of a deal | the deal: its words, every item with colour and size, what was paid for the deal, one timeline, and one `can_cancel` / `can_return` for the deal |

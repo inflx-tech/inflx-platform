@@ -93,11 +93,29 @@ export default function ReturnScreen({ navigation, route }) {
   }
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
-      <TopBar title={CR.title} onBack={() => navigation.goBack()} />
+      <TopBar title={pv && pv.deal ? CR.returnDeal : CR.title} onBack={() => navigation.goBack()} />
       {!pv ? (err ? <Empty title={err} action={offline ? CS.retry : undefined} onAction={offline ? read : undefined} testID="return-refused" /> : <Loading />) : (
         <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 30 }} keyboardShouldPersistTaps="handled" testID="return">
-          {pv.warning ? <View style={st.warn}><Text style={st.warnText}>⚠ {pv.warning}</Text></View> : null}
-          {pv.lines.map((l) => <Text key={l.id} style={st.name}>{l.role === 'gift' ? CO.freeGift(l.name) : l.name}{l.size ? ` · ${l.size}` : ''}</Text>)}
+          {pv.deal ? (
+            // shopper-deal-orders (O4): the deal goes back as one — its words, who it is from, its items.
+            <View testID="return-deal">
+              <View style={st.dealHead}>
+                {pv.deal.line ? <Text style={st.name} testID="return-deal-line">{pv.deal.line}</Text> : null}
+                <Text style={st.meta} numberOfLines={1} testID="return-deal-from">{CO.dealFrom(pv.deal.creator, pv.deal.brand)}</Text>
+              </View>
+              {pv.lines.map((l) => (
+                <Text key={l.id} style={[st.name, { marginTop: 6 }]} testID={`return-item-${l.id}`}>
+                  {l.role === 'gift' ? CO.freeGift(l.name) : l.name}
+                  <Text style={st.meta}>{[l.colour, l.size].filter(Boolean).length ? `  ${[l.colour, l.size].filter(Boolean).join(' · ')}` : ''}{l.qty > 1 ? ` ×${l.qty}` : ''}</Text>
+                </Text>
+              ))}
+            </View>
+          ) : (
+            <>
+              {pv.warning ? <View style={st.warn}><Text style={st.warnText}>⚠ {pv.warning}</Text></View> : null}
+              {pv.lines.map((l) => <Text key={l.id} style={st.name}>{l.role === 'gift' ? CO.freeGift(l.name) : l.name}{l.size ? ` · ${l.size}` : ''}</Text>)}
+            </>
+          )}
           <Text style={st.hint} testID="return-until">{CR.openUntil(untilLabel(pv.until))}</Text>
           <Text style={[st.lab, { marginTop: 14 }]}>{CR.why}</Text>
           {pv.reasons.map((r) => (
@@ -138,4 +156,5 @@ const st = StyleSheet.create({
   warnText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.warn },
   reason: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9 },
   reasonText: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: K.ink },
+  dealHead: { backgroundColor: K.surface, borderRadius: 12, padding: 10, marginBottom: 2 },
 });

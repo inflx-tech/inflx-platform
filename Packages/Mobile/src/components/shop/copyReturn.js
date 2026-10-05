@@ -15,6 +15,8 @@ export const CR = {
   filter: ['returned', 'Returned'],
   // Order details
   returnItem: 'Return',
+  // shopper-deal-orders · O4: a deal goes back as one. ("Return or replace" comes with replacing one item.)
+  returnDeal: 'Return deal',
   openUntil: (when) => `You can return this until ${when}.`,
   head: 'RETURN',
   box: {

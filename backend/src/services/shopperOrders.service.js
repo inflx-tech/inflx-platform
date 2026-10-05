@@ -140,6 +140,7 @@ function lineOut(r, back = null) {
     status: returned ? 'returned' : r.status === 'cancelled' ? 'cancelled' : r.order_status,
     status_word: returned ? 'Returned' : r.status === 'cancelled' ? 'Cancelled' : STATUS_WORD[r.order_status] || r.order_status,
     arrives_by: r.estimated_delivery_date, placed_at: r.created_at,
+    delivered_at: r.delivered_at ? new Date(r.delivered_at).toISOString() : null,      // shopper-deal-orders (O1): the card says when
     brand: { id: r.brand_id, name: r.brand_name },
     creator: r.creator_name ? { id: r.influencer_id, name: r.creator_name } : null,
     can_cancel: r.status === 'active' && CANCELLABLE.has(r.order_status),
@@ -159,9 +160,56 @@ const LINE_SQL = `
     JOIN brands b ON b.id = l.brand_id
     JOIN influencers i ON i.id = l.influencer_id JOIN users u ON u.id = i.user_id`;
 
-async function listOrders(followerId, { status = null, days = null, q = null, page = 1 } = {}) {
-  const where = ['l.follower_id = $1'];
-  const params = [followerId];
+/* ── a deal is one (shopper-deal-orders · A · founder's rule D1) ──────────────────────────────
+ * The items of a set, of a bundle's set, of a buy-one-get-one pair, and the items a buy-more saving
+ * applied to, are ONE in My orders: one card, one page, one Cancel, one Return. They are the lines
+ * of one sale (transaction) that share a deal key — the same lines that already cancel and return
+ * together (TOGETHER). A plain-discount item, an item bought alone, and a gift offer's items and
+ * gift each stay their own. */
+const isDealLine = (r) => !!r.deal_key && TOGETHER.test(r.deal_key);
+const cardOf = (r) => (isDealLine(r) ? `${r.transaction_id}|${r.deal_key}` : String(r.id));
+const CARD_SQL = `CASE WHEN l.deal_key ~ '^(pair|set)-[0-9]+$' OR l.deal_key = 'volume' THEN l.transaction_id::text || '|' || l.deal_key ELSE l.id::text END`;
+const itemOut = (r) => ({
+  id: r.id, name: r.name, image_url: r.image_url, colour: r.colour, size: r.size, qty: r.qty, role: r.role,
+  paid: Number(r.paid_total), normal: Number(r.normal_total),
+});
+const sumOf = (rows, k) => R(rows.reduce((s, r) => s + P(r[k]), 0));
+
+/** The offers behind these lines' deals, by id (an ended or deleted offer still names its past orders). */
+async function offersOf(rows, conn = db) {
+  const ids = [...new Set(rows.filter((r) => isDealLine(r) && r.offer_id).map((r) => r.offer_id))];
+  const out = new Map();
+  if (!ids.length) return out;
+  const { rows: offers } = await conn.query(`SELECT id, offer_type, sub_type, offer_config_json FROM brand_offers WHERE id = ANY($1::uuid[])`, [ids]);
+  for (const o of offers) out.set(o.id, o);
+  return out;
+}
+/** One deal, from its lines in order: its words, every item, what it cost. */
+function dealOut(rows, offers) {
+  const count = rows.reduce((s, r) => s + Number(r.qty), 0);
+  return {
+    key: rows[0].deal_key, line: rules.orderDealWords(offers.get(rows[0].offer_id) || null, count),
+    lines: rows.map(itemOut), count, paid: sumOf(rows, 'paid_total'), normal: sumOf(rows, 'normal_total'),
+  };
+}
+/** Every line of the deal this line belongs to (itself alone when it is in none), oldest first. */
+async function dealRows(line, conn = db) {
+  if (!isDealLine(line)) return [line];
+  const { rows } = await conn.query(`${LINE_SQL} WHERE l.transaction_id = $1 AND l.deal_key = $2 ORDER BY l.created_at, l.id`, [line.transaction_id, line.deal_key]);
+  return rows.length ? rows : [line];
+}
+/** For Cancel deal and Return deal: the deal's words and who it is from — null when this line is in no deal. */
+async function dealHead(line, conn = db) {
+  if (!isDealLine(line)) return null;
+  const rows = await dealRows(line, conn);
+  const offers = await offersOf(rows, conn);
+  return { line: rules.orderDealWords(offers.get(line.offer_id) || null, rows.reduce((s, r) => s + Number(r.qty), 0)),
+    creator: rows[0].creator_name || null, brand: rows[0].brand_name || null, lines: rows.map(itemOut) };
+}
+
+/** What My orders filters and searches by, as SQL conditions on `l`, `o` and `b`. */
+function orderFilters({ status = null, days = null, q = null }, params) {
+  const where = [];
   const add = (v) => { params.push(v); return `$${params.length}`; };
   // W14: an item that came back is called Returned, so it is under "Returned", not under "Cancelled".
   if (status === 'cancelled') where.push(`l.status = 'cancelled' AND l.cancelled_by IS DISTINCT FROM 'return'`);
@@ -169,12 +217,66 @@ async function listOrders(followerId, { status = null, days = null, q = null, pa
   else if (status && STATUS_WORD[status]) where.push(`l.status = 'active' AND o.order_status = ${add(status)}::order_status`);
   if (Number(days) > 0) where.push(`l.created_at >= now() - make_interval(days => ${add(Math.min(3650, Number(days)))})`);
   if (q && String(q).trim()) where.push(`(l.name ILIKE ${add(`%${String(q).trim().slice(0, 60)}%`)} OR b.business_name ILIKE $${params.length})`);
+  return where;
+}
+
+/**
+ * My orders. Asked plainly it answers every item on its own, as it always did (an app not yet
+ * updated asks this way). Asked `by=deal` it answers CARDS: one per deal, one per item otherwise.
+ */
+async function listOrders(followerId, { status = null, days = null, q = null, page = 1, by = null } = {}) {
+  if (by === 'deal') return listCards(followerId, { status, days, q, page });
+  const params = [followerId];
+  const where = ['l.follower_id = $1', ...orderFilters({ status, days, q }, params)];
   const lim = 20;
   const off = (Math.max(1, Number(page) || 1) - 1) * lim;
   const { rows } = await db.query(`${LINE_SQL} WHERE ${where.join(' AND ')} ORDER BY l.created_at DESC, l.id LIMIT ${lim + 1} OFFSET ${off}`, params);
   const page1 = rows.slice(0, lim);
   const back = await require('./shopperReturns.service').decorate(page1);
   return { items: page1.map((r) => lineOut(r, back.get(r.id))), more: rows.length > lim };
+}
+
+/**
+ * My orders as cards (A1). Paged by CARD — 20 whole cards a page — so a deal is never split across
+ * two pages. A filter or a search that matches any item of a deal brings the whole deal's card.
+ * Each card carries its first item's own fields (its page is opened by that item's id), every item
+ * in `lines`, and what the card cost in `paid` / `normal`.
+ */
+async function listCards(followerId, { status = null, days = null, q = null, page = 1 } = {}) {
+  const params = [followerId];
+  const where = orderFilters({ status, days, q }, params);
+  const lim = 20;
+  const off = (Math.max(1, Number(page) || 1) - 1) * lim;
+  const { rows: keys } = await db.query(
+    `SELECT card, max(created_at) AS at, min(id::text) AS first
+       FROM (SELECT l.id, l.created_at, ${CARD_SQL} AS card, (${where.length ? where.join(' AND ') : 'true'}) AS hit
+               FROM order_lines l JOIN follower_orders o ON o.id = l.order_id JOIN brands b ON b.id = l.brand_id
+              WHERE l.follower_id = $1) x
+      GROUP BY card HAVING bool_or(hit)
+      ORDER BY at DESC, first LIMIT ${lim + 1} OFFSET ${off}`, params);
+  const mine = keys.slice(0, lim).map((k) => k.card);
+  if (!mine.length) return { items: [], more: false };
+  const { rows } = await db.query(`${LINE_SQL} WHERE l.follower_id = $1 AND (${CARD_SQL}) = ANY($2::text[]) ORDER BY l.created_at, l.id`, [followerId, mine]);
+  const byCard = new Map(mine.map((k) => [k, []]));
+  for (const r of rows) { const k = cardOf(r); if (byCard.has(k)) byCard.get(k).push(r); }
+  const back = await require('./shopperReturns.service').decorate(rows);
+  const offers = await offersOf(rows);
+  const items = [];
+  for (const k of mine) {
+    const rs = byCard.get(k);
+    if (!rs.length) continue;
+    const first = rs.find((r) => r.status === 'active') || rs[0];      // the card's state is its items' state
+    const deal = isDealLine(first);
+    const d = deal ? dealOut(rs, offers) : null;
+    items.push({
+      ...lineOut(first, back.get(first.id)),
+      card: deal ? 'deal' : 'item',
+      deal: d ? { key: d.key, line: d.line, count: d.count } : null,
+      lines: rs.map(itemOut),
+      paid: sumOf(rs, 'paid_total'), normal: sumOf(rs, 'normal_total'),
+    });
+  }
+  return { items, more: keys.length > lim };
 }
 
 async function lineDetail(followerId, lineId) {
@@ -196,8 +298,11 @@ async function lineDetail(followerId, lineId) {
     : { rows: [] };
   const back = (await require('./shopperReturns.service').decorate([r])).get(r.id);
   const returned = r.status === 'cancelled' && r.cancelled_by === 'return';
+  // A2: any item of a deal opens the deal — its words, every item, what was paid for it.
+  const mates = isDealLine(r) ? await dealRows(r) : null;
   return {
     ...lineOut(r, back),
+    deal: mates ? dealOut(mates, await offersOf(mates)) : null,
     timeline: r.status === 'cancelled' ? [...timeline.filter((t) => t.at), { status: returned ? 'returned' : 'cancelled', word: returned ? 'Returned' : 'Cancelled', at: at('cancelled_at') }] : timeline,
     courier: r.courier_name ? { name: r.courier_name, tracking: r.tracking_number } : null,
     address: r.address_snapshot,
@@ -280,8 +385,10 @@ async function cancelPreview(followerId, lineId) {
   const set = await cancelSet(db, line);
   const paid = set.reduce((s, l) => s + P(l.paid_total), 0);
   const { rows: [o] } = await db.query(`SELECT payment_method FROM follower_orders WHERE id = $1`, [line.order_id]);
+  const head = await dealHead(line);       // A3: "Cancel deal" — the deal's words and who it is from
   return {
-    lines: set.map((l) => ({ id: l.id, name: l.name, size: l.size, role: l.role })),
+    lines: set.map((l) => ({ id: l.id, name: l.name, size: l.size, colour: l.colour, qty: l.qty, image_url: l.image_url, role: l.role })),
+    deal: head ? { line: head.line, creator: head.creator, brand: head.brand } : null,
     warning: set.length > 1 ? `This is part of a deal. Cancelling cancels ${set.length} items together.` : null,
     refund: o.payment_method === 'cod' ? { amount: 0, text: 'A refund is not needed; this was pay on delivery' }
       : { amount: R(paid), text: `Refund of ${inr(R(paid))} to your original payment method in 5–7 working days` },
@@ -519,5 +626,5 @@ async function setParcelStatus({ brandId = null, orderId, status: st, order_stat
 
 module.exports = {
   REASONS, STATUS_WORD, dealPage, priceDeal, listOrders, lineDetail, checkoutDetail,
-  cancelPreview, cancel, cancelSet, brandParcels, setParcelStatus,
+  cancelPreview, cancel, cancelSet, dealHead, brandParcels, setParcelStatus,
 };

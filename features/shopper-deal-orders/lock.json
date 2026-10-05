@@ -31,6 +31,17 @@
       "go": "founder (chat 5 Oct 2026: \"pls relese this part\")",
       "pre_release": "the whole phone suite (115 suites / 2687) and this part's server suites run once more on the exact tree released, all passing",
       "alone_price": "added after the first push, before the app update: the live check showed the founder's buy-more ladder starts at \"Buy 1 → 10%\", so one unit alone costs less than its normal price. The server sends alone_price (the engine's answer for one unit) and the product page and size sheet show it. Tests: server 19/19, phone 28+20; 10 more changes put back one at a time, each caught; phone whole suite 2692/2692; the seven server suites that read the deal data 167/167."
+    },
+    "part_a": {
+      "what": "A — My orders shows a deal as one (board O1–O4)",
+      "built_at": "2026-10-05",
+      "code": "server: offerRules.orderDealWords; shopperOrders listCards (GET /follower/orders?by=deal), deal on order details and cancel preview, delivered_at; shopperReturns deal on return preview. phone: OrderScreens (My orders, Order details, Cancel), ReturnScreen, copyOrder, copyReturn, services/api. rules v1.20.",
+      "migration": "none",
+      "tests": "server shopper-deal-orders-orders 16/16; phone shopperDealOrdersOrders 20/20 + ordersByDeal 4/4; 30 changes put back one at a time, each caught (one only after a missing gift-offer test was added); phone whole suite 117 suites / 2716 passing; server whole suite in 06-diff/backend-compare.txt",
+      "seen": "nothing on a phone",
+      "released": false,
+      "go": "founder (chat 5 Oct 2026: \"Ok pls release part 2\")",
+      "pre_release": "the whole phone suite (117 suites / 2716) and this part's server suites (6 suites / 131) run once more on the exact tree released, all passing"
     }
   },
   "deployed_to_production": {

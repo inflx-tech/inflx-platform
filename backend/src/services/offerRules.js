@@ -119,6 +119,26 @@ function aloneAllowed(offer) {
   }
 }
 
+/**
+ * shopper-deal-orders (A1): the deal as an ORDER names it — on My orders, the deal's page, Cancel
+ * deal. Short, and said to the shopper: "Any 3 for ₹2,999", "Buy 1 get 1", "3 items for ₹5,000",
+ * the buy-more ladder. `units` is how many items that deal has in her order (a set says its size).
+ * Null for an offer whose items are not one deal (a plain discount, a gift offer) or one with no numbers.
+ */
+function orderDealWords(offer, units = null) {
+  if (!offer) return null;
+  const c = normaliseConfig(offer.sub_type, offer.offer_config_json);
+  switch (offer.sub_type) {
+    case 'bogo': return 'Buy 1 get 1';
+    case 'pick_any':
+    case 'mix_match': return c.pick == null || c.price == null ? null : `Any ${c.pick} for ${inr(c.price)}`;
+    case 'fixed': return c.price == null ? null : `${units ? `${units} items` : 'Set'} for ${inr(c.price)}`;
+    case 'quantity':
+    case 'value': return dealLine(offer);
+    default: return null;
+  }
+}
+
 // ── the deal, in words ───────────────────────────────────────────────────────
 function tierText(subType, reward, t) {
   const r = reward === 'amount' ? `${inr(t.value)} off` : pctText(t.value);
@@ -550,7 +570,7 @@ function exampleEarning(offer, pool, commissionPct) {
 module.exports = {
   creatorDeal, shopperHow, shopperSays, exampleEarning,
   SUB_TYPES, TYPES, TYPE_LABEL, SUB_LABEL, MAX_TIERS,
-  typeLabel, isValidSubType, normaliseConfig, numberProblems, aloneAllowed,
+  typeLabel, isValidSubType, normaliseConfig, numberProblems, aloneAllowed, orderDealWords,
   dealLine, discountedPrice, displayStatus,
   cheapestCombination, suggestedBundlePrice, bundleSaving,
   publishChecks, numbersHelp,
