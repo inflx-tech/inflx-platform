@@ -63,5 +63,15 @@
     "money": "none moved. On live the two shopper-checkout sales (both made 4 Oct 08:27–08:30 IST, not yet shipped) now wait for delivery; they were stamped before the 7-day change and keep their stamped 30-day window, as the rule says (a change never moves a sale already made). 16 older sales are not from the shopper checkout and follow their stamped date as before.",
     "live_data_read": "product details on live listings: 32 of 62 products have at least one detail row (e.g. Fit, Neck, Sleeve, Fabric / Material, Care); the rest carry only brand, category, colour and size because that is all their listing holds. The 5 videos already live have no picture (P4).",
     "pending": "the founder's device walk of every \"walk owed\" row (03-expected-outputs.md section D), the admin pages opened on live, after-shots, Maestro. release.released stays false until then."
-  }
+  },
+  "followups": [
+    {
+      "at": "2026-10-05",
+      "what": "W16 — pictures for the four video posts that were live before 4 Oct",
+      "by": "founder (chat 5 Oct 2026: \"Ok carry on with this\")",
+      "code": "server only: POST /v1/ops/post-media/:id/cover (publishing token), contentStorage.put, shoppablePosts.setVideoPicture; backend/scripts/backfill-video-covers.js",
+      "tests": "shopper-walk-fixes-shop.test.js 15/15 (4 new, W16)",
+      "phone": "none — the shopper app already shows a video's picture when it has one"
+    }
+  ]
 }

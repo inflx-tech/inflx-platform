@@ -123,6 +123,23 @@ async function head(key) {
   } catch { return null; }
 }
 
+/**
+ * Store a small file the SERVER itself holds. Everything a creator or shopper uploads goes straight
+ * to storage through uploadUrl; this is only for a file INFLX adds (the picture of a video that has
+ * none — shopper-walk-fixes W16).
+ */
+async function put(key, mime, buffer) {
+  if (env.R2_MOCK) {
+    const file = mockPath(key);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, buffer);
+    fs.writeFileSync(`${file}.meta.json`, JSON.stringify({ contentType: mime }));
+    return;
+  }
+  const { PutObjectCommand } = require('@aws-sdk/client-s3');
+  await r2().send(new PutObjectCommand({ Bucket: env.R2_BUCKET, Key: key, Body: buffer, ContentType: mime, ContentLength: buffer.length }));
+}
+
 /** Delete an object. Absent is fine. */
 async function remove(key) {
   if (env.R2_MOCK) {
@@ -231,5 +248,5 @@ function mockRouter() {
 
 module.exports = {
   PREFIX, UPLOAD_EXPIRES_S, VIEW_EXPIRES_S, EXT,
-  keyFor, keyBelongsTo, uploadUrl, head, remove, viewUrl, sharedViewUrl, SHARED_WINDOW_S, mockRouter, MOCK_DIR,
+  keyFor, keyBelongsTo, uploadUrl, head, put, remove, viewUrl, sharedViewUrl, SHARED_WINDOW_S, mockRouter, MOCK_DIR,
 };

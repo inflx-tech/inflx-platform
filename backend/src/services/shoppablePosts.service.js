@@ -1073,7 +1073,31 @@ async function sweepEndedOffers(today = todayInIndia()) {
   return { offers: rows.length, posts: n };
 }
 
+/**
+ * shopper-walk-fixes (W16): INFLX adds the picture of a video that has none — a video uploaded before
+ * the creator's phone made one (4 Oct 2026). The picture is a JPEG taken from that same video. It is
+ * stored where her own would have been and served by the same door, so every tile shows the post
+ * instead of a product photo. A picture that is already there is kept unless `replace` is asked.
+ */
+async function setVideoPicture(mediaId, jpeg, { replace = false } = {}) {
+  if (!UUID.test(String(mediaId || ''))) throw new AppError('NOT_FOUND', 'Not found', 404);
+  const { rows: [m] } = await db.query(
+    `SELECT m.id, m.mime, m.cover_r2_key, p.id AS post_id, p.post_code, p.influencer_id
+       FROM post_media m JOIN creator_posts p ON p.id = m.post_id WHERE m.id = $1`, [mediaId]);
+  if (!m) throw new AppError('NOT_FOUND', 'Not found', 404);
+  if (kindOf(String(m.mime || '').toLowerCase()) !== 'video') throw bad('Only a video has a picture taken from it', 'media');
+  if (!Buffer.isBuffer(jpeg) || jpeg.length < 4 || jpeg[0] !== 0xFF || jpeg[1] !== 0xD8 || jpeg[2] !== 0xFF) throw bad('The picture must be a JPEG', 'jpeg');
+  if (jpeg.length > COVER_MB * MB) throw bad(MSG.FILE_TOO_BIG(COVER_MB), 'jpeg');
+  if (m.cover_r2_key && !replace) return { media_id: m.id, post_code: m.post_code, changed: false, cover_url: coverUrl(m.id) };
+  const key = `posts/${m.influencer_id}/${m.post_id}/${crypto.randomUUID()}.jpg`;
+  await storage.put(key, 'image/jpeg', jpeg);
+  await db.query(`UPDATE post_media SET cover_r2_key = $2 WHERE id = $1`, [m.id, key]);
+  if (m.cover_r2_key) await storage.remove(m.cover_r2_key);
+  return { media_id: m.id, post_code: m.post_code, changed: true, cover_url: coverUrl(m.id) };
+}
+
 module.exports = {
+  setVideoPicture,
   MAX_SLIDES, MAX_PRODUCTS, MAX_VIDEO_S, GROUPS,
   postable, brands, collaborations, createDraft, options, update, uploadUrl, submit, takeDown, remove,
   getPost, getMany, getAny, listMine, createHome, stateOf, liveDayOf, titleOf, bandFor, shopperPrice, priceBands, themeTags,

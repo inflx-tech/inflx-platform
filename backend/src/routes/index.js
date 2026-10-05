@@ -195,6 +195,7 @@ router.use('/',              productionRoutes);   // /contracts/:id/production +
 router.use('/',              proposalRoutes);     // /influencers/me/* + /brands/me/proposals* + /admin/proposals
 router.use('/uploads',       uploadRoutes);
 router.use('/ota',           otaRoutes);
+router.use('/ops',           require('./ops.routes'));   // shopper-walk-fixes W16: a video's picture, added by INFLX
 
 // ── Phase 4 — Follower identity + follow + addresses + feed ──────────────────
 // Note: /followers/* uses 'followers' (plural) for register/me

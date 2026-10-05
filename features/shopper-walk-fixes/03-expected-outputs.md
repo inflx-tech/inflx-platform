@@ -29,6 +29,14 @@
 | B7 | The picture must be her own upload for this post, a JPEG, ≤ 2 MB | same | pass |
 | B8 | A shared file: her phone adds the picture; the brand sees it only once she has sent the file; a stranger gets nothing | same | pass |
 
+### W16 · INFLX adds the picture of an older video (5 Oct 2026)
+| # | Expected | Proved by | Status |
+|---|---|---|---|
+| B9 | Only with the publishing token; with none set on the server nobody gets in; nothing is written on a refusal | `shopper-walk-fixes-shop.test.js` · W16 | pass |
+| B10 | The picture is on the card, is served like the video and reaches Going live; her video is untouched; it is stored where her own would be | same | pass |
+| B11 | A picture already there (INFLX's or the creator's own) is kept unless replacing is asked for | same | pass |
+| B12 | Refused: not a JPEG, nothing sent, a photo slide, an unknown slide | same | pass |
+
 ## C · Returns (W14) — server
 | # | Expected | Proved by | Status |
 |---|---|---|---|

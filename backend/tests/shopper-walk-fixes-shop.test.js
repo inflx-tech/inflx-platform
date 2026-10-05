@@ -217,6 +217,77 @@ describe('W15 · a video carries a picture taken from it', () => {
     expect(hers.cover).toEqual({ url: null, isVideo: true });
   });
 
+  // W16 (founder, 5 Oct 2026) — INFLX adds the picture of a video uploaded before her phone made one.
+  describe('W16 · INFLX adds the picture of an older video', () => {
+    const env = require('../src/config/env');
+    const JPEG = Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF, 0xE0]), Buffer.alloc(600, 7)]);
+    const add = (mediaId, body, token = 'ops-test-token') => {
+      const r = request(app).post(`/v1/ops/post-media/${mediaId}/cover`);
+      return (token ? r.set('X-OTA-Token', token) : r).send(body);
+    };
+    let before;
+    beforeAll(() => { before = env.OTA_PUBLISH_TOKEN; env.OTA_PUBLISH_TOKEN = 'ops-test-token'; });
+    afterAll(() => { env.OTA_PUBLISH_TOKEN = before; });
+
+    it('only with the publishing token; with none set on the server nobody gets in', async () => {
+      const w = await world({ video: true, cover: false });
+      const id = (await cardOf(w)).media[0].id;
+      expect((await add(id, { jpeg_b64: JPEG.toString('base64') }, null)).status).toBe(401);
+      expect((await add(id, { jpeg_b64: JPEG.toString('base64') }, 'wrong')).status).toBe(401);
+      env.OTA_PUBLISH_TOKEN = '';
+      expect((await add(id, { jpeg_b64: JPEG.toString('base64') }, '')).status).toBe(401);
+      env.OTA_PUBLISH_TOKEN = 'ops-test-token';
+      expect((await cardOf(w)).media[0].cover_url).toBeNull();                               // nothing was written
+    });
+
+    it('the picture shows on the card, is served like the video, and reaches Going live — her video is untouched', async () => {
+      const w = await world({ video: true, cover: false });
+      const m = (await cardOf(w)).media[0];
+      const { rows: [was] } = await query(`SELECT r2_key FROM post_media WHERE id = $1`, [m.id]);
+      const r = await add(m.id, { jpeg_b64: JPEG.toString('base64') });
+      expect(r.status).toBe(200);
+      expect(r.body.data).toMatchObject({ media_id: m.id, changed: true });
+      const c = await cardOf(w);
+      expect(c.media[0].cover_url).toMatch(new RegExp(`/v1/media/post/${m.id}/cover$`));
+      const { rows: [now] } = await query(`SELECT r2_key, cover_r2_key FROM post_media WHERE id = $1`, [m.id]);
+      expect(now.r2_key).toBe(was.r2_key);                                                    // the video itself
+      expect(now.cover_r2_key.startsWith(`posts/${w.cr.influencerId}/${w.post}/`)).toBe(true);  // where her own would be
+      expect(now.cover_r2_key.endsWith('.jpg')).toBe(true);
+      expect((await request(app).get(`/v1/media/post/${m.id}/cover`)).status).toBe(302);
+      const hers = (await api.get(`/influencers/me/invitations/${w.ciId}/content`, w.cr.token)).body.data.content.path1.posts[0];
+      expect(hers.cover).toEqual({ url: c.media[0].cover_url, isVideo: true });
+    });
+
+    it('a picture that is already there is kept, unless replacing is asked for', async () => {
+      const w = await world({ video: true, cover: false });
+      const id = (await cardOf(w)).media[0].id;
+      await add(id, { jpeg_b64: JPEG.toString('base64') });
+      const { rows: [a] } = await query(`SELECT cover_r2_key FROM post_media WHERE id = $1`, [id]);
+      const again = await add(id, { jpeg_b64: JPEG.toString('base64') });
+      expect(again.body.data.changed).toBe(false);
+      expect((await query(`SELECT cover_r2_key FROM post_media WHERE id = $1`, [id])).rows[0].cover_r2_key).toBe(a.cover_r2_key);
+      const swap = await add(id, { jpeg_b64: JPEG.toString('base64'), replace: true });
+      expect(swap.body.data.changed).toBe(true);
+      expect((await query(`SELECT cover_r2_key FROM post_media WHERE id = $1`, [id])).rows[0].cover_r2_key).not.toBe(a.cover_r2_key);
+      // a creator's own picture is kept the same way
+      const hers = await world({ video: true });
+      const hid = (await cardOf(hers)).media[0].id;
+      expect((await add(hid, { jpeg_b64: JPEG.toString('base64') })).body.data.changed).toBe(false);
+      expect((await query(`SELECT cover_r2_key FROM post_media WHERE id = $1`, [hid])).rows[0].cover_r2_key).toBe(hers.coverKey);
+    });
+
+    it('refused: not a JPEG, nothing sent, a photo slide, an unknown slide', async () => {
+      const w = await world({ video: true, cover: false });
+      const id = (await cardOf(w)).media[0].id;
+      expect((await add(id, { jpeg_b64: Buffer.from('not a picture at all').toString('base64') })).status).toBe(422);
+      expect((await add(id, {})).status).toBe(422);
+      const photo = await world();
+      expect((await add((await cardOf(photo)).media[0].id, { jpeg_b64: JPEG.toString('base64') })).status).toBe(422);
+      expect((await add('00000000-0000-4000-8000-000000000000', { jpeg_b64: JPEG.toString('base64') })).status).toBe(404);
+      expect((await cardOf(w)).media[0].cover_url).toBeNull();
+    });
+  });
+
   it('a photo post\'s cover is the photo', async () => {
     const w = await world();
     const c = await cardOf(w);
