@@ -264,6 +264,10 @@ function stockNeeds(rv) {
 /** What is frozen on the checkout: every group with its ids and every priced line (6.13). */
 function frozen(rv) {
   return {
+    // shopper-app-fixes (F1): the bag lines this order takes, so an ONLINE order can empty them when
+    // its payment arrives — not at Place order, when nothing is ordered yet.
+    bag_lines: (rv._lines || []).map((l) => ({ post_id: l.post_id, product_id: l.product_id || null, gift_item_id: l.gift_item_id || null,
+      colour: l.colour || null, size: l.size || null, role: l.role })),
     parcels: rv.parcels.map((p) => ({
       brand_id: p.brand ? p.brand.id : null, arrives_by: p.arrives_by, delivery_fee: p.delivery_fee,
       groups: p.groups.map((g) => {
@@ -333,9 +337,13 @@ async function place(followerId, body, { deviceId = null } = {}) {
     return co;
   });
 
-  // Emptying the bag: what she ordered leaves it; unticked items stay (6.6).
-  await removeOrderedFromBag(followerId, rv._lines).catch(() => {});
-  if (method === 'cod') await notifyPlaced(result.id).catch((e) => console.error('[checkout] notify', e.message));
+  // Emptying the bag: what she ordered leaves it; unticked items stay (6.6). An online order is not
+  // an order until its payment arrives (shopper-app-fixes F1): cancelling or failing the payment
+  // used to leave her with "Nothing was charged" and an empty bag.
+  if (method === 'cod') {
+    await removeOrderedFromBag(followerId, rv._lines).catch(() => {});
+    await notifyPlaced(result.id).catch((e) => console.error('[checkout] notify', e.message));
+  }
   return {
     checkout_id: result.id, status: method === 'cod' ? 'placed' : 'pending', total: rv.total, payment_method: method,
     razorpay: razorpayOrderId ? { order_id: razorpayOrderId, key_id: txService.getRazorpayKeyId(), amount: rv.total, expires_in_s: HOLD_MINUTES * 60 } : null,
@@ -469,9 +477,31 @@ async function paymentArrived({ razorpayOrderId, paymentId, followerId = null })
       await db.query(`UPDATE checkouts SET refund_id = $2 WHERE id = $1`, [co.id, id]);
     } catch (e) { console.error(`[checkout] REFUND FAILED for ${co.id}: ${e.message}`); }
   } else if (!out.already) {
+    // F1: the order exists now, so what she ordered leaves her bag (a checkout made before this
+    // release has no bag_lines and was emptied at Place order).
+    await removeOrderedFromBag(co.follower_id, (co.priced && co.priced.bag_lines) || []).catch(() => {});
     await notifyPlaced(co.id).catch((e) => console.error('[checkout] notify', e.message));
   }
   return { checkout_id: co.id, status: out.status, already: !!out.already };
+}
+
+/**
+ * shopper-app-fixes (F1): she closed the payment sheet, or the payment failed. The items held for
+ * it are released NOW — they would otherwise stay held for the full 15 minutes and her own retry
+ * could read "Sold out in this size". Nothing else changes: her bag was never emptied.
+ * A payment that still arrives afterwards is handled by paymentArrived (it takes the items again,
+ * or refunds when they have gone). Safe to call twice; only her own checkout.
+ */
+async function abandon(followerId, checkoutId) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(checkoutId || ''))) throw new AppError('NOT_FOUND', 'Order not found', 404);
+  return db.withTransaction(async (conn) => {
+    const { rows: [co] } = await conn.query(`SELECT * FROM checkouts WHERE id = $1 AND follower_id = $2 FOR UPDATE`, [checkoutId, followerId]);
+    if (!co) throw new AppError('NOT_FOUND', 'Order not found', 404);
+    if (co.status !== 'pending') return { checkout_id: co.id, status: co.status };
+    await stock.giveBack(conn, needsFromSnapshot(co.priced));
+    await conn.query(`UPDATE checkouts SET status = 'expired' WHERE id = $1`, [co.id]);
+    return { checkout_id: co.id, status: 'expired' };
+  });
 }
 
 /** The app's verify: Razorpay's signature first. */
@@ -522,7 +552,7 @@ async function notifyPlaced(checkoutId) {
     `SELECT o.id, o.brand_id, b.user_id AS brand_user, b.business_name FROM follower_orders o JOIN brands b ON b.id = o.brand_id WHERE o.checkout_id = $1`, [checkoutId]);
   await notificationService.send({ userId: co.user_id, type: 'order_placed', title: 'Order placed',
     body: `${inr(co.total)} · ${parcels.length} parcel${parcels.length > 1 ? 's' : ''}${co.payment_method === 'cod' ? ' · pay on delivery' : ''}`,
-    data: { checkout_id: co.id } });
+    data: { screen: 'orders', checkout_id: co.id } });   // shopper-app-fixes F15: a tap opens My orders
   for (const p of parcels) {
     await notificationService.send({ userId: p.brand_user, type: 'brand_new_order', title: 'New order',
       body: 'A shopper ordered from your store. Pack it and mark it Packed.', data: { order_id: p.id } });
@@ -537,6 +567,6 @@ async function notifyPlaced(checkoutId) {
 
 module.exports = {
   HOLD_MINUTES, settings, cleanLines, mergeSame, followerIdOf,
-  readBag, writeBag, mergeIntoBag, priceBag, review, publicReview, place, verify, paymentArrived,
+  readBag, writeBag, mergeIntoBag, priceBag, review, publicReview, place, verify, paymentArrived, abandon,
   writeOrders, expireHolds, needsFromSnapshot, notifyPlaced,
 };

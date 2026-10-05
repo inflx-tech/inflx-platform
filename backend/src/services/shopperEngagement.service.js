@@ -25,6 +25,12 @@ const { SHOP_FOR, WELCOME_STYLES, MSG } = require('./shopperCopy');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const bad = (m, field = null) => new AppError('VALIDATION_ERROR', m, 422, field);
 const notFound = (m = 'Not found') => new AppError('NOT_FOUND', m, 404);
+/**
+ * shopper-app-fixes (F4): has this shopper never given her name? Until now the app signed every new
+ * shopper up as "Follower" (and the server's own stand-in is "Pending (1234)"), and never asked.
+ */
+const nameNeeded = (name) => { const s = String(name || '').trim(); return !s || /^follower$/i.test(s) || /^Pending \(\d+\)$/.test(s); };
+const NO_NAME = 'INFLX shopper';
 const needFollower = (who) => { if (!who.followerId) throw new AppError('SIGN_IN_REQUIRED', MSG.NO_FOLLOWER, 401); return who.followerId; };
 
 async function postExists(postId) {
@@ -214,7 +220,11 @@ async function comments(postId, who, { before = null, limit = 30 } = {}) {
     sign_in: who.followerId ? null : { title: MSG.SIGN_IN, body: MSG.SIGN_IN_WHY },
     comments: rows.map((r) => ({
       id: r.id, body: r.body, at: r.created_at, ago: ago(r.created_at), reply_to: r.reply_to,
-      author: { name: r.name || 'Shopper', initials: initials(r.name), creator: r.author_kind === 'creator' },
+      author: (() => {
+        const creator = r.author_kind === 'creator';
+        const name = !creator && nameNeeded(r.name) ? NO_NAME : (r.name || NO_NAME);
+        return { name, initials: initials(name), creator };
+      })(),
       mine: !!(who.followerId && r.follower_id === who.followerId),
       can_report: !(who.followerId && r.follower_id === who.followerId),
     })),
@@ -383,9 +393,13 @@ async function profile(who) {
     `SELECT f.id, f.city_id, f.shop_for, f.style_tag_ids, f.welcomed_at, u.name, u.phone, c.name AS city
        FROM followers f JOIN users u ON u.id = f.user_id LEFT JOIN ref_cities c ON c.id = f.city_id WHERE f.id = $1`, [fid]);
   const { rows: [n] } = await db.query(`SELECT count(*)::int AS n FROM follower_follows WHERE follower_id = $1`, [fid]);
+  // shopper-app-fixes (F13): "on the way" is everything not yet delivered (it counted only Confirmed
+  // and Shipped, so a Packed, Out-for-delivery or Delivered order read "No orders yet").
   const { rows: [o] } = await db.query(
-    `SELECT count(*)::int AS n FROM follower_orders fo JOIN follower_transactions ft ON ft.id = fo.transaction_id
-      WHERE ft.follower_id = $1 AND fo.order_status IN ('confirmed', 'dispatched')`, [fid]);
+    `SELECT count(*) FILTER (WHERE fo.order_status IN ('confirmed', 'packed', 'dispatched', 'out_for_delivery'))::int AS n,
+            count(*) FILTER (WHERE fo.order_status <> 'cancelled')::int AS total
+       FROM follower_orders fo JOIN follower_transactions ft ON ft.id = fo.transaction_id
+      WHERE ft.follower_id = $1`, [fid]);
   const { rows: tags } = (f.style_tag_ids || []).length
     ? await db.query(`SELECT id, name FROM theme_tags WHERE id = ANY($1::uuid[])`, [f.style_tag_ids]) : { rows: [] };
   const phone = String(f.phone || '').replace(/\D/g, '');
@@ -394,9 +408,10 @@ async function profile(who) {
   return {
     name: f.name, phone: masked, city: f.city_id ? { id: f.city_id, name: f.city } : null,
     shop_for: f.shop_for || [], styles: tags.map((t) => ({ id: t.id, name: t.name })), welcomed: !!f.welcomed_at,
-    following: n.n, orders_on_the_way: o.n,
+    following: n.n, orders_on_the_way: o.n, orders_total: o.total,
+    name_needed: nameNeeded(f.name),
     rows: {
-      orders: o.n ? `${o.n} on the way` : 'No orders yet',
+      orders: o.n ? `${o.n} on the way` : o.total ? `${o.total} order${o.total === 1 ? '' : 's'}` : 'No orders yet',
       following: `${n.n} creator${n.n === 1 ? '' : 's'}`,
       city: f.city || 'Not set',
       shop_for: [shopFor.join(' · '), tags.map((t) => t.name).join(', ')].filter(Boolean).join(' · ') || 'Not set',
@@ -407,5 +422,5 @@ async function profile(who) {
 module.exports = {
   setLike, setSave, saveProduct, unsaveProduct, saved, resolveSaved,
   comments, addComment, reportComment, reportedComments, decideComment,
-  setFollow, following, merge, cities, welcome, setPreferences, profile,
+  setFollow, following, merge, cities, welcome, setPreferences, profile, nameNeeded,
 };

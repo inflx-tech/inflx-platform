@@ -94,6 +94,7 @@ router.post('/bag/merge', ...followerAuth, orderCtrl.mergeBag);             // O
 router.post('/checkout/review', ...followerAuth, orderCtrl.review);         // O11, O12
 router.post('/checkout/place', ...followerAuth, orderCtrl.place);           // Place order
 router.post('/checkout/verify', ...followerAuth, orderCtrl.verify);         // Razorpay's answer
+router.post('/checkout/:id/abandon', ...followerAuth, orderCtrl.abandon);   // shopper-app-fixes F1 — she cancelled the payment: release what was held
 router.get('/checkouts/:id', ...followerAuth, orderCtrl.checkoutDetail);    // O13
 router.get('/orders', ...followerAuth, orderCtrl.listOrders);               // O14
 router.get('/orders/lines/:id', ...followerAuth, orderCtrl.lineDetail);     // O15

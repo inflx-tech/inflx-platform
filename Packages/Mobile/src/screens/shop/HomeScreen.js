@@ -5,6 +5,10 @@
  * The server orders the feed (Stage A rules; Stage B once INFLX switches learning on). The phone
  * sends what it has already shown this session, her choices and where she is (never stored), and
  * shows "You're all caught up" before the first post coming back.
+ *
+ * shopper-app-fixes (F11): when she comes back to Home with different Welcome choices (Women / Men /
+ * Kids, styles, her city) the feed is loaded again with them, from the top. Only then — coming back
+ * with the same choices changes nothing.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
@@ -15,11 +19,11 @@ import { CS } from '../../components/shop/copyShop';
 import { TopBar, CircleRow, PostCard, ShopSheet, SignInSheet, Loading, Empty, C } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
 import { useAutoplay } from '../../components/shop/useAutoplay';
-import { shopStore, whoParams, ensureDeviceHeader, isSignedIn } from '../../components/shop/shopStore';
+import { shopStore, whoParams, ensureDeviceHeader, isSignedIn, choicesKey } from '../../components/shop/shopStore';
 import { fonts } from '../../theme/tokens';
 
 export default function HomeScreen({ navigation }) {
-  const nav = useShopNav(navigation);
+  const nav = useShopNav(navigation, { tab: true });      // a bottom tab: a video opens in the Play tab (F8)
   const [posts, setPosts] = useState([]);
   const { seenProps, playingId } = useAutoplay('home', posts);
   const [circles, setCircles] = useState(null);
@@ -29,13 +33,20 @@ export default function HomeScreen({ navigation }) {
   const served = useRef([]);
   const busy = useRef(false);
   const welcomedChecked = useRef(false);
+  const turn = useRef(0);           // which "from the top" request is the newest
+  const choices = useRef(null);     // her Welcome choices when the feed was last loaded from the top (F11)
+  const listRef = useRef(null);
 
   const loadPage = useCallback(async (reset) => {
-    if (busy.current) return;
+    // The next page waits its turn; a feed from the top never waits behind one.
+    if (!reset && busy.current) return;
+    if (reset) turn.current += 1;
+    const mine = turn.current;
     busy.current = true;
-    if (reset) served.current = [];
+    if (reset) { served.current = []; choices.current = await choicesKey(); }
     const who = await whoParams();
     const res = await followerApi.feed({ mode: 'home', served: served.current, ...who });
+    if (mine !== turn.current) return;                    // a newer feed has been asked for since
     busy.current = false;
     if (!res || !res.success) { if (reset) setStatus('error'); return; }
     const page = res.data.posts || [];
@@ -59,6 +70,20 @@ export default function HomeScreen({ navigation }) {
   }, [loadPage, loadCircles]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // F11 — back on Home: were her choices changed (Welcome, or Profile › My city / What I shop for)
+  // since this feed was loaded? Then it is loaded again with them, from the top.
+  useFocusEffect(useCallback(() => {
+    let alive = true;
+    (async () => {
+      if (choices.current === null) return;               // the first load has not asked yet
+      const now = await choicesKey();
+      if (!alive || now === choices.current) return;
+      await loadAll();
+      if (alive && listRef.current) { try { listRef.current.scrollToOffset({ offset: 0, animated: false }); } catch { /* not on screen */ } }
+    })();
+    return () => { alive = false; };
+  }, [loadAll]));
 
   // F1 — the optional Welcome, once, on first open.
   useFocusEffect(useCallback(() => {
@@ -110,6 +135,7 @@ export default function HomeScreen({ navigation }) {
         <Empty title={CS.loadError} action={CS.retry} onAction={loadAll} testID="home-error" />
       ) : (
         <FlatList
+          ref={listRef}
           data={posts}
           keyExtractor={(p) => p.id}
           renderItem={renderItem}

@@ -49,6 +49,8 @@ module.exports = {
   review: ok(async (req) => checkout.publicReview(await checkout.review(await me(req), req.body || {}))),
   place: ok(async (req) => checkout.place(await me(req), req.body || {}, { deviceId: deviceOf(req) })),
   verify: ok(async (req) => checkout.verify(await me(req), req.body || {})),
+  // shopper-app-fixes (F1): she cancelled the payment, or it failed — release what was held for it.
+  abandon: ok(async (req) => checkout.abandon(await me(req), req.params.id)),
   checkoutDetail: ok(async (req) => orders.checkoutDetail(await me(req), req.params.id)),
 
   // ── my orders (O14, O15) and cancelling (O16, O17) ───────────────────────

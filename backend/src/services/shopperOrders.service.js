@@ -56,7 +56,14 @@ async function dealPage(postId, who = {}) {
   const productOut = (p) => {
     const colours = pricing.choicesOf(p).map((c) => ({
       colour: c.colour, images: c.images,
-      sizes: c.sizes.map((s) => ({ size: s.size, price: s.price || Number(p.price), left: s.stock != null && s.stock <= 3 ? Math.max(0, s.stock) : null, sold_out: s.stock != null && s.stock <= 0 })),
+      // shopper-app-fixes (F10): a size that has its own price says what she pays for THAT size —
+      // the phone showed the product's base price and the bag then said "Price changed".
+      sizes: c.sizes.map((s) => {
+        const normal = s.price || Number(p.price);
+        const off = offer && offer.offer_type === 'discount' ? rules.discountedPrice(offer, normal) : null;
+        return { size: s.size, price: normal, shopper_price: off ? off.pays : normal,
+          left: s.stock != null && s.stock <= 3 ? Math.max(0, s.stock) : null, sold_out: s.stock != null && s.stock <= 0 };
+      }),
     }));
     const soldOut = colours.length ? colours.every((c) => c.sizes.length && c.sizes.every((s) => s.sold_out)) : (p.stock != null && Number(p.stock) <= 0);
     const discounted = offer && offer.offer_type === 'discount' ? rules.discountedPrice(offer, p.price) : null;
@@ -362,7 +369,7 @@ async function notifyCancelled({ actor, lineIds, refund }) {
   if (!r) return;
   const money = refund.status === 'issued' ? ` Refund of ${inr(refund.amount)} is on its way.` : '';
   await notificationService.send({ userId: r.shopper, type: 'order_cancelled', title: 'Cancelled',
-    body: `${r.name}${lineIds.length > 1 ? ` and ${lineIds.length - 1} more` : ''} cancelled${actor === 'brand' ? ' by the store' : ''}.${money}`, data: { line_id: lineIds[0] } });
+    body: `${r.name}${lineIds.length > 1 ? ` and ${lineIds.length - 1} more` : ''} cancelled${actor === 'brand' ? ' by the store' : ''}.${money}`, data: { screen: 'order', line_id: lineIds[0] } });
   if (actor !== 'brand') {
     await notificationService.send({ userId: r.brand_user, type: 'brand_order_cancelled', title: 'Item cancelled',
       body: `The shopper cancelled ${r.name}. Don't ship it.`, data: { line_id: lineIds[0] } });
@@ -466,10 +473,11 @@ async function setParcelStatus({ brandId = null, orderId, status: st, order_stat
   if (!rowCount) throw new AppError('CONFLICT', 'The order changed; refresh', 409);
   if (o.checkout_id && status !== 'packed') {
     const { rows: [s] } = await db.query(
-      `SELECT f.user_id, (SELECT name FROM order_lines WHERE order_id = $1 AND status = 'active' ORDER BY created_at LIMIT 1) AS name
+      `SELECT f.user_id, (SELECT name FROM order_lines WHERE order_id = $1 AND status = 'active' ORDER BY created_at LIMIT 1) AS name,
+              (SELECT id FROM order_lines WHERE order_id = $1 AND status = 'active' ORDER BY created_at LIMIT 1) AS line_id
          FROM follower_orders o JOIN checkouts c ON c.id = o.checkout_id JOIN followers f ON f.id = c.follower_id WHERE o.id = $1`, [o.id]);
     if (s) await notificationService.send({ userId: s.user_id, type: `order_${status}`, title: STATUS_WORD[status],
-      body: `${s.name || 'Your order'}: ${STATUS_WORD[status].toLowerCase()}${status === 'dispatched' ? ` with ${courier} (${tracking})` : ''}.`, data: { order_id: o.id } })
+      body: `${s.name || 'Your order'}: ${STATUS_WORD[status].toLowerCase()}${status === 'dispatched' ? ` with ${courier} (${tracking})` : ''}.`, data: s.line_id ? { screen: 'order', line_id: s.line_id, order_id: o.id } : { screen: 'orders', order_id: o.id } })
       .catch((e) => console.error('[orders] notify', e.message));
   }
   return { id: o.id, status, status_word: STATUS_WORD[status] };

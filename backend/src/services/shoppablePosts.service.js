@@ -28,6 +28,7 @@ const rules = require('./offerRules');
 const pool = require('./offerPool.service');
 const terms = require('./creatorTerms.service');
 const storage = require('./contentStorage.service');
+const stockService = require('./stock.service');
 const notificationService = require('./notification.service');
 const events = require('./collabEvents.service');
 const { SIGNED_CONTRACT_SQL } = require('./collabState');
@@ -323,6 +324,19 @@ function titleOf(p) {
   return p.offer_name || (p.post_kind === 'price' ? 'Price post' : 'Untitled post');
 }
 
+/**
+ * What a SHOPPER reads as the post's title (shopper-app-fixes N7): the first line of its caption,
+ * else its products ("Blue polo and 2 more"). Never an internal name — a post with no caption used
+ * to be titled "Price post", "Untitled post" or the brand's own name for its offer.
+ */
+function shopperTitleOf(p, products) {
+  const line = String(p.caption || '').split('\n').map((s) => s.trim()).find(Boolean);
+  if (line) return titleOf(p);
+  const names = (products || []).filter((x) => x.on_sale !== false).map((x) => x.name).filter(Boolean);
+  if (!names.length) return 'A post on INFLX';
+  return names.length === 1 ? names[0] : `${names[0]} and ${names.length - 1} more`;
+}
+
 function offerWords(p) {
   if (p.post_kind !== 'offer' || !p.offer_id) return null;
   const shaped = { offer_type: p.offer_type, sub_type: p.sub_type, offer_config_json: p.offer_config_json || {} };
@@ -360,7 +374,7 @@ async function productsOf(postIds) {
   if (!postIds.length) return new Map();
   const { rows } = await db.query(
     `SELECT pp.post_id, pp.product_id, pp.media_id, pp.x_pct, pp.y_pct, pm.slide_index,
-            bp.name, bp.price, bp.image_url, bp.stock, bp.is_active, bp.pushed_to_store, bp.category_node_id AS leaf_id
+            bp.name, bp.price, bp.image_url, bp.stock, bp.variants_json, bp.is_active, bp.pushed_to_store, bp.category_node_id AS leaf_id
        FROM post_products pp JOIN brand_products bp ON bp.id = pp.product_id
        LEFT JOIN post_media pm ON pm.id = pp.media_id
       WHERE pp.post_id = ANY($1::uuid[]) ORDER BY pp.created_at, bp.name`, [postIds]);
@@ -369,6 +383,8 @@ async function productsOf(postIds) {
     const list = out.get(r.post_id) || [];
     list.push({ id: r.product_id, name: r.name, price: Number(r.price), image_url: r.image_url, leaf_id: r.leaf_id,
       stock: r.stock == null ? null : Number(r.stock), on_sale: r.is_active && r.pushed_to_store,
+      // shopper-app-fixes (F6): can anything of it still be bought — its sizes decide when it has sizes.
+      available: stockService.available({ stock: r.stock, variants_json: r.variants_json }),
       pin: r.media_id ? { media_index: r.slide_index, x_pct: Number(r.x_pct), y_pct: Number(r.y_pct) } : null });
     out.set(r.post_id, list);
   }
@@ -401,7 +417,7 @@ async function shape(p, { media, products, sales, tags, paths, today = todayInIn
   const leafNames = (p.category_node_ids || []).map((id) => (paths.get(id) || []).map((n) => n.name).join(' › ')).filter(Boolean);
   const removedReason = p.status === 'removed' ? p.removed_reason : (state === 'removed' ? 'offer_ended' : null);
   return {
-    id: p.id, state, status: p.status, title: titleOf(p), caption: p.caption,
+    id: p.id, state, status: p.status, title: titleOf(p), shopper_title: shopperTitleOf(p, products.get(p.id)), caption: p.caption,
     // post-links-codes: the code given at approval (4.14); null for drafts and posts in review.
     code: p.post_code || null, influencer_id: p.influencer_id, set_id: p.set_id,
     // The day a post waiting for its offer enters the shop (null once it is in).

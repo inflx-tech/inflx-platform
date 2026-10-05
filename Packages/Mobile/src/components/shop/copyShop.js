@@ -61,6 +61,10 @@ export const CS = {
   signInTitle: 'Sign in to like and comment',
   signInBody: 'Your likes and comments are public. Saving and following work without signing in.',
   signInCta: 'Sign in with your number',
+  // The sign-in screen says why she is signing in (shopper-app-fixes · N2): order, like and comment,
+  // save, follow. With no reason given it stays "to like and comment".
+  signInWhy: (reason) => `Sign in with your number ${{ order: 'to place your order', save: 'to keep your saves on your account', follow: 'to keep who you follow on your account' }[reason] || 'to like and comment'}`,
+  resendCode: 'Resend code',
   noComments: 'No comments yet. Be the first.',
   counter: (n) => `${n}/300`,
   // F7–F10 stores
@@ -78,7 +82,8 @@ export const CS = {
   price: 'Price', category: 'Category', theme: 'Theme',
   offersFoot: 'Tapping an offer shows the posts that carry it. You shop from a post, so the creator is credited. Offers with no live posts aren’t listed.',
   noOffers: 'No offers with live posts right now.',
-  collectionFoot: (name) => `A collection can mix brands. Each product sells like a one-product post: its own offer, and ${name} earns her commission.`,
+  // shopper-app-fixes (N8): the line that said each product "sells like a one-product post" is gone —
+  // it sat directly above "To buy one, open it from a creator's post" (checkoutSoon), which is the true one.
   collectionHidden: 'This collection is empty right now.',
   // F11 Saved
   savedPosts: (n) => `Posts · ${n}`,
@@ -87,6 +92,7 @@ export const CS = {
   noSavedPosts: 'Tap the bookmark on a post to keep it here.',
   noSavedProducts: 'Tap the heart on a product in Shop this post to keep it here, with its offer.',
   otherPosts: (line) => `${line} →`,
+  remove: 'Remove',
   // F12 Search
   searchPlaceholder: 'Search or enter a post code',
   searchHint: "Search or enter a post code. Capitals don't matter.",
@@ -111,7 +117,13 @@ export const CS = {
   addressesRow: 'Addresses',
   addressesRowSub: 'Where your orders go',
   returnsRow: 'Returns',
-  returnsRowSub: 'Coming next',
+  returnsRowSub: 'Return an item from My orders',
+  // shopper-app-fixes (F4, F13, F15): her name when she has given none, who she follows, what INFLX told her.
+  addYourName: 'Add your name',
+  creatorsCount: (n) => `${n} creator${n === 1 ? '' : 's'}`,
+  noFollowing: "You don't follow anyone yet",
+  notificationsRow: 'Notifications',
+  noNotifications: 'Nothing yet',
   logOut: 'Log out',
   edit: 'Edit',
   notSet: 'Not set',
@@ -130,5 +142,17 @@ export function fmtCount(n) {
 }
 
 export const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+
+/** When something was sent: today → "3:40 pm"; another day → "4 Oct" (with the year when it is not this one). */
+export function whenLabel(at, now = new Date()) {
+  const d = new Date(at);
+  if (!at || Number.isNaN(d.getTime())) return '';
+  if (d.toDateString() === now.toDateString()) {
+    const h = d.getHours();
+    return `${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`;
+  }
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d.getDate()} ${months[d.getMonth()]}${d.getFullYear() === now.getFullYear() ? '' : ` ${d.getFullYear()}`}`;
+}
 
 export const initialsOf = (name) => String(name || '').trim().split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '·';

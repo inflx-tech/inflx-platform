@@ -417,7 +417,8 @@ describe('O6 · Review your deal → Add to bag → back where she was', () => {
     jest.useFakeTimers();
     await act(async () => { fireEvent.press(r.getByTestId('review-add-to-bag')); });
     await act(async () => { fireEvent.press(r.getByTestId('review-buy-now')); });
-    expect(r.n.navigate).toHaveBeenCalledWith('FollowerLogin', { onDone: expect.any(Function) });
+    // shopper-app-fixes N2: the sign-in screen is told why she is signing in (it was { onDone } alone).
+    expect(r.n.navigate).toHaveBeenCalledWith('FollowerLogin', { onDone: expect.any(Function), reason: 'order' });
     act(() => { jest.advanceTimersByTime(5000); });
     expect(r.n.pop).not.toHaveBeenCalled();
   });

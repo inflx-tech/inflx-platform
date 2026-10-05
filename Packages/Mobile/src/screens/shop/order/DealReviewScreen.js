@@ -8,15 +8,23 @@
  * this review and the deal page under it both close: she is on the post (or the video) she came
  * from, or — when the deal was opened from the Bag's Edit deal — back in the Bag. The bag icon
  * with its count is in the top bar. Buy now is unchanged.
+ *
+ * shopper-app-fixes · F12 — Remove here is Remove on the deal page too: what is left is handed
+ * back (`onChange`), so tapping Change no longer brings the removed item back. Removing the last
+ * item returns her to the deal page with nothing picked — it used to leave a spinner for ever,
+ * because with no lines the server sends no deal to show. A price that could not be fetched says
+ * so, with Try again, instead of spinning.
+ *
+ * route.params: { postId, lines, editing, onChange? } — `onChange(lines)` is the deal page's.
  */
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../../services/api';
-import { TopBar, Loading } from '../../../components/shop/bitsShop';
+import { TopBar, Loading, Empty } from '../../../components/shop/bitsShop';
 import { MoneyRows, Notes, BagButton, AddedLine, AddToBagButton, useAdded, closePages, inFront, K, b } from '../../../components/shop/orderBits';
 import { CO } from '../../../components/shop/copyOrder';
-import { inr } from '../../../components/shop/copyShop';
+import { CS, inr } from '../../../components/shop/copyShop';
 import { addToBag, replacePost } from '../../../components/shop/bag';
 import { isSignedIn } from '../../../components/shop/shopStore';
 import { fonts } from '../../../theme/tokens';
@@ -24,27 +32,41 @@ import { fonts } from '../../../theme/tokens';
 const plain = (xs) => xs.map(({ ref, post_id, product_id, gift_item_id, colour, size, qty, role }) => ({ ref, post_id, product_id, gift_item_id, colour, size, qty, role }));
 
 export default function DealReviewScreen({ navigation, route }) {
-  const { postId, lines: start = [], editing = false } = route.params || {};
-  const [lines, setLines] = useState(start);
+  const { postId, lines: start = [], editing = false, onChange = null } = route.params || {};
+  const [lines, setLines] = useState(start || []);
   const [g, setG] = useState(null);
+  const [failed, setFailed] = useState(false);     // the price could not be fetched
+  const [tries, setTries] = useState(0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   // The review and the deal page it was opened from: both close (W10). If she has gone to another
   // page meanwhile (the bag icon, say) nothing is closed under her; the button stays "Go to bag ›".
   const flash = useAdded(() => { if (inFront(navigation)) closePages(navigation, 2); });
+  const nothing = lines.length === 0;
 
   useEffect(() => {
+    if (nothing) return undefined;                 // nothing to price: she is going back (below)
     let alive = true;
     (async () => {
-      const r = await followerApi.dealPrice(postId, plain(lines));
-      if (alive) setG(r && r.success ? r.data.groups[0] || null : null);
+      let r = null;
+      try { r = await followerApi.dealPrice(postId, plain(lines)); } catch { r = null; }
+      if (!alive) return;
+      const group = r && r.success && r.data && Array.isArray(r.data.groups) ? r.data.groups[0] || null : null;
+      if (group) { setG(group); setFailed(false); } else setFailed(true);
     })();
     return () => { alive = false; };
-  }, [lines, postId]);
+  }, [lines, postId, nothing, tries]);
+
+  // F12: with nothing left there is no deal to review — back to the deal page, nothing picked.
+  useEffect(() => { if (nothing) navigation.goBack(); }, [nothing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function remove(ref) {
     const t = lines.find((l) => l.ref === ref);
-    setLines((xs) => (t && t.pair ? xs.filter((l) => l.pair !== t.pair) : xs.filter((l) => l.ref !== ref)));
+    let left = t && t.pair ? lines.filter((l) => l.pair !== t.pair) : lines.filter((l) => l.ref !== ref);
+    // A gift is nothing without the items that earn it: with no item left, nothing is picked.
+    if (!left.some((l) => l.role !== 'gift')) left = [];
+    setLines(left);
+    if (onChange) onChange(left);                  // the deal page keeps the same picks
   }
   async function toBag() {
     setBusy(true); setErr(null);
@@ -65,10 +87,19 @@ export default function DealReviewScreen({ navigation, route }) {
     flash.stop();
     const withPost = plain(lines).map((l) => ({ ...l, post_id: postId }));
     const go = () => navigation.navigate('Checkout', { lines: withPost, buyNow: true });
-    if (await isSignedIn()) go(); else navigation.navigate('FollowerLogin', { onDone: go });
+    // N2: the sign-in screen says why she is signing in — here, to place her order.
+    if (await isSignedIn()) go(); else navigation.navigate('FollowerLogin', { onDone: go, reason: 'order' });
   }
 
-  if (!g) return <SafeAreaView style={st.safe}><TopBar title={CO.yourDeal} onBack={() => navigation.goBack()} right={<BagButton />} /><Loading /></SafeAreaView>;
+  if (failed && !nothing) {
+    return (
+      <SafeAreaView style={st.safe}>
+        <TopBar title={CO.yourDeal} onBack={() => navigation.goBack()} right={<BagButton />} />
+        <Empty title={CS.loadError} action={CS.retry} onAction={() => { setFailed(false); setG(null); setTries((n) => n + 1); }} testID="deal-review-error" />
+      </SafeAreaView>
+    );
+  }
+  if (!g || nothing) return <SafeAreaView style={st.safe}><TopBar title={CO.yourDeal} onBack={() => navigation.goBack()} right={<BagButton />} /><Loading /></SafeAreaView>;
   const items = g.lines.filter((l) => l.role !== 'gift');
   const gifts = g.lines.filter((l) => l.role === 'gift');
   return (

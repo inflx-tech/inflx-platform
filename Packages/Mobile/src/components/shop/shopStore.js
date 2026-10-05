@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { followerApi } from '../../services/api';
 import { getDeviceId } from '../../services/deviceId';
+import { engaged } from './engaged';
 
 const KEY = 'inflx_shop_v2';
 const EMPTY = { follows: [], savedPosts: [], savedProducts: [], shopFor: [], styles: [], cityId: null, cityName: null, welcomed: false, lastHome: null, useLocation: false };
@@ -42,8 +43,8 @@ export const shopStore = {
   get: load,
   set: write,
   subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
-  /** Tests only. */
-  _reset() { state = null; listeners.clear(); },
+  /** Tests only: a fresh phone — nothing kept, and nothing remembered from this session (engaged). */
+  _reset() { state = null; listeners.clear(); engaged.clear(); },
 };
 
 export async function isSignedIn() {
@@ -157,6 +158,15 @@ export async function whoParams() {
     follows: (await isSignedIn()) ? [] : s.follows,
     lat: pos ? pos.lat : undefined, lng: pos ? pos.lng : undefined,
   };
+}
+
+/**
+ * Her Welcome choices as one string (shopper-app-fixes · F11). A feed remembers the choices it was
+ * loaded with; when she comes back to it and they are different, it loads again — and only then.
+ */
+export async function choicesKey() {
+  const s = await load();
+  return JSON.stringify([[...s.shopFor].sort(), [...s.styles].sort(), s.cityId || null, !!s.useLocation]);
 }
 
 export async function ensureDeviceHeader() {

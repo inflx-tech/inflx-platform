@@ -21,6 +21,12 @@
  *
  * route.params: { postId, productId, post?, data?, surface?, saved?, onHeart?, onBack?, onDone? }
  *   `data` is the deal data the sheet already holds; without it the page asks for it itself.
+ *
+ * shopper-app-fixes:
+ *   N1  A post that has ended says the server's own sentence ("This post is no longer in the shop");
+ *       a load that really failed says "Couldn't load" and has Try again.
+ *   F14 Opened without the sheet's answer, the heart is what she did this session (engaged).
+ *   N2  Buy now as a guest: the sign-in screen is told she is signing in to place her order.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
@@ -30,12 +36,13 @@ import { followerApi } from '../../services/api';
 import { track } from '../../services/events';
 import { TopBar, Loading, Empty, heartProduct, s as bs } from '../../components/shop/bitsShop';
 import {
-  BagButton, Photos, ChoicePicker, ProductDetails, AddedLine, AddToBagButton, useAdded, hasChoices, firstColour, inFront, K, b,
+  BagButton, Photos, ChoicePicker, ProductDetails, AddedLine, AddToBagButton, useAdded, hasChoices, firstColour, inFront, priceFor, K, b,
 } from '../../components/shop/orderBits';
 import { CO } from '../../components/shop/copyOrder';
 import { CS, inr } from '../../components/shop/copyShop';
 import { addToBag } from '../../components/shop/bag';
 import { shopStore, isSignedIn } from '../../components/shop/shopStore';
+import { engaged } from '../../components/shop/engaged';
 import { fonts } from '../../theme/tokens';
 
 const W = Dimensions.get('window').width;
@@ -49,9 +56,12 @@ export default function ProductScreen({ navigation, route }) {
   const [data, setData] = useState(given);
   const [status, setStatus] = useState(given ? 'ready' : 'loading');
   const [sel, setSel] = useState({ colour: null, size: null });
-  const [saved, setSaved] = useState(!!params.saved);
+  // The sheet says whether it is hearted; opened without it, what she did this session says (F14).
+  const [saved, setSaved] = useState(params.saved !== undefined ? !!params.saved : engaged.heartedInPost(postId, productId, false));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [ended, setEnded] = useState(null);   // N1: the server's own sentence — the post has left the shop
+  const [again, setAgain] = useState(0);      // N1: "Try again"
   const gone = useRef(false);       // the sheet has been told once how she left
   // O6: a second after the add, if she is still here and did nothing, the page closes by itself.
   const flash = useAdded(() => { if (inFront(navigation)) leave(); });
@@ -62,11 +72,16 @@ export default function ProductScreen({ navigation, route }) {
     (async () => {
       const r = await followerApi.deal(postId);
       if (!alive) return;
-      if (!r || !r.success) { setStatus('error'); return; }
+      if (!r || !r.success) {
+        // An ended post answers "not found" with its own sentence; anything else is a failed load.
+        setEnded(r && r.error && r.error.code === 'NOT_FOUND' && r.error.message ? r.error.message : null);
+        setStatus('error');
+        return;
+      }
       setData(r.data); setStatus('ready');
     })();
     return () => { alive = false; };
-  }, [postId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [postId, again]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Opened without the sheet's answer: a guest's heart is read from the phone.
   useEffect(() => {
@@ -116,10 +131,12 @@ export default function ProductScreen({ navigation, route }) {
 
   if (status === 'loading') return <SafeAreaView style={st.safe}><TopBar title=" " onBack={back} right={<BagButton />} /><Loading /></SafeAreaView>;
   if (status === 'error' || !product) {
+    const failed = status === 'error' && !ended;      // a real failed load: she can ask again
     return (
       <SafeAreaView style={st.safe}>
         <TopBar title=" " onBack={back} right={<BagButton />} />
-        <Empty title={status === 'error' ? CS.loadError : CO.productGone} testID="product-gone" />
+        <Empty title={status === 'error' ? ended || CS.loadError : CO.productGone} testID="product-gone"
+          action={failed ? CS.retry : null} onAction={() => { setStatus('loading'); setAgain((n) => n + 1); }} />
       </SafeAreaView>
     );
   }
@@ -128,8 +145,10 @@ export default function ProductScreen({ navigation, route }) {
   const creator = (data.post && data.post.creator) || (post && post.creator) || null;
   const brand = (data.post && data.post.brand) || (post && post.brand) || null;
   const first = creator && creator.name ? creator.name.split(' ')[0] : '';
-  const pays = product.shopper_price != null ? product.shopper_price : product.price;
-  const lower = Number(pays) < Number(product.price);
+  // shopper-app-fixes (F10): a size that has its own price shows it once she chooses that size —
+  // what she pays after the offer, as the server worked it out. Before a size is chosen: the product's own.
+  const { pays, normal, seen } = priceFor(product, sel);
+  const lower = Number(pays) < Number(normal);
   const chip = !isDeal && lower ? ((post && post.offer && post.offer.line) || (data.offer && data.offer.line) || null) : null;
   const counts = isDeal && product.in_deal && data.offer && data.offer.line ? CO.countsToward(data.offer.line) : null;
   const needs = hasChoices(product);
@@ -137,7 +156,7 @@ export default function ProductScreen({ navigation, route }) {
   const canBuy = !product.sold_out && ready && !busy;
   const soldBy = CO.soldBy(brand && brand.name, first);
   const line = () => ({
-    post_id: postId, product_id: product.id, colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size, qty: 1, price_seen: product.price,
+    post_id: postId, product_id: product.id, colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size, qty: 1, price_seen: seen,
   });
 
   async function heart() {
@@ -165,7 +184,7 @@ export default function ProductScreen({ navigation, route }) {
     flash.stop();
     done();
     const go = () => navigation.navigate('Checkout', { lines, buyNow: true });
-    if (await isSignedIn()) go(); else navigation.navigate('FollowerLogin', { onDone: go });
+    if (await isSignedIn()) go(); else navigation.navigate('FollowerLogin', { onDone: go, reason: 'order' });
   }
   // A deal item is never added alone (W7): the deal page takes this page's place, with this
   // product started, so closing the deal brings her to the post she came from.
@@ -185,7 +204,7 @@ export default function ProductScreen({ navigation, route }) {
             <View style={st.priceRow}>
               <Text style={st.price} testID="product-price">
                 {inr(pays)}
-                {lower ? <Text style={st.struck}>  {inr(product.price)}</Text> : null}
+                {lower ? <Text style={st.struck}>  {inr(normal)}</Text> : null}
               </Text>
               {chip ? <View style={bs.chipOk} testID="product-offer"><Text style={bs.chipOkText}>{chip}</Text></View> : null}
             </View>

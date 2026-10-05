@@ -22,6 +22,8 @@ import BrandOffersScreen from '../screens/shop/BrandOffersScreen';
 import OfferPostsScreen from '../screens/shop/OfferPostsScreen';
 import SearchScreen from '../screens/shop/SearchScreen';
 import ProductScreen from '../screens/shop/ProductScreen';
+import FollowingScreen from '../screens/shop/FollowingScreen';
+import NotificationsScreen from '../screens/shop/NotificationsScreen';
 import EditProfileScreen from '../screens/follower/EditProfileScreen';
 import FollowerLoginScreen from '../screens/follower/FollowerLoginScreen';
 import LegalListScreen from '../screens/legal/LegalListScreen';
@@ -106,6 +108,11 @@ export default function FollowerNavigator() {
       <Stack.Screen name="LegalDocument" component={LegalDocumentScreen} />
       {/* The product page (shopper-walk-fixes · board S3, S4): a product's photo in "Products in this post" opens it. */}
       <Stack.Screen name="ShopProduct" component={ProductScreen} />
+      {/* shopper-app-fixes — F8: Play pushed on top of a store, search, a post's page… (the same screen as the
+          Play tab, with a Back arrow); F13: Profile › Following; F15: Profile › Notifications. */}
+      <Stack.Screen name="PlayOver" component={PlayScreen} />
+      <Stack.Screen name="ShopFollowing" component={FollowingScreen} />
+      <Stack.Screen name="ShopNotifications" component={NotificationsScreen} />
       {/* Ordering (shopper-ordering · board O1–O17, D1, P/B/V/K/G, D4, D11) */}
       <Stack.Screen name="Deal" component={DealScreen} />
       <Stack.Screen name="DealReview" component={DealReviewScreen} />

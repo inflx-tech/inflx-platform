@@ -130,7 +130,7 @@ async function storeOf(influencerId) {
 /** A post as a link shows it: what it is, never who made the sales. */
 function publicPost(p) {
   return {
-    code: p.code, title: p.title, caption: p.caption,
+    code: p.code, title: p.shopper_title || p.title, caption: p.caption,
     brand_name: p.collaboration.brand_name,
     offer: p.offer ? `${p.offer.type} · ${p.offer.deal}` : null,
     price_band: p.facets.price_band,
@@ -157,7 +157,7 @@ async function resolvePost(code, { channel = 'o', visitor = {} } = {}) {
     kind: 'post', state, store,
     goes_live_on: state === 'upcoming' ? p.goes_live_on : null,
     creator: store ? { name: store.name, handle: store.handle } : null,
-    post: state === 'gone' ? { code: p.code, title: p.title } : publicPost(p),
+    post: state === 'gone' ? { code: p.code, title: p.shopper_title || p.title } : publicPost(p),
   };
 }
 
@@ -320,7 +320,7 @@ async function setPosts(brandUserId, campaignId, setId, { ciId = null } = {}) {
   for (const p of all) {
     const s = await statsOf(p);
     const creator = await storeOf(p.influencer_id);
-    out.push({ id: p.id, title: p.title, code: p.code, state: p.state, creator_name: creator ? creator.name : '',
+    out.push({ id: p.id, title: p.shopper_title || p.title, code: p.code, state: p.state, creator_name: creator ? creator.name : '',
       goes_live_on: p.state === 'approved' ? p.goes_live_on : null, totals: s.totals });
   }
   const live = out.filter((p) => p.state === 'live');

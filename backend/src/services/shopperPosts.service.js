@@ -272,12 +272,12 @@ function card(p, { creator, brand, counts, mine, liveAt }) {
     return {
       id: x.id, name: x.name, image_url: x.image_url, price: x.price,
       shopper_price: pays, struck: pays < x.price,
-      in_stock: x.stock == null || x.stock > 0,
+      in_stock: x.available !== undefined ? x.available : (x.stock == null || x.stock > 0),   // F6: its sizes decide
       pin: x.pin,
     };
   });
   return {
-    id: p.id, code: p.code, title: p.title, caption: p.caption,
+    id: p.id, code: p.code, title: p.shopper_title || p.title, caption: p.caption,   // N7: never an internal title
     share_url: `https://${linkHost()}/p/${p.code}`,
     creator, brand,
     media_kind: p.media_kind, media_layout: p.media_layout, tag_style: p.tag_style,

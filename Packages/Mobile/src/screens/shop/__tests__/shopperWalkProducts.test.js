@@ -614,7 +614,8 @@ describe('O3 · the product page', () => {
     await r.findByTestId('product-page');
     fireEvent.press(r.getByTestId('product-size-M'));
     await act(async () => { fireEvent.press(r.getByTestId('product-buy-now')); });
-    expect(r.n.navigate).toHaveBeenCalledWith('FollowerLogin', { onDone: expect.any(Function) });
+    // shopper-app-fixes N2: the sign-in screen is now told why she is signing in (reason: 'order').
+    expect(r.n.navigate).toHaveBeenCalledWith('FollowerLogin', { onDone: expect.any(Function), reason: 'order' });
     r.n.navigate.mock.calls[0][1].onDone();
     expect(r.n.navigate).toHaveBeenLastCalledWith('Checkout', { buyNow: true, lines: [{ post_id: 'p-disc', product_id: 'polo', colour: 'Blue', size: 'M', qty: 1, price_seen: 899 }] });
     expect(await bagNow()).toEqual([]);
@@ -725,7 +726,8 @@ describe('O6 · after Add to bag she carries on shopping', () => {
     await act(async () => { fireEvent.press(r.getByTestId('size-sheet-buy')); });
     expect(Vibration.vibrate).not.toHaveBeenCalled();
     expect(r.onClose).toHaveBeenCalledTimes(1);
-    expect(mockNav.navigate).toHaveBeenCalledWith('FollowerLogin', { onDone: expect.any(Function) });
+    // shopper-app-fixes N2: the sign-in screen is now told why she is signing in (reason: 'order').
+    expect(mockNav.navigate).toHaveBeenCalledWith('FollowerLogin', { onDone: expect.any(Function), reason: 'order' });
     expect(await bagNow()).toEqual([]);
   });
 

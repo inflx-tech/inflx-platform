@@ -12,9 +12,17 @@
  * box (requested, approved, not accepted with INFLX's note, returned with the money). My orders has
  * a "Returned" filter and says "Return requested" on the row. The screen she asks on is
  * ReturnScreen.js. An item that went back is "Returned" — it never reads "Arrives by".
+ *
+ * shopper-app-fixes:
+ *   N3  Order details: cash on delivery reads "To pay ₹X on delivery" until the parcel is
+ *       delivered, and "Paid ₹X · Cash on delivery" after. Online is unchanged.
+ *   N4  My orders: a search or a filter with no match says "Nothing matches" and what did not
+ *       match; "No orders yet" only when she has none. Packed and Out for delivery are filters.
+ *       Orders that could not be read are not "No orders yet" either: Try again.
+ *   N5  My orders goes on past the first 20: the next ones load as she reaches the end.
  */
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, FlatList, Image, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, ScrollView, FlatList, Image, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -63,32 +71,107 @@ export function OrderPlacedScreen({ navigation, route }) {
 /** An item that is no longer on its way: it has no "Arrives by", and Cancel is not what is closed. */
 const DONE = ['cancelled', 'delivered', 'returned'];
 
+/** The next page's rows after the ones shown; a row already shown (the list moved meanwhile) is not repeated. */
+const joined = (have, next) => { const ids = new Set(have.map((x) => x.id)); return [...have, ...(next || []).filter((x) => !ids.has(x.id))]; };
+
 export function OrdersScreen({ navigation }) {
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
-  const [items, setItems] = useState(null);
+  // What is on screen: the rows, whether more follow, the last page read, and the filter and the
+  // search they answer — so "Nothing matches" names what she asked for. null until the first answer.
+  const [list, setList] = useState(null);
+  const [failed, setFailed] = useState(false);            // the orders could not be read
+  const [adding, setAdding] = useState(false);            // the next page is on its way (N5)
+  const [moreFailed, setMoreFailed] = useState(false);    // the next page could not be read
+  const turn = useRef(0);                                 // only the latest read may answer
+  const reading = useRef(false);                          // the list is being read again from its first page
+  const asking = useRef(false);                           // a next page has been asked for and is not back yet
+  const depth = useRef({ key: null, page: 1 });           // how far down she has gone, for this filter and search
+  const asked = q.trim();
+
+  const ask = useCallback((page) => followerApi.orders({ status: status || undefined, q: asked || undefined, page: page > 1 ? page : undefined }), [status, asked]);
+
+  // Opening the screen, changing the filter or the search, and coming back from an item (its
+  // status may have changed there): every page she had is read again, so she is where she was.
   const load = useCallback(() => {
-    let alive = true;
-    followerApi.orders({ status: status || undefined, q: q || undefined }).then((r) => {
-      if (alive) setItems(r && r.success ? r.data.items : []);
-    });
-    return () => { alive = false; };
-  }, [status, q]);
+    const key = `${status}|${asked}`;
+    const upTo = depth.current.key === key ? depth.current.page : 1;
+    const mine = (turn.current += 1);
+    reading.current = true;
+    (async () => {
+      let items = []; let more = false; let page = 0;
+      for (let p = 1; p <= upTo; p += 1) {
+        let r = null;
+        try { r = await ask(p); } catch { r = null; }
+        if (mine !== turn.current) return;
+        if (!r || !r.success) break;
+        items = joined(items, r.data.items); more = !!r.data.more; page = p;
+        if (!more) break;
+      }
+      reading.current = false;
+      if (!page) {
+        // Not even the first page: that is not "No orders yet" (N4). What she was looking at stays
+        // if it answers the same filter and search; otherwise she is told, with Try again.
+        setFailed(true);
+        setList((cur) => (cur && cur.status === status && cur.q === asked ? cur : null));
+        return;
+      }
+      depth.current = { key, page };
+      setFailed(false); setMoreFailed(false);
+      setList({ items, more, page, status, q: asked });
+    })();
+    return () => { turn.current += 1; };
+  }, [status, asked, ask]);
   useFocusEffect(load);
+
+  // N5: the next ones load as she reaches the end of the list.
+  async function next() {
+    if (!list || !list.more || asking.current) return;
+    // The list on screen is being read again (another filter or search, or she just came back):
+    // that read answers; she reaches the end again afterwards.
+    if (reading.current || list.status !== status || list.q !== asked) return;
+    const mine = turn.current;
+    asking.current = true;
+    setAdding(true); setMoreFailed(false);
+    let r = null;
+    try { r = await ask(list.page + 1); } catch { r = null; }
+    asking.current = false;
+    setAdding(false);
+    if (mine !== turn.current) return;
+    if (!r || !r.success) { setMoreFailed(true); return; }
+    const page = list.page + 1;
+    depth.current = { key: `${status}|${asked}`, page };
+    setList({ ...list, items: joined(list.items, r.data.items), more: !!r.data.more, page });
+  }
+
+  const filters = [...CO.filters, CR.filter];
+  const filterName = (k) => { const f = filters.find(([key]) => key === k); return f ? f[1] : ''; };
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
       <TopBar title={CO.myOrders} onBack={() => navigation.goBack()} />
       <View style={{ paddingHorizontal: 14 }}>
         <TextInput value={q} onChangeText={setQ} placeholder="Search your orders" style={st.search} testID="orders-search" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 10 }}>
-          {[...CO.filters, CR.filter].map(([k, label]) => <Chip key={k || 'all'} label={label} on={status === k} onPress={() => setStatus(k)} testID={`orders-filter-${k || 'all'}`} />)}
+          {filters.map(([k, label]) => <Chip key={k || 'all'} label={label} on={status === k} onPress={() => setStatus(k)} testID={`orders-filter-${k || 'all'}`} />)}
         </ScrollView>
       </View>
-      {items === null ? <Loading /> : !items.length ? <Empty title={CO.noOrders} sub={CO.noOrdersSub} testID="orders-empty" /> : (
+      {!list ? (
+        failed ? <Empty title={CS.loadError} action={CS.retry} onAction={() => { setFailed(false); load(); }} testID="orders-error" /> : <Loading />
+      ) : !list.items.length ? (
+        // N4: "No orders yet" only when she has none at all — a filter or a search with no match says so.
+        list.status || list.q
+          ? <Empty title={CO.nothingMatches} sub={CO.nothingMatchesSub(list.q, list.status ? filterName(list.status) : '')} testID="orders-no-match" />
+          : <Empty title={CO.noOrders} sub={CO.noOrdersSub} testID="orders-empty" />
+      ) : (
         <FlatList
-          data={items}
+          data={list.items}
           keyExtractor={(x) => x.id}
           contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 30 }}
+          testID="orders-list"
+          onEndReached={next}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={adding ? <ActivityIndicator color={K.ink} style={{ marginVertical: 12 }} testID="orders-more" />
+            : moreFailed ? <Text style={st.moreFailed} onPress={next} testID="orders-more-retry">{CS.loadError} <Text style={st.act}>{CS.retry}</Text></Text> : null}
           renderItem={({ item }) => (
             <TouchableOpacity style={st.card} onPress={() => navigation.navigate('OrderDetail', { lineId: item.id })} testID={`order-${item.id}`}>
               <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -114,6 +197,21 @@ export function OrdersScreen({ navigation }) {
 
 /* ───────────────────────────────────────────── O15 */
 
+/**
+ * The money line of Order details (N3). Cash on delivery is paid when the parcel is handed over:
+ * until then "To pay ₹X on delivery", after it "Paid ₹X · Cash on delivery". An item cancelled
+ * before it was delivered was never paid and is not owed: the price and the method, nothing more.
+ * Online, and a free gift (₹0), read as they always did.
+ */
+export function moneyLine(d) {
+  const amount = d.role === 'gift' ? '₹0' : inr(d.paid);
+  if (d.payment_method !== 'cod') return `${CO.paid} ${amount} · ${CO.payOnline}`;
+  const delivered = d.status === 'delivered' || d.status === 'returned' || (d.timeline || []).some((t) => t.status === 'delivered' && t.at);
+  if (delivered || d.role === 'gift') return `${CO.paid} ${amount} · ${CO.cod}`;
+  if (d.status === 'cancelled') return `${amount} · ${CO.cod}`;
+  return CO.toPayOnDelivery(amount);
+}
+
 export function OrderDetailScreen({ navigation, route }) {
   const { lineId } = route.params || {};
   const [d, setD] = useState(null);
@@ -135,7 +233,7 @@ export function OrderDetailScreen({ navigation, route }) {
           <View style={{ flex: 1 }}>
             <Text style={st.name}>{d.name}</Text>
             <Text style={st.meta}>{[d.colour, d.size].filter(Boolean).join(' · ')}{d.qty > 1 ? ` ×${d.qty}` : ''} · {d.brand.name}</Text>
-            <Text style={st.meta}>{CO.paid} {d.role === 'gift' ? '₹0' : inr(d.paid)} · {d.payment_method === 'cod' ? CO.cod : CO.payOnline}</Text>
+            <Text style={st.meta} testID="order-money">{moneyLine(d)}</Text>
           </View>
         </View>
         <View style={st.card} testID="timeline">
@@ -264,6 +362,7 @@ const st = StyleSheet.create({
   tlText: { fontFamily: fonts.sansBold, fontSize: 13, color: K.ink },
   lab: { fontFamily: fonts.sansBold, fontSize: 12, color: K.ink2, marginBottom: 4 },
   act: { fontFamily: fonts.sansBold, fontSize: 13, color: K.ink, textDecorationLine: 'underline' },
+  moreFailed: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: K.ink2, textAlign: 'center', marginVertical: 12 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: K.ink2, marginTop: 10 },
   refund: { fontFamily: fonts.sansBold, fontSize: 13, color: K.ok, marginVertical: 10 },
   warn: { backgroundColor: K.warnSoft, borderRadius: 12, padding: 10, marginBottom: 10 },

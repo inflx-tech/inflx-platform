@@ -7,6 +7,10 @@
  * shopper-walk-fixes (board S3–S7, V2, G1–G2) adds: the bag icon over a video or a photo, the
  * listing's details block, the second after Add to bag (one vibration, "Go to bag ›", then back
  * where she was), and which deals stay whole in the bag.
+ *
+ * shopper-app-fixes (F6, F9, F10) adds: `isSoldOut` and "Sold out in every size"; `priceFor` — the
+ * chosen size's price, as the server sends it per size; the bag icon's count read when the app
+ * opens, without the "just added" mark; an add that fails is said in the size sheet.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -48,8 +52,9 @@ export function BagButton({ dark, overlay, style }) {
   const last = useRef(null);
   const timer = useRef(null);
   useEffect(() => {
-    const off = subscribeBagCount((v) => {
-      if (last.current !== null && v > last.current) {
+    // `how.quiet`: the count was only read (the app just opened, F9) — a number, not "just added".
+    const off = subscribeBagCount((v, how) => {
+      if (!(how && how.quiet) && last.current !== null && v > last.current) {
         setUp(true);
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => { timer.current = null; setUp(false); }, MARK_MS);
@@ -157,9 +162,50 @@ export const isLockedDeal = (offer) => !!offer && LOCKED_DEALS.includes(offer.su
 
 /* ───────────────────────────────────────────── colour and size */
 
-/** The colours and sizes of a product from the deal page's data: [{ colour, sizes:[{ size, left, sold_out }] }]. */
+/** The colours and sizes of a product from the deal page's data: [{ colour, sizes:[{ size, price, shopper_price, left, sold_out }] }]. */
 export function hasChoices(product) {
   return !!(product && Array.isArray(product.colours) && product.colours.some((c) => (c.sizes || []).length));
+}
+
+/**
+ * Nothing of this product can be bought (shopper-app-fixes · F6): the deal data says so
+ * (`sold_out`), or every size of every colour has sold out.
+ */
+export function isSoldOut(product) {
+  if (!product) return false;
+  if (product.sold_out) return true;
+  const withSizes = (product.colours || []).filter((c) => (c.sizes || []).length);
+  return withSizes.length > 0 && withSizes.every((c) => c.sizes.every((s) => !!s.sold_out));
+}
+
+/** The size she has chosen, as the deal data sends it ({ size, price, shopper_price, left, sold_out }), or null. */
+export function chosenSize(product, sel) {
+  if (!product || !sel || !sel.size) return null;
+  const withSizes = (product.colours || []).filter((c) => (c.sizes || []).length);
+  const colour = sel.colour != null ? sel.colour : (withSizes[0] ? withSizes[0].colour : null);
+  const row = withSizes.find((c) => (c.colour || null) === (colour || null)) || withSizes[0];
+  return (row && row.sizes.find((s) => s.size === sel.size)) || null;
+}
+
+/**
+ * The price to show for a product once a size is chosen (shopper-app-fixes · F10). A size can have
+ * its own price; the server sends, per size, `price` and `shopper_price` (what she pays for THAT
+ * size, after the offer). Nothing is worked out here — the numbers are the server's:
+ *
+ *   pays     what she pays: the chosen size's `shopper_price`; before a size is chosen (or from a
+ *            server that sends none per size) the product's own
+ *   normal   the price to strike through when `pays` is lower
+ *   seen     what to send as `price_seen` with a bag line or Buy now: the chosen size's `price`
+ *            (the product's own when no size is chosen) — so the bag never says a false
+ *            "Price changed from ₹…"
+ */
+export function priceFor(product, sel) {
+  if (!product) return { pays: null, normal: null, seen: null };
+  const own = product.shopper_price != null ? product.shopper_price : product.price;
+  const s = chosenSize(product, sel);
+  const seen = s && s.price != null ? Number(s.price) : product.price;
+  if (s && s.shopper_price != null) return { pays: Number(s.shopper_price), normal: s.price != null ? Number(s.price) : Number(s.shopper_price), seen };
+  return { pays: own, normal: product.price, seen };
 }
 
 export function ChoicePicker({ product, value, onChange, testIDPrefix = 'pick' }) {
@@ -168,6 +214,7 @@ export function ChoicePicker({ product, value, onChange, testIDPrefix = 'pick' }
   const colour = value.colour != null ? value.colour : (withSizes[0] ? withSizes[0].colour : null);
   const row = withSizes.find((c) => (c.colour || null) === (colour || null)) || withSizes[0];
   if (!withSizes.length) return null;
+  const allGone = isSoldOut(product);
   return (
     <View>
       {withSizes.some((c) => c.colour) ? (
@@ -206,6 +253,8 @@ export function ChoicePicker({ product, value, onChange, testIDPrefix = 'pick' }
         const s = row && row.sizes.find((x) => x.size === value.size);
         return s && s.left ? <Text style={b.left}>{CO.onlyLeft(s.left)}</Text> : null;
       })()}
+      {/* F6: every size crossed out used to be all it said. */}
+      {allGone ? <Text style={b.allGone} testID={`${testIDPrefix}-sold-out`}>{CO.soldOutEverySize}</Text> : null}
     </View>
   );
 }
@@ -328,7 +377,13 @@ export function ProductPopup({ product, visible, onClose, effect, price, struck,
   }, [product, sel.colour]);
   if (!product) return null;
   const needs = hasChoices(product);
-  const ready = !needs || !!sel.size;
+  const gone = isSoldOut(product);
+  const ready = (!needs || !!sel.size) && !gone;
+  // F10: once a size is chosen the price is that size's. A price the caller fixes (a gift, the
+  // free one of a pair: ₹0) stays as given.
+  const pf = priceFor(product, sel);
+  const shown = price != null ? price : pf.pays;
+  const strike = price != null ? struck : (struck || (Number(pf.pays) < Number(pf.normal) ? pf.normal : null));
   return (
     <Sheet visible={visible} onClose={onClose} testID={testID} tall>
       <ScrollView style={{ maxHeight: 600 }} contentContainerStyle={{ paddingBottom: 8 }}>
@@ -336,8 +391,8 @@ export function ProductPopup({ product, visible, onClose, effect, price, struck,
         <Photos images={images} />
         <View style={[b.rowBetween, { marginTop: 10 }]}>
           <Text style={b.pname} numberOfLines={2}>{product.name}</Text>
-          <Text style={b.price}>{inr(price != null ? price : product.shopper_price != null ? product.shopper_price : product.price)}
-            {struck ? <Text style={b.struck}>  {inr(struck)}</Text> : null}</Text>
+          <Text style={b.price} testID={`${testID}-price`}>{inr(shown)}
+            {strike ? <Text style={b.struck}>  {inr(strike)}</Text> : null}</Text>
         </View>
         {effect ? <View style={b.effect}><Text style={b.effectText}>{effect}</Text></View> : null}
         <ChoicePicker product={product} value={sel} onChange={setSel} testIDPrefix={testID} />
@@ -351,7 +406,7 @@ export function ProductPopup({ product, visible, onClose, effect, price, struck,
       </ScrollView>
       <TouchableOpacity disabled={!ready} onPress={() => onPrimary({ colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size, qty })}
         style={[b.primary, !ready && b.primaryDis]} testID={`${testID}-primary`} accessibilityState={{ disabled: !ready }}>
-        <Text style={[b.primaryText, !ready && { color: T.disabledText }]}>{ready ? primaryLabel(sel) : CO.chooseSize}</Text>
+        <Text style={[b.primaryText, !ready && { color: T.disabledText }]}>{ready ? primaryLabel(sel) : gone ? CO.soldOut : CO.chooseSize}</Text>
       </TouchableOpacity>
       {onRemove ? <Text style={b.remove} onPress={onRemove} testID={`${testID}-remove`}>{CO.remove}</Text> : null}
     </Sheet>
@@ -427,35 +482,51 @@ export function Notes({ problems = [], notes = [] }) {
  * the green line, and the main button a black "Go to bag ›" that opens the bag (`onGoToBag`).
  * The sizes come with the deal data: while they are on their way (`waiting`), or could not be
  * fetched (`problem`), nothing can be added — a product is never put in the bag without its size.
+ *
+ * shopper-app-fixes:
+ *   F6   a product sold out in every size says so, and Add / Buy now stay off
+ *   F10  choosing a size shows that size's price; what the sheet hands to `onAdd` / `onBuyNow` is
+ *        { colour, size, price_seen } — `price_seen` is the chosen size's own price
+ *   F9   an add that fails (her bag could not be read or saved: `onAdd` rejects) is said here, in
+ *        the sheet, and nothing was added
  */
 export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, busy: working, waiting = false, problem = null, added = false, onGoToBag }) {
   const [sel, setSel] = useState({ colour: null, size: null });
-  useEffect(() => { if (visible) setSel({ colour: null, size: null }); }, [visible, product && product.id]);
+  const [failed, setFailed] = useState(null);
+  useEffect(() => { if (visible) { setSel({ colour: null, size: null }); setFailed(null); } }, [visible, product && product.id]);
   if (!product) return null;
-  const busy = !!working || waiting || !!problem;
+  const gone = isSoldOut(product);
+  const busy = !!working || waiting || !!problem || gone;
   const needs = hasChoices(product);
   const ready = !needs || !!sel.size;
-  const pick = () => ({ colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size });
+  const pf = priceFor(product, sel);
+  const pick = () => ({ colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size, price_seen: pf.seen });
+  async function add() {
+    setFailed(null);
+    try { await onAdd(pick()); } catch (e) { setFailed((e && e.message) || CO.bagNotSaved); }
+  }
   return (
     <Sheet visible={visible} onClose={onClose} testID="size-sheet">
       <View style={{ flexDirection: 'row', gap: 12, marginBottom: 10 }}>
         {product.image_url ? <Image source={{ uri: product.image_url }} style={b.thumb} /> : <View style={b.thumb} />}
         <View style={{ flex: 1 }}>
           <Text style={b.pname} numberOfLines={2}>{product.name}</Text>
-          <Text style={b.price}>{inr(product.shopper_price)}{product.shopper_price < product.price ? <Text style={b.struck}>  {inr(product.price)}</Text> : null}</Text>
+          <Text style={b.price} testID="size-sheet-price">{inr(pf.pays)}{Number(pf.pays) < Number(pf.normal) ? <Text style={b.struck}>  {inr(pf.normal)}</Text> : null}</Text>
           {post && post.offer && post.offer.line ? <Text style={b.okLine}>{post.offer.line}{post.creator ? ` · from ${post.creator.name.split(' ')[0]}'s post` : ''}</Text> : null}
         </View>
       </View>
-      <ChoicePicker product={product} value={sel} onChange={setSel} testIDPrefix="size-sheet" />
+      <ChoicePicker product={product} value={sel} onChange={(v) => { setSel(v); setFailed(null); }} testIDPrefix="size-sheet" />
       {waiting ? <ActivityIndicator color={K.ink} style={{ marginTop: 12 }} testID="size-sheet-waiting" /> : null}
       {problem ? <Text style={b.problem} testID="size-sheet-problem">{problem}</Text> : null}
+      {failed ? <Text style={b.problem} testID="size-sheet-failed">{failed}</Text> : null}
       {added ? <View style={{ marginTop: 12 }}><AddedLine /></View> : null}
       <View style={{ flexDirection: 'row', gap: 10, marginTop: added ? 8 : 14 }}>
-        <TouchableOpacity disabled={!ready || busy} onPress={() => onBuyNow(pick())} style={[b.secondary, { flex: 1 }, (!ready || busy) && b.primaryDis]} testID="size-sheet-buy">
+        <TouchableOpacity disabled={!ready || busy} onPress={() => onBuyNow(pick())} style={[b.secondary, { flex: 1 }, (!ready || busy) && b.primaryDis]} testID="size-sheet-buy"
+          accessibilityState={{ disabled: !ready || busy }}>
           <Text style={b.secondaryText}>{CO.buyNow}</Text>
         </TouchableOpacity>
-        <AddToBagButton added={added} disabled={!ready || busy} label={ready ? CO.addToBag : CO.chooseSize}
-          onAdd={() => onAdd(pick())} onGoToBag={onGoToBag} testID="size-sheet-add" style={{ flex: 1, marginTop: 0 }} />
+        <AddToBagButton added={added} disabled={!ready || busy} label={gone ? CO.soldOut : ready ? CO.addToBag : CO.chooseSize}
+          onAdd={add} onGoToBag={onGoToBag} testID="size-sheet-add" style={{ flex: 1, marginTop: 0 }} />
       </View>
     </Sheet>
   );
@@ -490,6 +561,7 @@ export const b = StyleSheet.create({
   sizeOut: { backgroundColor: '#F4F3EE', borderColor: '#EDEDE8' },
   outText: { color: T.disabledText, textDecorationLine: 'line-through' },
   left: { fontFamily: fonts.sansBold, fontSize: 11.5, color: '#B04600', marginTop: 6 },
+  allGone: { fontFamily: fonts.sansBold, fontSize: 12, color: T.danger, marginTop: 8 },
   step: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: K.border, borderRadius: 10 },
   stepBtn: { width: 34, height: 32, alignItems: 'center', justifyContent: 'center' },
   stepSign: { fontFamily: fonts.sansBold, fontSize: 16, color: K.ink },

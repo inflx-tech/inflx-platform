@@ -2,8 +2,15 @@
  * F8 A collection, opened — its name and its posts (as tiles) or products (as rows).
  * Contract: features/follower-app-v2 · board F8 · rules v1.7 §4.11, M6
  *
- * Each product sells like a one-product post: its own offer applies and the creator earns her
- * commission. The ♡ keeps the product with this collection. Also where a collection link lands.
+ * Each product shows its own offer. The ♡ keeps the product with this collection; to buy one she
+ * opens it from a creator's post. Also where a collection link lands.
+ *
+ * shopper-app-fixes:
+ *   F14 A signed-in shopper's hearts come from the server's `saved` flag on each product (she never
+ *       saw them: only a guest's, kept on the phone, were read). What she hearts here this session
+ *       is remembered too.
+ *   N8  The line "each product sells like a one-product post" is gone: it sat directly above the
+ *       true one, "To buy one, open it from a creator's post".
  */
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
@@ -13,6 +20,7 @@ import { CS, inr } from '../../components/shop/copyShop';
 import { TopBar, TileGrid, Loading, Empty, C, s as bs } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
 import { shopStore, isSignedIn, toggleSaveProductLocal } from '../../components/shop/shopStore';
+import { engaged } from '../../components/shop/engaged';
 import { fonts } from '../../theme/tokens';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -28,12 +36,17 @@ export default function CollectionScreen({ navigation, route }) {
       const res = await followerApi.collection(id);
       if (!res || !res.success) { setStatus('error'); return; }
       setC(res.data); setStatus('ready');
-      if (!(await isSignedIn())) {
+      const on = {};
+      if (await isSignedIn()) {
+        // F14: her account's hearts arrive on the products themselves.
+        for (const p of res.data.products || []) if (p.saved) on[p.collection_item_id] = true;
+      } else {
         const st = await shopStore.get();
-        const on = {};
         for (const x of st.savedProducts) if (x.collection_item_id) on[x.collection_item_id] = true;
-        setHearts(on);
       }
+      // …and what she hearted (or took off) since the app opened is the newer word.
+      for (const p of res.data.products || []) on[p.collection_item_id] = engaged.heartedInCollection(p.collection_item_id, p.id, on[p.collection_item_id]);
+      setHearts(on);
     })();
   }, [id]);
 
@@ -42,10 +55,11 @@ export default function CollectionScreen({ navigation, route }) {
     setHearts((h) => ({ ...h, [p.collection_item_id]: on }));
     if (await isSignedIn()) {
       const r = on ? await followerApi.saveProduct({ product_id: p.id, collection_item_id: p.collection_item_id }) : await followerApi.unsaveProduct(p.id);
-      if (!r || !r.success) setHearts((h) => ({ ...h, [p.collection_item_id]: !on }));
+      if (!r || !r.success) { setHearts((h) => ({ ...h, [p.collection_item_id]: !on })); return; }
     } else {
       await toggleSaveProductLocal({ product_id: p.id, collection_item_id: p.collection_item_id }, on);
     }
+    engaged.setHeart(p.id, on, { collection_item_id: p.collection_item_id });
   }
 
   if (status === 'loading') return <SafeAreaView style={st.safe}><TopBar onBack={() => navigation.goBack()} /><Loading /></SafeAreaView>;
@@ -80,8 +94,7 @@ export default function CollectionScreen({ navigation, route }) {
                 </TouchableOpacity>
               </View>
             ))}
-            <Text style={[bs.hint, { marginTop: 10 }]}>{CS.collectionFoot(first)}</Text>
-            <View style={[bs.soon, { marginTop: 8 }]}><Text style={bs.soonText}>{CS.checkoutSoon}</Text></View>
+            <View style={[bs.soon, { marginTop: 10 }]}><Text style={bs.soonText} testID="collection-how-to-buy">{CS.checkoutSoon}</Text></View>
           </View>
         )}
       </ScrollView>

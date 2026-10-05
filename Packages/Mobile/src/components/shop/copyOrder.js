@@ -47,8 +47,13 @@ export const CO = {
   nothingPicked: 'Nothing picked yet',
   reviewDeal: 'Review your deal',
   soldOut: 'Sold out',
+  // shopper-app-fixes · F6: every size of the product has gone
+  soldOutEverySize: 'Sold out in every size',
   countsToward: (line) => `Counts toward ${line}`,
-  sizesCount: (c, s) => [c > 1 ? `${c} colours` : null, s ? `${s} sizes` : null].filter(Boolean).join(' · '),
+  // shopper-app-fixes · N7: "1 size", and nothing at all for a product with no sizes
+  sizesCount: (c, s) => [c > 1 ? `${c} colours` : null, s ? `${s} size${s === 1 ? '' : 's'}` : null].filter(Boolean).join(' · '),
+  // shopper-app-fixes · N1: a post that has ended, when the server sends no sentence of its own
+  postEnded: 'This post is no longer in the shop',
   // B — BOGO
   youPayFor: '1 · The one you pay for',
   yourFreeOne: '2 · Your free one',
@@ -89,6 +94,10 @@ export const CO = {
   bag: (n) => `Bag · ${n} item${n === 1 ? '' : 's'}`,
   bagEmpty: 'Your bag is empty',
   bagEmptySub: 'Add from a post and it waits here.',
+  // shopper-app-fixes · F9: a bag that could not be read is never shown as an empty one
+  bagTitle: 'Bag',
+  bagLoadFailed: "Couldn't load your bag",
+  bagNotSaved: "Couldn't update your bag",
   editDeal: 'Edit deal',
   // shopper-walk-fixes · G1, G2: a deal made of fixed pieces stays whole (set, bundle, buy one get one)
   removeDeal: 'Remove deal',
@@ -147,6 +156,12 @@ export const CO = {
   holdNote: 'An online payment has 15 minutes; your items are held meanwhile.',
   paymentCancelled: 'Payment cancelled. Nothing was charged.',
   paymentFailed: "The payment didn't go through. Nothing was ordered.",
+  // shopper-app-fixes · F1: she paid, but INFLX could not be reached to confirm it. Not a failure:
+  // her items stay held and the payment is matched to this order by itself. She must not pay twice.
+  paymentUnconfirmed: "We couldn't confirm your payment yet. Please don't pay again. Tap Check again, or look in My orders in a minute.",
+  checkAgain: 'Check again',
+  // shopper-app-fixes · F1: the payment arrived after the items had been released, and they are gone
+  soldOutWhilePaying: 'It sold out while you were paying. Your payment is being refunded.',
   testPayment: 'Test payment',
   testPaymentBody: 'Payments are in test mode. Confirm to simulate a successful payment.',
   confirm: 'Confirm',
@@ -159,12 +174,20 @@ export const CO = {
   // O14, O15
   noOrders: 'No orders yet',
   noOrdersSub: 'What you buy shows here, with where it is.',
-  filters: [['', 'All'], ['confirmed', 'Confirmed'], ['dispatched', 'Shipped'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled']],
+  // shopper-app-fixes · N4: a search or a filter with no match is not "No orders yet"
+  nothingMatches: 'Nothing matches',
+  nothingMatchesSub: (q, filter) => (q && filter ? `No order under “${filter}” matches “${q}”.`
+    : q ? `No order matches “${q}”.` : `You have no orders under “${filter}”.`),
+  // N4 adds Packed and Out for delivery, in the order a parcel moves
+  filters: [['', 'All'], ['confirmed', 'Confirmed'], ['packed', 'Packed'], ['dispatched', 'Shipped'], ['out_for_delivery', 'Out for delivery'],
+    ['delivered', 'Delivered'], ['cancelled', 'Cancelled']],
   track: 'Track',
   cancelItem: 'Cancel',
   needHelp: 'Need help',
   courier: (name, t) => `${name} · ${t}`,
   paid: 'Paid',
+  // shopper-app-fixes · N3: cash on delivery is paid when the parcel is handed over, not before
+  toPayOnDelivery: (v) => `To pay ${v} on delivery`,
   viewPost: 'See the post',
   cancelClosed: 'It has shipped. You can return it once delivered.',
   // O16, O17

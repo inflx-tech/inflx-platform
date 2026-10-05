@@ -68,6 +68,7 @@ async function tryRefreshAccessToken() {
       if (newRefresh) {
         await AsyncStorage.setItem('inflx_refresh_token', newRefresh);
       }
+      noteIssuedNow(newAccess);
       return { token: newAccess };
     } catch {
       return { transient: true };
@@ -77,6 +78,85 @@ async function tryRefreshAccessToken() {
   })();
   return _refreshInFlight;
 }
+
+// ── shopper-app-fixes (F3) — renew the session BEFORE asking ─────────────────────────────────
+// The access token lasts 15 minutes. A page a guest may also see (the feed, a post, comments, a
+// store) never answers 401 for an expired token: the server quietly treats her as a guest. So the
+// refresh-on-401 in request() never ran there, and after 15 minutes a signed-in shopper's likes,
+// saves and follows looked empty and Comments asked her to sign in. The token itself says when it
+// runs out (`exp`), so request() renews it first when it has run out or is about to.
+//
+// The phone's clock is not trusted on its own: a clock set ahead would make every fresh token look
+// expired and renew before every request. What the server's own answers say the time is (the Date
+// header; a fresh token's `iat`) corrects it.
+const RENEW_EARLY_MS = 30 * 1000;
+let _clockAheadMs = 0;          // the phone's clock minus the server's
+
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+function decodeBase64Url(text) {
+  const s = String(text).replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '');
+  let out = '';
+  let bits = 0;
+  let acc = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    const v = B64.indexOf(s[i]);
+    if (v < 0) return null;
+    acc = (acc << 6) | v;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out += String.fromCharCode((acc >> bits) & 0xff);
+      acc &= (1 << bits) - 1;
+    }
+  }
+  return out;
+}
+
+/** What an access token says about itself, in seconds: { exp, iat }. null when it cannot be read. */
+export function tokenTimes(token) {
+  try {
+    const part = String(token || '').split('.')[1];
+    const json = part ? decodeBase64Url(part) : null;
+    const p = json ? JSON.parse(json) : null;
+    if (!p || typeof p.exp !== 'number') return null;
+    return { exp: p.exp, iat: typeof p.iat === 'number' ? p.iat : null };
+  } catch {
+    return null;
+  }
+}
+
+function noteServerTime(res) {
+  try {
+    const at = res && res.headers && typeof res.headers.get === 'function' ? Date.parse(res.headers.get('date')) : NaN;
+    if (!Number.isNaN(at)) _clockAheadMs = Date.now() - at;
+  } catch { /* no Date header: keep what is known */ }
+}
+
+/** A token the server issued this instant: its `iat` is the server's "now". */
+function noteIssuedNow(token) {
+  const t = tokenTimes(token);
+  if (t && t.iat) _clockAheadMs = Date.now() - t.iat * 1000;
+}
+
+/** Has this token run out, or will it within half a minute? A token that cannot be read: no. */
+function runsOutSoon(token) {
+  const t = tokenTimes(token);
+  if (!t) return false;
+  return Date.now() - _clockAheadMs >= t.exp * 1000 - RENEW_EARLY_MS;
+}
+
+/** Is the stored session a shopper's? (The brand and creator apps share this file.) */
+async function isShopperSession() {
+  try {
+    const raw = await AsyncStorage.getItem('inflx_user');
+    return !!raw && JSON.parse(raw).role === 'follower';
+  } catch {
+    return false;
+  }
+}
+
+/** Tests only: forget what has been learned about the phone's clock. */
+export function _resetClockForTests() { _clockAheadMs = 0; }
 
 // follower-app-v2: the phone's anonymous id rides on every request, so a guest's reads and
 // visits are hers (rules 5.14). Set once by services/deviceId.js; never an identity for money.
@@ -99,6 +179,7 @@ async function fetchOnce(method, path, body, token) {
       signal: controller.signal,
     });
     clearTimeout(timeout);
+    noteServerTime(res);
     return res;
   } finally {
     clearTimeout(timeout);
@@ -171,6 +252,24 @@ async function request(method, path, body) {
   // Skip the refresh dance for the endpoints that hand out sessions.
   const isSessionEstablishing = SESSION_ESTABLISHING_PATHS.includes(path.split('?')[0]);
   let token = await getToken();
+
+  // shopper-app-fixes (F3): the token has run out (or is about to) — renew it before asking, so a
+  // page a guest may also see still knows who she is.
+  //   renewed                 the request goes with the new token
+  //   refused for good        a SHOPPER becomes a guest quietly: no error, no "Session expired"
+  //                           (the app is guest-first). The brand and creator apps are left exactly
+  //                           as they were: the request goes with the old token and the 401
+  //                           handling below says what it has always said.
+  //   could not be reached    the request goes as it would have gone
+  if (token && !isSessionEstablishing && runsOutSoon(token)) {
+    const renewed = await tryRefreshAccessToken();
+    if (renewed.token) {
+      token = renewed.token;
+    } else if (renewed.invalid && (await isShopperSession())) {
+      await clearSession();
+      token = null;
+    }
+  }
 
   try {
     let res = await fetchOnce(method, path, body, token);
@@ -968,6 +1067,10 @@ export const followerApi = {
   unfollow: (influencerId) => api.delete(`/follower/follows/${influencerId}`),
   following: (follows) => api.get(`/follower/following${q({ follows })}`),
 
+  // shopper-app-fixes (F15): Profile › Notifications — the latest fifty, newest first; opening the list reads them.
+  notifications: () => api.get('/notifications'),
+  markNotificationsRead: () => api.post('/notifications/read-all', {}),
+
   // F7 – F10
   creatorStore: (idOrHandle, follows) => api.get(`/follower/creators/${encodeURIComponent(idOrHandle)}${q({ follows })}`),
   creatorPosts: (idOrHandle, params) => api.get(`/follower/creators/${encodeURIComponent(idOrHandle)}/posts${q(params)}`),
@@ -988,6 +1091,8 @@ export const followerApi = {
   checkoutReview: (body) => api.post('/follower/checkout/review', body),
   placeOrder: (body) => api.post('/follower/checkout/place', body),
   verifyPayment: (body) => api.post('/follower/checkout/verify', body),
+  // shopper-app-fixes (F1): she cancelled the online payment, or it failed — release what was held for it.
+  abandonCheckout: (id) => api.post(`/follower/checkout/${id}/abandon`, {}),
   checkout: (id) => api.get(`/follower/checkouts/${id}`),
   orders: (params) => api.get(`/follower/orders${q(params)}`),
   orderLine: (id) => api.get(`/follower/orders/lines/${id}`),

@@ -1,0 +1,13 @@
+/* The look is the locked shopper board's (30 Sep 2026) plus the walk-fixes pieces (4 Oct 2026).
+   Only these three small things are new on this board. */
+
+/* the "Today: …" line under a screen is italic here */
+.cap em{font-style:italic}
+
+/* A4 · sign-in: the six boxes the code is typed into */
+.code{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.code span{height:44px;border-radius:12px;border:1.5px solid var(--border);display:grid;place-items:center;font-size:17px;font-weight:800}
+.code span.on{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+
+/* A13 · a notification she has already opened is not bold */
+.listrow.seen .t b{font-weight:500}

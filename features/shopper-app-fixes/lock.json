@@ -1,0 +1,33 @@
+{
+  "feature": "shopper-app-fixes",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (chat 5 Oct 2026: \"Fix all 15 issues first as well as 8 small other issues....then we go for design round issues\")",
+  "approved_at": "2026-10-05T15:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "Claude, under the founder's standing delegation and his instruction of 5 Oct 2026 (\"Fix all 15 issues first as well as 8 small other issues\") — the board records corrections he approved; nothing on it is a new design (01-spec.md X8). He has NOT reviewed the board itself.",
+  "mockup_locked_at": "2026-10-05T16:30:00+05:30",
+  "mockup_final": "04-preview/mockups/shopper-app-fixes-mockups-v1.html",
+  "notes": "Fifteen faults and eight small ones in the shopper app, found by a read-through of every shopper screen on 4 Oct 2026 and each confirmed in the code on both ends before it was listed (01-spec.md). The founder approved fixing all of them on 5 Oct 2026. No rule changes, no migration, no new app build. The three design items he decided the same day (My orders by deal, replacing one item of a bundle, buying one item of an offer alone) are NOT here: they get their own contract and board. BUILT 5 Oct 2026 (see build). Released on the founder's go (chat 5 Oct 2026: \"Pls go and release\"); the deploy record follows in its own commit. He has not yet answered which side of N8 changes (X9).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "at": "2026-10-05",
+    "waves": "server (me) → two phone builds side by side against BUILD_API.md (browsing and account; ordering) → joined and reviewed against the server → a payment-safety case added (X10) → the board brought in line with what was built",
+    "mobile": "2624/2624 (110 suites); was 2410/2410 (104 suites) before this contract",
+    "backend_new_suite": "shopper-app-fixes.test.js 15/15; the eight neighbouring shopper, ordering, returns, links and wallet suites 175/175",
+    "backend_full_run": "vs the full run stored after the 4 Oct release: 143 suites / 1932 tests / 1727 passed / 177 failed -> 144 / 1951 / 1746 / 177; 0 that passed before fail now, 0 new tests fail, the same 177 by name (06-diff/backend-compare.txt). qa_all_green stays false on the pre-existing failures.",
+    "migration": "none",
+    "not_done": "N8, the refund policy sentence — it is produced from the website's policy and cannot differ from it; left for the founder (X9)",
+    "device": "NOT seen on a phone. Every \"walk owed\" row of 03-expected-outputs.md section B is open. Maestro not run.",
+    "no_new_app_build": "no new native module; ships over the air to the 30 Sep 2026 builds"
+  }
+}

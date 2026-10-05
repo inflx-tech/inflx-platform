@@ -5,13 +5,16 @@
  *
  * Tapping a tile starts a feed from that post. A brand circle opens its store; a category circle
  * filters her store. Guests can follow (kept on the phone, 5.2).
+ *
+ * shopper-app-fixes (N5): her posts and videos go on past the first 20 — the next ones load as she
+ * reaches the end of the page (no button).
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
 import { CS } from '../../components/shop/copyShop';
-import { TopBar, Avatar, CircleRow, TileGrid, PrimaryBtn, Loading, Empty, Chip, C } from '../../components/shop/bitsShop';
+import { TopBar, Avatar, CircleRow, TileGrid, PrimaryBtn, Loading, Empty, Chip, C, nearEnd } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
 import { shopStore, isSignedIn, toggleFollowLocal, ensureDeviceHeader } from '../../components/shop/shopStore';
 import { track } from '../../services/events';
@@ -28,6 +31,7 @@ export default function CreatorStoreScreen({ navigation, route }) {
   const [collections, setCollections] = useState(null);
   const [following, setFollowing] = useState(false);
   const [followers, setFollowers] = useState(0);
+  const page = useRef({ key: null, more: false, next: 0, busy: false });   // N5: where the list shown has got to
 
   const load = useCallback(async () => {
     await ensureDeviceHeader();
@@ -47,12 +51,35 @@ export default function CreatorStoreScreen({ navigation, route }) {
         const r = await followerApi.creatorCollections(store.creator.id);
         setCollections(r && r.success ? r.data.collections : []);
       } else {
+        const key = `${tab}:${category || ''}`;
+        page.current = { key, more: false, next: 0, busy: false };
         setPosts(null);
         const r = await followerApi.creatorPosts(store.creator.id, { tab, category: category || undefined });
-        setPosts(r && r.success ? r.data.posts : []);
+        if (page.current.key !== key) return;               // she has chosen another tab or category since
+        const first = r && r.success ? r.data.posts || [] : [];
+        page.current = { key, more: !!(r && r.success && r.data.more), next: r && r.success && r.data.next != null ? r.data.next : first.length, busy: false };
+        setPosts(first);
       }
     })();
   }, [store, tab, category]);
+
+  // N5 — the end of the page: the next posts of the tab and category on screen.
+  async function loadMore() {
+    const at = page.current;
+    if (tab === 'collections' || !store || !at.more || at.busy) return;
+    at.busy = true;
+    const r = await followerApi.creatorPosts(store.creator.id, { tab, category: category || undefined, offset: at.next });
+    if (page.current !== at) return;                        // another list is on screen now
+    at.busy = false;
+    if (!r || !r.success) return;                           // asked again at the next reach of the end
+    const more = r.data.posts || [];
+    at.more = !!r.data.more && more.length > 0;
+    at.next = r.data.next != null ? r.data.next : at.next + more.length;
+    setPosts((prev) => {
+      const have = new Set((prev || []).map((p) => p.id));
+      return [...(prev || []), ...more.filter((p) => !have.has(p.id))];
+    });
+  }
 
   async function follow() {
     const on = !following;
@@ -75,7 +102,8 @@ export default function CreatorStoreScreen({ navigation, route }) {
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
       <TopBar onBack={() => navigation.goBack()} onSearch={() => navigation.navigate('Search')} title=" " />
-      <ScrollView contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 30 }}>
+      <ScrollView contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 30 }}
+        onScroll={(e) => { if (nearEnd(e)) loadMore(); }} scrollEventThrottle={200} testID="creator-store">
         <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
           <Avatar uri={c.avatar} name={c.name} size={60} />
           <View style={{ flex: 1, gap: 2 }}>

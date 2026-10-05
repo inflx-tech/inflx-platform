@@ -3,6 +3,9 @@
  * that post has gone it says so and points to other live posts with the same product. It can't be
  * bought outside a post (P1). A guest's saves stay on this phone until she signs in.
  * Contract: features/follower-app-v2 · board F11 · rules v1.7 §5.8
+ *
+ * shopper-app-fixes (F14): every saved product has "Remove" — whether it can still be bought or its
+ * post has ended (one whose post had ended could never be taken out of Saved), signed in or not.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
@@ -12,11 +15,12 @@ import { followerApi } from '../../services/api';
 import { CS, inr } from '../../components/shop/copyShop';
 import { TopBar, TileGrid, Loading, Empty, C, s as bs } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
-import { shopStore, isSignedIn, ensureDeviceHeader } from '../../components/shop/shopStore';
+import { shopStore, isSignedIn, ensureDeviceHeader, toggleSaveProductLocal } from '../../components/shop/shopStore';
+import { engaged } from '../../components/shop/engaged';
 import { fonts } from '../../theme/tokens';
 
 export default function SavedScreen({ navigation }) {
-  const nav = useShopNav(navigation);
+  const nav = useShopNav(navigation, { tab: true });      // a bottom tab: a video opens in the Play tab (F8)
   const [tab, setTab] = useState('posts');
   const [data, setData] = useState(null);
   const [guest, setGuest] = useState(false);
@@ -35,6 +39,18 @@ export default function SavedScreen({ navigation }) {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // F14 — Remove: it leaves the list at once; her account (or, for a guest, the phone) forgets it.
+  async function remove(p) {
+    setData((d) => (d ? { ...d, products: d.products.filter((x) => x.product_id !== p.product_id) } : d));
+    if (await isSignedIn()) {
+      const r = await followerApi.unsaveProduct(p.product_id);
+      if (!r || !r.success) { load(); return; }           // it could not be removed: show what is really saved
+    } else {
+      await toggleSaveProductLocal({ product_id: p.product_id }, false);
+    }
+    engaged.setHeart(p.product_id, false);
+  }
 
   if (!data) return <SafeAreaView style={st.safe}><TopBar title={CS.saved} /><Loading /></SafeAreaView>;
 
@@ -80,6 +96,10 @@ export default function SavedScreen({ navigation }) {
                   ) : null}
                 </View>
               )}
+              <TouchableOpacity onPress={() => remove(p)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} testID={`saved-remove-${p.product_id}`}
+                accessibilityRole="button" accessibilityLabel={`${CS.remove} ${p.name}`}>
+                <Text style={st.link}>{CS.remove}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )) : <Text style={st.mut}>{CS.noSavedProducts}</Text>}

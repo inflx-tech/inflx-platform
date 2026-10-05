@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { creatorVibe as C } from '../../theme/tokens';
@@ -14,19 +14,33 @@ const darkColors = {
   pink: C.brown, pinkDim: C.soft, teal: C.verify, tealDim: C.soft,
   purple: C.brown, purpleDim: C.soft, orange: C.brown, orangeDim: C.soft,
 };
-import { api } from '../../services/api';
+import { api, followerApi } from '../../services/api';
 import { mergeAfterSignIn } from '../../components/shop/shopStore';
 import { mergeBagAfterSignIn } from '../../components/shop/bag';
+import { registerPushAfterSignIn } from '../../components/shop/notifications';
+import { CS } from '../../components/shop/copyShop';
 
 /**
  * FollowerLoginScreen — quick OTP login for followers.
  *
- * Flow: Phone → OTP → Name (new users only) → Done → back to payment.
+ * Flow: Phone → OTP → Name (only when she has never given one) → Done → back to where she was.
  * Guest-first (founder 2026-07-25): this screen is the ONE login moment of
  * the shopping journey (reached from Place Order); route.params.onDone lets
  * the caller resume (e.g. continue the order) after sign-in. Skin follows
  * the locked design law: pure white, black text, yellow on the button only.
+ *
+ * shopper-app-fixes:
+ *   F2  The ten digits she types are always sent as +91 and those ten digits. (A number that
+ *       starts with 91 — 91234 56789 — was sent as +9123456789 and refused.)
+ *   F4  No name is sent with the code (every new shopper used to be signed up as "Follower").
+ *       After the code her account says whether a name is still needed (`name_needed`); if so she
+ *       is asked "Your name" once — one box, required — and it is saved to her account.
+ *   N2  The first line says why she is signing in (route.params.reason: 'order' | 'comment' |
+ *       'save' | 'follow'); "Resend code" appears 30 seconds after the code was sent.
+ *   F15 The phone is registered for notifications as soon as she is signed in.
  */
+
+export const RESEND_AFTER_MS = 30 * 1000;
 
 export default function FollowerLoginScreen({ navigation, route }) {
   const [phone, setPhone] = useState('');
@@ -34,16 +48,31 @@ export default function FollowerLoginScreen({ navigation, route }) {
   const [name, setName] = useState('');
   const [step, setStep] = useState('phone'); // 'phone' | 'otp' | 'name'
   const [loading, setLoading] = useState(false);
+  const [sentAt, setSentAt] = useState(0);            // when the code was last sent
+  const [canResend, setCanResend] = useState(false);
+  const [noProfile, setNoProfile] = useState(false);  // an account with no shopper profile yet: her name creates it
+  const reason = route && route.params ? route.params.reason : undefined;
 
-  const cleanedPhone = phone.replace(/\D/g, '');
-  const fullPhone = cleanedPhone.startsWith('91') ? `+${cleanedPhone}` : `+91${cleanedPhone}`;
+  // F2: whatever she typed, the number is the last ten digits, behind +91.
+  const cleanedPhone = phone.replace(/\D/g, '').slice(-10);
+  const fullPhone = `+91${cleanedPhone}`;
 
-  async function handleSendOtp() {
+  // N2: "Resend code" appears 30 seconds after a code is sent (each time one is sent).
+  useEffect(() => {
+    if (step !== 'otp' || !sentAt) return undefined;
+    setCanResend(false);
+    const t = setTimeout(() => setCanResend(true), RESEND_AFTER_MS);
+    return () => clearTimeout(t);
+  }, [step, sentAt]);
+
+  async function handleSendOtp(again) {
     if (cleanedPhone.length < 10) { Alert.alert('Enter a valid 10-digit phone number'); return; }
     setLoading(true);
     try {
       const res = await api.post('/auth/send-otp', { phone: fullPhone });
       if (res.success || res.data) {
+        if (again === true) setOtp('');
+        setSentAt(Date.now());
         setStep('otp');
       } else {
         Alert.alert('Failed', res.error?.message || 'Could not send OTP');
@@ -52,91 +81,78 @@ export default function FollowerLoginScreen({ navigation, route }) {
     finally { setLoading(false); }
   }
 
+  /** She is signed in: this phone is hers to notify, and what she kept as a guest moves to her account. */
+  async function afterSignIn() {
+    registerPushAfterSignIn();        // F15 — never waited for, never fails a sign-in
+    // follower-app-v2 (5.2): what she kept on the phone as a guest (follows, saves, Welcome
+    // choices) moves to her account now. A failure here never blocks signing in.
+    try { await mergeAfterSignIn(); } catch (_) { /* kept on the phone; merged next time */ }
+    // shopper-ordering (O8): the bag she filled as a guest joins her account.
+    try { await mergeBagAfterSignIn(); } catch (_) { /* kept on the phone; merged next time */ }
+  }
+
   async function handleVerifyOtp() {
     if (otp.length < 6) { Alert.alert('Enter the 6-digit OTP'); return; }
     setLoading(true);
     try {
-      // First try verify with a dummy name — if user exists, it works
-      const res = await api.post('/auth/verify-otp', { phone: fullPhone, otp, role: 'follower', name: 'Follower' });
+      // F4: no name goes with the code. A new shopper's account is made without one, and
+      // `name_needed` below says to ask her.
+      const res = await api.post('/auth/verify-otp', { phone: fullPhone, otp, role: 'follower' });
 
       if (res.success || res.data) {
         const token = res.data?.access_token;
         const user = res.data?.user;
+        if (!token) { Alert.alert('Failed', 'No token received'); return; }
 
-        if (token) {
-          await AsyncStorage.setItem('inflx_token', token);
-          // Persist the refresh token so the API client can silently refresh the
-          // 15-min access token. Without this, every follower write (save address,
-          // place order) failed with "session expired" after 15 minutes.
-          if (res.data?.refresh_token) await AsyncStorage.setItem('inflx_refresh_token', res.data.refresh_token);
-          await AsyncStorage.setItem('inflx_user', JSON.stringify({ ...user, role: 'follower' }));
+        await AsyncStorage.setItem('inflx_token', token);
+        // Persist the refresh token so the API client can silently refresh the
+        // 15-min access token. Without this, every follower write (save address,
+        // place order) failed with "session expired" after 15 minutes.
+        if (res.data?.refresh_token) await AsyncStorage.setItem('inflx_refresh_token', res.data.refresh_token);
+        await AsyncStorage.setItem('inflx_user', JSON.stringify({ ...user, role: 'follower' }));
 
-          // Check if this is a new user who needs follower registration
-          const checkRes = await api.get('/followers/me');
-          if (checkRes.success && checkRes.data) {
-            // Existing follower — done!
-            finishLogin();
-          } else {
-            // New user — need name for follower registration
-            setStep('name');
-          }
-        } else {
-          Alert.alert('Failed', 'No token received');
-        }
-      } else {
-        // If error says "name is required" — go to name step first
-        if (res.error?.field === 'name' || res.error?.message?.includes('name')) {
+        const me = await followerApi.getMe();
+        if (me && !me.success && me.error && me.error.code === 'NOT_FOUND') {
+          // An account with no shopper profile yet: her name creates it (and nothing of hers can
+          // be moved to it before it exists).
+          setNoProfile(true);
           setStep('name');
-        } else {
-          Alert.alert('Invalid OTP', res.error?.message || 'Please check and try again');
+          return;
         }
+        await afterSignIn();
+        // Her account could not be read just now: she is signed in all the same, and Profile
+        // offers "Add your name" if one is still needed.
+        if (me && me.success && me.data && me.data.name_needed) setStep('name');
+        else finishLogin();
+      } else {
+        Alert.alert('Invalid OTP', res.error?.message || 'Please check and try again');
       }
     } catch (e) { Alert.alert('Error', e.message); }
     finally { setLoading(false); }
   }
 
   async function handleNameSubmit() {
-    if (!name.trim()) { Alert.alert('Please enter your name'); return; }
+    const given = name.trim();
+    if (given.length < 2) { Alert.alert('Please enter your name'); return; }
     setLoading(true);
     try {
-      // If we don't have token yet (verify-otp failed earlier), re-verify with name
-      const token = await AsyncStorage.getItem('inflx_token');
-      if (!token) {
-        const res = await api.post('/auth/verify-otp', { phone: fullPhone, otp, role: 'follower', name: name.trim() });
-        if (res.success || res.data) {
-          await AsyncStorage.setItem('inflx_token', res.data.access_token);
-          if (res.data?.refresh_token) await AsyncStorage.setItem('inflx_refresh_token', res.data.refresh_token);
-          await AsyncStorage.setItem('inflx_user', JSON.stringify({ ...res.data.user, role: 'follower' }));
-        } else {
-          Alert.alert('Failed', res.error?.message || 'Could not verify');
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Register as follower
-      const regRes = await api.post('/followers/register', { name: name.trim() });
-      if (regRes.success || regRes.data) {
+      const res = noProfile ? await api.post('/followers/register', { name: given }) : await followerApi.updateMe({ name: given });
+      if (res && (res.success || res.data)) {
+        try {
+          const stored = await AsyncStorage.getItem('inflx_user');
+          if (stored) await AsyncStorage.setItem('inflx_user', JSON.stringify({ ...JSON.parse(stored), name: given }));
+        } catch (_) { /* her account has it; the copy on the phone is only a copy */ }
+        if (noProfile) await afterSignIn();
         finishLogin();
       } else {
-        // If already registered, that's fine
-        if (regRes.error?.message?.includes('already')) {
-          finishLogin();
-        } else {
-          Alert.alert('Failed', regRes.error?.message || 'Could not register');
-        }
+        Alert.alert('Failed', res?.error?.message || 'Could not save your name');
       }
     } catch (e) { Alert.alert('Error', e.message); }
     finally { setLoading(false); }
   }
 
-  async function finishLogin() {
+  function finishLogin() {
     const onDone = route?.params?.onDone;
-    // follower-app-v2 (5.2): what she kept on the phone as a guest (follows, saves, Welcome
-    // choices) moves to her account now. A failure here never blocks signing in.
-    try { await mergeAfterSignIn(); } catch (_) { /* kept on the phone; merged next time */ }
-    // shopper-ordering (O8): the bag she filled as a guest joins her account.
-    try { await mergeBagAfterSignIn(); } catch (_) { /* kept on the phone; merged next time */ }
     Alert.alert('Signed in', 'You are all set.', [
       {
         text: 'Continue',
@@ -152,18 +168,21 @@ export default function FollowerLoginScreen({ navigation, route }) {
 
   return (
     <View style={s.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-        <Text style={s.backText}>← Back</Text>
-      </TouchableOpacity>
+      {/* On "Your name" there is no Back: she is already signed in, and the name is required (X2). */}
+      {step !== 'name' ? (
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} testID="login-back">
+          <Text style={s.backText}>← Back</Text>
+        </TouchableOpacity>
+      ) : null}
 
       <View style={s.content}>
         {/* Title */}
         <Text style={s.title}>
           {step === 'phone' ? 'Sign in' : step === 'otp' ? 'Enter OTP' : 'Your name'}
         </Text>
-        <Text style={s.subtitle}>
-          {step === 'phone' ? 'Sign in with your number to like and comment'
-            : step === 'otp' ? `We sent a 6-digit code to +91 ${cleanedPhone.slice(-10)}`
+        <Text style={s.subtitle} testID="login-why">
+          {step === 'phone' ? CS.signInWhy(reason)
+            : step === 'otp' ? `We sent a 6-digit code to +91 ${cleanedPhone}`
             : 'Last step — tell us your name'}
         </Text>
 
@@ -182,14 +201,17 @@ export default function FollowerLoginScreen({ navigation, route }) {
                 keyboardType="phone-pad"
                 placeholder="Enter 10-digit number"
                 placeholderTextColor="#B5B5B5"
-                maxLength={10}
+                // F2: room for a pasted "+91 98765 43210" — the last ten digits are the number.
+                maxLength={16}
                 autoFocus
+                testID="login-phone"
               />
             </View>
             <TouchableOpacity
               style={[s.btn, cleanedPhone.length < 10 && s.btnDisabled]}
-              onPress={handleSendOtp}
+              onPress={() => handleSendOtp(false)}
               disabled={loading || cleanedPhone.length < 10}
+              testID="login-send"
             >
               {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Send OTP →</Text>}
             </TouchableOpacity>
@@ -209,15 +231,23 @@ export default function FollowerLoginScreen({ navigation, route }) {
               placeholderTextColor="#B5B5B5"
               maxLength={6}
               autoFocus
+              testID="login-otp"
             />
             <Text style={s.hint}>Enter the 6-digit code sent to your phone</Text>
             <TouchableOpacity
               style={[s.btn, otp.length < 6 && s.btnDisabled]}
               onPress={handleVerifyOtp}
               disabled={loading || otp.length < 6}
+              testID="login-verify"
             >
               {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Verify →</Text>}
             </TouchableOpacity>
+            {/* N2: half a minute after the code was sent, she can ask for it again. */}
+            {canResend ? (
+              <TouchableOpacity onPress={() => handleSendOtp(true)} disabled={loading} style={s.linkBtn} testID="login-resend" accessibilityRole="button">
+                <Text style={s.resendText}>{CS.resendCode}</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity onPress={() => { setStep('phone'); setOtp(''); }} style={s.linkBtn}>
               <Text style={s.linkText}>← Change phone number</Text>
             </TouchableOpacity>
@@ -234,12 +264,16 @@ export default function FollowerLoginScreen({ navigation, route }) {
               onChangeText={setName}
               placeholder="Enter your name"
               placeholderTextColor="#B5B5B5"
+              autoCapitalize="words"
+              maxLength={100}
               autoFocus
+              testID="login-name"
             />
             <TouchableOpacity
-              style={[s.btn, !name.trim() && s.btnDisabled]}
+              style={[s.btn, name.trim().length < 2 && s.btnDisabled]}
               onPress={handleNameSubmit}
-              disabled={loading || !name.trim()}
+              disabled={loading || name.trim().length < 2}
+              testID="login-name-continue"
             >
               {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Continue →</Text>}
             </TouchableOpacity>
@@ -294,5 +328,6 @@ const s = StyleSheet.create({
   btnText: { fontSize: 15, fontWeight: '800', color: '#111' },
   linkBtn: { marginTop: 14, alignItems: 'center' },
   linkText: { fontSize: 12, color: '#8A8A8A' },
+  resendText: { fontSize: 13, fontWeight: '700', color: '#111', textDecorationLine: 'underline' },
   note: { textAlign: 'center', fontSize: 11, color: '#9A9A9A', marginTop: 32, lineHeight: 18 },
 });

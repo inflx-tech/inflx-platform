@@ -43,7 +43,9 @@ function EditProfileInner({ navigation }) {
       if (!alive) return;
       const d = res?.data || res || {};
       const f = d.follower || d;
-      setName(f.name || '');
+      // shopper-app-fixes (F4): a name she never gave ("Follower", the server's stand-in) is not
+      // put in the box as if it were hers — "Add your name" opens on an empty one.
+      setName(d.name_needed ? '' : f.name || '');
       setEmail(f.email || '');
       setPhone(f.phone || '');
       setLoading(false);

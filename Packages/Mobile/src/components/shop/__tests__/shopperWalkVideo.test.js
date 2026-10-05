@@ -53,7 +53,7 @@ const Saved = require('../../../screens/shop/SavedScreen').default;
 const CreatorStore = require('../../../screens/shop/CreatorStoreScreen').default;
 const BrandStore = require('../../../screens/shop/BrandStoreScreen').default;
 
-const nav = () => ({ goBack: jest.fn(), navigate: jest.fn(), replace: jest.fn(), addListener: jest.fn(() => () => {}) });
+const nav = () => ({ goBack: jest.fn(), navigate: jest.fn(), push: jest.fn(), replace: jest.fn(), addListener: jest.fn(() => () => {}) });
 const ok = (data) => ({ success: true, data });
 
 const AKSHAYA = { id: 'c1', name: 'Akshaya Reddy', handle: 'akshaya', avatar: null };
@@ -83,8 +83,10 @@ function FakeVideo(props) {
 const touchCatchers = (node) => node.findAll((n) => typeof n.props.onPress === 'function'
   || typeof n.props.onClick === 'function' || typeof n.props.onStartShouldSetResponder === 'function');
 
+// shopper-app-fixes F8: this stand-in is a card on Home, so it says what Home says — it is a bottom
+// tab — and its video opens in the Play tab as before. (A pushed screen now opens Play on top instead.)
 function Feed({ navigation, post }) {
-  const sn = useShopNav(navigation);
+  const sn = useShopNav(navigation, { tab: true });
   return (
     <PostCard post={post} surface="home" position={0} active onOpen={sn.openPost} onShop={sn.openShop} onComments={sn.openComments}
       onCreator={sn.openCreator} onBrand={sn.openBrand} onNeedSignIn={sn.needSignIn} />
@@ -147,7 +149,10 @@ describe('V1 · a tap on a video in a feed opens it full screen', () => {
     await waitFor(() => post.getByTestId('video-v2'));
     expect(touchCatchers(post.getByTestId('video-v2'))).toEqual([]);
     fireEvent.press(post.getByTestId('fake-player-v2'));
-    expect(n2.navigate).toHaveBeenCalledWith('PlayTab', expect.objectContaining({ start: 'v2' }));
+    // shopper-app-fixes F8: a post's page is a pushed screen, so Play opens ON TOP of it (it was
+    // navigate('PlayTab'), which threw the page away: Back went to Home).
+    expect(n2.push).toHaveBeenCalledWith('PlayOver', expect.objectContaining({ start: 'v2' }));
+    expect(n2.navigate).not.toHaveBeenCalled();
   });
 
   it('a video that is itself the opened post (from the bag\'s "Add more", a saved product, an order) goes full screen too; an opened photo stays put', async () => {
@@ -158,7 +163,8 @@ describe('V1 · a tap on a video in a feed opens it full screen', () => {
     await waitFor(() => opened.getByTestId('video-v1'));
     expect(touchCatchers(opened.getByTestId('video-v1'))).toEqual([]);
     fireEvent.press(opened.getByTestId('fake-player-v1'));
-    expect(n.navigate).toHaveBeenCalledWith('PlayTab', expect.objectContaining({ start: 'v1' }));
+    // shopper-app-fixes F8: full screen ON TOP of the post's page (it was navigate('PlayTab')).
+    expect(n.push).toHaveBeenCalledWith('PlayOver', expect.objectContaining({ start: 'v1' }));
     opened.unmount();
 
     const n2 = nav();
@@ -166,6 +172,7 @@ describe('V1 · a tap on a video in a feed opens it full screen', () => {
     await waitFor(() => photo.getByTestId('post-open-ph1'));
     fireEvent.press(photo.getByTestId('post-open-ph1'));
     expect(n2.navigate).not.toHaveBeenCalled();                    // it is already open
+    expect(n2.push).not.toHaveBeenCalled();
   });
 
   it('a store tile of a video opens Play too (creator store, brand store, Saved)', async () => {
@@ -175,7 +182,28 @@ describe('V1 · a tap on a video in a feed opens it full screen', () => {
     const store = render(<CreatorStore navigation={n} route={{ params: { id: 'c1' } }} />);
     await waitFor(() => store.getByTestId('creator-tile-v1'));
     fireEvent.press(store.getByTestId('creator-tile-v1'));
-    expect(n.navigate).toHaveBeenCalledWith('PlayTab', expect.objectContaining({ start: 'v1' }));
+    // shopper-app-fixes F8: a store is a pushed screen — Play opens on top of it (it was navigate('PlayTab')).
+    expect(n.push).toHaveBeenCalledWith('PlayOver', expect.objectContaining({ start: 'v1' }));
+    store.unmount();
+
+    followerApi.brandStore.mockResolvedValue(ok({ brand: AVEEN, line: '', categories: [], creators: [], offers_count: 0 }));
+    followerApi.brandPosts.mockResolvedValue(ok({ posts: [VIDEO()], more: false }));
+    const n2 = nav();
+    const brand = render(<BrandStore navigation={n2} route={{ params: { id: 'b1' } }} />);
+    await waitFor(() => brand.getByTestId('brand-tile-v1'));
+    fireEvent.press(brand.getByTestId('brand-tile-v1'));
+    expect(n2.push).toHaveBeenCalledWith('PlayOver', expect.objectContaining({ start: 'v1' }));
+    brand.unmount();
+
+    // Saved is a bottom tab: its video opens in the Play tab, as it always did.
+    await shopStore.set({ savedPosts: ['v1'] });
+    followerApi.resolveSaved.mockResolvedValue(ok({ posts: [VIDEO()], products: [] }));
+    const n3 = nav();
+    const saved = render(<Saved navigation={n3} />);
+    await waitFor(() => saved.getByTestId('saved-tile-v1'));
+    fireEvent.press(saved.getByTestId('saved-tile-v1'));
+    expect(n3.navigate).toHaveBeenCalledWith('PlayTab', expect.objectContaining({ start: 'v1' }));
+    expect(n3.push).not.toHaveBeenCalled();
   });
 
   it('in Play the tap pauses and resumes — it never opens anything', async () => {

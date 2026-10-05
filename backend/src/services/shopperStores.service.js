@@ -145,6 +145,9 @@ async function collection(idOrCode, who = {}, { cardsToo = true } = {}) {
   } else {
     const pairs = items.map((x) => ({ ci: x.campaign_influencer_id, product: x.product_id }));
     const [offers, ok] = await Promise.all([productOffers(pairs), sellable(pairs)]);
+    // shopper-app-fixes (F14): a signed-in shopper's hearts — the phone showed them only for a guest.
+    const hearted = new Set(who && who.followerId
+      ? (await db.query(`SELECT product_id FROM follower_wishlist_items WHERE follower_id = $1`, [who.followerId])).rows.map((r) => r.product_id) : []);
     products = items.filter((x) => ok.has(`${x.campaign_influencer_id}:${x.product_id}`) && x.is_active && x.pushed_to_store
       && (x.stock == null || Number(x.stock) > 0)).map((x) => {
       const o = offers.get(`${x.campaign_influencer_id}:${x.product_id}`) || null;
@@ -152,6 +155,7 @@ async function collection(idOrCode, who = {}, { cardsToo = true } = {}) {
       return {
         collection_item_id: x.id, id: x.product_id, name: x.name, image_url: x.image_url, brand: { id: x.brand_id, name: x.brand_name },
         price: Number(x.price), shopper_price: pays, struck: pays < Number(x.price),
+        saved: hearted.has(x.product_id),
         offer: o ? { id: o.id, badge: sp.badgeOf(o), line: sp.appliedLine(o), ends_on: calendarDay(o.ends_on) } : null,
         line: o ? (o.offer_type === 'discount' ? `${rules.inr(pays)} · ${sp.appliedLine(o).replace(' applied', '')}` : `${rules.inr(x.price)} · ${rules.dealLine(o) || o.name}`) : rules.inr(x.price),
       };

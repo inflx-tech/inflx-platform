@@ -7,6 +7,15 @@
  *
  * route.params: { lines, buyNow } — Buy now brings its own lines (the bag is untouched); otherwise
  * the bag's ticked lines are ordered.
+ *
+ * shopper-app-fixes · F1 — an online order is an order only when its payment arrives:
+ *   · she closes the payment sheet, the payment fails, or it cannot be confirmed → the items held
+ *     for it are released at once (POST /follower/checkout/:id/abandon) and she stays on this
+ *     review; her bag was never emptied (the server empties it when the payment arrives);
+ *   · the payment arrives after the items were released and they have sold out (`status:
+ *     'refunded'`) → "It sold out while you were paying. Your payment is being refunded." — never
+ *     "Order placed".
+ * F9 — a bag that could not be read is said here with Try again; it is not ordered as an empty one.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
@@ -45,6 +54,24 @@ async function pay({ order_id: orderId, key_id: keyId, amount }, prefill) {
   }
 }
 
+// How long between the tries to tell INFLX about a payment she has made (three tries).
+let CONFIRM_WAIT_MS = 1500;
+export const _setConfirmWaitForTests = (ms) => { CONFIRM_WAIT_MS = ms; };
+
+/**
+ * She has paid: INFLX is told. A refusal is an answer. NO answer (no signal, the server asleep) is
+ * not a failed payment — it is tried three times; null means INFLX still could not be reached.
+ */
+async function confirmPayment(result) {
+  for (let i = 0; i < 3; i += 1) {
+    let v = null;
+    try { v = await followerApi.verifyPayment(result); } catch { v = null; }
+    if (v && (v.success || !(v.error && v.error.code === 'NETWORK_ERROR'))) return v;
+    if (i < 2) await new Promise((res) => setTimeout(res, CONFIRM_WAIT_MS));
+  }
+  return null;
+}
+
 export default function CheckoutScreen({ navigation, route }) {
   const { lines: given = null, buyNow = false } = route.params || {};
   const [lines, setLines] = useState(given ? plain(given) : null);
@@ -54,22 +81,26 @@ export default function CheckoutScreen({ navigation, route }) {
   const [state, setState] = useState('loading');   // loading · ready · no-address · error
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+  // A payment she made that INFLX could not be told about yet: { result, checkoutId }. While it is
+  // set there is no Place order — pressing it would have her pay twice.
+  const [unconfirmed, setUnconfirmed] = useState(null);
 
-  // The lines and the default address.
-  useEffect(() => {
-    (async () => {
-      let ls = lines;
-      if (!ls) {
-        const bag = await loadBag();
-        ls = plain(bag.filter((l) => l.ticked !== false));
-        setLines(ls);
-      }
-      const r = await followerApi.addresses();
-      const list = r && r.success ? r.data.addresses || [] : [];
-      if (!list.length) { setState('no-address'); return; }
-      setAddress(list.find((a) => a.is_default) || list[0]);
-    })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // The lines and the default address. A bag that could not be read is an error with Try again
+  // (F9) — it used to come back empty, and the review then said "Nothing to order".
+  const start = useCallback(async () => {
+    let ls = lines;
+    if (!ls) {
+      let bag;
+      try { bag = await loadBag(); } catch (e) { setMsg(e.message || CO.bagLoadFailed); setState('error'); return; }
+      ls = plain(bag.filter((l) => l.ticked !== false));
+      setLines(ls);
+    }
+    const r = await followerApi.addresses();
+    const list = r && r.success ? r.data.addresses || [] : [];
+    if (!list.length) { setState('no-address'); return; }
+    setAddress(list.find((a) => a.is_default) || list[0]);
+  }, [lines]);
+  useEffect(() => { start(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const review = useCallback(async () => {
     if (!address || !lines) return;
@@ -80,8 +111,20 @@ export default function CheckoutScreen({ navigation, route }) {
   }, [address, lines, method]);
   useEffect(() => { review(); }, [review]);
 
+  // Try again: whichever read failed — the bag and the address first, else the review.
+  function retry() {
+    setMsg(null); setState('loading');
+    if (!lines || !address) start(); else review();
+  }
+
+  /** F1: the items held for an online payment are released now, not after 15 minutes. */
+  async function release(checkoutId) {
+    try { await followerApi.abandonCheckout(checkoutId); } catch { /* they are released by themselves when the hold ends */ }
+  }
+
   async function place() {
     setBusy(true); setMsg(null);
+    let held = null;        // the online checkout whose items are held while she pays
     try {
       const r = await followerApi.placeOrder({ address_id: address.id, lines, payment_method: method, expected_total: rv.total });
       if (!r || !r.success) {
@@ -94,15 +137,60 @@ export default function CheckoutScreen({ navigation, route }) {
       }
       const out = r.data;
       if (out.status === 'placed') { await loadBag().catch(() => {}); navigation.replace('OrderPlaced', { checkoutId: out.checkout_id }); return; }
+      held = out.checkout_id;
       const result = await pay(out.razorpay, { phone: address.receiver_phone, name: address.receiver_name });
       if (!result) { setMsg(CO.paymentCancelled); return; }
-      const v = await followerApi.verifyPayment(result);
-      if (!v || !v.success) { setMsg((v && v.error && v.error.message) || CO.paymentFailed); return; }
-      await loadBag().catch(() => {});
-      navigation.replace('OrderPlaced', { checkoutId: out.checkout_id });
+      const v = await confirmPayment(result);
+      if (!v) {
+        // She paid, and INFLX could not be reached. Nothing is released: the items stay held for
+        // this payment, which is matched to the order by itself. She is told not to pay again.
+        held = null;
+        setUnconfirmed({ result, checkoutId: out.checkout_id });
+        setMsg(CO.paymentUnconfirmed);
+        return;
+      }
+      if (!v.success) { setMsg((v.error && v.error.message) || CO.paymentFailed); return; }
+      held = null;          // the payment arrived: the server has settled what was held
+      await settled(v, out.checkout_id);
     } catch (e) {
       setMsg(e.message || CO.paymentFailed);
-    } finally { setBusy(false); }
+    } finally {
+      // Cancelled, failed, or not confirmed: release before she can press Place order again, so
+      // her own retry never reads "Sold out". Her bag is as it was.
+      if (held) await release(held);
+      setBusy(false);
+    }
+  }
+
+  /** The server has answered about a payment that arrived: the order is placed, or it was refunded. */
+  async function settled(v, checkoutId) {
+    if (v.data && v.data.status === 'refunded') {
+      // It arrived after the items were released, and they have sold out: nothing was ordered and
+      // the money is going back. She stays here; the review is read again so it shows what is gone.
+      setUnconfirmed(null);
+      setMsg(CO.soldOutWhilePaying);
+      try {
+        const again = await followerApi.checkoutReview({ address_id: address.id, lines, payment_method: method });
+        if (again && again.success) setRv(again.data);
+      } catch { /* the review she has stays */ }
+      return;
+    }
+    await loadBag().catch(() => {});
+    navigation.replace('OrderPlaced', { checkoutId });
+  }
+
+  /** "Check again": the same payment is confirmed once more. It never asks her to pay. */
+  async function checkAgain() {
+    if (!unconfirmed) return;
+    setBusy(true);
+    try {
+      const v = await confirmPayment(unconfirmed.result);
+      if (!v) { setMsg(CO.paymentUnconfirmed); return; }
+      if (!v.success) { setUnconfirmed(null); setMsg((v.error && v.error.message) || CO.paymentFailed); await release(unconfirmed.checkoutId); return; }
+      await settled(v, unconfirmed.checkoutId);
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (state === 'no-address') {
@@ -118,7 +206,7 @@ export default function CheckoutScreen({ navigation, route }) {
     return (
       <SafeAreaView style={st.safe}>
         <TopBar title={CO.reviewOrder} onBack={() => navigation.goBack()} />
-        {state === 'error' ? <Empty title={msg || CS.loadError} action={CS.retry} onAction={review} /> : <Loading />}
+        {state === 'error' ? <Empty title={msg || CS.loadError} action={CS.retry} onAction={retry} testID="checkout-error" /> : <Loading />}
       </SafeAreaView>
     );
   }
@@ -174,9 +262,21 @@ export default function CheckoutScreen({ navigation, route }) {
         {msg ? <Text style={b.problem} testID="checkout-msg">{msg}</Text> : null}
       </ScrollView>
       <View style={st.bar}>
-        <TouchableOpacity style={[b.primary, { marginTop: 0 }, (!rv.buyable || busy) && b.primaryDis]} disabled={!rv.buyable || busy} onPress={place} testID="place-order">
-          <Text style={b.primaryText}>{CO.placeOrder(inr(rv.total))}</Text>
-        </TouchableOpacity>
+        {unconfirmed ? (
+          // F1: she has paid and INFLX could not be told yet — no Place order here (she would pay twice).
+          <>
+            <TouchableOpacity style={[b.primary, { marginTop: 0 }, busy && b.primaryDis]} disabled={busy} onPress={checkAgain} testID="check-payment">
+              <Text style={b.primaryText}>{CO.checkAgain}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[b.secondary, { marginTop: 10 }]} onPress={() => navigation.navigate('Orders')} testID="unconfirmed-orders">
+              <Text style={b.secondaryText}>{CO.myOrders}</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity style={[b.primary, { marginTop: 0 }, (!rv.buyable || busy) && b.primaryDis]} disabled={!rv.buyable || busy} onPress={place} testID="place-order">
+            <Text style={b.primaryText}>{CO.placeOrder(inr(rv.total))}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );

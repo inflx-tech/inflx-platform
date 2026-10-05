@@ -2,13 +2,16 @@
  * F9 Brand store — only this brand's posts; category circles (only categories it has posts in),
  * creator circles (only creators who worked with it); a floating Offers button that stays in place.
  * Contract: features/follower-app-v2 · board F9 · rules v1.7 §5.10, §4.13
+ *
+ * shopper-app-fixes (N5): its posts go on past the first 20 — the next ones load as she reaches the
+ * end of the page (no button).
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
 import { CS } from '../../components/shop/copyShop';
-import { TopBar, CircleRow, TileGrid, Loading, Empty, Chip, C } from '../../components/shop/bitsShop';
+import { TopBar, CircleRow, TileGrid, Loading, Empty, Chip, C, nearEnd } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
 import { ensureDeviceHeader } from '../../components/shop/shopStore';
 import { track } from '../../services/events';
@@ -22,6 +25,7 @@ export default function BrandStoreScreen({ navigation, route }) {
   const [category, setCategory] = useState(null);
   const [creator, setCreator] = useState(null);
   const [posts, setPosts] = useState(null);
+  const page = useRef({ key: null, more: false, next: 0, busy: false });   // N5: where the list shown has got to
 
   const load = useCallback(async () => {
     await ensureDeviceHeader();
@@ -35,11 +39,34 @@ export default function BrandStoreScreen({ navigation, route }) {
   useEffect(() => {
     if (!store) return;
     (async () => {
+      const key = `${category || ''}:${creator || ''}`;
+      page.current = { key, more: false, next: 0, busy: false };
       setPosts(null);
       const r = await followerApi.brandPosts(id, { category: category || undefined, creator: creator || undefined });
-      setPosts(r && r.success ? r.data.posts : []);
+      if (page.current.key !== key) return;                 // she has chosen another category or creator since
+      const first = r && r.success ? r.data.posts || [] : [];
+      page.current = { key, more: !!(r && r.success && r.data.more), next: r && r.success && r.data.next != null ? r.data.next : first.length, busy: false };
+      setPosts(first);
     })();
   }, [store, id, category, creator]);
+
+  // N5 — the end of the page: the next posts of the category and creator on screen.
+  async function loadMore() {
+    const at = page.current;
+    if (!store || !at.more || at.busy) return;
+    at.busy = true;
+    const r = await followerApi.brandPosts(id, { category: category || undefined, creator: creator || undefined, offset: at.next });
+    if (page.current !== at) return;                        // another list is on screen now
+    at.busy = false;
+    if (!r || !r.success) return;                           // asked again at the next reach of the end
+    const more = r.data.posts || [];
+    at.more = !!r.data.more && more.length > 0;
+    at.next = r.data.next != null ? r.data.next : at.next + more.length;
+    setPosts((prev) => {
+      const have = new Set((prev || []).map((p) => p.id));
+      return [...(prev || []), ...more.filter((p) => !have.has(p.id))];
+    });
+  }
 
   if (status === 'loading') return <SafeAreaView style={st.safe}><TopBar title={name} onBack={() => navigation.goBack()} /><Loading /></SafeAreaView>;
   if (status === 'error') return <SafeAreaView style={st.safe}><TopBar title={name} onBack={() => navigation.goBack()} /><Empty title={CS.loadError} action={CS.retry} onAction={load} /></SafeAreaView>;
@@ -48,7 +75,8 @@ export default function BrandStoreScreen({ navigation, route }) {
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
       <TopBar title={store.brand.name} onBack={() => navigation.goBack()} onSearch={() => navigation.navigate('Search')} />
-      <ScrollView contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 90 }}>
+      <ScrollView contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 90 }}
+        onScroll={(e) => { if (nearEnd(e)) loadMore(); }} scrollEventThrottle={200} testID="brand-store">
         <Text style={st.sub} testID="brand-line">{store.line}</Text>
         {store.categories.length ? (
           <View style={{ gap: 6 }}>

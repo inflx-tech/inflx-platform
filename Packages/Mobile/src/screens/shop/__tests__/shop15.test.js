@@ -234,7 +234,8 @@ describe('F4 · F5 · F6', () => {
     getByTestId('comments-sign-in'); getByText('Sign in with your number');
     expect(queryByTestId('comment-input')).toBeNull();
     fireEvent.press(getByTestId('comments-sign-in-cta'));
-    expect(n.navigate).toHaveBeenCalledWith('FollowerLogin');
+    // shopper-app-fixes N2: Comments now tells the sign-in screen why she is signing in (it sent nothing).
+    expect(n.navigate).toHaveBeenCalledWith('FollowerLogin', { reason: 'comment' });
   });
 
   it('F6 signed in: write (300 at most), send, report', async () => {
@@ -285,10 +286,13 @@ describe('F7 – F10 stores', () => {
         { collection_item_id: 'ci1', id: 'pr2', name: 'Chanderi saree', image_url: null, brand: SLS, price: 1800, shopper_price: 1440, struck: true, offer: { line: '20% off applied' } },
         { collection_item_id: 'ci2', id: 'pr9', name: 'Cotton kurta · Ivory', image_url: null, brand: { id: 'b-k', name: 'Kaya Studio' }, price: 999, shopper_price: 999, struck: false, offer: null },
       ] }));
-    const { getByText, getByTestId } = render(<Collection navigation={nav()} route={{ params: { id: 'col2' } }} />);
+    const { getByText, getByTestId, queryByText } = render(<Collection navigation={nav()} route={{ params: { id: 'col2' } }} />);
     await waitFor(() => getByTestId('collection-title'));
     getByText('My Dasara picks · 2 products'); getByText('Chanderi saree'); getByText('₹1,440'); getByText('Kaya Studio');
-    getByText('A collection can mix brands. Each product sells like a one-product post: its own offer, and Priya earns her commission.');
+    // shopper-app-fixes N8: the line "Each product sells like a one-product post…" is gone — it sat
+    // directly above the true one, which is the only one kept.
+    expect(queryByText(/sells like a one-product post/)).toBeNull();
+    getByText("To buy one, open it from a creator's post. Save what you like here for now.");
     await act(async () => { fireEvent.press(getByTestId('collection-heart-pr9')); });
     expect((await shopStore.get()).savedProducts).toEqual([{ product_id: 'pr9', post_id: null, collection_item_id: 'ci2' }]);
   });
@@ -362,13 +366,17 @@ describe('F11 · F12 · F13 · Discover', () => {
     expect(n.navigate).toHaveBeenCalledWith('Post', expect.objectContaining({ postId: 'p1' }));
   });
 
-  it('F13 Profile (guest): sign in first; following, city, what she shops for; returns greyed (coming next)', async () => {
+  // shopper-app-fixes F13: Returns is live — "Coming next" is gone. The row opens My orders, which
+  // is hers once signed in, so a guest is not shown it (it was a greyed "Returns · Coming next").
+  it('F13 Profile (guest): sign in first; following, city, what she shops for; no Returns row until she signs in', async () => {
     await shopStore.set({ follows: ['a', 'b'], cityName: 'Vijayawada', shopFor: ['women'] });
     const n = nav();
-    const { getByText, getByTestId, queryByTestId } = render(<Profile navigation={n} />);
+    const { getByText, getByTestId, queryByTestId, queryByText } = render(<Profile navigation={n} />);
     await waitFor(() => getByTestId('profile-guest'));
     getByText('Browsing as guest'); getByText('2 creators'); getByText('Vijayawada'); getByText('Women');
-    getByText('Returns'); getByText('Coming next');
+    expect(queryByText('Coming next')).toBeNull();
+    expect(queryByText('Returns')).toBeNull();
+    expect(queryByTestId('row-returns')).toBeNull();
     expect(queryByTestId('row-addresses')).toBeNull();                  // addresses are hers once signed in
     expect(queryByTestId('log-out')).toBeNull();
     expect(queryByTestId('row-orders')).toBeNull();

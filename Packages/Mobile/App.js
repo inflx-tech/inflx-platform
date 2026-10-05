@@ -1,7 +1,7 @@
 import React, { useEffect, useState, createContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, ActivityIndicator, Platform, Linking } from 'react-native';
+import { View, ActivityIndicator, Platform, Linking, AppState } from 'react-native';
 import { navigationRef } from './src/navigation/navRef';
 import { handleDeepLink } from './src/utils/deepLink';
 import { OneSignal, LogLevel } from 'react-native-onesignal';
@@ -17,6 +17,7 @@ import BrandNavigator from './src/navigation/BrandNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { checkForOtaUpdate, confirmAppliedVersion } from './src/services/otaUpdater';
 import { ensureDeviceHeader } from './src/components/shop/shopStore';
+import { openPendingNotification } from './src/components/shop/notifications';
 
 export const AuthContext = createContext({ setRole: () => {} });
 
@@ -40,7 +41,11 @@ export default function App() {
       const data = event.notification.additionalData;
       if (data) {
         // Store the deep link data so the active navigator can pick it up
-        AsyncStorage.setItem('inflx_pending_deeplink', JSON.stringify(data));
+        AsyncStorage.setItem('inflx_pending_deeplink', JSON.stringify(data))
+          // shopper-app-fixes (F15): the shopper app opens what the notification is about, now.
+          // (The brand and creator apps are untouched: nothing there reads this yet.)
+          .then(() => { if (APP_ROLE === 'follower') openPendingNotification(); })
+          .catch(() => {});
       }
     });
 
@@ -73,7 +78,15 @@ export default function App() {
     ensureDeviceHeader().catch(() => {});
     Linking.getInitialURL().then((url) => { if (url) handleDeepLink(url); }).catch(() => {});
     const sub = Linking.addEventListener('url', (e) => handleDeepLink(e?.url));
-    return () => { try { sub.remove(); } catch (_) { /* older RN */ } };
+    // shopper-app-fixes (F15): a notification she tapped is kept under `inflx_pending_deeplink` and
+    // nothing read it, so the tap only opened Home. Read it when the app starts and whenever it
+    // comes to the front; it is forgotten once opened.
+    openPendingNotification();
+    const front = AppState.addEventListener('change', (state) => { if (state === 'active') openPendingNotification(); });
+    return () => {
+      try { sub.remove(); } catch (_) { /* older RN */ }
+      try { front.remove(); } catch (_) { /* older RN */ }
+    };
   }, []);
 
   // ── OTA update check ───────────────────────────────────────────────────

@@ -72,7 +72,9 @@ const getMe = asyncHandler(async (req, res) => {
     [follower.id]
   );
 
-  return success(res, { follower, addresses });
+  // shopper-app-fixes (F4): the sign-in screen asks "Your name" once when she has never given one.
+  const { nameNeeded } = require('../services/shopperEngagement.service');
+  return success(res, { follower, addresses, name_needed: nameNeeded(follower.name) });
 });
 
 // ── Addresses ────────────────────────────────────────────────────────────────

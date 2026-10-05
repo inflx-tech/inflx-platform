@@ -38,6 +38,36 @@ function sizeEntry(vj, colour, size) {
   return null;
 }
 
+/** Every size entry of a variants object: the colours' sizes, else the top-level list. */
+function sizeEntries(vj) {
+  if (!vj || typeof vj !== 'object') return [];
+  const colors = Array.isArray(vj.colors) ? vj.colors : [];
+  const withSizes = colors.filter((c) => Array.isArray(c && c.sizes) && c.sizes.length);
+  if (withSizes.length) return withSizes.flatMap((c) => c.sizes);
+  return Array.isArray(vj.sizes) ? vj.sizes : [];
+}
+
+/** All the stock of a product with sizes, when every size is tracked; null when any is not, or it has no sizes. */
+function sizesTotal(vj) {
+  const es = sizeEntries(vj);
+  if (!es.length || !es.every((s) => s && typeof s === 'object' && tracked(s))) return null;
+  return es.reduce((n, s) => n + Math.max(0, Number(s.stock)), 0);
+}
+
+/**
+ * Can anything of this product still be bought? (shopper-app-fixes F6)
+ * A product with sizes is in stock while ANY size is — its own stock number is not asked (it used to
+ * be, so a product sold out in every size still looked in stock). A size with a blank stock is not
+ * tracked and never blocks. A product with no sizes answers from its own number.
+ */
+function available(product) {
+  let vj = product && product.variants_json;
+  if (typeof vj === 'string') { try { vj = JSON.parse(vj); } catch { vj = null; } }
+  const es = sizeEntries(vj);
+  if (es.length) return es.some((s) => !s || typeof s !== 'object' || !tracked(s) || Number(s.stock) > 0);
+  return !product || product.stock == null || Number(product.stock) > 0;
+}
+
 /**
  * Moves stock for product items. `sign` −1 takes, +1 gives back.
  * items: [{ product_id, colour, size, qty, name }]
@@ -76,6 +106,14 @@ async function moveProducts(conn, items, sign) {
     p.dirtyStock = true;
   }
   if (short.length) return { ok: false, short };
+  // F6: a product with sizes keeps its own stock number equal to the sum of its sizes, so everything
+  // that reads that number (the feed, "is this post still in the shop") sees it sold out when every
+  // size is. Only when every size is tracked; otherwise the number is left alone.
+  for (const p of byId.values()) {
+    if (!p.dirtyVj) continue;
+    const total = sizesTotal(p.vj);
+    if (total != null && Number(p.stock) !== total) { p.stock = total; p.dirtyStock = true; }
+  }
   for (const p of byId.values()) {
     if (p.dirtyVj) await conn.query(`UPDATE brand_products SET variants_json = $2::jsonb WHERE id = $1`, [p.id, JSON.stringify(p.vj)]);
     if (p.dirtyStock) await conn.query(`UPDATE brand_products SET stock = $2 WHERE id = $1`, [p.id, p.stock]);
@@ -141,4 +179,4 @@ async function giveBack(conn, { products = [], gifts = [] }) {
   await moveGifts(conn, gifts, +1);
 }
 
-module.exports = { take, giveBack, moveProducts, moveGifts, sizeEntry };
+module.exports = { take, giveBack, moveProducts, moveGifts, sizeEntry, sizeEntries, sizesTotal, available };

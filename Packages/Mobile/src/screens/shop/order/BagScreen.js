@@ -11,6 +11,16 @@
  * deal. No − 1 +, no Change, no Remove, no Move to Saved on a single item — raising one item of a
  * set used to block the whole bag ("Sold only as the whole set"). Everything else — a plain
  * discount, buy more save more, spend or buy for a gift, no offer — is exactly as it was.
+ *
+ * shopper-app-fixes:
+ *   F9   a bag that could not be read says "Couldn't load your bag" with Try again — it used to
+ *        say "Your bag is empty", and the next change saved over what she really had
+ *   F10  changing an item's size here also records that size's own price, so the bag does not
+ *        then say a false "Price changed from ₹…"
+ *   N6   a gift she chose shows once, as its own row marked "Free gift: …" (it was also repeated
+ *        as a green line under the items; that line is now only for a gift added by itself, which
+ *        has no row). "Delivery · Free" is no longer written into the bag: the priced bag carries
+ *        no delivery amount, so the line is on Review order, where the server sends it.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -19,7 +29,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { followerApi } from '../../../services/api';
 import { TopBar, Loading, Empty, Avatar, PrimaryBtn } from '../../../components/shop/bitsShop';
-import { MoneyRows, Notes, QtyStepper, ProductPopup, Sheet, isLockedDeal, K, b } from '../../../components/shop/orderBits';
+import { MoneyRows, Notes, QtyStepper, ProductPopup, Sheet, isLockedDeal, priceFor, K, b } from '../../../components/shop/orderBits';
 import { CO } from '../../../components/shop/copyOrder';
 import { CS, inr } from '../../../components/shop/copyShop';
 import { loadBag, saveBag } from '../../../components/shop/bag';
@@ -30,6 +40,7 @@ const plain = (xs) => xs.map(({ ref, post_id, product_id, gift_item_id, colour, 
 
 export default function BagScreen({ navigation }) {
   const [lines, setLines] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);   // her bag could not be read (F9)
   const [priced, setPriced] = useState(null);
   const [err, setErr] = useState(null);
   const [change, setChange] = useState(null);   // { line, product, returns }
@@ -46,16 +57,20 @@ export default function BagScreen({ navigation }) {
     if (!r || !r.success) setErr((r && r.error && r.error.message) || CS.loadError);
   }, []);
 
+  // F9: a bag that could not be read is NOT an empty bag. Nothing of an earlier read is kept on
+  // screen either — a change made on stale lines would be saved over her real bag.
+  const read = useCallback(async (alive = () => true) => {
+    let ls;
+    try { ls = await loadBag(); } catch { if (alive()) { setLoadFailed(true); setLines(null); setPriced(null); } return; }
+    if (!alive()) return;
+    setLoadFailed(false); setLines(ls); setErr(null);
+    await price(ls);
+  }, [price]);
   const refresh = useCallback(() => {
     let alive = true;
-    (async () => {
-      const ls = await loadBag();
-      if (!alive) return;
-      setLines(ls); setErr(null);
-      await price(ls);
-    })();
+    read(() => alive);
     return () => { alive = false; };
-  }, [price]);
+  }, [read]);
   useFocusEffect(refresh);
 
   async function write(next) {
@@ -103,6 +118,14 @@ export default function BagScreen({ navigation }) {
     navigation.navigate('Checkout', {});
   }
 
+  if (loadFailed) {
+    return (
+      <SafeAreaView style={st.safe}>
+        <TopBar title={CO.bagTitle} onBack={() => navigation.goBack()} />
+        <Empty title={CO.bagLoadFailed} action={CS.retry} onAction={() => { setLoadFailed(false); read(); }} testID="bag-load-failed" />
+      </SafeAreaView>
+    );
+  }
   if (lines === null) return <SafeAreaView style={st.safe}><TopBar title={CO.bag(0)} onBack={() => navigation.goBack()} /><Loading /></SafeAreaView>;
   const count = lines.filter((l) => l.role !== 'gift').reduce((s, l) => s + l.qty, 0);
   if (!lines.length) {
@@ -133,7 +156,9 @@ export default function BagScreen({ navigation }) {
         {(priced ? priced.groups : []).map((g) => {
           const mine = lines.filter((l) => l.post_id === g.post_id && l.ticked !== false);
           const isDeal = g.offer && g.offer.type && g.offer.type !== 'discount';
-          const gifts = g.lines.filter((x) => x.role === 'gift');
+          // N6: a gift she chose is a line of her bag and has its own row below; only a gift the
+          // server added by itself (it is in no bag line) is said as the green line.
+          const gifts = g.lines.filter((x) => x.role === 'gift' && !mine.some((l) => String(l.ref) === String(x.ref)));
           const head = (
             <>
               <Avatar uri={g.creator && g.creator.avatar} name={g.creator ? g.creator.name : ''} size={30} />
@@ -193,6 +218,7 @@ export default function BagScreen({ navigation }) {
               <View style={st.gHead}>{head}</View>
               {mine.map((l) => {
                 const p = pricedOf(l.ref) || {};
+                const isGift = l.role === 'gift';
                 return (
                   <View key={l.ref} style={st.line} testID={`bag-line-${l.ref}`}>
                     <TouchableOpacity onPress={() => upd(l.ref, { ticked: false })} testID={`tick-${l.ref}`} accessibilityRole="checkbox" accessibilityState={{ checked: true }}>
@@ -200,7 +226,8 @@ export default function BagScreen({ navigation }) {
                     </TouchableOpacity>
                     {p.image_url ? <Image source={{ uri: p.image_url }} style={st.thumb} /> : <View style={st.thumb} />}
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={st.name} numberOfLines={2}>{p.name || '…'}{p.role === 'free' ? ` · ${CO.free}` : ''}</Text>
+                      {/* N6: her gift is said once — here, on its own row. */}
+                      <Text style={[st.name, isGift && { color: K.ok }]} numberOfLines={2}>{isGift && p.name ? CO.freeGift(p.name) : p.name || '…'}{p.role === 'free' ? ` · ${CO.free}` : ''}</Text>
                       <Text style={st.meta}>{[l.colour, l.size].filter(Boolean).join(' · ')}</Text>
                       <Text style={st.price}>
                         {p.paid != null ? (p.role === 'free' ? '₹0' : inr(p.paid)) : ''}
@@ -222,7 +249,7 @@ export default function BagScreen({ navigation }) {
                 );
               })}
               {gifts.map((x, i) => (
-                <Text key={`g${i}`} style={st.gift}>{CO.freeGift(x.name)} · ₹0 · {CO.worth(inr(x.normal_unit))}</Text>
+                <Text key={`g${i}`} style={st.gift} testID={`bag-gift-${g.post_id}-${i}`}>{CO.freeGift(x.name)} · ₹0 · {CO.worth(inr(x.normal_unit))}</Text>
               ))}
               {g.progress && (g.progress.next || !g.progress.done) ? (
                 <View style={st.nudge}><Text style={st.nudgeText}>{g.progress.next || g.progress.text}</Text></View>
@@ -252,7 +279,10 @@ export default function BagScreen({ navigation }) {
           </View>
         ) : null}
 
-        {priced ? <MoneyRows normal={priced.items_normal} savings={priced.savings} delivery={0} total={priced.items_total} /> : null}
+        {/* N6: "Delivery · Free" was written into the app here (delivery={0}). The priced bag carries
+            no delivery amount — the server works delivery out at Review order, per parcel — so the
+            bag has no Delivery line; Review order shows the server's amount ("Free" only when 0). */}
+        {priced ? <MoneyRows normal={priced.items_normal} savings={priced.savings} total={priced.items_total} /> : null}
         {err ? <Text style={b.problem}>{err}</Text> : null}
       </ScrollView>
       <View style={st.bar}>
@@ -268,7 +298,11 @@ export default function BagScreen({ navigation }) {
         allowQty
         onClose={() => setChange(null)}
         primaryLabel={() => CO.change}
-        onPrimary={(sel) => { upd(change.line.ref, { colour: sel.colour, size: sel.size, qty: sel.qty || change.line.qty }); setChange(null); }}
+        // F10: the size she changes to has its own price; that is the price she has now seen.
+        onPrimary={(sel) => {
+          upd(change.line.ref, { colour: sel.colour, size: sel.size, qty: sel.qty || change.line.qty, price_seen: priceFor(change.product, sel).seen });
+          setChange(null);
+        }}
         returnsLine={change ? change.returns : null}
         testID="bag-change"
       />
@@ -277,7 +311,8 @@ export default function BagScreen({ navigation }) {
         <Text style={st.hint}>{CO.signInToOrderSub}</Text>
         <PrimaryBtn label={CO.getOtp} testID="bag-sign-in-go" onPress={() => {
           setAskSignIn(false);
-          navigation.navigate('FollowerLogin', { onDone: () => navigation.navigate('Checkout', {}) });
+          // N2: the sign-in screen says why she is signing in — here, to place her order.
+          navigation.navigate('FollowerLogin', { onDone: () => navigation.navigate('Checkout', {}), reason: 'order' });
         }} />
       </Sheet>
     </SafeAreaView>

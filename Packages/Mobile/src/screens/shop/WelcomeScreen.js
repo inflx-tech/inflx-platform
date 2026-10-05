@@ -4,13 +4,17 @@
  *
  * Skippable and changeable later in Profile. The choices live on the phone (and on her account
  * once she signs in). The location is asked for here, used for the feed and never stored.
+ *
+ * shopper-app-fixes (F11): a Welcome that cannot load says so, with Try again and Skip — it used to
+ * spin for ever with no way out. (Her choices reach the feed when she goes back: Home sees that
+ * they changed and loads again.)
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
 import { CS } from '../../components/shop/copyShop';
-import { Chip, PrimaryBtn, Loading, C } from '../../components/shop/bitsShop';
+import { Chip, PrimaryBtn, Loading, Empty, C } from '../../components/shop/bitsShop';
 import { shopStore, askLocationPermission, currentPosition, isSignedIn } from '../../components/shop/shopStore';
 import { fonts } from '../../theme/tokens';
 
@@ -25,14 +29,18 @@ export default function WelcomeScreen({ navigation, route }) {
   const [locNote, setLocNote] = useState('');
   const [picking, setPicking] = useState(false);
   const [q, setQ] = useState('');
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const [res, st] = await Promise.all([followerApi.welcome(), shopStore.get()]);
-      if (res && res.success) setOpts(res.data);
-      setShopFor(st.shopFor); setStyles(st.styles); setCityId(st.cityId); setCityName(st.cityName); setUseLoc(!!st.useLocation);
-    })();
+  const load = useCallback(async () => {
+    setFailed(false);
+    let res = null;
+    let st = null;
+    try { [res, st] = await Promise.all([followerApi.welcome(), shopStore.get()]); } catch { /* shown as "couldn't load" below */ }
+    if (st) { setShopFor(st.shopFor); setStyles(st.styles); setCityId(st.cityId); setCityName(st.cityName); setUseLoc(!!st.useLocation); }
+    if (res && res.success && res.data) setOpts(res.data); else setFailed(true);
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const cities = useMemo(() => {
     const list = (opts && opts.cities) || [];
@@ -63,6 +71,21 @@ export default function WelcomeScreen({ navigation, route }) {
     navigation.goBack();
   }
 
+  // The choices could not be fetched: say so, with a way to ask again and a way out. Skip leaves
+  // what she chose before untouched (from Profile it only closes the page).
+  if (!opts && failed) {
+    return (
+      <SafeAreaView style={st.safe} edges={['top', 'bottom']}>
+        <View style={st.top}>
+          <Text style={st.wm}>{CS.wordmark}</Text>
+          <TouchableOpacity onPress={() => (fromProfile ? navigation.goBack() : finish(true))} testID="welcome-skip" accessibilityRole="button">
+            <Text style={st.skip}>{CS.skip}</Text>
+          </TouchableOpacity>
+        </View>
+        <Empty title={CS.loadError} action={CS.retry} onAction={load} testID="welcome-error" />
+      </SafeAreaView>
+    );
+  }
   if (!opts) return <SafeAreaView style={st.safe}><Loading /></SafeAreaView>;
 
   return (

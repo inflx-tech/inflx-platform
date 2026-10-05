@@ -8,13 +8,19 @@
  * shopper-walk-fixes: the bag icon with its count is in the top bar (O6), and the product pop-up
  * shows the listing's details as the product page does — brand, category, every listed detail,
  * returns, then the description (O3, board S4).
+ *
+ * shopper-app-fixes:
+ *   N1   a post that has ended says the server's own sentence; a load that failed has Try again
+ *   N7   a card reads "₹999" for a product with no sizes (not "₹999 · "), and "1 size"
+ *   F10  a picked product shows the price of the size she picked
+ *   F12  what she removes on the review is removed here too (the review hands its lines back)
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../../services/api';
 import { TopBar, Loading, Empty, Chip } from '../../../components/shop/bitsShop';
-import { ProductPopup, StickyBar, BagButton, K } from '../../../components/shop/orderBits';
+import { ProductPopup, StickyBar, BagButton, priceFor, K } from '../../../components/shop/orderBits';
 import { CO, dayLabel } from '../../../components/shop/copyOrder';
 import { CS, inr } from '../../../components/shop/copyShop';
 import { fonts } from '../../../theme/tokens';
@@ -50,7 +56,8 @@ function withPairs(lines) {
 export default function DealScreen({ navigation, route }) {
   const { postId, start = null, lines: fromBag = null, editing = false } = route.params || {};
   const [data, setData] = useState(null);
-  const [status, setStatus] = useState('loading');
+  const [status, setStatus] = useState('loading');     // loading · ready · ended · error
+  const [ended, setEnded] = useState(null);            // the server's sentence for a post that has ended (N1)
   const [picks, setPicks] = useState(() => withPairs((fromBag || []).map((l) => ({ ...l, ref: l.ref || newRef() }))));
   const [priced, setPriced] = useState(null);
   const [popup, setPopup] = useState(null);       // { product, mode, ref, part, paid, gift }
@@ -63,17 +70,24 @@ export default function DealScreen({ navigation, route }) {
   const sub = data && data.offer ? data.offer.sub_type : null;
   const cfg = (data && data.offer && data.offer.config) || {};
 
-  useEffect(() => {
-    (async () => {
-      const r = await followerApi.deal(postId);
-      if (!r || !r.success) { setStatus('error'); return; }
-      setData(r.data); setStatus('ready');
-      if (start) {
-        const p = r.data.products.find((x) => x.id === start);
-        if (p) setTimeout(() => openProduct(p, r.data), 250);
-      }
-    })();
-  }, [postId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // N1: a post that has ended is not a failed load. The server answers 404 with its own sentence
+  // ("This post is no longer in the shop"); anything else is a load that failed, with Try again.
+  async function load() {
+    setStatus('loading');
+    let r = null;
+    try { r = await followerApi.deal(postId); } catch { r = null; }
+    if (!r || !r.success) {
+      const e = (r && r.error) || {};
+      if (e.code === 'NOT_FOUND') { setEnded(e.message || CO.postEnded); setStatus('ended'); } else setStatus('error');
+      return;
+    }
+    setData(r.data); setStatus('ready');
+    if (start) {
+      const p = r.data.products.find((x) => x.id === start);
+      if (p) setTimeout(() => openProduct(p, r.data), 250);
+    }
+  }
+  useEffect(() => { load(); }, [postId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Every change is priced by the server (R5).
   useEffect(() => {
@@ -155,7 +169,15 @@ export default function DealScreen({ navigation, route }) {
   }, [data, cat, sort]);
 
   if (status === 'loading') return <SafeAreaView style={st.safe}><TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} right={<BagButton />} /><Loading /></SafeAreaView>;
-  if (status === 'error' || !data) return <SafeAreaView style={st.safe}><TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} right={<BagButton />} /><Empty title={CS.loadError} /></SafeAreaView>;
+  if (status === 'ended') return <SafeAreaView style={st.safe}><TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} right={<BagButton />} /><Empty title={ended} testID="deal-ended" /></SafeAreaView>;
+  if (status === 'error' || !data) {
+    return (
+      <SafeAreaView style={st.safe}>
+        <TopBar title={CO.buildDeal} onBack={() => navigation.goBack()} right={<BagButton />} />
+        <Empty title={CS.loadError} action={CS.retry} onAction={load} testID="deal-error" />
+      </SafeAreaView>
+    );
+  }
 
   const buys = picks.filter((l) => l.role !== 'gift');
   const unitCount = buys.reduce((s, l) => s + (l.qty || 1), 0);
@@ -226,7 +248,7 @@ export default function DealScreen({ navigation, route }) {
               return (
                 <View key={l.pair} style={st.pair} testID={`pair-${i}`}>
                   <Text style={st.pairName}>{i + 1} · {p ? p.name : ''}</Text>
-                  <Text style={st.pairLine}>{[l.colour, l.size].filter(Boolean).join(' · ')} · {inr(p ? p.shopper_price : 0)}</Text>
+                  <Text style={st.pairLine}>{[l.colour, l.size].filter(Boolean).join(' · ')} · {inr(p ? priceFor(p, l).pays : 0)}</Text>
                   {free ? <Text style={st.pairFree}>{[free.colour, free.size].filter(Boolean).join(' · ')} · {CO.free} ₹0</Text> : null}
                   <Text style={st.remove} onPress={() => removePick(l.ref)} testID={`pair-remove-${i}`}>{CO.remove}</Text>
                 </View>
@@ -280,7 +302,7 @@ export default function DealScreen({ navigation, route }) {
                   {p.image_url ? <Image source={{ uri: p.image_url }} style={st.setImg} /> : <View style={st.setImg} />}
                   <View style={{ flex: 1 }}>
                     <Text style={st.name}>{p.name}{p.set_qty > 1 ? ` ×${p.set_qty}` : ''}</Text>
-                    <Text style={st.meta}>{inr(p.price)}{cs ? ` · ${[cs.first.colour, cs.first.size].filter(Boolean).join(' · ')}` : ''}</Text>
+                    <Text style={st.meta}>{inr(cs ? priceFor(p, cs.first).normal : p.price)}{cs ? ` · ${[cs.first.colour, cs.first.size].filter(Boolean).join(' · ')}` : ''}</Text>
                     <Text style={[st.cta, cs && st.ctaOn, { alignSelf: 'flex-start' }]}>{cs ? CO.chosen : CO.tapToChooseColourSize}</Text>
                   </View>
                 </TouchableOpacity>
@@ -292,6 +314,10 @@ export default function DealScreen({ navigation, route }) {
             {products.map((p) => {
               const cs = cardState(p);
               const pl = priced && cs ? priced.lines.find((l) => l.ref === cs.first.ref) : null;
+              // F10: once picked, the card shows the price of the size she picked.
+              const unit = cs ? priceFor(p, cs.first) : null;
+              // N7: nothing after the price for a product with no sizes (it read "₹999 · ").
+              const sizes = !cs ? CO.sizesCount((p.colours || []).length, (p.colours && p.colours[0] && p.colours[0].sizes.length) || 0) : '';
               return (
                 <TouchableOpacity key={p.id} style={[st.card, cs && st.cardOn, p.sold_out && { opacity: 0.45 }]} disabled={p.sold_out} onPress={() => openProduct(p)} testID={`deal-product-${p.id}`}>
                   <View>
@@ -299,9 +325,11 @@ export default function DealScreen({ navigation, route }) {
                     {cs && cs.count > 1 ? <View style={st.times}><Text style={st.timesText}>×{cs.count}</Text></View> : null}
                   </View>
                   <Text style={st.name} numberOfLines={2}>{p.name}</Text>
-                  <Text style={st.meta}>
-                    {pl && pl.paid_total < pl.normal_total ? <><Text style={st.bold}>{inr(pl.paid_total / (pl.qty || 1))}</Text>{'  '}<Text style={st.struck}>{inr(p.price)}</Text></> : inr(p.shopper_price)}
-                    {!cs ? ` · ${CO.sizesCount(p.colours.length, (p.colours[0] && p.colours[0].sizes.length) || 0)}` : ''}
+                  <Text style={st.meta} testID={`deal-card-price-${p.id}`}>
+                    {pl && pl.paid_total < pl.normal_total
+                      ? <><Text style={st.bold}>{inr(pl.paid_total / (pl.qty || 1))}</Text>{'  '}<Text style={st.struck}>{inr(pl.normal_unit != null ? pl.normal_unit : unit.normal)}</Text></>
+                      : inr(unit ? unit.pays : p.shopper_price)}
+                    {sizes ? ` · ${sizes}` : ''}
                   </Text>
                   <Text style={[st.cta, cs && st.ctaOn]} numberOfLines={1}>{p.sold_out ? CO.soldOut : cs ? (sub === 'pick_any' || sub === 'mix_match' ? CO.inSet(cs.first.size) : CO.picked(cs.first.colour, cs.first.size)) : CO.tapToChoose}</Text>
                 </TouchableOpacity>
@@ -321,7 +349,12 @@ export default function DealScreen({ navigation, route }) {
         disabled={nextToGift ? false : !(priced && priced.buyable)}
         onPress={() => {
           if (nextToGift) { setStep('gift'); return; }
-          navigation.navigate('DealReview', { postId, lines: picks, editing });
+          // F12: the review hands back what is left when she removes something there, so this
+          // page and the review never disagree (an item removed there used to be back here).
+          navigation.navigate('DealReview', {
+            postId, lines: picks, editing,
+            onChange: (left) => { setPicks(left); if (!left.some((l) => l.role !== 'gift')) setStep('buy'); },
+          });
         }}
       />
 

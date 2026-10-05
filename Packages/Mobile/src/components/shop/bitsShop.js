@@ -22,6 +22,7 @@ import { followerApi } from '../../services/api';
 import { track } from '../../services/events';
 import { CS, inr, initialsOf, fmtCount } from './copyShop';
 import { shopStore, isSignedIn, toggleSavePostLocal, toggleSaveProductLocal } from './shopStore';
+import { engaged } from './engaged';
 import ShopVideo, { videoStill } from './ShopVideo';
 import { BagButton, SizeSheet, useAdded, useNavSafe } from './orderBits';
 import { CO, dayLabel } from './copyOrder';
@@ -130,18 +131,32 @@ function Slides({ post, width, height, active, surface }) {
 /**
  * The like / save state of one post on this phone. Likes need sign-in; a guest's save stays on
  * the phone (5.2). Returns handlers that record what she did (5.14).
+ *
+ * shopper-app-fixes (F14): what she has done to this post since the app opened (`engaged`) is read
+ * first — before the copy of the post this screen was handed, which is as old as the feed it came
+ * from — and every card and reel of the same post follows it. So a like or a bookmark she has just
+ * given shows on the next screen, and on the one she comes back to.
  */
 export function usePostActions(post, { surface, onNeedSignIn }) {
-  const [liked, setLiked] = useState(!!(post.mine && post.mine.liked));
-  const [likes, setLikes] = useState((post.counts && post.counts.likes) || 0);
-  const [saved, setSaved] = useState(!!(post.mine && post.mine.saved));
+  const done = engaged.post(post.id) || {};
+  const [liked, setLiked] = useState(done.liked !== undefined ? !!done.liked : !!(post.mine && post.mine.liked));
+  const [likes, setLikes] = useState(done.likes !== undefined ? done.likes : (post.counts && post.counts.likes) || 0);
+  const [saved, setSaved] = useState(done.saved !== undefined ? !!done.saved : !!(post.mine && post.mine.saved));
+
+  useEffect(() => engaged.subscribe((id, now) => {
+    if (id !== post.id) return;
+    if (now.liked !== undefined) setLiked(!!now.liked);
+    if (now.likes !== undefined) setLikes(now.likes);
+    if (now.saved !== undefined) setSaved(!!now.saved);
+  }), [post.id]);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       if (await isSignedIn()) return;
       const st = await shopStore.get();
-      if (alive) setSaved(st.savedPosts.includes(post.id));
+      // What she did a moment ago (engaged) is newer than what the phone had when this was read.
+      if (alive && (engaged.post(post.id) || {}).saved === undefined) setSaved(st.savedPosts.includes(post.id));
     })();
     return () => { alive = false; };
   }, [post.id]);
@@ -149,20 +164,22 @@ export function usePostActions(post, { surface, onNeedSignIn }) {
   const like = useCallback(async () => {
     if (!(await isSignedIn())) { onNeedSignIn && onNeedSignIn(); return; }
     const on = !liked;
-    setLiked(on); setLikes((n) => Math.max(0, n + (on ? 1 : -1)));
+    const was = likes;
+    // Shown at once, on every card of this post (they all listen to `engaged`).
+    engaged.setPost(post.id, { liked: on, likes: Math.max(0, was + (on ? 1 : -1)) });
     track(on ? 'like' : 'unlike', post.id, surface);
     const res = on ? await followerApi.like(post.id) : await followerApi.unlike(post.id);
-    if (res && res.success) setLikes(res.data.likes);
-    else { setLiked(!on); setLikes((n) => Math.max(0, n + (on ? -1 : 1))); }
-  }, [liked, post.id, surface, onNeedSignIn]);
+    if (res && res.success) engaged.setPost(post.id, { likes: res.data.likes });
+    else engaged.setPost(post.id, { liked: !on, likes: was });
+  }, [liked, likes, post.id, surface, onNeedSignIn]);
 
   const save = useCallback(async () => {
     const on = !saved;
-    setSaved(on);
+    engaged.setPost(post.id, { saved: on });
     track(on ? 'save' : 'unsave', post.id, surface);
     if (await isSignedIn()) {
       const res = on ? await followerApi.save(post.id) : await followerApi.unsave(post.id);
-      if (!res || !res.success) setSaved(!on);
+      if (!res || !res.success) engaged.setPost(post.id, { saved: !on });
     } else {
       await toggleSavePostLocal(post.id, on);
     }
@@ -243,15 +260,25 @@ export function isDealPost(post, deal) {
 /**
  * The ♡ on a product: it is kept with its post, so it keeps the post's offer (5.8). A guest's stays
  * on the phone. Resolves false when her account could not keep it, so the heart can go back.
+ * What was kept is remembered for the session (F14), so the sheet shows it the next time it opens.
  */
 export async function heartProduct(postId, productId, on, surface) {
   track(on ? 'save_product' : 'unsave_product', postId, surface, { product_id: productId });
   if (await isSignedIn()) {
     const res = on ? await followerApi.saveProduct({ product_id: productId, post_id: postId }) : await followerApi.unsaveProduct(productId);
-    return !!(res && res.success);
+    if (!res || !res.success) return false;
+  } else {
+    await toggleSaveProductLocal({ product_id: productId, post_id: postId }, on);
   }
-  await toggleSaveProductLocal({ product_id: productId, post_id: postId }, on);
+  engaged.setHeart(productId, on, { post_id: postId });
   return true;
+}
+
+/** Has the list been scrolled to (nearly) its end? For the pages whose posts sit in a scrolling page (N5). */
+export function nearEnd(e, within = 600) {
+  const n = e && e.nativeEvent;
+  if (!n || !n.layoutMeasurement || !n.contentOffset || !n.contentSize) return false;
+  return n.layoutMeasurement.height + n.contentOffset.y >= n.contentSize.height - within;
 }
 
 /** One product of the grid: the photo opens its page; the heart saves it; the bag icon adds it. */
@@ -289,6 +316,8 @@ export function ShopSheet({ post, visible, onClose, surface }) {
   const [hearts, setHearts] = useState({});
   const [deal, setDeal] = useState(null);           // the deal page's data: colours, sizes, stock (D1, O1)
   const [dealFailed, setDealFailed] = useState(false);
+  const [ended, setEnded] = useState(null);         // N1: the server's own sentence — the post has left the shop
+  const [again, setAgain] = useState(0);            // N1: "Try again" asks for the deal data once more
   const [sizing, setSizing] = useState(null);       // the id of the product in the size sheet (O1)
   const [inBag, setInBag] = useState({});           // product id → the size of it in her bag (O2)
   const [count, setCount] = useState(0);
@@ -304,7 +333,7 @@ export function ShopSheet({ post, visible, onClose, surface }) {
   useEffect(() => {
     if (!post) return undefined;
     let alive = true;
-    setDeal(null); setDealFailed(false); setInBag({});
+    setDeal(null); setDealFailed(false); setEnded(null); setInBag({});
     awayRef.current = false; setAway(false);
     (async () => {
       const on = {};
@@ -313,12 +342,21 @@ export function ShopSheet({ post, visible, onClose, surface }) {
         const st = await shopStore.get();
         for (const x of st.savedProducts) if (x.post_id === post.id) on[x.product_id] = true;
       }
+      // F14: `post.mine` is as old as the feed this post came from. What she hearted (or took
+      // off) since the app opened is the newer word.
+      for (const p of post.products || []) on[p.id] = engaged.heartedInPost(post.id, p.id, on[p.id]);
       if (alive) setHearts(on);
     })();
     if (visible) {
       if (followerApi.deal) {
         followerApi.deal(post.id)
-          .then((r) => { if (!alive) return; if (r && r.success) setDeal(r.data); else setDealFailed(true); })
+          .then((r) => {
+            if (!alive) return;
+            if (r && r.success) setDeal(r.data);
+            // N1: an ended post answers "not found" with its own sentence — that is not a failed load.
+            else if (r && r.error && r.error.code === 'NOT_FOUND' && r.error.message) setEnded(r.error.message);
+            else setDealFailed(true);
+          })
           .catch(() => { if (alive) setDealFailed(true); });
       }
       // An add closes this sheet now, so "✓ In your bag" is read from her bag each time it opens.
@@ -329,7 +367,7 @@ export function ShopSheet({ post, visible, onClose, surface }) {
       })().catch(() => {});
     }
     return () => { alive = false; };
-  }, [post, visible]);
+  }, [post, visible, again]);
   // She left the product page some way other than Back (an order placed, say): nothing stays open.
   useEffect(() => {
     if (!nav || typeof nav.addListener !== 'function') return undefined;
@@ -386,7 +424,7 @@ export function ShopSheet({ post, visible, onClose, surface }) {
     const p = sizingProduct;
     setBusy(true);
     try {
-      await addToBag([{ post_id: post.id, product_id: p.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: p.price }]);
+      await addToBag([{ post_id: post.id, product_id: p.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: sel.price_seen != null ? sel.price_seen : p.price }]);
       track('add_to_bag', post.id, surface, { product_id: p.id });
       setInBag((m) => ({ ...m, [p.id]: sel.size || '' }));
       flash.start();
@@ -398,11 +436,31 @@ export function ShopSheet({ post, visible, onClose, surface }) {
   }
   async function buyNow(sel) {
     const p = sizingProduct;
-    const lines = [{ post_id: post.id, product_id: p.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: p.price }];
+    const lines = [{ post_id: post.id, product_id: p.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: sel.price_seen != null ? sel.price_seen : p.price }];
     flash.reset(); setSizing(null); onClose();
     if (!nav) return;
     const go = () => nav.navigate('Checkout', { lines, buyNow: true });
-    if (await isSignedIn()) go(); else nav.navigate('FollowerLogin', { onDone: go });
+    if (await isSignedIn()) go(); else nav.navigate('FollowerLogin', { onDone: go, reason: 'order' });
+  }
+  // N1 — the post has left the shop: the sheet says so in the server's words, and offers nothing to buy.
+  if (ended) {
+    return (
+      <Modal visible={visible && !away} transparent animationType="slide" onRequestClose={onClose}>
+        <Pressable style={s.dim} onPress={onClose} testID="shop-sheet-dim">
+          <Pressable style={s.sheet} onPress={() => {}} testID="shop-sheet">
+            <View style={s.grab} />
+            <View style={s.rowBetween}>
+              <Text style={s.sheetTitle}>{CS.shopTitle}</Text>
+              <TouchableOpacity onPress={onClose} style={s.xBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} testID="shop-sheet-close"
+                accessibilityRole="button" accessibilityLabel={CS.close}>
+                <Icon name="close" size={18} color={C.ink2} />
+              </TouchableOpacity>
+            </View>
+            <Text style={s.giftLine} testID="shop-sheet-ended">{ended}</Text>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    );
   }
   return (
     <>
@@ -432,7 +490,7 @@ export function ShopSheet({ post, visible, onClose, surface }) {
             <ScrollView style={{ maxHeight: Math.round(H * 0.46) }}>
               <View style={s.g3} testID="shop-grid">
                 {post.products.map((p) => (
-                  <ProductTile key={p.id} p={p} saved={!!hearts[p.id]} inBagSize={inBag[p.id]}
+                  <ProductTile key={p.id} p={full(p).sold_out ? { ...p, in_stock: false } : p} saved={!!hearts[p.id]} inBagSize={inBag[p.id]}
                     onOpen={() => openProduct(p)} onHeart={() => heart(p)} onBag={() => add(p)} />
                 ))}
               </View>
@@ -440,6 +498,15 @@ export function ShopSheet({ post, visible, onClose, surface }) {
             {post.gift_line ? <Text style={s.giftLine}>{post.gift_line}</Text> : null}
             {!isDeal && post.offer && post.offer.how ? <Text style={s.hint}>{post.offer.how}</Text> : null}
             <Text style={s.hint}>{CS.noCodeNeeded(first)} {CS.heartKeepsOffer}</Text>
+            {/* N1 — the sizes and stock could not be fetched: say so here, with a way to ask again. */}
+            {dealFailed && !deal ? (
+              <View style={s.rowBetween} testID="shop-sheet-failed">
+                <Text style={[s.oos, s.oneLine]}>{CS.loadError}</Text>
+                <TouchableOpacity onPress={() => setAgain((n) => n + 1)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} testID="shop-sheet-retry" accessibilityRole="button">
+                  <Text style={s.retry}>{CS.retry}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
             {isDeal ? <PrimaryBtn label={CO.buildDeal} onPress={() => openDeal(null)} testID="build-deal" />
               : count > 0 ? <PrimaryBtn label={CO.goToBag(count)} onPress={() => { onClose(); if (nav) nav.navigate('Bag'); }} testID="go-to-bag" secondary /> : null}
           </Pressable>
@@ -599,6 +666,7 @@ export const s = StyleSheet.create({
   pprice: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: C.ink2, marginTop: 1 },
   struck: { textDecorationLine: 'line-through', color: C.ink3, fontSize: 11 },
   oos: { fontFamily: fonts.sansBold, fontSize: 11, color: T.danger, marginTop: 1 },
+  retry: { fontFamily: fonts.sansBold, fontSize: 12.5, color: C.ink, textDecorationLine: 'underline' },
   heartBtn: { padding: 6 },
   heart: { fontSize: 18, color: C.ink },
   giftLine: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: C.ink },
