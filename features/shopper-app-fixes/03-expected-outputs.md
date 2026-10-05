@@ -49,9 +49,23 @@
 | B21 | N8 · The collection's contradicting sentence is gone. **The refund policy sentence is unchanged (X9).** | `screens/shop/__tests__/shop15.test.js` (updated) | jest · policy: **open** |
 | B22 | Three new screens are each registered once, with their import: PlayOver, ShopFollowing, ShopNotifications | `shopperAppFixes.test.js`, `shopperWalkReturn.test.js` (the route-list check) | jest |
 
+## B2 · The seven small faults (built 5 Oct 2026, second pass)
+Phone suite after this pass: 113 suites, 2,644 tests, all passing. Every phone row is "walk owed".
+
+| # | Expected | Proved by | Status |
+|---|---|---|---|
+| S1 | Addresses that cannot be read → an error with Try again, which reads them; no address at all → "Add an address" | `screens/shop/order/__tests__/shopperSmallFixes.test.js` | jest · walk owed |
+| S2 | Order placed, Order details, Cancel, Return: a failed read has Try again; a refusal keeps the server's sentence with nothing to retry | same | jest · walk owed |
+| S3 | A cash parcel: the item's page says what the whole parcel collects, naming delivery and the cash fee; a cancelled item is no longer collected for; delivered or paid online → nothing owed | `backend/tests/shopper-app-fixes.test.js` · S3 (2 tests), `shopperSmallFixes.test.js` | pass · jest · walk owed |
+| S4 | A link to a video replaces its page with Play on top (`PlayOver`), once; a link to a photo post still opens the post's page | `screens/shop/__tests__/shopperSmallFixesBrowse.test.js` | jest · walk owed |
+| S5 | A collection that cannot be read has Try again; one that has gone says the server's sentence | same | jest · walk owed |
+| S6 | Renewed session + "SIGN_IN_REQUIRED" → the answer is returned and she stays signed in; a refused session is still cleared; a guest never reads "Session expired" | `services/__tests__/signInRequired.test.js` | jest |
+| S7 | `createPost` is written once in the creator's calls | `shopperSmallFixesBrowse.test.js` | jest |
+
 ## C · Drift recorded (tests moved from an old behaviour to the new one — never skipped)
 | File | What it said | What it says now | Why |
 |---|---|---|---|
 | `Packages/Mobile/src/components/shop/__tests__/shopperWalkVideo.test.js` | a video from a post's page or a store jumped to the Play tab | it is pushed on top (`PlayOver`) | F8 |
 | `Packages/Mobile/src/screens/shop/__tests__/shop15.test.js` | Comments' sign-in carried no reason; a collection said each product "sells like a one-product post"; a guest's Profile had a Returns row | the reason is passed; the sentence is gone; a guest has no Returns row (it opens My orders, which is hers only when signed in) | N2, N8, F13 |
 | `Packages/Mobile/src/screens/shop/__tests__/shopperWalkProducts.test.js`, `screens/shop/order/__tests__/shopperWalkBag.test.js` | Buy now's sign-in carried no reason | `reason: 'order'` | N2 |
+| `backend/tests/item17-wallet.test.js` (1 line) | everything the creator is sent, ids included, must not contain the letters "fee" | the same, with random ids taken out first; a second line proves the check still catches a fee | a random id contained "fee" in the full run of 5 Oct ("…-d0553a4fee25") — a fragile check, not a product fault |

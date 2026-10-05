@@ -30,11 +30,17 @@ export default function CollectionScreen({ navigation, route }) {
   const [c, setC] = useState(null);
   const [status, setStatus] = useState('loading');
   const [hearts, setHearts] = useState({});
+  const [gone, setGone] = useState(null);       // S5: the server's own sentence when it is no longer there
+  const [again, setAgain] = useState(0);
 
   useEffect(() => {
     (async () => {
       const res = await followerApi.collection(id);
-      if (!res || !res.success) { setStatus('error'); return; }
+      if (!res || !res.success) {
+        setGone(res && res.error && res.error.code === 'NOT_FOUND' && res.error.message ? res.error.message : null);
+        setStatus('error');
+        return;
+      }
       setC(res.data); setStatus('ready');
       const on = {};
       if (await isSignedIn()) {
@@ -48,7 +54,7 @@ export default function CollectionScreen({ navigation, route }) {
       for (const p of res.data.products || []) on[p.collection_item_id] = engaged.heartedInCollection(p.collection_item_id, p.id, on[p.collection_item_id]);
       setHearts(on);
     })();
-  }, [id]);
+  }, [id, again]);
 
   async function heart(p) {
     const on = !hearts[p.collection_item_id];
@@ -63,7 +69,15 @@ export default function CollectionScreen({ navigation, route }) {
   }
 
   if (status === 'loading') return <SafeAreaView style={st.safe}><TopBar onBack={() => navigation.goBack()} /><Loading /></SafeAreaView>;
-  if (status === 'error') return <SafeAreaView style={st.safe}><TopBar onBack={() => navigation.goBack()} /><Empty title={CS.loadError} /></SafeAreaView>;
+  if (status === 'error') {
+    return (
+      <SafeAreaView style={st.safe}>
+        <TopBar onBack={() => navigation.goBack()} />
+        {gone ? <Empty title={gone} testID="collection-gone" />
+          : <Empty title={CS.loadError} action={CS.retry} onAction={() => { setStatus('loading'); setAgain((n) => n + 1); }} testID="collection-failed" />}
+      </SafeAreaView>
+    );
+  }
 
   const first = c.creator ? c.creator.name.split(' ')[0] : '';
   return (

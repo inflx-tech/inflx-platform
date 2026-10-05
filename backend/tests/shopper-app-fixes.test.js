@@ -299,3 +299,38 @@ describe('N7 · a post with no caption is titled by its products', () => {
     expect((await cardOf(w)).title).toBe((await cardOf(w)).products[0].name);      // one product: just its name
   });
 });
+
+// The small faults found on the way (founder, 5 Oct 2026: "fix the small issues").
+describe('S3 · what the courier collects for a cash parcel is the parcel\'s amount', () => {
+  const detail = async (o, i = 0) => (await api.get(`/follower/orders/lines/${o.lines[i].id}`, o.sh.token)).body.data;
+
+  it('two items: each item\'s page says what the whole parcel collects; with a delivery and a cash fee they are named', async () => {
+    const w = await W.saleWorld();
+    const o = await W.order(w, [0, 1], { method: 'cod' });
+    const sum = o.lines.reduce((s, l) => s + Number(l.paid_total), 0);
+    const d = await detail(o);
+    expect(d.parcel).toMatchObject({ items: 2, items_total: sum });
+    expect(d.parcel.to_pay).toBe(sum + d.parcel.delivery_fee + d.parcel.cod_fee);
+    expect(d.parcel.says).toMatch(/^For this parcel you pay ₹[\d,]+ on delivery: 2 items ₹[\d,]+/);
+
+    await query(`UPDATE follower_orders SET delivery_fee = 50, cod_fee = 20 WHERE id = $1`, [o.parcel.id]);
+    const f = await detail(o, 1);
+    expect(f.parcel).toMatchObject({ items: 2, items_total: sum, delivery_fee: 50, cod_fee: 20, to_pay: sum + 70 });
+    expect(f.parcel.says).toBe(`For this parcel you pay ₹${(sum + 70).toLocaleString('en-IN')} on delivery: 2 items ₹${sum.toLocaleString('en-IN')} + delivery ₹50 + cash on delivery fee ₹20.`);
+  });
+
+  it('an item cancelled out of the parcel is no longer collected for; once delivered nothing is owed; an online order owes nothing', async () => {
+    const w = await W.saleWorld();
+    const o = await W.order(w, [0, 1], { method: 'cod' });
+    const [gone, kept] = o.lines;
+    await api.post(`/follower/orders/lines/${gone.id}/cancel`, o.sh.token, { reason: 'Not needed any more' });
+    const d = await detail(o, 1);
+    expect(d.parcel).toMatchObject({ items: 1, items_total: Number(kept.paid_total), to_pay: Number(kept.paid_total) + d.parcel.delivery_fee + d.parcel.cod_fee });
+    expect((await detail(o, 0)).parcel.says).toBeNull();                          // the cancelled item itself asks for nothing
+    await W.deliver(w, o.parcel.id);
+    expect((await detail(o, 1)).parcel.says).toBeNull();
+
+    const paid = await W.order(w, [0]);                                            // online
+    expect((await detail(paid)).parcel).toMatchObject({ to_pay: 0, says: null });
+  });
+});

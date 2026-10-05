@@ -13,7 +13,7 @@
  * No board was drawn for this (founder, 4 Oct 2026): it is the Cancel screen (O16, O17) with
  * Return's words. The reasons, the refund sentence, the warning and "how it works" are the server's.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -54,9 +54,17 @@ export default function ReturnScreen({ navigation, route }) {
   const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
-  useEffect(() => {
-    followerApi.returnPreview(lineId).then((r) => { if (r && r.success) setPv(r.data); else setErr(r && r.error ? r.error.message : CS.loadError); });
+  const [offline, setOffline] = useState(false);     // S2: it could not be read at all (not a refusal)
+  const read = useCallback(() => {
+    setErr(null); setOffline(false);
+    followerApi.returnPreview(lineId).then((r) => {
+      if (r && r.success) { setPv(r.data); return; }
+      const lost = !r || !r.error || r.error.code === 'NETWORK_ERROR';
+      setOffline(lost);
+      setErr(lost ? CS.loadError : r.error.message);
+    }).catch(() => { setOffline(true); setErr(CS.loadError); });
   }, [lineId]);
+  useEffect(() => { read(); }, [read]);
 
   const needsNote = reason === 'other';
   const off = !reason || (needsNote && !note.trim()) || busy;
@@ -86,7 +94,7 @@ export default function ReturnScreen({ navigation, route }) {
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
       <TopBar title={CR.title} onBack={() => navigation.goBack()} />
-      {!pv ? (err ? <Empty title={err} testID="return-refused" /> : <Loading />) : (
+      {!pv ? (err ? <Empty title={err} action={offline ? CS.retry : undefined} onAction={offline ? read : undefined} testID="return-refused" /> : <Loading />) : (
         <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 30 }} keyboardShouldPersistTaps="handled" testID="return">
           {pv.warning ? <View style={st.warn}><Text style={st.warnText}>⚠ {pv.warning}</Text></View> : null}
           {pv.lines.map((l) => <Text key={l.id} style={st.name}>{l.role === 'gift' ? CO.freeGift(l.name) : l.name}{l.size ? ` · ${l.size}` : ''}</Text>)}

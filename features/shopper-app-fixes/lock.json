@@ -46,5 +46,17 @@
     "money": "none moved",
     "open": "N8 — the refund policy sentence; the founder has not yet said which side changes (01-spec.md X9).",
     "pending": "the founder's device walk of every \"walk owed\" row (03-expected-outputs.md section B; the checklist is in 06-diff/notes.md), after-shots, Maestro. release.released stays false until then."
-  }
+  },
+  "followups": [
+    {
+      "at": "2026-10-05",
+      "what": "S1–S7 — the seven small faults found while fixing the fifteen (01-spec.md §2b)",
+      "by": "founder (chat 5 Oct 2026: \"Seven small faults found on the way...fix the small issues, after that we start Design round\")",
+      "code": "server: shopperOrders.lineDetail carries the parcel's pay-on-delivery amount and sentence (S3). phone: CheckoutScreen (S1), OrderScreens + ReturnScreen (S2, S3), PostScreen (S4), CollectionScreen (S5), services/api.js (S6, S7).",
+      "tests": "phone 2644/2644 (113 suites); backend shopper-app-fixes 17/17",
+      "released": false,
+      "go": "founder (chat 5 Oct 2026: \"pls relase these\")",
+      "backend_full_run": "144 suites / 1953 tests: 0 new tests fail, the same 177 old failures; one old wallet check failed by chance on a random id containing \"fee\" and now ignores ids (06-diff/backend-compare.txt)"
+    }
+  ]
 }

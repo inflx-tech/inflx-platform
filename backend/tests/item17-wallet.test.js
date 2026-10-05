@@ -115,7 +115,13 @@ describe('item 17 · the figures, each from its own source (checks 2, 3)', () =>
     expect(p).toMatchObject({ stillToCome: 6000, received: 2000 });
     expect(p.collaborations[0]).toMatchObject({ amount: 8000, paid: 2000, locked: 6000 });
     expect(p.collaborations[0]).not.toHaveProperty('campaignFee');
-    expect(JSON.stringify(p)).not.toMatch(/fee/i);
+    // The word "fee" must not appear anywhere she can read. Ids are taken out first: they are random
+    // hex, and one in a few hundred contains the letters "fee" ("…-d0553a4fee25"), which failed this
+    // check by chance in the full run of 5 Oct 2026 (shopper-app-fixes, second pass). Nothing is
+    // weaker for it: every field name and every value she is shown is still searched.
+    const ids = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+    expect(JSON.stringify(p).replace(ids, '')).not.toMatch(/fee/i);
+    expect(JSON.stringify({ campaignFee: 640 }).replace(ids, '')).toMatch(/fee/i);       // the check still bites
   });
 });
 

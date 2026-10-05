@@ -96,7 +96,10 @@ export default function CheckoutScreen({ navigation, route }) {
       setLines(ls);
     }
     const r = await followerApi.addresses();
-    const list = r && r.success ? r.data.addresses || [] : [];
+    // S1: addresses that could not be READ are an error with Try again — only a shopper who really
+    // has none is asked to add one.
+    if (!r || !r.success) { setMsg(r && r.error && r.error.message ? r.error.message : CS.loadError); setState('error'); return; }
+    const list = r.data.addresses || [];
     if (!list.length) { setState('no-address'); return; }
     setAddress(list.find((a) => a.is_default) || list[0]);
   }, [lines]);

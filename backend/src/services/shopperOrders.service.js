@@ -195,8 +195,35 @@ async function lineDetail(followerId, lineId) {
     courier: r.courier_name ? { name: r.courier_name, tracking: r.tracking_number } : null,
     address: r.address_snapshot,
     post: post[0] ? { id: post[0].id, code: post[0].post_code } : null,
+    parcel: await parcelOf(r),
     deal_items: deal,
     cancel_reason: r.cancel_reason, cancelled_by: r.cancelled_by,
+  };
+}
+
+/**
+ * shopper-app-fixes (small fault S3): what the courier collects for a cash-on-delivery parcel is the
+ * PARCEL's amount — every item still on it, its delivery and the cash fee — not one item's price.
+ * `says` is the sentence for Order details while the parcel is not yet delivered; null otherwise.
+ */
+async function parcelOf(r) {
+  const { rows: [o] } = await db.query(
+    `SELECT o.cod_fee, o.delivery_fee,
+            (SELECT count(*)::int FROM order_lines l WHERE l.order_id = o.id AND l.status = 'active') AS items,
+            (SELECT COALESCE(sum(l.paid_total), 0) FROM order_lines l WHERE l.order_id = o.id AND l.status = 'active') AS items_total
+       FROM follower_orders o WHERE o.id = $1`, [r.order_id]);
+  if (!o) return null;
+  const cod = r.payment_method === 'cod';
+  const items = P(o.items_total);
+  const delivery = P(o.delivery_fee);
+  const fee = cod ? P(o.cod_fee) : 0;
+  const toPay = cod && o.items > 0 ? items + delivery + fee : 0;
+  const parts = [`${o.items} item${o.items === 1 ? '' : 's'} ${inr(R(items))}`, delivery > 0 ? `delivery ${inr(R(delivery))}` : null,
+    fee > 0 ? `cash on delivery fee ${inr(R(fee))}` : null].filter(Boolean);
+  const waiting = cod && o.items > 0 && r.order_status !== 'delivered' && r.status === 'active';
+  return {
+    items: o.items, items_total: R(items), delivery_fee: R(delivery), cod_fee: R(fee), to_pay: R(toPay),
+    says: waiting ? `For this parcel you pay ${inr(R(toPay))} on delivery${parts.length > 1 || o.items > 1 ? `: ${parts.join(' + ')}` : ''}.` : null,
   };
 }
 

@@ -285,6 +285,14 @@ async function request(method, path, body) {
       } else if (refreshed.transient) {
         return { success: false, error: { code: 'NETWORK_ERROR', message: 'Could not reach the server. Please try again.' } };
       }
+      // shopper-app-fixes (small fault S6): the session was JUST renewed and the server still says
+      // "sign in" with SIGN_IN_REQUIRED — that is its answer about this request (the account has no
+      // shopper profile for it), not a dead session. The session is kept and the answer returned.
+      if (res.status === 401 && refreshed.token && typeof res.clone === 'function') {
+        let said = null;
+        try { said = JSON.parse(await res.clone().text()); } catch { said = null; }
+        if (said && said.error && said.error.code === 'SIGN_IN_REQUIRED') return said;
+      }
       if (res.status === 401 && !KEEP_SESSION_ON_401_PATHS.includes(path.split('?')[0])) {
         // Definitive: refresh token invalid/expired, or retry still rejected.
         // Guests (no session at all) get a sign-in prompt, not "expired" —
@@ -699,7 +707,8 @@ export const influencerApi = {
   getPostScope: () => api.get('/influencers/me/post-scope'),
   postPicker: (data) => api.post('/influencers/me/posts/picker', data),
   getPostUploadUrl: (data) => api.post('/influencers/me/posts/upload-url', data),
-  createPost: (data) => api.post('/influencers/me/posts', data),
+  // (S7: an older `createPost` for '/influencers/me/posts' stood here. The one further down — the
+  //  shoppable post — has the same name and always won, so this one could never run. Removed.)
   getMyPosts: (status) => api.get(`/influencers/me/posts${status ? `?status=${status}` : ''}`),
   // ── Item 5 · my invitations (I11–I15). Contract: features/item5-invitations ──
   myInvitations:     (tab) => api.get(`/influencers/me/invitations${tab ? `?tab=${encodeURIComponent(tab)}` : ''}`),

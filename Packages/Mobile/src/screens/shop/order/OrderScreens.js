@@ -40,9 +40,16 @@ import { fonts } from '../../../theme/tokens';
 export function OrderPlacedScreen({ navigation, route }) {
   const { checkoutId } = route.params || {};
   const [co, setCo] = useState(null);
-  useEffect(() => {
-    followerApi.checkout(checkoutId).then((r) => { if (r && r.success) setCo(r.data); });
+  // S2: the order IS placed; if its details cannot be read the page says so with Try again — it used
+  // to spin for ever.
+  const [failed, setFailed] = useState(false);
+  const read = useCallback(() => {
+    setFailed(false);
+    followerApi.checkout(checkoutId)
+      .then((r) => { if (r && r.success) setCo(r.data); else setFailed(true); })
+      .catch(() => setFailed(true));
   }, [checkoutId]);
+  useEffect(() => { read(); }, [read]);
   return (
     <SafeAreaView style={st.safe}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 40 }} testID="order-placed">
@@ -58,6 +65,11 @@ export function OrderPlacedScreen({ navigation, route }) {
               </View>
             ))}
           </>
+        ) : failed ? (
+          <View testID="placed-failed">
+            <Text style={st.sub}>{CO.placedDetailsFailed}</Text>
+            <Text style={[st.act, { textAlign: 'center', marginBottom: 12 }]} onPress={read} testID="placed-retry">{CS.retry}</Text>
+          </View>
         ) : <Loading />}
         <TouchableOpacity style={b.primary} onPress={() => navigation.replace('Orders')} testID="placed-orders"><Text style={b.primaryText}>{CO.myOrders}</Text></TouchableOpacity>
         <TouchableOpacity style={[b.secondary, { marginTop: 10 }]} onPress={() => navigation.navigate('Tabs')} testID="placed-shop"><Text style={b.secondaryText}>{CO.keepShopping}</Text></TouchableOpacity>
@@ -209,8 +221,14 @@ export function moneyLine(d) {
   const delivered = d.status === 'delivered' || d.status === 'returned' || (d.timeline || []).some((t) => t.status === 'delivered' && t.at);
   if (delivered || d.role === 'gift') return `${CO.paid} ${amount} · ${CO.cod}`;
   if (d.status === 'cancelled') return `${amount} · ${CO.cod}`;
+  // S3: when the parcel has other items or a fee, the courier collects the PARCEL's amount — the
+  // server says it (`parcel.says`, shown under this line) — so this line is just the item's price.
+  if (d.parcel && d.parcel.to_pay != null && Number(d.parcel.to_pay) !== Number(d.paid)) return `${amount} · ${CO.cod}`;
   return CO.toPayOnDelivery(amount);
 }
+
+/** S3: what the courier collects for this parcel, in the server's words — only while it is still owed. */
+export const parcelLine = (d) => (d && d.parcel && d.parcel.says && Number(d.parcel.to_pay) !== Number(d.paid) ? d.parcel.says : null);
 
 export function OrderDetailScreen({ navigation, route }) {
   const { lineId } = route.params || {};
@@ -222,7 +240,7 @@ export function OrderDetailScreen({ navigation, route }) {
   }, [lineId]);
   useFocusEffect(load);
   if (d === null) return <SafeAreaView style={st.safe}><TopBar onBack={() => navigation.goBack()} /><Loading /></SafeAreaView>;
-  if (d === false) return <SafeAreaView style={st.safe}><TopBar onBack={() => navigation.goBack()} /><Empty title={CS.loadError} /></SafeAreaView>;
+  if (d === false) return <SafeAreaView style={st.safe}><TopBar onBack={() => navigation.goBack()} /><Empty title={CS.loadError} action={CS.retry} onAction={() => { setD(null); load(); }} testID="order-detail-failed" /></SafeAreaView>;
   const a = d.address || {};
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
@@ -234,6 +252,7 @@ export function OrderDetailScreen({ navigation, route }) {
             <Text style={st.name}>{d.name}</Text>
             <Text style={st.meta}>{[d.colour, d.size].filter(Boolean).join(' · ')}{d.qty > 1 ? ` ×${d.qty}` : ''} · {d.brand.name}</Text>
             <Text style={st.meta} testID="order-money">{moneyLine(d)}</Text>
+            {parcelLine(d) ? <Text style={st.meta} testID="order-parcel-pay">{parcelLine(d)}</Text> : null}
           </View>
         </View>
         <View style={st.card} testID="timeline">
@@ -289,9 +308,17 @@ export function CancelScreen({ navigation, route }) {
   const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
-  useEffect(() => {
-    followerApi.cancelPreview(lineId).then((r) => { if (r && r.success) setPv(r.data); else setErr(r && r.error ? r.error.message : CS.loadError); });
+  const [offline, setOffline] = useState(false);     // S2: it could not be read at all (not a refusal)
+  const read = useCallback(() => {
+    setErr(null); setOffline(false);
+    followerApi.cancelPreview(lineId).then((r) => {
+      if (r && r.success) { setPv(r.data); return; }
+      const lost = !r || !r.error || r.error.code === 'NETWORK_ERROR';
+      setOffline(lost);
+      setErr(lost ? CS.loadError : r.error.message);
+    }).catch(() => { setOffline(true); setErr(CS.loadError); });
   }, [lineId]);
+  useEffect(() => { read(); }, [read]);
 
   async function go() {
     setBusy(true); setErr(null);
@@ -318,7 +345,7 @@ export function CancelScreen({ navigation, route }) {
   return (
     <SafeAreaView style={st.safe} edges={['top']}>
       <TopBar title={CO.cancelTitle} onBack={() => navigation.goBack()} />
-      {!pv ? (err ? <Empty title={err} /> : <Loading />) : (
+      {!pv ? (err ? <Empty title={err} action={offline ? CS.retry : undefined} onAction={offline ? read : undefined} testID="cancel-failed" /> : <Loading />) : (
         <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 30 }} testID="cancel">
           {pv.warning ? <View style={st.warn}><Text style={st.warnText}>⚠ {pv.warning}</Text></View> : null}
           {pv.lines.map((l) => <Text key={l.id} style={st.name}>{l.role === 'gift' ? CO.freeGift(l.name) : l.name}{l.size ? ` · ${l.size}` : ''}</Text>)}

@@ -171,6 +171,8 @@ export const CO = {
   paidBy: (v, how) => `${v} ${how === 'cod' ? 'to pay on delivery' : 'paid online'}`,
   myOrders: 'My orders',
   keepShopping: 'Keep shopping',
+  // shopper-app-fixes · S2: the order is placed, only its details could not be read
+  placedDetailsFailed: "Your order is placed. We couldn't load its details just now.",
   // O14, O15
   noOrders: 'No orders yet',
   noOrdersSub: 'What you buy shows here, with where it is.',

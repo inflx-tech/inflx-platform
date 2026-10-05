@@ -48,7 +48,9 @@ export default function PostScreen({ navigation, route }) {
         if (!r || !r.success) { setGone({ message: r && r.error ? r.error.message : CS.loadError }); setStatus('gone'); return; }
         p = r.data;
       }
-      if (p.media_kind === 'video' && code) { navigation.replace('Tabs', { screen: 'PlayTab', params: { start: p.id, at: Date.now() } }); return; }
+      // S4: a link to a video takes this page's place with Play (the same screen a video opened from a
+      // store uses, with its Back arrow) — it used to put a second copy of all the tabs on the stack.
+      if (p.media_kind === 'video' && code) { navigation.replace('PlayOver', { start: p.id, at: Date.now() }); return; }
       setPost(p); setStatus('ready');
       served.current = [p.id];
       loadMore(p.id);

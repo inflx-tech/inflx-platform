@@ -57,17 +57,14 @@ All fifteen faults and seven of the eight small ones, on the server and in the s
 - **F9.** If reading the bag signs her out for good, she quietly gets the phone's own bag.
 - Order lists that cannot be read say "Couldn't load…" with Try again instead of "No orders yet".
 
-## Found on the way, NOT fixed (outside the approved list)
+## Second pass, 5 Oct 2026 — the seven small faults found on the way
 
-1. Review order: an address list that cannot be read shows "Add an address".
-2. Order details and Cancel have no Try again when their read fails; Order placed spins for ever if
-   its read fails.
-3. "To pay ₹X on delivery" is the item's price; a parcel's delivery or cash fee is not in it.
-4. A post link that opens a video puts a second copy of the tabs on the stack.
-5. A collection that fails to load has no Try again.
-6. A signed-in-only page can answer "sign in" for an account with no shopper profile, and the app
-   then clears the session.
-7. In the creator app's code one server call is defined twice (the later one wins); harmless today.
+The founder: "Seven small faults found on the way… fix the small issues, after that we start Design
+round." All seven are fixed (01-spec.md §2b, S1–S7): addresses that cannot be read; Try again on Order
+placed, Order details, Cancel, Return and a collection; what a cash parcel really collects; a video
+link opening Play once; "sign in" for one page no longer signing her out; one call written once.
+Phone 113 suites / 2,644 tests; the server suite 17/17. **Released on his go of 5 Oct 2026** ("pls relase these") — server
+(one added field on an order's details) and the shopper app update; no migration.
 
 ## Test runs (5 Oct 2026)
 

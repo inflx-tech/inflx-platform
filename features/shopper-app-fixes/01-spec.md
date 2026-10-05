@@ -37,6 +37,18 @@
 | N7 | A deal card reads "₹999 · " for a product with no sizes and "1 sizes" for one size. A shared post or a code match can show the internal titles "Price post" / "Untitled post". | "₹999", "1 size". A post with no caption is titled by its first product ("Blue polo and 2 more"). | phone + server |
 | N8 | The refund policy in the app says cancelling needs no reason; Cancel requires one (rule 6.12). A collection says each product "sells like a one-product post" directly above "To buy one, open it from a creator's post". | The collection keeps only the sentence that is true (done). **The policy sentence is NOT changed — see X9.** | phone |
 
+## 2b · Seven more small faults, found while fixing the above (founder, 5 Oct 2026: "fix the small issues")
+
+| ID | Today | After | Where |
+|---|---|---|---|
+| S1 | Review order: when her addresses cannot be read she is told "Add an address". | "Couldn't load. Check your connection." with Try again; only a shopper who really has no address is asked to add one. | phone |
+| S2 | Order details, Cancel and Return have no Try again when they cannot be read; Order placed spins for ever. | Each has Try again. Order placed says "Your order is placed. We couldn't load its details just now." A refusal (it has shipped; the window has closed) keeps the server's own sentence, with nothing to retry. | phone |
+| S3 | "To pay ₹899 on delivery" on an item, when the courier will collect for the whole parcel (other items, delivery, the cash fee). | The item's line is its price ("₹899 · Cash on delivery"), and under it the server says what the parcel collects: "For this parcel you pay ₹1,548 on delivery: 2 items ₹1,498 + cash on delivery fee ₹50." A parcel of one item with no fee reads "To pay ₹899 on delivery" as before. | server + phone |
+| S4 | A link to a video post puts a second copy of all the tabs on the stack. | It opens Play on top, once, with its Back arrow (the same screen a video opened from a store uses). | phone |
+| S5 | A collection that cannot be read has no Try again. | Try again; a collection that has gone says the server's sentence. | phone |
+| S6 | When the server answers "sign in" for something only a shopper profile has, the app signs her out of everything. | That answer is shown for that page only; her session is kept. A session the server really refuses is still ended, as before. | phone |
+| S7 | In the creator app's code one call (`createPost`) is written twice; the first can never run. | Written once. Nothing changes on any screen. | phone (code only) |
+
 ## 3 · Decisions
 
 **The founder's (5 Oct 2026):** fix all fifteen and the eight; the design items wait for their own round.
