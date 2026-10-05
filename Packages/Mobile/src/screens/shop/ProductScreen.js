@@ -10,8 +10,14 @@
  * MRP, no tax line.
  *
  *   a discount or price post   Buy now · Add to bag — the same two actions the size sheet has
- *   a deal post                Build your deal — it opens the deal page with this product started
- *                              (a deal item is never added alone, W7)
+ *   a deal post                shopper-deal-orders (board B1–B3) — the server says (`buy_alone`):
+ *     can be bought alone      "Buy this alone · ₹1,999" over Buy now · Add to bag (its normal price),
+ *                              and "In an offer: Any 3 for ₹2,999 · See offer ›" (bundle, buy more
+ *                              save more, a gift offer, a set whose brand allows its pieces alone)
+ *     buy one get one          "Buy one, get one free. Pick your free one next." · Get this offer
+ *     a set sold only whole    "Sold as a set." · Build your deal
+ *                              (See offer, Get this offer and Build your deal open the deal page with
+ *                              this product started; an older server sends no `buy_alone`: Build your deal)
  *
  * Leaving it (W10):
  *   Back                        the "Products in this post" sheet is there again, open
@@ -40,7 +46,7 @@ import {
 } from '../../components/shop/orderBits';
 import { CO } from '../../components/shop/copyOrder';
 import { CS, inr } from '../../components/shop/copyShop';
-import { addToBag } from '../../components/shop/bag';
+import { addToBag, noteAddedAlone } from '../../components/shop/bag';
 import { shopStore, isSignedIn } from '../../components/shop/shopStore';
 import { engaged } from '../../components/shop/engaged';
 import { fonts } from '../../theme/tokens';
@@ -142,6 +148,11 @@ export default function ProductScreen({ navigation, route }) {
   }
 
   const isDeal = !!data.deal_page;
+  // shopper-deal-orders (B1–B3): on a deal post the server says whether one product may be bought
+  // alone, at its normal price. Buy one get one never; a set only when its brand allows it.
+  const alone = isDeal && data.buy_alone === true;
+  const sub = data.offer ? data.offer.sub_type : null;
+  const offerLine = data.offer && data.offer.line ? data.offer.line : null;
   const creator = (data.post && data.post.creator) || (post && post.creator) || null;
   const brand = (data.post && data.post.brand) || (post && post.brand) || null;
   const first = creator && creator.name ? creator.name.split(' ')[0] : '';
@@ -169,6 +180,7 @@ export default function ProductScreen({ navigation, route }) {
     setBusy(true); setErr(null);
     try {
       await addToBag([line()]);
+      if (alone) noteAddedAlone(postId);
       track('add_to_bag', postId, surface, { product_id: product.id });
       flash.start();
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
@@ -186,8 +198,8 @@ export default function ProductScreen({ navigation, route }) {
     const go = () => navigation.navigate('Checkout', { lines, buyNow: true });
     if (await isSignedIn()) go(); else navigation.navigate('FollowerLogin', { onDone: go, reason: 'order' });
   }
-  // A deal item is never added alone (W7): the deal page takes this page's place, with this
-  // product started, so closing the deal brings her to the post she came from.
+  // The offer (See offer ›, Get this offer, Build your deal): the deal page takes this page's
+  // place, with this product started, so closing the deal brings her to the post she came from.
   function buildDeal() {
     done();
     navigation.replace('Deal', { postId, start: product.sold_out || !product.in_deal ? null : product.id });
@@ -230,11 +242,17 @@ export default function ProductScreen({ navigation, route }) {
       <View style={st.bar}>
         {flash.added ? <AddedLine /> : null}
         {err ? <Text style={b.problem}>{err}</Text> : null}
-        {isDeal ? (
-          <TouchableOpacity style={[b.primary, { marginTop: 0 }]} onPress={buildDeal} testID="product-build-deal" accessibilityRole="button">
-            <Text style={b.primaryText}>{CO.buildDeal}</Text>
-          </TouchableOpacity>
-        ) : (
+        {isDeal && !alone ? (
+          <>
+            {sub === 'bogo' ? <Text style={st.barNote} testID="product-offer-note">{CO.bogoNext}</Text>
+              : sub === 'fixed' ? <Text style={st.barNote} testID="product-offer-note">{CO.soldAsSet}</Text> : null}
+            <TouchableOpacity style={[b.primary, { marginTop: 0 }]} onPress={buildDeal} testID="product-build-deal" accessibilityRole="button">
+              <Text style={b.primaryText}>{sub === 'bogo' ? CO.getThisOffer : CO.buildDeal}</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
+        {alone ? <Text style={st.barLabel} testID="product-buy-alone">{CO.buyAlone(inr(pays))}</Text> : null}
+        {!isDeal || alone ? (
           <View style={st.btnRow}>
             <TouchableOpacity disabled={!canBuy} onPress={buyNow} style={[b.secondary, { flex: 1 }, !canBuy && b.primaryDis]} testID="product-buy-now"
               accessibilityRole="button" accessibilityState={{ disabled: !canBuy }}>
@@ -243,7 +261,13 @@ export default function ProductScreen({ navigation, route }) {
             <AddToBagButton added={flash.added} disabled={!canBuy} label={product.sold_out ? CO.soldOut : ready ? CO.addToBag : CO.chooseSize}
               onAdd={add} onGoToBag={goToBag} testID="product-add" style={{ flex: 1, marginTop: 0 }} />
           </View>
-        )}
+        ) : null}
+        {alone && product.in_deal && offerLine ? (
+          <TouchableOpacity style={st.offerStrip} onPress={buildDeal} testID="product-see-offer" accessibilityRole="button"
+            accessibilityLabel={`${CO.inAnOffer(offerLine)}. ${CO.seeOffer}`}>
+            <Text style={st.offerStripText}>{CO.inAnOffer(offerLine)} · <Text style={st.offerStripLink}>{CO.seeOffer}</Text></Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -263,4 +287,9 @@ const st = StyleSheet.create({
   lift: { elevation: 2, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
   bar: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 14, borderTopWidth: 1, borderTopColor: K.border, gap: 8, backgroundColor: '#fff' },
   btnRow: { flexDirection: 'row', gap: 10 },
+  barLabel: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ink },
+  barNote: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: K.ink2 },
+  offerStrip: { backgroundColor: K.warnSoft, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9 },
+  offerStripText: { fontFamily: fonts.sansBold, fontSize: 12, color: K.warn },
+  offerStripLink: { textDecorationLine: 'underline' },
 });

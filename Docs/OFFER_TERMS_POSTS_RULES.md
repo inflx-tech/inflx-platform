@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.18 · 4 October 2026 · living document**
+**Version 1.19 · 5 October 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -825,11 +825,31 @@ maximum per item, or ₹ off). Each item stands alone. Choose size → **Buy now
 **B. Deal items:** BOGO, Volume (buy more save more), Bundle (pick any, mix & match, fixed) and Free gift. Each
 needs one extra step from the shopper, and the app guides it (6.4).
 
+**One item of an offer can also be bought alone (v1.19, founder 5 Oct 2026).** On an offer post a shopper may buy a
+single product **at its normal price**; the offer is shown beside it, and its price applies only once the offer is
+completed — never a part of it. Which offers allow it:
+
+| Offer | One product alone? |
+|---|---|
+| Bundle (pick any, mix & match) | Yes, at its normal price |
+| Volume (buy more save more) | Yes, at its normal price (it is the first step of the ladder) |
+| Free gift (spend, buy X) | Yes (it already paid its own price) |
+| BOGO | **No.** She pays the same either way and would lose the free one |
+| Bundle, fixed (a set) | **Only if the brand switched on "Pieces can also be bought alone"** for that offer (1.x numbers; off unless switched on; set while the offer is a draft and frozen with its other numbers at publish) |
+
+An item bought alone is an ordinary sale through that post: its own order line, cancelled and returned on its own,
+and the creator earns her collaboration % on what was paid (6.13).
+
 ### 6.3 Choosing size and colour (O1)
 - On a **simple post** (normal price or a discount), tapping **Add** on a product in Shop this post (F3) opens the
   **size and colour sheet**: its colours, its sizes with stock, sold-out sizes crossed out, and "Only 2 left" when 3
-  or fewer remain. On a **deal post**, Shop this post leads to the **deal page** instead (6.5), where each product
-  she taps opens the **product pop-up** (P2) rather than this sheet.
+  or fewer remain. On a **deal post** whose products can be bought alone (6.2), **Add** opens this same sheet at the
+  product's normal price, with the line "Or get it in the offer: Any 3 for ₹2,999 ›" under the buttons, which opens
+  the **deal page** (6.5) with that product started. On a BOGO post, or a set sold only whole, **Add** opens the
+  deal page, where each product she taps opens the **product pop-up** (P2) rather than this sheet.
+- **The product page** on a deal post (v1.19): "Buy this alone · ₹1,999" over **Buy now** and **Add to bag**, and the
+  strip "In an offer: Any 3 for ₹2,999 · See offer ›". On a BOGO post: "Buy one, get one free. Pick your free one
+  next." and one button, **Get this offer**. On a set sold only whole: "Sold as a set." and **Build your deal**.
 - A **size chart** link shows only when the brand has given one.
 - The sheet shows the price she pays for one (after a discount) with the normal price struck, and the post's
   offer line ("20% off applied", "Any 2 for ₹2,999", "Buy one, get the same free").
@@ -844,8 +864,8 @@ needs one extra step from the shopper, and the app guides it (6.4).
 | **BOGO** | On the deal page (B1–B4): tap a product; its pop-up asks the paid one's colour and size, then the free one's (the same product, any colour or size); the pair is listed | Every paid unit can take one free unit of the same product, up to the offer's maximum free items per order. The free unit costs ₹0 whatever that variant costs. |
 | **Volume by quantity** | On the deal page (V1–V3): the tier ladder at the top, quantity chosen in each product's pop-up, "1 more → 30% off" | Count every unit from the post. The highest tier reached applies; tiers replace each other and never add up. A % reward comes off every unit; a ₹ reward comes off the post's items once. |
 | **Volume by value** | The same deal page (V4), the ladder in ₹: "Spend ₹550 more → 20% off" | The same, counting the normal-price total of the post's items. |
-| **Bundle, pick any / mix & match** | On the deal page (K1–K3): the set's empty slots at the top, every product below (mix & match: one tab per category), "2 of 3 picked" | Every full set of N units costs the bundle price. The costliest units go into sets first (the best saving for her). Units left over pay their normal price, with "Add 1 more to complete another set". |
-| **Bundle, fixed** | On the deal page (K4, K5): every item of the set, each chosen in its own pop-up | Sold only as the whole set, at the bundle price. Removing one item removes the set; quantity changes whole sets. |
+| **Bundle, pick any / mix & match** | On the deal page (K1–K3): the set's empty slots at the top, every product below (mix & match: one tab per category), "2 of 3 picked" | Every full set of N units costs the bundle price. The costliest units go into sets first (the best saving for her). Units left over — or bought alone, before any set is full (v1.19) — pay their normal price, with "Add 2 more from this post and get all 3 for ₹2,999" or "Add 1 more to complete another set". |
+| **Bundle, fixed** | On the deal page (K4, K5): every item of the set, each chosen in its own pop-up | Sold only as the whole set, at the bundle price. Removing one item removes the set; quantity changes whole sets. **Unless the brand allows its pieces alone (6.2):** then a piece outside a whole set pays its normal price, and whole sets among her picks still cost the set's price. |
 | **Free gift, spend** | On the deal page in two steps (G1, G3, G4, then the review D4): **1 · choose what you buy**, with the progress to the gift; **2 · choose your gift** from all the gifts, shown clearly; then review | When the normal-price total of the post's buy-pool items reaches the minimum, she gets the offer's number of gifts, **once per order**. One gift in the pool is added by itself. |
 | **Free gift, buy X** | The same two steps, counting items (G2); one gift in the pool is added by itself (G5) | The same, counting units. |
 
@@ -865,9 +885,10 @@ A deal post can carry 20 products and 10 gifts, so a deal is never built in a sm
 a full-screen deal page** where she sees everything clearly, one step at a time.
 
 **Opening it.** On a deal post, Shop this post (F3) shows the offer, how it works, how many products (and gifts)
-there are, and **Build your deal** (D1). The deal page also opens from **Add** on any of the post's products (that
-product arrives already picked), and from **Edit deal** or **Add more from this post** in the bag (her picks are
-already in it).
+there are, and **Build your deal** (D1). The deal page also opens from **See offer ›** on a product's page and from
+"Or get it in the offer ›" in the size sheet (that product arrives already picked); from **Add** on a product of a
+BOGO post or of a set sold only whole; and from **Edit deal**, **See offer ›** or **Add more from this post** in the
+bag (her picks are already in it). Where a product can be bought alone (6.2), **Add** adds it alone instead (6.3).
 
 **What every deal page has**
 - **The deal at the top:** creator, brand, the deal line, a one-line "how it works", and the end date.
@@ -923,6 +944,12 @@ already in it).
 - **Grouped by post:** each group shows the creator (avatar, name), the brand and the offer, then its items, then its
   progress or nudge. A deal group shows its sets and gift together (D11) with **Edit deal**, which reopens the deal
   page.
+- **Items bought alone from an offer post (v1.19):** each is an ordinary row (quantity, Change, Remove, Move to
+  Saved) at its normal price, with the nudge to complete the offer and **See offer ›**. **When her ticked items from
+  one post complete the offer, the offer's price applies by itself** — she is not asked — and they show as one deal
+  (one tick, Edit deal, Remove deal), with "The offer applied by itself." Anything beyond what the deal needs stays an
+  ordinary row under it. Taking an item out, or unticking it, un-applies the offer the same way: the server prices
+  what is left.
 - Each item: photo, name, size and colour, quantity, the price she pays with the normal price struck, and **Change**
   (size, colour, quantity), **Remove**, **Move to Saved** (it keeps its post, 5.8).
 - **Quantity:** 1 to 5 of one size per item.
@@ -1135,3 +1162,4 @@ Founder, 4 Oct 2026. Contract `features/shopper-walk-fixes` (W11, W13, W14).
 | 2026-10-01 | 1.16 | Founder: the shopper's **Women / Men / Kids choice is a preference for ordering, never a filter** (5.12). Every live post is in her feed; the ones she shops for come first. Before, a shopper who chose only Women saw nothing while the one live post was a men's watch. Home circles and "more posts" follow the same rule. Contract `features/shop-for-preference`. |
 | 2026-10-03 | 1.17 | Founder: **Delete in two places.** A **Draft** is deleted from the Offers list and erased. An **Ended** offer (ended early or by its date) is deleted from the Offers list or its own page and **removed from the brand's lists** (the list and its counts, its page, the creator-terms "not shown, ended" note, "last in offer …" on Products without offers; the days its products were held are freed); its record stays for the creators who had it, their posts, orders, payments and INFLX. A **Scheduled** or **Live** offer can't be deleted: end it first. 1.9 rewritten, 1.12 aligned (Delete on Draft and Ended rows and on an Ended offer's page). This **partly reverses** v1.0 §1.9 ("a published offer can't be deleted, only ended") and question 3 of the `features/offer-builder-v2` board O1 (drafts only), for ended offers, at the founder's request of 3 Oct. Contract `features/offer-delete`. |
 | 2026-10-04 | 1.18 | Founder, from his walk of 3–4 Oct (contract `features/shopper-walk-fixes`, board locked 4 Oct). **The return window is INFLX's, one number for the whole platform, set by the admin in hours or days (7 days now); after delivery the creator's commission, INFLX's share and the brand's money all follow it** — this replaces item 17's rule for online orders (added once shipped, counted from the order); the money jobs run hourly; the per-category and per-product return numbers are no longer read. **A shopper can return a delivered item inside the window**; INFLX approves or rejects and marks it refunded; a deal goes back together; an open return holds the sale's shares (new 6.16). In the bag a set, a bundle and buy one get one stay whole (no − 1 + on one item). After Add to bag: vibration, "Go to bag" for a second, back where she was; the bag icon on every browsing page. A feed video opens full screen on a tap; the playing video switches the moment the swipe lands (5.5, 5.7 unchanged in words — the app now does what they say). "Products in this post" is a grid with a product page showing the listing's details; a discount post never shows "Build your deal"; the deal's sentence is said to the shopper. A video carries a picture taken from it on the creator's phone. |
+| 2026-10-05 | 1.19 | Founder, 5 Oct 2026 (contract `features/shopper-deal-orders`, part C; board locked 5 Oct): **one item of an offer can be bought alone, at its normal price; the offer's price applies only when the offer is completed.** This **reverses** 6.5's "a deal item is never added alone" for bundles (pick any, mix & match), buy more save more and gift offers. **Not for buy one get one. A set stays whole unless its brand switches on "Pieces can also be bought alone"** — a new number of a Bundle · Fixed offer, off by default, set in the draft and frozen at publish like the others. The product page of an offer post has two choices ("Buy this alone · ₹X" with Buy now and Add to bag, and "In an offer: … · See offer ›"); the bag icon in "Products in this post" adds the product alone; in the bag an item bought alone is an ordinary row with a nudge, and **when her items from one post complete the offer it applies by itself**. A saved product opens its product page. 6.2, 6.3, 6.4, 6.5, 6.6. No change to what any deal costs, to commission, or to INFLX's share. |

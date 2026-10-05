@@ -210,7 +210,9 @@ describe('status (check 23)', () => {
 describe('the numbers keep only what the sub-type uses', () => {
   test('stray fields are dropped; blanks stay null', () => {
     expect(R.normaliseConfig('percentage', { pct: '20', max_off: '', availing_modes: ['x'], scope: 'store' })).toEqual({ pct: 20, max_off: null });
-    expect(R.normaliseConfig('fixed', { price: 2499, quantities: { a: 2, b: 0, c: 'x' } })).toEqual({ price: 2499, quantities: { a: 2 } });
+    // shopper-deal-orders (C3, 5 Oct 2026): a set's numbers now also say whether its pieces can be bought
+    // alone. Missing = off, so every set offer that exists stays sold only whole. (Was: { price, quantities }.)
+    expect(R.normaliseConfig('fixed', { price: 2499, quantities: { a: 2, b: 0, c: 'x' } })).toEqual({ price: 2499, quantities: { a: 2 }, pieces_alone: false });
   });
   test('type labels', () => {
     expect(R.typeLabel('bundle', 'pick_any')).toBe('Bundle · Pick-any');

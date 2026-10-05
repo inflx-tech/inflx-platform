@@ -106,6 +106,15 @@ export default function NumbersPanel({ view, save }) {
         <div className="row between"><span className="sm">Total price of items</span><b className="mono">{inr(help.total)}</b></div>
         <Num label="Bundle price" prefix="₹" value={cfg.price} onChange={(v) => set('price', v)} placeholder="2499" />
         <div className="hint">The shopper only picks size and colour. Quantities are set on the products step.</div>
+        {/* shopper-deal-orders (board B7): off = the set is sold only whole, as every set was. */}
+        <div className="swrow" data-testid="pieces-alone">
+          <button type="button" className="sw" role="switch" aria-checked={cfg.pieces_alone === true} aria-label="Pieces can also be bought alone"
+            onClick={() => set('pieces_alone', !(cfg.pieces_alone === true))} />
+          <div className="t">
+            <b className="sm">Pieces can also be bought alone</b>
+            <span className="xs mut2">Off: the set is sold only whole. On: a shopper may also buy one piece at its normal price.</span>
+          </div>
+        </div>
       </>);
       break;
     case 'spend':

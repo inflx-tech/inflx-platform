@@ -269,6 +269,9 @@ export default function OfferWizard({ id: idProp = null, initialProducts = [] })
                     <tr><td className="mut">Dates</td><td><b>{o.starts_on && o.ends_on ? `${longDay(o.starts_on)} – ${longDay(o.ends_on)}` : 'Not set'}</b></td><td className="r"><button className="link xs" onClick={() => setStep(3)}>Edit</button></td></tr>
                     <tr><td className="mut">Pool</td><td><b>{view.pool.counts.buy} product{view.pool.counts.buy === 1 ? '' : 's'}</b>{view.pool.counts.gift ? ` + ${view.pool.counts.gift} gift${view.pool.counts.gift > 1 ? 's' : ''}` : ''}{view.pool.sources.length ? ` · ${view.pool.sources.map((s) => s.label).join(', ')}` : ''}</td><td className="r"><button className="link xs" onClick={() => setStep(4)}>Edit</button></td></tr>
                     <tr><td className="mut">Deal</td><td><b>{o.deal || 'Not set'}</b></td><td className="r"><button className="link xs" onClick={() => setStep(5)}>Edit</button></td></tr>
+                    {o.sub_type === 'fixed' && (
+                      <tr data-testid="review-pieces-alone"><td className="mut">Pieces alone</td><td>{(o.offer_config_json || {}).pieces_alone === true ? 'A piece can also be bought alone, at its normal price' : 'Sold only as the whole set'}</td><td className="r"><button className="link xs" onClick={() => setStep(5)}>Edit</button></td></tr>
+                    )}
                     <tr><td className="mut">New products</td><td>{o.auto_add ? 'Added automatically from category lines' : 'Not added automatically'}</td><td /></tr>
                   </tbody>
                 </table>

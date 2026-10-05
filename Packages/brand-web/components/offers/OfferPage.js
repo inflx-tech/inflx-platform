@@ -148,7 +148,13 @@ export default function OfferPage({ id }) {
           )}
         </div>
         <div className="hdr">
-          <div><h3>{o.name}</h3><div className="sub">{o.type_label}{o.deal ? ` · ${o.deal}` : ''} · {o.starts_on && o.ends_on ? `${longDay(o.starts_on)} – ${longDay(o.ends_on)}` : ''}</div></div>
+          <div><h3>{o.name}</h3><div className="sub">{o.type_label}{o.deal ? ` · ${o.deal}` : ''} · {o.starts_on && o.ends_on ? `${longDay(o.starts_on)} – ${longDay(o.ends_on)}` : ''}</div>
+            {/* shopper-deal-orders (B7): how the set was set up. One of the offer's numbers, so frozen with them. */}
+            {o.sub_type === 'fixed' && (
+              <div className="xs mut2" data-testid="pieces-alone-line">{(o.offer_config_json || {}).pieces_alone === true
+                ? 'A piece can also be bought alone, at its normal price.' : 'Sold only as the whole set.'}</div>
+            )}
+          </div>
           <span className={'st ' + ds}>{statusText}</span>
         </div>
         {running && !poolOpen && (

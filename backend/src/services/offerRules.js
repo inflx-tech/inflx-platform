@@ -12,7 +12,7 @@
  *   bogo       { max_free }
  *   quantity   { reward:'pct'|'amount', tiers:[{ at, value }] }   (at = items)
  *   value      { reward:'pct'|'amount', tiers:[{ at, value }] }   (at = ₹ spend)
- *   pick_any / mix_match { pick, price }       fixed     { price, quantities: { productId: n } }
+ *   pick_any / mix_match { pick, price }       fixed     { price, quantities: { productId: n }, pieces_alone }
  *   spend      { min_spend, gift_count, gift_limits: { productId: n } }
  *   buy_x      { buy_qty,   gift_count, gift_limits: { productId: n } }
  */
@@ -95,10 +95,27 @@ function normaliseConfig(subType, raw) {
     }
     case 'pick_any':
     case 'mix_match': return { pick: int(c.pick), price: num(c.price) };
-    case 'fixed': return { price: num(c.price), quantities: idMap(c.quantities, (v) => { const n = int(v); return n && n >= 1 ? n : null; }) };
+    // shopper-deal-orders (C3): a set is sold only whole unless the brand switched this on. Missing = off.
+    case 'fixed': return { price: num(c.price), quantities: idMap(c.quantities, (v) => { const n = int(v); return n && n >= 1 ? n : null; }), pieces_alone: c.pieces_alone === true };
     case 'spend': return { min_spend: num(c.min_spend), gift_count: int(c.gift_count), gift_limits: idMap(c.gift_limits, (v) => { const n = int(v); return n && n >= 1 ? n : null; }) };
     case 'buy_x': return { buy_qty: int(c.buy_qty), gift_count: int(c.gift_count), gift_limits: idMap(c.gift_limits, (v) => { const n = int(v); return n && n >= 1 ? n : null; }) };
     default: return {};
+  }
+}
+
+/**
+ * shopper-deal-orders (D4): may ONE product of this offer be bought on its own, at its normal price?
+ * Yes for a bundle (pick any, mix & match), buy more save more and both gift offers — there the
+ * offer's price applies only once the offer is completed. Never for buy one get one (she pays the
+ * same and would lose the free one). A set only when its brand switched "pieces can also be bought
+ * alone" on. A plain discount needs no answer: each item already stands alone.
+ */
+function aloneAllowed(offer) {
+  if (!offer) return true;
+  switch (offer.sub_type) {
+    case 'bogo': return false;
+    case 'fixed': return normaliseConfig('fixed', offer.offer_config_json).pieces_alone === true;
+    default: return true;
   }
 }
 
@@ -462,7 +479,7 @@ function shopperHow(offer, pool) {
     case 'value': return `The more they spend on your post's products, the more they save: ${tiers()}. Tiers replace each other; they never add up.`;
     case 'pick_any':
     case 'mix_match': return `They pick any ${c.pick} of these ${n} products from your post and pay ${inr(c.price)} together. All ${c.pick} must come from the same post.`;
-    case 'fixed': return `They buy the whole set from your post for ${inr(c.price)} and only choose size and colour.`;
+    case 'fixed': return `They buy the whole set from your post for ${inr(c.price)} and only choose size and colour.${c.pieces_alone ? ' A piece can also be bought alone, at its normal price.' : ''}`;
     case 'spend': return `They spend ${inr(c.min_spend)} on these products from your post and ${g > 1 ? `choose ${c.gift_count || 1} free gift${(c.gift_count || 1) > 1 ? 's' : ''} from ${g}` : 'get the gift free'}.`;
     case 'buy_x': return `They buy ${c.buy_qty} of these products from your post and ${g > 1 ? `choose ${c.gift_count || 1} free gift${(c.gift_count || 1) > 1 ? 's' : ''} from ${g}` : 'get the gift free'}.`;
     default: return '';
@@ -491,7 +508,7 @@ function shopperSays(offer, pool) {
     case 'value': return `The more you spend on this post's products, the more you save: ${tiers()}. Only the highest one applies.`;
     case 'pick_any':
     case 'mix_match': return `Pick any ${c.pick} of these ${n} products and pay ${inr(c.price)} for them together.`;
-    case 'fixed': return `Buy the whole set for ${inr(c.price)}. You only choose size and colour.`;
+    case 'fixed': return `Buy the whole set for ${inr(c.price)}. You only choose size and colour.${c.pieces_alone ? ' A piece can also be bought alone, at its normal price.' : ''}`;
     case 'spend': return `Spend ${inr(c.min_spend)} on these products and ${gift}.`;
     case 'buy_x': return `Buy ${c.buy_qty} of these products and ${gift}.`;
     default: return '';
@@ -533,7 +550,7 @@ function exampleEarning(offer, pool, commissionPct) {
 module.exports = {
   creatorDeal, shopperHow, shopperSays, exampleEarning,
   SUB_TYPES, TYPES, TYPE_LABEL, SUB_LABEL, MAX_TIERS,
-  typeLabel, isValidSubType, normaliseConfig, numberProblems,
+  typeLabel, isValidSubType, normaliseConfig, numberProblems, aloneAllowed,
   dealLine, discountedPrice, displayStatus,
   cheapestCombination, suggestedBundlePrice, bundleSaving,
   publishChecks, numbersHelp,

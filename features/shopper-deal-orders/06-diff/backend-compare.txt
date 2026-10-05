@@ -1,0 +1,21 @@
+shopper-deal-orders — the whole server suite, before and after part C (5 Oct 2026)
+Compared with the last full run (after shopper-app-fixes' small fixes). Run serially on the scratch test database.
+
+before: suites 144 tests 1953 passed 1747 failed 178 pending 28
+after : suites 145 tests 1970 passed 1765 failed 177 pending 28
+
+passed before, failing now: 0
+new tests failing: 0
+failed before, passing now: 1
+    item17-wallet.test.js :: item 17 · the figures, each from its own source (checks 2, 3) a Hybrid collaboration: locked is its unpaid payments, never the campaign fee; the creator sees the same payments without the fee
+failing before and now (same name): 177
+tests gone under their old name: 0
+new test names: 17 {"shopper-deal-orders.test.js":17}
+suites added: shopper-deal-orders.test.js
+suites that did not load: before collection-library.test.js · now collection-library.test.js
+
+Reading it
+- 0 tests that passed before fail now; 0 new tests fail; this part's 17 new tests pass.
+- The same 177 old failures, by name (the long-standing debt — qa_all_green stays false on it; nothing was skipped, removed or weakened).
+- "failed before, passing now: 1" is the wallet check that failed by chance in the last run (a random id contained the letters "fee"); it was corrected then and passes.
+- One existing test was moved to the new rule: offers-v2-rules "stray fields are dropped" (03-expected-outputs.md, drift table).

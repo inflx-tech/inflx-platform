@@ -6,7 +6,7 @@
   "approved_by": "founder (chat 5 Oct 2026: \"Also lock the screens design round\")",
   "approved_at": "2026-10-05T18:30:00+05:30",
   "preview_reviewed": true,
-  "impact_reviewed": false,
+  "impact_reviewed": true,
   "mockup_locked": true,
   "mockup_locked_by": "founder (chat 5 Oct 2026: \"Also lock the screens design round\"; Q1 answered: \"brand pays for this return\")",
   "mockup_locked_at": "2026-10-05T18:30:00+05:30",
@@ -18,5 +18,18 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false
+  },
+  "build": {
+    "part_c": {
+      "what": "C — buying one item of an offer alone (board B1–B7, C7)",
+      "built_at": "2026-10-05",
+      "code": "server: offerRules (pieces_alone, aloneAllowed), orderPricing (opened set, offer.alone, alone_nudge), shopperCheckout, shopperOrders, shopperPosts (buy_alone). phone: ProductScreen, bitsShop, orderBits, BagScreen, DealReviewScreen, SavedScreen, copyOrder, bag. website: offers/NumbersPanel, OfferWizard, OfferPage, offerCss. rules v1.19.",
+      "migration": "none",
+      "tests": "server shopper-deal-orders 17/17; phone shopperDealOrdersAlone 23/23 + shopperDealOrdersBag 20/20; 25 changes put back one at a time, each caught; phone whole suite 115 suites / 2687 passing; server whole suite in 06-diff/backend-compare.txt",
+      "seen": "the website switch, in the local preview on a private database. Nothing on a phone.",
+      "released": false,
+      "go": "founder (chat 5 Oct 2026: \"pls relese this part\")",
+      "pre_release": "the whole phone suite (115 suites / 2687) and this part's server suites run once more on the exact tree released, all passing"
+    }
   }
 }

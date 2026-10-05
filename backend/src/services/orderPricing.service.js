@@ -187,6 +187,9 @@ function priceGroup(ctx, input) {
   let progress = null;         // { text, done, next }
   let dealProblems = [];
   let giftState = null;
+  // shopper-deal-orders (C5): the bag's sentence for items of this post that are in no completed
+  // deal — what completing the offer would give her. Null when nothing is outside a deal.
+  let aloneNudge = null;
 
   // 3 · the offer
   switch (sub) {
@@ -261,6 +264,8 @@ function priceGroup(ctx, input) {
         shareByWeight(setPrice, us.map((u) => u.normal)).forEach((p, i) => { us[i].paid = p; us[i].deal = `set-${s + 1}`; });
       }
       const rest = pick ? sorted.length % pick : 0;
+      if (pick && sorted.length && !sets) aloneNudge = `Add ${pick - sorted.length} more from this post and get all ${pick} for ${inr(cfg.price)}`;
+      else if (pick && rest) aloneNudge = `Add ${pick - rest} more to complete another set of ${pick} for ${inr(cfg.price)}`;
       if (!sets) progress = { text: `${poolUnits.length} of ${pick} picked`, done: false, next: `Pick ${pick - poolUnits.length} more to complete the set` };
       else if (rest) progress = { text: `${plural(sets, 'set')} complete`, done: true, next: `Add ${pick - rest} more to complete another set of ${pick} for ${inr(cfg.price)}` };
       else progress = { text: `${sets > 1 ? `${sets} sets complete` : 'Set complete'} · you save ${inr(R(saved))}`, done: true };
@@ -284,7 +289,13 @@ function priceGroup(ctx, input) {
         shareByWeight(Math.min(P(cfg.price), normal), us.map((u) => u.normal)).forEach((p, i) => { us[i].paid = p; us[i].deal = `set-${s + 1}`; });
       }
       const inSets = new Set(setUnits.flat());
-      if (poolUnits.some((u) => !inSets.has(u)) || !sets) {
+      const outside = poolUnits.filter((u) => !inSets.has(u));
+      if (cfg.pieces_alone) {
+        // C3: the brand lets a piece be bought alone — it pays its normal price (already so) and
+        // blocks nothing. Whole sets among her picks still cost the set's price.
+        const setSize = [...need.values()].reduce((x, n) => x + n, 0);
+        if (outside.length && setSize) aloneNudge = `Take the whole set of ${setSize} and pay ${inr(cfg.price)}`;
+      } else if (outside.length || !sets) {
         dealProblems.push({ code: 'incomplete_set', text: 'Sold only as the whole set' });
       }
       const chosen = [...need.keys()].filter((pid) => (have.get(pid) || []).length >= need.get(pid) * Math.max(1, sets)).length;
@@ -360,11 +371,13 @@ function priceGroup(ctx, input) {
   const buyable = !problems.length && priced.length > 0 && priced.every((l) => !l.problems.length) && counted.length > 0;
   return {
     post_id: ctx.post_id, brand_id: ctx.brand_id,
-    offer: ctx.offer ? { id: ctx.offer.id, type: ctx.offer.offer_type, sub_type: ctx.offer.sub_type, line: rules.dealLine(ctx.offer) } : null,
+    // `alone`: one product of this offer may be bought on its own (rules.aloneAllowed) — the bag then
+    // shows what is outside a completed deal as ordinary rows.
+    offer: ctx.offer ? { id: ctx.offer.id, type: ctx.offer.offer_type, sub_type: ctx.offer.sub_type, line: rules.dealLine(ctx.offer), alone: !!offer && rules.aloneAllowed(offer) } : null,
     lines: priced,
     normal_total: R(normal), paid_total: R(paid), savings: R(normal - paid),
     gift_value: R(priced.filter((l) => l.role === 'gift' && !l.problems.length).reduce((s, l) => s + P(l.normal_total), 0)),
-    progress, gift: giftState, problems, buyable,
+    progress, gift: giftState, problems, buyable, alone_nudge: aloneNudge,
     commission_pct: Number(ctx.commission_pct) || 0, fee_pct: Number(ctx.fee_pct) || 0, fee_source: ctx.fee_source || null,
   };
 }

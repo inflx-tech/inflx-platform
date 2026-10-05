@@ -147,6 +147,8 @@ async function shape(priced) {
       creator: creator.get(g.influencer_id) || null,
       brand: brand.get(g.brand_id) || null,
       offer: g.offer, progress: g.progress, gift: g.gift, problems: g.problems, buyable: g.buyable,
+      // shopper-deal-orders (C5): what completing the offer would give her, for items outside a deal.
+      alone_nudge: g.alone_nudge || null,
       normal_total: g.normal_total, paid_total: g.paid_total, savings: g.savings, gift_value: g.gift_value,
       lines: g.lines.map((l) => ({
         ref: l.ref, product_id: l.product_id, gift_item_id: l.gift_item_id, name: l.name, image_url: l.image_url,

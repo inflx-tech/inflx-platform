@@ -489,8 +489,13 @@ export function Notes({ problems = [], notes = [] }) {
  *        { colour, size, price_seen } — `price_seen` is the chosen size's own price
  *   F9   an add that fails (her bag could not be read or saved: `onAdd` rejects) is said here, in
  *        the sheet, and nothing was added
+ *
+ * shopper-deal-orders (board B4): on an offer post whose products can be bought alone, the sheet
+ * adds this one product at its normal price. `offerLink` = { text, onPress } is then the line under
+ * the buttons ("Or get it in the offer: Any 3 for ₹2,999 ›"), and the top says only whose post it
+ * is — the offer's own line is not put next to a price the offer has not touched.
  */
-export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, busy: working, waiting = false, problem = null, added = false, onGoToBag }) {
+export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, busy: working, waiting = false, problem = null, added = false, onGoToBag, offerLink = null }) {
   const [sel, setSel] = useState({ colour: null, size: null });
   const [failed, setFailed] = useState(null);
   useEffect(() => { if (visible) { setSel({ colour: null, size: null }); setFailed(null); } }, [visible, product && product.id]);
@@ -512,7 +517,8 @@ export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, bu
         <View style={{ flex: 1 }}>
           <Text style={b.pname} numberOfLines={2}>{product.name}</Text>
           <Text style={b.price} testID="size-sheet-price">{inr(pf.pays)}{Number(pf.pays) < Number(pf.normal) ? <Text style={b.struck}>  {inr(pf.normal)}</Text> : null}</Text>
-          {post && post.offer && post.offer.line ? <Text style={b.okLine}>{post.offer.line}{post.creator ? ` · from ${post.creator.name.split(' ')[0]}'s post` : ''}</Text> : null}
+          {offerLink ? (post && post.creator ? <Text style={b.fromLine} testID="size-sheet-from">{CO.fromPost(post.creator.name.split(' ')[0])}</Text> : null)
+            : post && post.offer && post.offer.line ? <Text style={b.okLine}>{post.offer.line}{post.creator ? ` · from ${post.creator.name.split(' ')[0]}'s post` : ''}</Text> : null}
         </View>
       </View>
       <ChoicePicker product={product} value={sel} onChange={(v) => { setSel(v); setFailed(null); }} testIDPrefix="size-sheet" />
@@ -528,6 +534,11 @@ export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, bu
         <AddToBagButton added={added} disabled={!ready || busy} label={gone ? CO.soldOut : ready ? CO.addToBag : CO.chooseSize}
           onAdd={add} onGoToBag={onGoToBag} testID="size-sheet-add" style={{ flex: 1, marginTop: 0 }} />
       </View>
+      {offerLink && offerLink.text ? (
+        <TouchableOpacity onPress={offerLink.onPress} style={{ marginTop: 12 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} testID="size-sheet-offer" accessibilityRole="button">
+          <Text style={b.offerLink}>{offerLink.text}</Text>
+        </TouchableOpacity>
+      ) : null}
     </Sheet>
   );
 }
@@ -608,4 +619,6 @@ export const b = StyleSheet.create({
   problem: { fontFamily: fonts.sansBold, fontSize: 11.5, color: T.danger, marginTop: 3 },
   thumb: { width: 64, height: 80, borderRadius: 10, backgroundColor: '#EDECE6' },
   okLine: { fontFamily: fonts.sansBold, fontSize: 11.5, color: K.ok, marginTop: 4 },
+  fromLine: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: K.ink2, marginTop: 4 },
+  offerLink: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ink, textDecorationLine: 'underline' },
 });

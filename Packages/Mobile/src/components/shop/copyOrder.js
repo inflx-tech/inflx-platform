@@ -33,6 +33,14 @@ export const CO = {
   productGone: 'This product is no longer in this post.',
   // D1 — a deal post
   buildDeal: 'Build your deal',
+  // shopper-deal-orders · B1–B4: one item of an offer can be bought alone, at its normal price
+  buyAlone: (price) => `Buy this alone · ${price}`,
+  inAnOffer: (line) => `In an offer: ${line}`,
+  seeOffer: 'See offer ›',
+  getThisOffer: 'Get this offer',
+  bogoNext: 'Buy one, get one free. Pick your free one next.',
+  soldAsSet: 'Sold as a set.',
+  orInOffer: (line) => `Or get it in the offer: ${line} ›`,
   dealCounts: (p, g) => `${p} product${p === 1 ? '' : 's'}${g ? ` · ${g} gift${g === 1 ? '' : 's'}` : ''}`,
   tillDate: (d) => `till ${d}`,
   till: (d) => `Till ${d}.`,
@@ -109,6 +117,8 @@ export const CO = {
     bogo: 'To add another pair, tap Edit deal.',
   },
   times: (n) => `×${n}`,
+  // shopper-deal-orders · B6: her separate items completed the offer
+  offerApplied: 'The offer applied by itself.',
   addMore: '+ Add more from this post',
   moveToSaved: 'Move to Saved',
   unticked: "Unticked items stay in the bag and don't go to checkout. Deals are worked out on the ticked items.",

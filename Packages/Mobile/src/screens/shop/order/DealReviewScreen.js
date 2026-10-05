@@ -25,7 +25,7 @@ import { TopBar, Loading, Empty } from '../../../components/shop/bitsShop';
 import { MoneyRows, Notes, BagButton, AddedLine, AddToBagButton, useAdded, closePages, inFront, K, b } from '../../../components/shop/orderBits';
 import { CO } from '../../../components/shop/copyOrder';
 import { CS, inr } from '../../../components/shop/copyShop';
-import { addToBag, replacePost } from '../../../components/shop/bag';
+import { addToBag, replacePost, forgetAddedAlone } from '../../../components/shop/bag';
 import { isSignedIn } from '../../../components/shop/shopStore';
 import { fonts } from '../../../theme/tokens';
 
@@ -73,6 +73,7 @@ export default function DealReviewScreen({ navigation, route }) {
     try {
       const withPost = plain(lines).map((l) => ({ ...l, post_id: postId }));
       if (editing) await replacePost(postId, withPost); else await addToBag(withPost);
+      forgetAddedAlone(postId);      // a deal she built here did not "apply by itself" (shopper-deal-orders · B6)
       flash.start();
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }

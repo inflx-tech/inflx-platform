@@ -297,6 +297,8 @@ function card(p, { creator, brand, counts, mine, liveAt }) {
     // discount or a price post never does. (The phone used to guess from `offer.type`, which is a
     // display name, so every discount post flashed "Build your deal" until the deal data arrived.)
     deal_page: !!shaped && !!shaped.offer_type && shaped.offer_type !== 'discount',
+    // shopper-deal-orders (C4): the bag icon in "Products in this post" adds one product alone when true.
+    buy_alone: !!shaped && !!shaped.offer_type && shaped.offer_type !== 'discount' && rules.aloneAllowed(shaped),
     gift_line: null,
     products,
     counts, mine,

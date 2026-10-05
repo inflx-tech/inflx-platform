@@ -26,7 +26,7 @@ import { engaged } from './engaged';
 import ShopVideo, { videoStill } from './ShopVideo';
 import { BagButton, SizeSheet, useAdded, useNavSafe } from './orderBits';
 import { CO, dayLabel } from './copyOrder';
-import { addToBag, peekBag, subscribeBagCount } from './bag';
+import { addToBag, peekBag, subscribeBagCount, noteAddedAlone } from './bag';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export const C = { ...T, ink: '#1A1A17', dark: '#111111' };
@@ -386,6 +386,10 @@ export function ShopSheet({ post, visible, onClose, surface }) {
   }
   const first = post.creator ? post.creator.name.split(' ')[0] : '';
   const isDeal = isDealPost(post, deal);
+  // shopper-deal-orders (B4): may one product of this deal post be bought alone? The server says —
+  // in the deal data once it has come, on the post's card before that. An older server says
+  // nothing: then the bag icon opens the deal page, as it always did.
+  const alone = isDeal && (deal ? deal.buy_alone === true : post.buy_alone === true);
   const offer = (deal && deal.offer) || post.offer || null;
   const dealLine = offer ? offer.line || offer.deal || null : null;
   const dealHow = offer ? offer.how || null : null;
@@ -397,11 +401,18 @@ export function ShopSheet({ post, visible, onClose, surface }) {
     onClose();
     if (nav) nav.navigate('Deal', { postId: post.id, start: startProductId || null });
   }
-  // The bag icon on a product: a deal post opens its deal page with that product started; any
-  // other post opens the size sheet (the quick add).
+  // The bag icon on a product: the size sheet (the quick add) — also on a deal post whose
+  // products can be bought alone (B4). Buy one get one, and a set sold only whole, open the deal
+  // page with that product started.
   function add(p) {
     track('tap_product', post.id, surface, { product_id: p.id });
-    if (isDeal) openDeal(p.id); else setSizing(p.id);
+    if (isDeal && !alone) openDeal(p.id); else setSizing(p.id);
+  }
+  // "Or get it in the offer ›" in the size sheet: the deal page, with the product she was sizing started.
+  function offerFromSizing() {
+    const id = sizing;
+    flash.reset(); setSizing(null);
+    openDeal(id);
   }
   // The photo: the product's own page (S3, S4). This sheet steps aside without being closed, so
   // Back brings her to it, open, on the page she came from.
@@ -425,6 +436,7 @@ export function ShopSheet({ post, visible, onClose, surface }) {
     setBusy(true);
     try {
       await addToBag([{ post_id: post.id, product_id: p.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: sel.price_seen != null ? sel.price_seen : p.price }]);
+      if (alone) noteAddedAlone(post.id);
       track('add_to_bag', post.id, surface, { product_id: p.id });
       setInBag((m) => ({ ...m, [p.id]: sel.size || '' }));
       flash.start();
@@ -514,7 +526,8 @@ export function ShopSheet({ post, visible, onClose, surface }) {
       </Modal>
       {/* The sizes come with the deal data: until it has arrived nothing can be added without one. */}
       <SizeSheet post={post} product={sizingProduct} visible={!!sizingProduct} onClose={closeSizing} onAdd={addSized} onBuyNow={buyNow}
-        busy={busy} waiting={!deal && !dealFailed} problem={!deal && dealFailed ? CS.loadError : null} added={flash.added} onGoToBag={goToBag} />
+        busy={busy} waiting={!deal && !dealFailed} problem={!deal && dealFailed ? CS.loadError : null} added={flash.added} onGoToBag={goToBag}
+        offerLink={alone && dealLine ? { text: CO.orInOffer(dealLine), onPress: offerFromSizing } : null} />
     </>
   );
 }

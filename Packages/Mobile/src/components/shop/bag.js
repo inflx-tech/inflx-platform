@@ -175,6 +175,16 @@ export async function mergeBagAfterSignIn() {
  * The bag icon's count; calls back now and on every change, as fn(count, { quiet }). The first
  * icon to ask after the app opens has the count read for everyone (F9).
  */
+/**
+ * shopper-deal-orders (board B6): the posts she added ONE item from, on its own, since the app
+ * opened. When those items later complete the post's offer, the bag says "The offer applied by
+ * itself." — only then; a deal she built on its deal page needs no such line. Kept in memory only.
+ */
+const alonePosts = new Set();
+export const noteAddedAlone = (postId) => { if (postId) alonePosts.add(postId); };
+export const wasAddedAlone = (postId) => alonePosts.has(postId);
+export const forgetAddedAlone = (postId) => { alonePosts.delete(postId); };
+
 export function subscribeBagCount(fn) {
   listeners.add(fn);
   fn(lastCount, { quiet: true });
@@ -186,6 +196,7 @@ export function subscribeBagCount(fn) {
 export function _resetBag() {
   listeners.clear();
   lastCount = 0; counted = false; counting = false; told += 1;
+  alonePosts.clear();
 }
 
 export const BAG_MAX_QTY = MAX_QTY;

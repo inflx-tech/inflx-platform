@@ -103,6 +103,8 @@ async function dealPage(postId, who = {}) {
       badge: card.offer ? card.offer.badge : null,
     } : null,
     deal_page: !!offer && offer.offer_type !== 'discount',
+    // shopper-deal-orders (C1–C4): on a deal post, may one product be bought alone at its normal price?
+    buy_alone: !!offer && offer.offer_type !== 'discount' && rules.aloneAllowed(offer),
     // W11: INFLX's one return window, as the product page says it ("Within 7 days of delivery").
     returns: await returnWindow.forShopper(),
     products, gifts,

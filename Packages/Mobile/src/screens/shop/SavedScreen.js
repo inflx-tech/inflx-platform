@@ -6,6 +6,9 @@
  *
  * shopper-app-fixes (F14): every saved product has "Remove" — whether it can still be bought or its
  * post has ended (one whose post had ended could never be taken out of Saved), signed in or not.
+ *
+ * shopper-deal-orders (C7): tapping a saved product that can still be bought opens its product page
+ * (photo or name), where she can buy it — alone, or in its offer. "Open post ›" still opens the post.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
@@ -52,6 +55,10 @@ export default function SavedScreen({ navigation }) {
     engaged.setHeart(p.product_id, false);
   }
 
+  // C7: its product page, on the post it was saved with (that post fixes its offer and price).
+  const canOpen = (p) => !!(p.available && p.post_id);
+  const openProduct = (p) => navigation.navigate('ShopProduct', { postId: p.post_id, productId: p.product_id, surface: 'saved', saved: true });
+
   if (!data) return <SafeAreaView style={st.safe}><TopBar title={CS.saved} /><Loading /></SafeAreaView>;
 
   return (
@@ -70,9 +77,11 @@ export default function SavedScreen({ navigation }) {
           data.posts.length ? <TileGrid posts={data.posts} onOpen={nav.openPost} testIDPrefix="saved-tile" /> : <Text style={st.mut}>{CS.noSavedPosts}</Text>
         ) : data.products.length ? data.products.map((p) => (
           <View key={`${p.product_id}`} style={[bs.pline, { alignItems: 'flex-start' }]} testID={`saved-product-${p.product_id}`}>
-            {p.image_url ? <Image source={{ uri: p.image_url }} style={bs.pthumb} /> : <View style={bs.pthumb} />}
+            <TouchableOpacity disabled={!canOpen(p)} onPress={() => openProduct(p)} activeOpacity={0.85} testID={`saved-photo-${p.product_id}`} accessibilityLabel={p.name}>
+              {p.image_url ? <Image source={{ uri: p.image_url }} style={bs.pthumb} /> : <View style={bs.pthumb} />}
+            </TouchableOpacity>
             <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-              <Text style={bs.pname} numberOfLines={2}>{p.name}</Text>
+              <Text style={bs.pname} numberOfLines={2} onPress={canOpen(p) ? () => openProduct(p) : undefined} testID={`saved-name-${p.product_id}`}>{p.name}</Text>
               {p.available ? (
                 <>
                   <Text style={bs.pprice}>

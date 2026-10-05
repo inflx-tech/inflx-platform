@@ -68,6 +68,12 @@ export const OFX_CSS = `
 .ofx .radio{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted3);flex:none;display:inline-block}
 .ofx .radio.on{border:4px solid var(--ink)}
 .ofx input[type=checkbox]{accent-color:#0A0A0A;width:14px;height:14px}
+.ofx .swrow{display:flex;gap:10px;align-items:flex-start;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+.ofx .swrow .t{display:grid;gap:2px;min-width:0}
+.ofx .sw{flex:none;width:36px;height:20px;border-radius:99px;background:var(--muted3);border:0;padding:0;position:relative;cursor:pointer;margin-top:1px}
+.ofx .sw::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .12s}
+.ofx .sw[aria-checked=true]{background:var(--ink)}
+.ofx .sw[aria-checked=true]::after{left:18px}
 .ofx .steps{display:flex;gap:4px;flex-wrap:wrap}
 .ofx .steps button{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--muted3);padding:5px 10px 5px 5px;border-radius:99px;background:#fff;border:1px solid var(--border);font-family:inherit;cursor:pointer}
 .ofx .steps button:disabled{cursor:default}
