@@ -71,7 +71,8 @@
       "by": "founder (chat 5 Oct 2026: \"Ok carry on with this\")",
       "code": "server only: POST /v1/ops/post-media/:id/cover (publishing token), contentStorage.put, shoppablePosts.setVideoPicture; backend/scripts/backfill-video-covers.js",
       "tests": "shopper-walk-fixes-shop.test.js 15/15 (4 new, W16)",
-      "phone": "none — the shopper app already shows a video's picture when it has one"
+      "phone": "none — the shopper app already shows a video's picture when it has one",
+      "deployed": "commit 91038fd4 pushed 5 Oct 2026; the route answered 401 (was 404) about 90 s later; backfill-video-covers.js --dry (4 files JPEG, none had a picture, route and token accepted) → --apply (4 SET, each served) → --apply again (4 kept). Read back as a guest: the feed carries cover_url for P4KGMB, JD54B4, SHNCZW, JY3ZVH and each answers 200 image/jpeg. No money, no migration, no OTA."
     }
   ]
 }
