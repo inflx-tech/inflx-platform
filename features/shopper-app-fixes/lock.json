@@ -54,9 +54,24 @@
       "by": "founder (chat 5 Oct 2026: \"Seven small faults found on the way...fix the small issues, after that we start Design round\")",
       "code": "server: shopperOrders.lineDetail carries the parcel's pay-on-delivery amount and sentence (S3). phone: CheckoutScreen (S1), OrderScreens + ReturnScreen (S2, S3), PostScreen (S4), CollectionScreen (S5), services/api.js (S6, S7).",
       "tests": "phone 2644/2644 (113 suites); backend shopper-app-fixes 17/17",
-      "released": false,
+      "released": true,
       "go": "founder (chat 5 Oct 2026: \"pls relase these\")",
-      "backend_full_run": "144 suites / 1953 tests: 0 new tests fail, the same 177 old failures; one old wallet check failed by chance on a random id containing \"fee\" and now ignores ids (06-diff/backend-compare.txt)"
+      "backend_full_run": "144 suites / 1953 tests: 0 new tests fail, the same 177 old failures; one old wallet check failed by chance on a random id containing \"fee\" and now ignores ids (06-diff/backend-compare.txt)",
+      "deploy": {
+        "at": "2026-10-05",
+        "migration": "none",
+        "commit": "3f7d68b4 (pushed b218f339..3f7d68b4; gov-check OK; 18 files staged by path, nothing of another window)",
+        "render": "the server answered healthy after the push (GET /health ok; the public cover route answers as the current server). The one server change of this pass — the parcel amount and sentence inside a signed-in shopper's order details — cannot be read from outside, so it is NOT proved from outside. An older server would simply send no parcel and the phone then shows the item's price as before. The proving click is on the walk list.",
+        "ota": {
+          "follower": 235,
+          "brand": "242 — unchanged, not published",
+          "influencer": "231 — unchanged, not published",
+          "native_runtime": "3",
+          "note": "published from the committed tree (phone source clean, otaUpdater untouched). The manifest read back says 235 and the live bundle carries this pass (order-parcel-pay, placed-retry, order-detail-failed, cancel-failed)."
+        },
+        "money": "none moved",
+        "pending": "the founder's device walk: a cash-on-delivery order of two items — each item's page says its price and, under it, what the courier collects for the parcel; and Try again on a page opened with no network."
+      }
     }
   ]
 }

@@ -66,6 +66,14 @@ link opening Play once; "sign in" for one page no longer signing her out; one ca
 Phone 113 suites / 2,644 tests; the server suite 17/17. **Released on his go of 5 Oct 2026** ("pls relase these") — server
 (one added field on an order's details) and the shopper app update; no migration.
 
+Deployed 5 Oct 2026: commit `3f7d68b4`; shopper app update **235** (brand 242 and creator 231 not
+touched). The update was read back from the live server and carries this pass. The server's part — the
+parcel sentence inside a signed-in shopper's order details — cannot be read from outside, so it is not
+proved from outside; an older server sends no parcel and the phone shows the item's price as before.
+To check on the phone (open the app twice first): a cash-on-delivery order with two items — each
+item's page says its price and, under it, "For this parcel you pay ₹… on delivery: 2 items ₹… + cash on
+delivery fee ₹…"; and with no network, Order details and Cancel show Try again.
+
 ## Test runs (5 Oct 2026)
 
 - Phone: `cd Packages/Mobile && npx jest --silent` → 110 suites, 2,624 tests, all passing (was 104 / 2,410).
