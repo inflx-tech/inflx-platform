@@ -7,11 +7,13 @@ The round is built in three parts (01-spec.md §6). This file is added to as eac
 
 | Part | Built | Released |
 |---|---|---|
-| C — buying one item of an offer alone (B1–B7) | **yes**, 5 Oct 2026 | **on his go of 5 Oct 2026** ("pls relese this part") — server, website, shopper app update; no migration |
+| C — buying one item of an offer alone (B1–B7) | **yes**, 5 Oct 2026 | **LIVE 5 Oct 2026** on his go ("pls relese this part"): commits `783b2bd9` + `ba579bc5`, shopper app update **236** (brand 242, creator 231 not touched); no migration |
 | A — My orders by deal (O1–O4) | no | — |
 | B — replace one item / refund its share (R1–R10) | no | — |
 
-Nothing of part C has been seen on a phone. The website switch was seen in the local preview.
+Nothing of part C has been seen on a phone. The website switch was seen in the local preview, and its words are in the live website's scripts. The live server was read as a guest after each push: every post says whether a product can be bought alone, and what one costs alone equals what the bag charges for it.
+
+**For the walk:** the live shop has no bundle ("any 2 for ₹…") post today — only a set, a buy-more post, a buy-one-get-one post and a 20% discount. The buy-more post shows "Buy this alone" now; to see the bundle screens (B1, B5, B6) a bundle offer and a post on it are needed.
 
 ## Part C — one item of an offer can be bought alone
 

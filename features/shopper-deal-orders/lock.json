@@ -27,10 +27,30 @@
       "migration": "none",
       "tests": "server shopper-deal-orders 17/17; phone shopperDealOrdersAlone 23/23 + shopperDealOrdersBag 20/20; 25 changes put back one at a time, each caught; phone whole suite 115 suites / 2687 passing; server whole suite in 06-diff/backend-compare.txt",
       "seen": "the website switch, in the local preview on a private database. Nothing on a phone.",
-      "released": false,
+      "released": true,
       "go": "founder (chat 5 Oct 2026: \"pls relese this part\")",
       "pre_release": "the whole phone suite (115 suites / 2687) and this part's server suites run once more on the exact tree released, all passing",
       "alone_price": "added after the first push, before the app update: the live check showed the founder's buy-more ladder starts at \"Buy 1 → 10%\", so one unit alone costs less than its normal price. The server sends alone_price (the engine's answer for one unit) and the product page and size sheet show it. Tests: server 19/19, phone 28+20; 10 more changes put back one at a time, each caught; phone whole suite 2692/2692; the seven server suites that read the deal data 167/167."
+    }
+  },
+  "deployed_to_production": {
+    "part_c": {
+      "at": "2026-10-05",
+      "by": "founder go (chat 5 Oct 2026: \"pls relese this part\")",
+      "migration": "none",
+      "commits": "783b2bd9 (pushed 939c1954..783b2bd9; gov-check OK; 28 files staged by path) and ba579bc5 (the alone-price correction found at the live check, before the app update; 9 files). Nothing of another window was staged.",
+      "render": "PROVED from outside by fields only the new server sends, read as a guest. After 783b2bd9 (about 90 seconds): every post in the live feed carries buy_alone on its card and in its deal data — the set false, buy more save more true, buy one get one false, the plain discount false; one piece of the live set is still refused (\"Sold only as the whole set\"). After ba579bc5 (about 150 seconds): the deal data carries alone_price per product and per size, and the bag asked for that one unit charges the same amount on every post (Henley tee 699 → 629 = 629; Oversized tee 749 → 674 = 674; set and pair products their normal price; the discount post sends none).",
+      "vercel": "PROVED by content: the offer builder page's listed scripts carry \"Pieces can also be bought alone\".",
+      "ota": {
+        "follower": 236,
+        "brand": "242 — unchanged, not published",
+        "influencer": "231 — unchanged, not published",
+        "native_runtime": "3",
+        "note": "published after both server deploys were proved live, from the committed tree (phone source clean, otaUpdater untouched). The manifest read back says 236 and the live bundle carries this part (Buy this alone, In an offer, Get this offer, Sold as a set., Or get it in the offer, The offer applied by itself., alone_price)."
+      },
+      "money": "none moved; what any deal costs is unchanged",
+      "live_data_note": "the live shop has no pick-any or mix-and-match bundle post today (4 posts: a set, buy more save more, buy one get one, a 20% discount), so the bundle screens B1, B5 and B6 need a new bundle offer and post to be walked; the buy-more post shows the two choices now.",
+      "pending": "the founder's device walk (the checklist is in 06-diff/notes.md); release.released stays false until the whole round is walked. Q2 (the refund-policy sentence) is still his: asked again at this release, not yet answered."
     }
   }
 }
