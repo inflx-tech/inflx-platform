@@ -39,7 +39,7 @@
       "migration": "none",
       "tests": "server shopper-deal-orders-orders 16/16; phone shopperDealOrdersOrders 20/20 + ordersByDeal 4/4; 30 changes put back one at a time, each caught (one only after a missing gift-offer test was added); phone whole suite 117 suites / 2716 passing; server whole suite in 06-diff/backend-compare.txt",
       "seen": "nothing on a phone",
-      "released": false,
+      "released": true,
       "go": "founder (chat 5 Oct 2026: \"Ok pls release part 2\")",
       "pre_release": "the whole phone suite (117 suites / 2716) and this part's server suites (6 suites / 131) run once more on the exact tree released, all passing"
     }
@@ -62,6 +62,22 @@
       "money": "none moved; what any deal costs is unchanged",
       "live_data_note": "the live shop has no pick-any or mix-and-match bundle post today (4 posts: a set, buy more save more, buy one get one, a 20% discount), so the bundle screens B1, B5 and B6 need a new bundle offer and post to be walked; the buy-more post shows the two choices now.",
       "pending": "the founder's device walk (the checklist is in 06-diff/notes.md); release.released stays false until the whole round is walked. Q2 (the refund-policy sentence) is still his: asked again at this release, not yet answered."
+    },
+    "part_a": {
+      "at": "2026-10-05",
+      "by": "founder go (chat 5 Oct 2026: \"Ok pls release part 2\")",
+      "migration": "none",
+      "commit": "e9e6bf21 (pushed fd582786..e9e6bf21; gov-check OK; 17 files staged by path, nothing of another window)",
+      "render": "NOT proved from outside, and it cannot be: everything this part changes on the server is behind a shopper's sign-in (My orders, order details, the cancel and return previews). After the push the live server answered healthy for five minutes without one failed answer (today's two earlier deploys took 90 and 150 seconds), and the public shop read as a guest was as it should be. An older server would answer every item on its own and the new app would show them so — nothing breaks either way. The proving click is My orders on the phone: a set or a pair shows as ONE card.",
+      "ota": {
+        "follower": 237,
+        "brand": "242 — unchanged, not published",
+        "influencer": "231 — unchanged, not published",
+        "native_runtime": "3",
+        "note": "published five minutes after the push, from the committed tree (phone source clean, otaUpdater untouched). The manifest read back says 237 and the live bundle carries this part (Cancel deal, Return deal, the deal's card and page, My orders asked for by deal)."
+      },
+      "money": "none moved; nothing about cancelling, returning or refunds changed",
+      "pending": "the founder's device walk (06-diff/notes.md, part A). release.released stays false until the whole round is walked. Q2 (the refund-policy sentence) is still his: asked a third time at this release, not yet answered."
     }
   }
 }
