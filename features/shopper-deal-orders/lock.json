@@ -1,0 +1,22 @@
+{
+  "feature": "shopper-deal-orders",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (chat 5 Oct 2026: \"Also lock the screens design round\")",
+  "approved_at": "2026-10-05T18:30:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 5 Oct 2026: \"Also lock the screens design round\"; Q1 answered: \"brand pays for this return\")",
+  "mockup_locked_at": "2026-10-05T18:30:00+05:30",
+  "mockup_final": "04-preview/mockups/shopper-deal-orders-mockups-v1.html",
+  "notes": "The design round after shopper-app-fixes: a deal is ordered, cancelled and returned as one; one item of a deal can be replaced (or its share refunded when the store cannot replace); one item of an offer can be bought alone at its normal price. The founder's rules of 5 Oct 2026 are D1-D5 in 01-spec.md; my choices E1-E12 were shown on the board and not overruled. Board v1 (23 frames) locked by him on 5 Oct 2026. Build order: C buying alone -> A My orders by deal -> B replace / refund one item; each part released only on his go. Q2 (the refund-policy sentence) is his and still open.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

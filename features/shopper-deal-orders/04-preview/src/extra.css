@@ -1,0 +1,85 @@
+/* The look is the locked shopper board's (30 Sep 2026) plus the walk-fixes pieces (4 Oct 2026).
+   Only what follows is new on this board: three small pieces for the phone screens, and the wide
+   frame for the three screens that are not on a phone (the brand website twice, admin once). */
+
+/* the "Today: …" line under a screen is italic (as on the shopper-app-fixes board) */
+.cap em{font-style:italic}
+
+/* a deal's items inside one order card, and the two big choices of "Return or replace" */
+.ordercard{grid-template-columns:minmax(0,1fr)}   /* a long brand name ends with "…", it never widens the card */
+.mini .nm2{display:grid;min-width:0;flex:1;line-height:1.3}
+.mini .nm2 b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.optbox.big{padding:15px 13px;align-items:center}
+.optbox.big b{font-size:14.5px}
+.optbox.big span{font-size:12px}
+
+/* a wide screen takes the whole row of the board */
+.shot.wide{grid-column:1/-1;justify-items:stretch}
+.shot.wide .cap{max-width:760px}
+
+/* the browser frame of the website boards (offer-builder-v2, offer-delete), with the website's own
+   colours: black buttons with yellow words, as the brand website has today */
+.web{--w-ink:#0A0A0A;--w-yellow:#FFC107;--w-muted:#52525B;--w-muted2:#71717A;--w-border:#E4E4E7;--w-bg:#FAFAFA;--w-bg2:#F4F4F5;
+  width:100%;background:var(--w-bg);border:1px solid #D4D4D8;border-radius:14px;overflow:hidden;font-size:13px;line-height:1.45;color:var(--w-ink)}
+.web.adm{--w-ink:#1B2D5E;--w-yellow:#fff}
+.w-chrome{height:30px;background:var(--w-bg2);border-bottom:1px solid var(--w-border);display:flex;align-items:center;gap:6px;padding-inline:12px}
+.w-chrome i{width:9px;height:9px;border-radius:50%;background:#D4D4D8;display:block}
+.w-chrome span{margin-left:12px;font-family:var(--mono);font-size:11px;color:var(--w-muted2)}
+.w-body{display:grid;grid-template-columns:150px minmax(0,1fr)}
+.w-side{background:#fff;border-right:1px solid var(--w-border);padding:14px 10px;display:grid;align-content:start;gap:2px}
+.w-side b{font-size:17px;font-weight:800;padding:0 8px 10px}
+.w-side span{padding:6px 8px;border-radius:8px;color:var(--w-muted);font-weight:600;font-size:12.5px}
+.w-side span.on{background:var(--w-ink);color:var(--w-yellow)}
+.w-main{padding:18px 22px 22px;min-width:0;display:grid;gap:12px;align-content:start}
+.w-h1{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.w-sub{font-size:12px;color:var(--w-muted2);max-width:74ch}
+.w-chips{display:flex;flex-wrap:wrap;gap:6px}
+.w-chips span{padding:6px 12px;border-radius:99px;background:#fff;border:1px solid var(--w-border);font-size:11.5px;font-weight:600;color:var(--w-muted);white-space:nowrap}
+.w-chips span.on{background:var(--w-ink);border-color:var(--w-ink);color:var(--w-yellow);font-weight:700}
+.w-card{background:#fff;border:1px solid var(--w-border);border-radius:12px;padding:14px;display:grid;gap:10px;min-width:0}
+.w-card.open{border-color:var(--w-ink)}
+.w-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.w-line .t{flex:1;min-width:160px;display:grid;gap:2px}
+.w-line .t b{font-size:13.5px}
+.w-line .t span{font-size:11.5px;color:var(--w-muted2)}
+.w-badge{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.04em;padding:5px 10px;border-radius:8px;background:var(--w-bg2);color:var(--w-muted);white-space:nowrap}
+.w-pill{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap;background:#D1FAE5;color:#047857}
+.w-pill.due{background:#FFF7CC;color:#6B5A00}
+.w-kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.w-kv div{background:var(--w-bg);border:1px solid var(--w-border);border-radius:9px;padding:9px 10px;display:grid;gap:3px;align-content:start}
+.w-kv span{font-size:10px;font-weight:800;color:var(--w-muted2);text-transform:uppercase;letter-spacing:.04em}
+.w-kv b{font-size:12.5px}
+.w-btn{background:var(--w-ink);color:var(--w-yellow);font-weight:800;font-size:12.5px;padding:10px 18px;border-radius:9px;white-space:nowrap}
+.w-btn.gh{background:#fff;border:1px solid var(--w-border);color:var(--w-muted)}
+.w-note{font-size:12px;color:var(--w-muted);font-weight:600;flex:1;min-width:200px}
+/* admin › Returns: the kind of request, and the two answers */
+.w-type{display:inline-flex;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap;background:#EEF1FB;color:#1B2D5E}
+.w-ans{display:flex;gap:6px;flex-wrap:wrap}
+.w-ans span{font-size:11px;font-weight:800;padding:4px 10px;border-radius:8px;white-space:nowrap}
+.w-ans .ok{background:#E0FAF5;color:#007A63;border:1px solid rgba(0,184,148,.25)}
+.w-ans .no{background:#FDEEE9;color:#E8401A;border:1px solid rgba(232,64,26,.25)}
+.w-tbl td{min-width:96px;color:var(--w-muted)}
+.w-tbl td:first-child{min-width:120px}
+.w-tbl td b{display:block;color:var(--w-ink);font-size:12.5px}
+.w-tbl td span.x{display:block;font-size:11px;color:var(--w-muted2)}
+/* the offer builder: its steps, an existing field drawn in outline, and the new switch */
+.w-steps{display:flex;gap:4px;flex-wrap:wrap}
+.w-steps span{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:#A1A1AA;padding:5px 10px 5px 5px;border-radius:99px;background:#fff;border:1px solid var(--w-border);white-space:nowrap}
+.w-steps i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:var(--w-bg2);font-size:10.5px}
+.w-steps .done{color:var(--w-muted)}
+.w-steps .done i{background:#D1FAE5;color:#047857}
+.w-steps .now{color:var(--w-ink);border-color:var(--w-ink)}
+.w-steps .now i{background:var(--w-ink);color:var(--w-yellow)}
+.w-out{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px dashed #C9C9CF;border-radius:9px;padding:9px 11px;color:var(--w-muted2);font-size:12.5px}
+.w-out b{color:var(--w-muted);font-weight:700}
+.w-switch{display:flex;gap:12px;align-items:flex-start;border:1.5px solid var(--w-ink);border-radius:12px;padding:12px}
+.w-switch .t{display:grid;gap:3px;flex:1;min-width:0}
+.w-switch .t b{font-size:13.5px}
+.w-switch .t span{font-size:12px;color:var(--w-muted)}
+.w-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--w-border);padding-top:12px}
+@media (max-width:760px){
+  .w-body{grid-template-columns:minmax(0,1fr)}
+  .w-side{display:none}
+  .w-main{padding:14px}
+  .w-kv{grid-template-columns:minmax(0,1fr)}
+}
