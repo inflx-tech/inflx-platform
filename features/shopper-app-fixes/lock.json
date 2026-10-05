@@ -29,5 +29,22 @@
     "not_done": "N8, the refund policy sentence — it is produced from the website's policy and cannot differ from it; left for the founder (X9)",
     "device": "NOT seen on a phone. Every \"walk owed\" row of 03-expected-outputs.md section B is open. Maestro not run.",
     "no_new_app_build": "no new native module; ships over the air to the 30 Sep 2026 builds"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-05",
+    "by": "founder go (chat 5 Oct 2026: \"Pls go and release\")",
+    "migration": "none",
+    "commit": "ce705b18 (pushed f090b051..ce705b18; gov-check OK: 52 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 68 files staged by path, nothing of another window). The whole phone suite was run once more on the exact tree released: 110 suites / 2,624 tests passing.",
+    "render": "PROVED from outside by a field only the new server sends: GET /v1/follower/posts/<id>/deal sizes had no shopper_price before the push and carried it (M · 899 · 719) about 90 seconds after. Then read as a guest: the feed (4 posts, each with its picture and in-stock flags), a priced bag line for a chosen size (719 of 899, no \"Price changed\"), the Following list for a guest, and the new abandon route answering \"sign in\" without a session.",
+    "ota": {
+      "follower": 234,
+      "brand": "242 — unchanged, not published",
+      "influencer": "231 — unchanged, not published",
+      "native_runtime": "3",
+      "note": "published after the server was proved live, from the committed tree (phone tree clean, otaUpdater untouched): follower 234 at 16:24 IST; the manifest read back and the bundle carries this round (the \"don't pay again\" sentence, \"Sold out in every size\", the three new route names)."
+    },
+    "money": "none moved",
+    "open": "N8 — the refund policy sentence; the founder has not yet said which side changes (01-spec.md X9).",
+    "pending": "the founder's device walk of every \"walk owed\" row (03-expected-outputs.md section B; the checklist is in 06-diff/notes.md), after-shots, Maestro. release.released stays false until then."
   }
 }
