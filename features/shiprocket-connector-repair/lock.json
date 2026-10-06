@@ -1,0 +1,25 @@
+{
+  "feature": "shiprocket-connector-repair",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 6 Oct 2026: \"Values got saved correctly, pls start your connector repair\" — after the 5 Oct report listing the ten faults and the Round 1 / Round 2 split)",
+  "approved_at": "2026-10-06T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Backend only — no website page and no phone screen changes, so there is no mockup to lock and no before/after diff (gov-check Rules 3 and 4 apply to Packages/* only). Round 1 of going live with a real courier: repairs the switched-off Shiprocket connector against Shiprocket's published reference (developer portal release 2026-10, read 5-6 Oct 2026 at apidocs-test.shiprocket.in because apidocs.shiprocket.in was answering 502). No migration. Behaviour-inert in production while SHIPPING_PROVIDER and SHIPROCKET_ENABLED stay unset, which is the founder's decision to change after one real test parcel. Builds on features/item11-remote. Production-impacting on push (backend/src) — explicit go required.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  },
+  "build": {
+    "built_at": "2026-10-06T00:00:00+05:30",
+    "checks": "27 / 27 — features/shiprocket-connector-repair/03-expected-outputs.md. 45 jest assertions in backend/tests/shiprocket-connector.test.js, all passing: 39 against the connector with Shiprocket replaced at its own transport by the reference's documented reply shapes, 6 driving item 11's real HTTP routes with the platform switched to the real courier (book, tracking updates through /v1/webhooks/shipping/courier, the return, an empty Shiprocket wallet, a refused cancel, a refused return).",
+    "backend_tests": "full suite, serial, vs baseline_item17.json (1 Oct 2026): suites 135 -> 148, tests 1786 -> 2053, passed 1577 -> 1848, failed 181 -> 177, pending 28 -> 28. 0 newly failing. 0 failing tests the baseline did not have. 1 newly passing. 37 baseline tests absent now — all in test files this contract does not touch, removed or renamed by the commits of 1-4 Oct (item17-wallet a5c77aab, item10 walk fixes 0ff1da31 + 81b42b33, ui-walk-fixes 772f0852, shopper-walk-fixes 4b94de7a). The one runtime-error suite (collection-library: a module that does not exist) is the same one the baseline had. Regression surface, file by file: shipping-layer 32/32, item11-test-parcels 13/13, item11-remote-flow 20/20, item11-remote-return 34/34, item11-phase2a 13 passed + 1 pending, stage4-parcel 25 passed + 3 pending, ui-walk-fixes-shoot-turn 4/4.",
+    "honest_note": "A first, PARALLEL run of seven suites showed one failure in item11-remote-return (check 27). That was my run, not the code: backend jest shares one database and must run --runInBand. Serially the file is 34/34, alone and in the full suite.",
+    "not_provable_without_the_account": "The tests prove INFLX sends what Shiprocket's reference requires and reads what it documents. They cannot prove Shiprocket behaves as its reference says. Five questions wait for one real parcel — listed at the foot of 01-spec.md.",
+    "note": "released stays false per GOVERNANCE.md §5 — the 177 pre-existing failures are unchanged debt; the certification is no-regression, never green."
+  }
+}

@@ -145,6 +145,11 @@ module.exports = {
   SHIPROCKET_BASE_URL: process.env.SHIPROCKET_BASE_URL || 'https://apiv2.shiprocket.in',
   SHIPROCKET_WEBHOOK_SECRET: process.env.SHIPROCKET_WEBHOOK_SECRET || '',
   SHIPROCKET_CHANNEL_ID: process.env.SHIPROCKET_CHANNEL_ID || '',
+  // features/shiprocket-connector-repair — the one open money question a real parcel answers:
+  // does Shiprocket's quoted `rate` already contain GST? Assumed yes. If the first real booking
+  // takes more from the INFLX Shiprocket wallet than was quoted, set this to 'true' and the
+  // connector adds 18% before the brand is shown a price.
+  SHIPROCKET_RATES_EXCLUDE_GST: process.env.SHIPROCKET_RATES_EXCLUDE_GST === 'true',
   // Approval §2.3 — a switch that makes the SIMULATOR refuse to quote a return, so the
   // "lock falls back to the outbound price" path is tested and not merely written.
   SIMULATOR_NO_RETURN_QUOTE: process.env.SIMULATOR_NO_RETURN_QUOTE === 'true',

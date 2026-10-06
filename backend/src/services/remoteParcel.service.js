@@ -415,14 +415,17 @@ async function book(ciId, scope, body = {}, conn = db) {
   // a courier that is slow to answer must not hold a wallet row locked.
   let booked;
   try {
-    await shipping.ensurePickup(branch.id, {
+    // What the provider registered the branch AS is what a booking must quote back to it —
+    // not the branch's name, which two brands can share (features/shiprocket-connector-repair).
+    const pickupCode = await shipping.ensurePickup(branch.id, {
       name: branch.name, phone: r.brand_phone, street: branch.formatted_address,
       pincode: branch.pincode, cityName: branch.city_name, stateName: branch.state_name,
     }, conn);
-    booked = await provider.api.book(created, { pickupLocationName: branch.name, items: lines });
+    booked = await provider.api.book(created, { pickupLocationName: pickupCode, items: lines });
   } catch (e) {
     // The provider refused after the money moved. Put it all back and say so — a brand must
     // never be left having paid for a parcel that does not exist.
+    console.error('[remote] booking refused by', provider.name, 'for', created.id, '—', e.code || '', e.message);
     await db.withTransaction(async (tx) => {
       await money.cancelRefund(tx, {
         brandId: r.brand_id, campaignId: r.campaign_id,
@@ -539,7 +542,17 @@ async function cancel(ciId, scope, conn = db) {
   if (parcel.collected_at) throw new AppError('ALREADY_COLLECTED', MSG.ALREADY_COLLECTED, 422, 'status');
 
   try { await shipping.provider(parcel).cancel(parcel); }
-  catch (e) { console.error('[remote] provider cancel failed for', parcel.id, e.message); }
+  catch (e) {
+    console.error('[remote] provider cancel failed for', parcel.id, e.message);
+    // A REAL courier that would not cancel is still coming, and INFLX is still paying for it.
+    // Refunding the brand here would give the same money back twice. The simulator has nobody
+    // to stop, so for it the cancel goes through as it always has
+    // (features/shiprocket-connector-repair, check 12).
+    if (parcel.provider !== 'simulator') {
+      throw new AppError('PROVIDER_FAILED',
+        'The courier could not be cancelled just now, so nothing has changed. Try again in a moment.', 502);
+    }
+  }
 
   await db.withTransaction(async (tx) => {
     const { rowCount } = await tx.query(

@@ -48,6 +48,9 @@ const shootRemindersJob      = require('./shoot-reminders.job');
 // Item 11 — the Remote return confirms itself at the stamped due.
 // Contract: features/item11-remote
 const remoteReturnAutoConfirmJob = require('./remote-return-autoconfirm.job');
+// The courier's weight differences are fetched, not pushed (inert until the real courier is on).
+// Contract: features/shiprocket-connector-repair
+const shippingWeightSyncJob = require('./shipping-weight-sync.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -155,6 +158,12 @@ function startAllJobs() {
   // confirms itself. Contract: features/item11-remote
   cron.schedule('15 * * * *', () => remoteReturnAutoConfirmJob.run(), { timezone: tz });
 
+  // Once a day, 03:30 IST — Shiprocket lists weight differences instead of pushing them, so
+  // they are read and handed to the same webhook handler as every other courier update.
+  // Returns at once unless SHIPPING_PROVIDER=shiprocket and SHIPROCKET_ENABLED=true.
+  // Contract: features/shiprocket-connector-repair
+  cron.schedule('30 3 * * *', () => shippingWeightSyncJob.run(), { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -182,4 +191,5 @@ module.exports = {
   collabDelayedJob,
   shootRemindersJob,
   remoteReturnAutoConfirmJob,
+  shippingWeightSyncJob,
 };

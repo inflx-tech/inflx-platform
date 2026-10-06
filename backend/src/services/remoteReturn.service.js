@@ -320,7 +320,20 @@ async function bookReturn(ciId, scope, body = {}, conn = db) {
      parcel ? parcel.box_h_cm : null, parcel ? parcel.weight_kg : null, day]);
   const ret = created.rows[0];
 
-  const booked = await provider.api.bookReturn(ret, { pickupDay: day });
+  let booked;
+  try {
+    // The lines going back travel with the booking — a real courier refuses a return that
+    // does not say what is in it (features/shiprocket-connector-repair, check 13).
+    booked = await provider.api.bookReturn(ret, { pickupDay: day, items: expected });
+  } catch (e) {
+    // The row above is what "already booked" is read from. Left standing after a refusal, it
+    // would stop her ever booking again — so it is withdrawn, and she is told to retry.
+    console.error('[remote] return booking refused by', provider.name, 'for', ret.id, '—', e.code || '', e.message);
+    await conn.query(
+      `UPDATE shipments SET cancelled_at = now(), updated_at = now() WHERE id = $1 AND cancelled_at IS NULL`, [ret.id]);
+    throw new AppError('PROVIDER_FAILED',
+      'The courier pickup could not be booked just now. Try again in a moment.', 502);
+  }
   await conn.query(
     `UPDATE shipments SET courier_name = $2, tracking_number = $3, provider_ref = $4, updated_at = now() WHERE id = $1`,
     [ret.id, booked.courierName, booked.trackingNumber, booked.providerRef || null]);

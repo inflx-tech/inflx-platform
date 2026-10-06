@@ -39,8 +39,16 @@ const parseJson = (raw) => {
   catch { return null; }
 };
 
+/**
+ * features/shiprocket-connector-repair — Shiprocket refuses a webhook address that contains
+ * `shiprocket`, `kartrocket`, `sr` or `kr`, so the address it is given cannot name it. `courier`
+ * is that address: /v1/webhooks/shipping/courier. Same handler, same secret, nothing else.
+ */
+const PROVIDER_ALIAS = Object.freeze({ courier: 'shiprocket' });
+
 const handle = asyncHandler(async (req, res) => {
-  const provider = String(req.params.provider || '').toLowerCase();
+  const named = String(req.params.provider || '').toLowerCase();
+  const provider = PROVIDER_ALIAS[named] || named;
   const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body || {}));
   const payload = parseJson(raw);
   if (!payload) throw new AppError('VALIDATION_ERROR', 'The body is not JSON.', 400);

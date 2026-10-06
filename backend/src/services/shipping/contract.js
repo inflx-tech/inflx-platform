@@ -37,11 +37,14 @@
  *       falls back to the outbound price for the same box and weight)
  *
  *   registerPickup({ name, phone, street, pincode, cityName, stateName })
- *     → { providerPickupId }
+ *     → { providerPickupId }   — whatever the provider needs quoted back on a booking from
+ *                                that address; the caller hands it to book() unchanged
  *
- *   book(shipment)   → { courierName, trackingNumber, providerRef }
- *   cancel(shipment) → { cancelled: true }
- *   bookReturn(shipment, { pickupDay }) → { courierName, trackingNumber, providerRef }
+ *   book(shipment, { pickupLocationName, items })
+ *     → { courierName, trackingNumber, providerRef }
+ *   cancel(shipment) → { cancelled: true }   — THROWS when the provider will not cancel; the
+ *                                              caller must not refund a courier still coming
+ *   bookReturn(shipment, { pickupDay, items }) → { courierName, trackingNumber, providerRef }
  *   label(shipment)  → { buffer: Buffer, contentType: 'application/pdf' }
  */
 
