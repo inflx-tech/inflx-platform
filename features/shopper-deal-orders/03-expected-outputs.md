@@ -48,6 +48,8 @@ Each row is proved by a test (named in the last column) or is owed to the founde
 ### Tests moved to the new rule (drift, not weakened)
 | Test | Was | Now | Why |
 |---|---|---|---|
+| `backend/tests/shopper-walk-fixes-returns.test.js` › "one request; the item says Return requested…" | the brand's parcel item says `return: { status, word }` | `{ status, kind: 'return', word }` | Part B: the brand is told which kind of request is open on a parcel. The assertion still names every field; a return is still "Return requested". |
+| `backend/tests/shopper-deal-orders-orders.test.js` (part A's own) › "every item on a card says…" | a card's item has nine fields | ten: `state` added (null unless that item went back or was cancelled while the rest stays) | Part B: one item of a deal can go back alone. The test still lists every field exactly. |
 | `backend/tests/offers-v2-rules.test.js` › "stray fields are dropped; blanks stay null" | a set's numbers normalise to `{ price, quantities }` | `{ price, quantities, pieces_alone: false }` | The set has one more number (C3). The assertion is as strict as before: it still names every field, and now also proves that a missing switch is off. |
 
 ### Owed to the founder's walk
@@ -77,3 +79,37 @@ B1–B6 on a phone with a real bundle post; B7 on the website.
 | AP4 | Cancel deal (O3) | the deal's words, its items, the reasons, "Refund of ₹2,999 to your original payment method in 5–7 working days", the button "Cancel deal"; no "This is part of a deal" warning |
 | AP5 | The deal's page after delivery (O4) | one button to return, with until when. It reads "Return deal" until part B is built, then "Return or replace" |
 | AP6 | With an older server (no cards in the answer) | every item on its own, as today |
+
+## Part B — one item of a deal is replaced, or its share refunded
+
+### Server (`backend/tests/shopper-deal-orders-replace.test.js`, 20 tests)
+| ID | Given | Then |
+|---|---|---|
+| BS1 | "Return or replace" asked for a delivered bundle | the deal, until when, three reasons, every item with its sizes (the one she has; which are in stock), whether the same item is in stock, its share, and the whole-deal return |
+| BS2 | She asks for another size | a request of kind `replace` (from 32 to 34, ₹0); nothing taken from stock yet; her deal says "Replacement requested" on its page and card; the brand has nothing to send yet and its parcel says "Replacement requested" |
+| BS3 | INFLX approves | the 34 is taken from stock; the brand's list has it "To send" (send / collect / to whom / the deal / "nothing is added to or taken from your wallet"); "Mark refunded" is refused; another brand cannot see or move it |
+| BS4 | The brand marks it sent, then delivered | only in that order; her item is now the 34; the 32 is back in stock; the request ends "Replaced"; the item's and the sale's money are exactly what they were |
+| BS5 | After the replacement is delivered | the return window runs again from that delivery: she can still return the deal; the settlement service refuses the sale; the wallet says the new day; both money jobs hold it — and release it when the new window has closed |
+| — | An open replacement, the sale's own window long closed | the sale's money is held; once INFLX says no it is released |
+| BS6 | An item replaced once | no second replacement; a size → keep it or return the deal; damaged → its share |
+| BS7 | Damaged / not as shown, the store has one | the same item again; a note is required; what comes back is NOT put back on sale |
+| BS8 | Damaged, the store has no more | only that item's share is refunded (online: to her payment); the other two are untouched to the paisa; exactly that item's three shares are undone; the deal shows one item "returned"; the rest can still go back together |
+| BS9 | Her screen showed "replace" and the stock moved | refused ("This changed while you were choosing"), nothing recorded |
+| BS10 | A buy-one-get-one pair | either item can be replaced; no one-item refund — the pair goes back together |
+| BS11 | INFLX does not accept | she is told why; that item has had its answer; the other items can still be asked about; the whole deal can still be returned |
+| BS12 | Before delivery · after the window · an item in no deal · another shopper · a second request | each refused with its own sentence |
+| BS13 | Two of one item, one not right | it becomes its own item first; the two parts add up to what the item was, to the paisa; the request is for the one |
+| BS14 | INFLX's Returns list, the brand's Returns list | each request names its kind; a replacement says what is swapped and the deal; a whole-deal return is kind "return" |
+| BS15 | The replacement sold out before INFLX approved | the request closes itself, she is told, and she may choose again |
+| E12 | Cash on delivery, one-item refund | paid back by INFLX by hand |
+
+### Phone (`shopperDealOrdersReplace.test.js`, 34 tests)
+R1 the two choices and until when · R2 which item and what is wrong (three reasons, never "I changed my mind"; an item that had its answer cannot be chosen) · R3 another size (the one she has and a sold-out one cannot be chosen; another colour) · R7 no other size, and "already replaced once" · R4 the same item again, with her words · R5 its share refunded, what she keeps · a pair goes back together · the stock moved while she chose (said, read again, choose again) · O4 the deal's button "Return or replace" · R8 the box by kind and state · the same words on the card.
+
+### Web (seen in the local preview on a private database, 5 Oct 2026)
+| ID | Then |
+|---|---|
+| BW1 | Admin › Returns has a Type column — Replace ("Indigo · 32 → Indigo · 34", the deal, "No money moves"), Return (each item, "3 items together"), Refund one item ("Refund ₹918") — and a Replaced tab |
+| BW2 | Approve on a replacement says what it does; after it, the Approved tab reads "The store has it to send" with no "Mark Refunded" |
+| BW3 | Brand › Order Fulfillment shows "Replacement to send" (Send · Collect · To · Why), Mark sent → Mark delivered, then "Replacement delivered"; the order's row says which kind of request is open |
+| BW4 | Brand › Returns names the kind of each request |

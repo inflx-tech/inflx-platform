@@ -153,7 +153,7 @@ const LINE_SQL = `
   SELECT l.*, o.order_status, o.estimated_delivery_date, o.payment_method, o.courier_name, o.tracking_number,
          o.packed_at, o.dispatched_at, o.out_for_delivery_at, o.delivered_at, o.cancelled_at AS parcel_cancelled_at,
          o.address_snapshot, b.business_name AS brand_name, COALESCE(i.full_name, u.name) AS creator_name,
-         ft.created_at AS tx_created_at, ft.return_window_ends_at
+         ft.created_at AS tx_created_at, ft.return_window_ends_at, ft.return_window_restart_at
     FROM order_lines l
     JOIN follower_orders o ON o.id = l.order_id
     JOIN follower_transactions ft ON ft.id = l.transaction_id
@@ -172,6 +172,8 @@ const CARD_SQL = `CASE WHEN l.deal_key ~ '^(pair|set)-[0-9]+$' OR l.deal_key = '
 const itemOut = (r) => ({
   id: r.id, name: r.name, image_url: r.image_url, colour: r.colour, size: r.size, qty: r.qty, role: r.role,
   paid: Number(r.paid_total), normal: Number(r.normal_total),
+  // shopper-deal-orders (B): an item of a deal that went back (its share was refunded) or was cancelled, while the rest stays.
+  state: r.status === 'cancelled' ? (r.cancelled_by === 'return' ? 'returned' : 'cancelled') : null,
 });
 const sumOf = (rows, k) => R(rows.reduce((s, r) => s + P(r[k]), 0));
 
@@ -259,7 +261,9 @@ async function listCards(followerId, { status = null, days = null, q = null, pag
   const { rows } = await db.query(`${LINE_SQL} WHERE l.follower_id = $1 AND (${CARD_SQL}) = ANY($2::text[]) ORDER BY l.created_at, l.id`, [followerId, mine]);
   const byCard = new Map(mine.map((k) => [k, []]));
   for (const r of rows) { const k = cardOf(r); if (byCard.has(k)) byCard.get(k).push(r); }
-  const back = await require('./shopperReturns.service').decorate(rows);
+  const returns = require('./shopperReturns.service');
+  const back = await returns.decorate(rows);
+  const hist = await returns.historyFor(rows.map((r) => r.id));
   const offers = await offersOf(rows);
   const items = [];
   for (const k of mine) {
@@ -269,7 +273,8 @@ async function listCards(followerId, { status = null, days = null, q = null, pag
     const deal = isDealLine(first);
     const d = deal ? dealOut(rs, offers) : null;
     items.push({
-      ...lineOut(first, back.get(first.id)),
+      // A deal's card says the DEAL's latest request and what can still be asked for it (part B).
+      ...lineOut(first, deal ? returns.dealState(rs, hist) : back.get(first.id)),
       card: deal ? 'deal' : 'item',
       deal: d ? { key: d.key, line: d.line, count: d.count } : null,
       lines: rs.map(itemOut),
@@ -296,10 +301,12 @@ async function lineDetail(followerId, lineId) {
   const { rows: deal } = r.deal_key && TOGETHER.test(r.deal_key)
     ? await db.query(`SELECT id, name, size FROM order_lines WHERE transaction_id = $1 AND deal_key = $2 AND id <> $3`, [r.transaction_id, r.deal_key, r.id])
     : { rows: [] };
-  const back = (await require('./shopperReturns.service').decorate([r])).get(r.id);
+  const returns = require('./shopperReturns.service');
   const returned = r.status === 'cancelled' && r.cancelled_by === 'return';
   // A2: any item of a deal opens the deal — its words, every item, what was paid for it.
   const mates = isDealLine(r) ? await dealRows(r) : null;
+  // Part B: on a deal's page the request box, "Return or replace" and until when are the DEAL's.
+  const back = mates ? returns.dealState(mates, await returns.historyFor(mates.map((m) => m.id))) : (await returns.decorate([r])).get(r.id);
   return {
     ...lineOut(r, back),
     deal: mates ? dealOut(mates, await offersOf(mates)) : null,
@@ -571,10 +578,18 @@ async function returnsOfLines(lineIds) {
   const out = new Map();
   if (!lineIds.length) return out;
   const { rows } = await db.query(
-    `SELECT DISTINCT ON (order_line_id) order_line_id, return_status FROM follower_returns
+    `SELECT DISTINCT ON (order_line_id) order_line_id, return_status, kind FROM follower_returns
       WHERE order_line_id = ANY($1::uuid[]) ORDER BY order_line_id, created_at DESC, id`, [lineIds]);
-  const WORD = { requested: 'Return requested', approved: 'Return approved — collect it', received: 'Return received', rejected: 'Return not accepted', refunded: 'Returned' };
-  for (const r of rows) out.set(r.order_line_id, { status: r.return_status, word: WORD[r.return_status] || r.return_status });
+  // shopper-deal-orders (part B): the brand is told which kind of request it is — a replacement is something to send, not a return.
+  const WORD = {
+    return: { requested: 'Return requested', approved: 'Return approved — collect it', received: 'Return received', rejected: 'Return not accepted', refunded: 'Returned' },
+    replace: { requested: 'Replacement requested', approved: 'Replacement approved — send it', rejected: 'Replacement not accepted', replaced: 'Replaced' },
+    refund_item: { requested: 'Refund of this item requested', approved: 'Refund approved — collect it', received: 'Item received', rejected: 'Refund not accepted', refunded: 'Returned' },
+  };
+  for (const r of rows) {
+    const kind = r.kind || 'return';
+    out.set(r.order_line_id, { status: r.return_status, kind, word: (WORD[kind] || WORD.return)[r.return_status] || r.return_status });
+  }
   return out;
 }
 

@@ -121,7 +121,21 @@ font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:var(--ink);f
 .ful .split .v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;margin-top:3px}
 .ful .split .you{border-color:var(--ink)}
 .ful .xbtn{font-size:11px;font-weight:700;color:var(--danger-text);background:none;border:none;cursor:pointer;padding:0;margin-top:4px}
+.ful .rp{background:var(--white);border:1px solid var(--ink);border-radius:12px;margin-bottom:8px;padding:12px 14px}
+.ful .rp.done{border-color:var(--border);opacity:.75}
+.ful .rp-top{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+.ful .rp-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;padding:5px 10px;border-radius:8px;background:var(--ink);color:var(--yellow)}
+.ful .rp-kv{display:grid;grid-template-columns:70px 1fr;gap:6px 10px;margin:12px 0;font-size:12.5px}
+.ful .rp-kv span{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;padding-top:2px}
+.ful .rp-kv b{font-weight:700}
+.ful .rp-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ful .pill.to_send{background:var(--yellow-pale);color:var(--yellow-text)}
+.ful .pill.sent{background:var(--info-pale);color:var(--info)}
 `;
+
+const variantOf = (v) => [v?.name, v?.colour, v?.size].filter(Boolean).join(' · ');
+const addressOf = (a) => (a ? [a.name, [a.house, a.area, a.landmark, a.city, a.state].filter(Boolean).join(', ') + (a.pincode ? ` ${a.pincode}` : '')].filter(Boolean).join(' · ') : '—');
+const dayOf = (iso) => (iso ? new Date(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '');
 
 export default function FulfillmentPage() {
   const [orders, setOrders] = useState([]);
@@ -131,6 +145,8 @@ export default function FulfillmentPage() {
   const [ship, setShip] = useState({}); // { [id]: { courier, tracking } }
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
+  // shopper-deal-orders (R9): replacements INFLX approved — the store sends one item and collects the other.
+  const [replacements, setReplacements] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -138,9 +154,25 @@ export default function FulfillmentPage() {
       // shopper-ordering: parcels with their items and each item's three shares (rules 6.13, 6.14).
       const res = await orderApi.parcels(filter ? { status: filter } : undefined);
       if (res.success || res.data) setOrders(res.data?.parcels || []);
+      const rp = await orderApi.replacements().catch(() => null);
+      setReplacements(rp && (rp.success || rp.data) ? rp.data?.replacements || [] : []);
     } catch (e) { console.error('fulfillment load', e); }
     finally { setLoading(false); }
   }, [filter]);
+
+  // Sent, then delivered — like a parcel. Delivered is when her order shows the new item and the
+  // one you collected goes back into stock (only when the reason was the size).
+  async function moveReplacement(r, status) {
+    setBusy(r.id); setMsg(null);
+    try {
+      const res = await orderApi.replacementStatus(r.id, status);
+      if (res.success || res.data) {
+        setMsg({ kind: 'ok', text: status === 'sent' ? 'Replacement marked sent. The shopper can see it.' : 'Replacement marked delivered. The shopper is told; nothing is added to or taken from your wallet.' });
+        await load();
+      } else setMsg({ kind: 'err', text: res.error?.message || 'Update failed' });
+    } catch (e) { setMsg({ kind: 'err', text: e.message || 'Update failed' }); }
+    finally { setBusy(null); }
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -202,6 +234,31 @@ export default function FulfillmentPage() {
 
       {msg && <div className={`msg ${msg.kind}`}>{msg.text}</div>}
 
+      {/* R9 — a replacement to send. Shown on All (and on Delivered once it is done), above the parcels. */}
+      {!loading && replacements.filter((r) => (filter === '' ? true : filter === 'delivered' ? r.status === 'delivered' : false)).map((r) => (
+        <div key={r.id} className={`rp${r.status === 'delivered' ? ' done' : ''}`} data-testid={`replacement-${r.id}`}>
+          <div className="rp-top">
+            <span className="rp-badge">REPLACEMENT</span>
+            <div style={{ minWidth: 0 }}>
+              <div className="oc-name">{r.status === 'delivered' ? 'Replacement delivered' : 'Replacement to send'} · {r.shopper}</div>
+              <div className="oc-meta">{[r.creator ? `From ${r.creator}'s post` : null, r.deal, r.order_delivered_at ? `delivered ${dayOf(r.order_delivered_at)}` : null].filter(Boolean).join(' · ')}</div>
+            </div>
+            <span className={`pill ${r.status}`}>{r.status_word}</span>
+          </div>
+          <div className="rp-kv">
+            <span>Send</span><b data-testid="replacement-send">{variantOf(r.send)}</b>
+            <span>Collect</span><b data-testid="replacement-collect">{variantOf(r.collect)}</b>
+            <span>To</span><b>{addressOf(r.address)}</b>
+            <span>Why</span><b style={{ fontWeight: 600 }}>{r.reason}{r.note ? ` — ${r.note}` : ''}</b>
+          </div>
+          <div className="rp-foot">
+            {r.status === 'to_send' && <button className="btn" disabled={busy === r.id} onClick={() => moveReplacement(r, 'sent')}>{busy === r.id ? 'Working…' : 'Mark sent'}</button>}
+            {r.status === 'sent' && <button className="btn" disabled={busy === r.id} onClick={() => moveReplacement(r, 'delivered')}>{busy === r.id ? 'Working…' : 'Mark delivered'}</button>}
+            <span className="note" style={{ marginTop: 0 }}>{r.money} You bring it and take the other item back at your own cost.</span>
+          </div>
+        </div>
+      ))}
+
       {loading ? <div className="spinner" /> : orders.length === 0 ? (
         <div className="empty"><div className="em">📦</div><div className="h">No orders in this view</div></div>
       ) : orders.map(o => {
@@ -213,7 +270,10 @@ export default function FulfillmentPage() {
         // shopper-walk-fixes (W14): every item went back → the parcel reads "Returned"; a return INFLX is
         // still deciding is said on the row.
         const returnedAll = items.length > 0 && items.every((it) => it.status === 'cancelled' && it.cancelled_by === 'return');
-        const returnOpen = items.some((it) => it.status === 'active' && it.return && ['requested', 'approved', 'received'].includes(it.return.status));
+        const openItem = items.find((it) => it.status === 'active' && it.return && ['requested', 'approved', 'received'].includes(it.return.status));
+        const returnOpen = !!openItem;
+        // shopper-deal-orders (part B): say which kind of request is open on the parcel.
+        const openWord = !openItem ? '' : openItem.return.kind === 'replace' ? 'replacement requested' : openItem.return.kind === 'refund_item' ? 'refund of one item requested' : 'return requested';
         const itemLabel = items.length ? `${items.length} item${items.length > 1 ? 's' : ''}` : '—';
         const s = ship[o.id] || {};
         const to = o.ship_to || {};
@@ -225,7 +285,7 @@ export default function FulfillmentPage() {
               <span className="oc-badge">📦 ORDER</span>
               <div style={{ minWidth: 0 }}>
                 <div className="oc-name">{to.name || 'Customer'}{o.payment_method === 'cod' ? ' · Cash on delivery' : ''}</div>
-                <div className="oc-meta">{itemLabel} · {fmtRel(o.placed_at)}{o.courier?.tracking ? ` · AWB ${o.courier.tracking}` : ''}{returnOpen ? ' · return requested' : ''}</div>
+                <div className="oc-meta">{itemLabel} · {fmtRel(o.placed_at)}{o.courier?.tracking ? ` · AWB ${o.courier.tracking}` : ''}{returnOpen ? ` · ${openWord}` : ''}</div>
               </div>
               <div className="oc-amt">{fmtMoney(o.money?.paid ?? 0)}</div>
               {returnedAll

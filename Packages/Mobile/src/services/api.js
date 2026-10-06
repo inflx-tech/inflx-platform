@@ -1112,6 +1112,9 @@ export const followerApi = {
   // shopper-walk-fixes (W14): Return — what goes back and until when; then she asks, and INFLX decides.
   returnPreview: (id) => api.get(`/follower/orders/lines/${id}/return`),
   returnLine: (id, body) => api.post(`/follower/orders/lines/${id}/return`, body),
+  // shopper-deal-orders (part B): one item of a delivered deal is not right — what can be asked, and asking.
+  replacePreview: (id) => api.get(`/follower/orders/lines/${id}/replace`),
+  replaceLine: (id, body) => api.post(`/follower/orders/lines/${id}/replace`, body),
   addresses: () => api.get('/follower/addresses'),
   addAddress: (body) => api.post('/follower/addresses', body),
   updateAddress: (id, body) => api.patch(`/follower/addresses/${id}`, body),

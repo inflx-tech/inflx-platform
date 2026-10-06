@@ -200,13 +200,15 @@ const listBrandReturns = asyncHandler(async (req, res) => {
   if (filter === 'open') {
     conds.push(`fr.return_status IN ('requested','approved','received')`);
   } else if (filter === 'closed') {
-    conds.push(`fr.return_status IN ('rejected','refunded')`);
+    conds.push(`fr.return_status IN ('rejected','refunded','replaced')`);
   }
 
   const { rows } = await db.query(
     `SELECT fr.id, fr.transaction_id, fr.product_id, fr.variant_id,
             fr.reason, fr.reason_text, fr.return_status, fr.refund_amount,
             fr.admin_notes, fr.created_at, fr.reviewed_at, fr.refunded_at,
+            -- shopper-deal-orders (B): what kind of request it is, and for a replacement what goes out and where it is
+            fr.kind, fr.from_colour, fr.from_size, fr.to_colour, fr.to_size, fr.replacement_status,
             bp.name AS product_name, bp.image_url AS product_image_url,
             pv.size AS variant_size, pv.color AS variant_color,
             ft.net_amount AS transaction_amount,
@@ -246,9 +248,15 @@ const adminListReturns = asyncHandler(async (req, res) => {
             -- W14: for an item of an order placed through a post, the amount is what was paid for THAT item
             COALESCE(ol.paid_total, ft.net_amount) AS transaction_amount,
             fr.order_line_id, fr.request_id, ol.qty AS line_qty, fo.payment_method,
-            (SELECT count(*)::int FROM follower_returns x WHERE x.request_id = fr.request_id) AS request_items
+            (SELECT count(*)::int FROM follower_returns x WHERE x.request_id = fr.request_id) AS request_items,
+            -- shopper-deal-orders (R10): the kind of request, what a replacement swaps, and the deal it belongs to
+            fr.kind, fr.from_colour, fr.from_size, fr.to_colour, fr.to_size, fr.replacement_status, fr.replacement_delivered_at,
+            ol.deal_key, bo.sub_type AS offer_sub_type, bo.offer_config_json AS offer_config,
+            (SELECT COALESCE(sum(x.qty), 0)::int FROM order_lines x WHERE x.transaction_id = ol.transaction_id AND x.deal_key = ol.deal_key) AS deal_units,
+            (SELECT COALESCE(sum(x.paid_total), 0) FROM order_lines x WHERE x.transaction_id = ol.transaction_id AND x.deal_key = ol.deal_key) AS deal_paid
        FROM follower_returns fr
        LEFT JOIN order_lines ol ON ol.id = fr.order_line_id
+       LEFT JOIN brand_offers bo ON bo.id = ol.offer_id
        LEFT JOIN follower_orders fo ON fo.id = fr.order_id
        JOIN follower_transactions ft ON ft.id = fr.transaction_id
        JOIN brands b ON b.id = ft.brand_id
@@ -260,6 +268,14 @@ const adminListReturns = asyncHandler(async (req, res) => {
       ORDER BY fr.created_at ASC`,
     [status]
   );
+  // The deal's own words ("Any 3 for ₹2,999"), for an item that belongs to one.
+  const offerRules = require('../services/offerRules');
+  for (const r of rows) {
+    const inDeal = r.deal_key && /^(pair|set)-\d+$|^volume$/.test(r.deal_key);
+    r.deal_line = inDeal && r.offer_sub_type ? offerRules.orderDealWords({ sub_type: r.offer_sub_type, offer_config_json: r.offer_config }, r.deal_units) : null;
+    r.deal_paid = inDeal ? Number(r.deal_paid) : null;
+    delete r.offer_sub_type; delete r.offer_config; delete r.deal_units;
+  }
   return success(res, { returns: rows });
 });
 

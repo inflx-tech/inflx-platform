@@ -93,7 +93,7 @@ const SALE_SQL = `
          b.business_name AS brand_name, COALESCE(i.full_name, u.name) AS creator_name,
          cp.post_code, cp.caption, bo.name AS offer_name,
          fo.payment_method, fo.order_status, fo.delivered_at,
-         ft.return_window_ends_at, ft.created_at AS tx_created_at, ft.brand_settlement_status, ft.brand_settled_at,
+         ft.return_window_ends_at, ft.return_window_restart_at, ft.created_at AS tx_created_at, ft.brand_settlement_status, ft.brand_settled_at,
          ft.commission_confirmed_at, ft.status AS tx_status,
          c.name AS campaign_name, cs.name AS set_name
     FROM order_lines ol
@@ -125,7 +125,10 @@ function saleState(s) {
     return { state: 'waiting_delivery', until: null, at: null };
   }
   const stamp = s.return_window_ends_at ? new Date(s.return_window_ends_at) : null;
-  const until = stamp ? new Date(new Date(s.delivered_at).getTime() + Math.max(0, stamp.getTime() - new Date(s.tx_created_at).getTime())) : null;
+  // shopper-deal-orders (E10): a delivered replacement starts the window again for that sale.
+  const from = s.return_window_restart_at && new Date(s.return_window_restart_at).getTime() > new Date(s.delivered_at).getTime()
+    ? new Date(s.return_window_restart_at) : new Date(s.delivered_at);
+  const until = stamp ? new Date(from.getTime() + Math.max(0, stamp.getTime() - new Date(s.tx_created_at).getTime())) : null;
   return { state: 'window', until, at: null };
 }
 

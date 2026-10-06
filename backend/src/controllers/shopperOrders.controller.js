@@ -60,6 +60,10 @@ module.exports = {
   // shopper-walk-fixes (W14): the shopper's Return, on a delivered item inside INFLX's return window.
   returnPreview: ok(async (req) => require('../services/shopperReturns.service').preview(await me(req), req.params.id)),
   returnRequest: ok(async (req) => require('../services/shopperReturns.service').request({ followerId: await me(req), lineId: req.params.id, reason: (req.body || {}).reason, note: (req.body || {}).note })),
+  // shopper-deal-orders (part B): one item of a delivered deal is not right — replace it, or refund its share.
+  replacePreview: ok(async (req) => require('../services/shopperReturns.service').replacePreview(await me(req), req.params.id)),
+  replaceRequest: ok(async (req) => { const b = req.body || {}; return require('../services/shopperReturns.service').replaceRequest({
+    followerId: await me(req), lineId: req.params.id, reason: b.reason, colour: b.colour, size: b.size, note: b.note, expect: b.expect }); }),
   cancel: ok(async (req) => orders.cancel({ actor: 'shopper', followerId: await me(req), lineId: req.params.id,
     reason: (req.body || {}).reason, note: (req.body || {}).note })),
 
@@ -68,6 +72,10 @@ module.exports = {
   brandStatus: ok(async (req) => orders.setParcelStatus({ brandId: await brandIdOf(req), orderId: req.params.id, ...(req.body || {}) })),
   brandCancel: ok(async (req) => orders.cancel({ actor: 'brand', brandId: await brandIdOf(req), lineId: req.params.id,
     reason: (req.body || {}).reason, note: (req.body || {}).note })),
+  // shopper-deal-orders (R9): the replacements this brand has to send, and marking one sent, then delivered.
+  brandReplacements: ok(async (req) => ({ replacements: await require('../services/shopperReturns.service').brandReplacements(await brandIdOf(req)) })),
+  brandReplacementStatus: ok(async (req) => ({ replacement: await require('../services/shopperReturns.service').setReplacementStatus({
+    brandId: await brandIdOf(req), returnId: req.params.id, status: (req.body || {}).status }) })),
 
   // ── INFLX admin ───────────────────────────────────────────────────────────
   adminStatus: ok((req) => orders.setParcelStatus({ orderId: req.params.id, ...(req.body || {}) })),

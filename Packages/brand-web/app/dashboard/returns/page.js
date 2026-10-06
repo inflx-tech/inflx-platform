@@ -19,8 +19,15 @@ const STATUS_LABEL = {
   approved:  'Approved',
   received:  'Received',
   refunded:  'Refunded',
+  replaced:  'Replaced',
   rejected:  'Rejected',
 };
+
+// shopper-deal-orders (part B): what kind of request it is. A replacement moves no money — you send
+// one item and collect the other (Order Fulfillment has the card to mark it sent and delivered).
+const KIND_LABEL = { return: 'Return', replace: 'Replace', refund_item: 'Refund one item' };
+const kindOf = (r) => r.kind || 'return';
+const variant = (colour, size) => [colour, size].filter(Boolean).join(' · ');
 
 const REASON_LABEL = {
   wrong_size:       'Wrong size',
@@ -59,7 +66,8 @@ font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:var(--ink);f
 .rtn .pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
 .rtn .pill.requested{background:var(--yellow-pale);color:var(--yellow-text)}
 .rtn .pill.approved,.rtn .pill.received{background:var(--info-pale);color:var(--info)}
-.rtn .pill.refunded{background:var(--success-pale);color:var(--success-text)}
+.rtn .pill.refunded,.rtn .pill.replaced{background:var(--success-pale);color:var(--success-text)}
+.rtn .kind{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;border:1px solid var(--border);margin-right:6px;vertical-align:1px}
 .rtn .pill.rejected{background:var(--danger-pale);color:var(--danger-text)}
 .rtn .ro-sub{background:var(--bg);border-top:1px solid var(--border-soft);padding:10px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .rtn .kv-l{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
@@ -141,8 +149,11 @@ export default function ReturnsPage() {
                 <div className="thumb-ph">▤</div>
               )}
               <div style={{ minWidth: 0 }}>
-                <div className="ro-name">{r.product_name || 'Item'}</div>
+                <div className="ro-name"><span className="kind" data-testid="return-kind">{KIND_LABEL[kindOf(r)] || kindOf(r)}</span>{r.product_name || 'Item'}</div>
                 <div className="ro-meta">
+                  {kindOf(r) === 'replace' && (r.from_size || r.to_size || r.from_colour || r.to_colour) && (
+                    <>{variant(r.from_colour, r.from_size) || '—'} → {variant(r.to_colour, r.to_size) || '—'} · </>
+                  )}
                   {REASON_LABEL[r.reason] || r.reason}
                   {(r.variant_size || r.variant_color) && (
                     <> · {[r.variant_size, r.variant_color].filter(Boolean).join(' / ')}</>
@@ -151,7 +162,12 @@ export default function ReturnsPage() {
                 </div>
               </div>
               <div className="ro-amt">
-                {r.refund_amount != null ? (
+                {kindOf(r) === 'replace' ? (
+                  <>
+                    —
+                    <div className="sub">No money moves</div>
+                  </>
+                ) : r.refund_amount != null ? (
                   <>
                     {fmtMoney(r.refund_amount)}
                     <div className="sub">Refund</div>

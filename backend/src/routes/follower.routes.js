@@ -102,6 +102,8 @@ router.get('/orders/lines/:id/cancel', ...followerAuth, orderCtrl.cancelPreview)
 router.post('/orders/lines/:id/cancel', ...followerAuth, orderCtrl.cancel); // O16 → O17
 router.get('/orders/lines/:id/return', ...followerAuth, orderCtrl.returnPreview);  // W14 — what a return takes, and until when
 router.post('/orders/lines/:id/return', ...followerAuth, orderCtrl.returnRequest); // W14 — she asks; INFLX decides
+router.get('/orders/lines/:id/replace', ...followerAuth, orderCtrl.replacePreview);  // shopper-deal-orders R1–R7 — what one item of a deal can be asked
+router.post('/orders/lines/:id/replace', ...followerAuth, orderCtrl.replaceRequest); // …a replacement, or a refund of that item's share
 
 // ── Reviews (after an order; kept for checkout) ──────────────────────────────
 router.get('/reviews', ...anyone, reviewCtrl.listBrandReviews);

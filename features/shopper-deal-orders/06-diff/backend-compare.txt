@@ -43,3 +43,26 @@ Reading part A
   search rightly found two cards. The test now names the product itself. Nothing was weakened: it still expects exactly one
   card, the bundle, with all three items. Run four times over with part C's suite afterwards: 35/35 each time.
 - This part's other 15 new tests, and part C's 2 added for the alone price, pass.
+
+── part B, 5 Oct 2026: one item of a deal is replaced, or its share refunded ──
+Compared with the run above (after part A). Run on the final code of part B (migration 204 applied by the test set-up).
+before: suites 146 tests 1988 passed 1782 failed 178 pending 28
+after : suites 147 tests 2008 passed 1803 failed 177 pending 28
+
+passed before, failing now: 0
+new tests failing: 0
+failed before, passing now: 1
+    shopper-deal-orders-orders.test.js :: My orders, by deal (AS1–AS6, AS9) AS6 a search for one item's name brings the whole deal's card; a filter that matches none brings nothing
+failing before and now (same name): 177
+tests gone under their old name: 0
+new test names: 20 {"shopper-deal-orders-replace.test.js":20}
+suites added: shopper-deal-orders-replace.test.js
+suites that did not load: before collection-library.test.js · now collection-library.test.js
+
+Reading part B
+- 0 tests that passed before fail now; 0 new tests fail; the same 177 old failures by name.
+- This part's 20 new tests pass. "failed before, passing now: 1" is part A's own test whose fixture was corrected after the last run.
+- The two money jobs, the settlement service and the wallet were changed (the window's start); their existing suites
+  (item17-wallet, shopper-walk-fixes-return-window, shopper-walk-fixes-returns, settlement) pass unchanged, except one
+  assertion moved to the new shape (the brand's parcel now also says the kind of request — drift table).
+- A first full run of this part was stopped and thrown away: one server file was edited while it was running.

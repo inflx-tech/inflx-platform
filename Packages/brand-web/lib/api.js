@@ -228,6 +228,9 @@ export const orderApi = {
   // shopper-ordering: parcels with items and each item's three shares; cancel an item with a reason.
   parcels: (params) => api.get(`/brands/me/parcels${params ? '?' + new URLSearchParams(params) : ''}`),
   cancelLine: (lineId, data) => api.post(`/brands/me/orders/lines/${lineId}/cancel`, data),
+  // shopper-deal-orders (R9): replacements INFLX approved — what goes out, what comes back; mark one sent, then delivered.
+  replacements: () => api.get('/brands/me/replacements'),
+  replacementStatus: (id, status) => api.patch(`/brands/me/replacements/${id}/status`, { status }),
 };
 
 export const brandApi = {

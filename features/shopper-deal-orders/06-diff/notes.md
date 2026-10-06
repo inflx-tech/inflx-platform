@@ -9,11 +9,69 @@ The round is built in three parts (01-spec.md §6). This file is added to as eac
 |---|---|---|
 | C — buying one item of an offer alone (B1–B7) | **yes**, 5 Oct 2026 | **LIVE 5 Oct 2026** on his go ("pls relese this part"): commits `783b2bd9` + `ba579bc5`, shopper app update **236** (brand 242, creator 231 not touched); no migration |
 | A — My orders by deal (O1–O4) | **yes**, 5 Oct 2026 | **LIVE 5 Oct 2026** on his go ("Ok pls release part 2"): commit `e9e6bf21`, shopper app update **237** (brand 242, creator 231 not touched); no migration. The server's part is behind sign-in and cannot be read from outside — the proving click is My orders on the phone |
-| B — replace one item / refund its share (R1–R10) | no | — |
+| B — replace one item / refund its share (R1–R10) | **yes**, 5 Oct 2026 | **on his go of 6 Oct 2026** ("pls go and release") — database change applied on live first (nothing moved), then server, website, shopper app update |
 
 Nothing of part C has been seen on a phone. The website switch was seen in the local preview, and its words are in the live website's scripts. The live server was read as a guest after each push: every post says whether a product can be bought alone, and what one costs alone equals what the bag charges for it.
 
 **For the walk:** the live shop has no bundle ("any 2 for ₹…") post today — only a set, a buy-more post, a buy-one-get-one post and a 20% discount. The buy-more post shows "Buy this alone" now; to see the bundle screens (B1, B5, B6) a bundle offer and a post on it are needed.
+
+## Part B — one item of a deal is replaced, or its share refunded
+
+### Before → after, screen by screen
+| Frame | Before | After |
+|---|---|---|
+| O4 → R1 | A delivered deal had "Return deal": whatever the reason, the whole deal went back. | The button is **Return or replace**. It asks first: "One item is not right · Replace it. The deal stays." or "Return the whole deal · All 3 items go back. Refund of ₹2,999.", with until when. |
+| R2 | — | Which item, and what is wrong: the size doesn't fit · it arrived damaged · it isn't as shown. |
+| R3 | A size that didn't fit could only be returned, with the whole deal. | Its sizes; the one she has and sold-out ones cannot be chosen; another colour of the same product can. "Replacement: Slim Jeans · 34. The deal stays and no money moves." "The store brings it and collects the 32." → Request replacement. |
+| R7 | — | No other size in stock: "You can keep it, or return the whole deal." → Return the whole deal, with the reason already "the size doesn't fit". |
+| R4 | A damaged item could only be returned, with the whole deal. | "Replace with the same item · In stock"; she writes what is wrong → Request replacement. |
+| R5 | The whole deal went back and all of it was refunded. | "The store has no more of this. INFLX refunds this item's share: ₹1,250. You keep the rest of the deal." What she keeps; her words → Request refund for this item. |
+| R6 | "Return", with the warning "this is part of a deal". | The Return screen of part A, opened from R1 (or from R7 with the reason chosen). |
+| R8 | Only a return had a box on the order page. | The same box for a replacement — REPLACEMENT · Replacement requested / approved ("The store will bring Slim Jeans · 34 and collect the 32.") / Replaced ("Slim Jeans · 34 delivered Wed, 7 Oct.") / not accepted, with INFLX's note — and for a one-item refund. The same word is on the deal's card. |
+| R9 · brand website | The page only said "return requested" on a parcel. | **Replacement to send**: Send · Collect · To · Why, **Mark sent** → **Mark delivered**, "Nothing is added to or taken from your wallet for a replacement. You bring it and take the other item back at your own cost." The parcel's row says which kind of request is open. |
+| R10 · admin | Returns listed returns only, with no kind. | A **Type** column: Replace · Refund one item · Return; a **Replaced** tab; Approve says what it does for that kind; a replacement has no "Mark Refunded". |
+
+### Where the build departs from the board's first words — and why
+- **A replacement that sells out before INFLX can approve it closes by itself.** Not on the board. The replacement is taken from stock at approval, not when she asks; if the last one was sold meanwhile there is nothing to approve. The request is closed with the note "It sold out before it could be sent. You can choose another size, or return the whole deal." It does not count as INFLX's answer for that item: she may choose again.
+- **INFLX's Returns lists a whole-deal return as one row per item** ("3 items together"), as it did; the board draws it as one row. Approving or rejecting any of them decides them all, as before.
+- **A "Replaced" tab** on INFLX's Returns (the board has none): otherwise a finished replacement is on no tab.
+- **An item of two** (two of the same size in a bundle) is split into two items of one before the request is recorded — money-neutral, kept even if the request is refused.
+- **Stock that comes back:** only for "the size doesn't fit". A damaged item, or one not as shown, is not put back on sale.
+- **The window after a replacement** runs again for the whole sale — everything she bought from that post in that order — not only the deal's items: the money of a sale is released as one.
+- **"The store brings it and collects the 32."** is said for a size; for the same item again it is "…collects the other", and the box says "another Slim Jeans".
+- **Not built — a damaged free gift being replaced** (one cell of the board's table). No screen is drawn for it and a gift has no page of choices today.
+
+### What was changed
+- **Database** — migration `204_return_kinds_and_replacements.sql` (additive): the kind of a request, what it is replaced with, where the replacement is, "sold out", one new state ("replaced"); a sale's "window runs again from". Run on live with `backend/scripts/run-204.js --dry`, then `--apply` (it prints what must not move, before and after).
+- **Server** — `shopperReturns.service.js` (kinds; asking; INFLX's decision; the brand sending; the deal's state), `shopperOrders.service.js` (the deal's request on its card and page; an item that went back; the parcel's wording), the two money jobs + `settlement.service.js` + `walletRead.service.js` (the window's start), `returns.controller.js` (the lists), routes `GET/POST /follower/orders/lines/:id/replace`, `GET /brands/me/replacements`, `PATCH /brands/me/replacements/:id/status`.
+- **Shopper app** — new `order/ReplaceScreen.js` (route `ReplaceItem`); `OrderScreens.js` (the button; an item that went back), `ReturnScreen.js` (the box by kind; a handed-over reason), `copyReturn.js`, `services/api.js`, `FollowerNavigator.js`.
+- **Website** — `app/admin/returns/page.js`, `app/dashboard/fulfillment/page.js`, `app/dashboard/returns/page.js`, `lib/api.js`.
+- **Rules** — v1.21 (§6.16).
+
+### Tests (5 Oct 2026)
+- Server, this part: `shopper-deal-orders-replace.test.js` — 20/20, real orders through a live bundle post whose products have sizes with stock; the money jobs are run for real.
+- Phone, this part: `shopperDealOrdersReplace.test.js` — 34/34.
+- 46 rules were broken one at a time (30 on the server, 16 on the phone). 41 were caught at once; four were not, and each got its own assertion (the settlement service and the wallet's date after a replacement; the brand's list before approval; the money jobs' clock) and is caught now. One is not a fault that can show: an item that had its answer is refused twice — the row cannot be pressed, and Continue stays off — so removing one of the two changes nothing she can see.
+- Two existing tests were moved to the new shape (drift table in 03-expected-outputs.md).
+- Phone, whole suite: 118 suites, 2,750 tests, all passing.
+- Server, whole suite: 147 suites / 2,008 tests — 0 tests that passed before fail now, 0 new tests fail, the same 177 old failures (`backend-compare.txt`, part B). A first run was thrown away because one server file was edited while it ran; this is the run on the final code.
+- The live-database script was tried on a scratch database built without the change: dry run, apply, apply again — the second apply changes nothing.
+- Web: the four pages were walked in the local preview on a private database seeded with one request of each kind (03-expected-outputs.md, BW1–BW4).
+
+### What to check at the walk (after release; close the app fully and open it twice first)
+- A delivered set or pair → its page → **Return or replace** → One item is not right → pick the item → "The size doesn't fit" → another size → Request replacement. The deal's page then says "Replacement requested".
+- Admin › Returns → the row says **Replace** → Approve.
+- Brand website › Fulfillment → **Replacement to send** → Mark sent → Mark delivered. The shopper's deal then says "Replaced" and shows the new size.
+- The same with "It arrived damaged" on a product that has stock (same item again), and on one whose stock is 0 (refund of that item's share → Admin approves → Mark Refunded).
+
+### Release, when the founder says go (production-impacting — never silent)
+1. `node scripts/run-204.js --dry` on live, read it; then `--apply` (the database change first: the new server needs it).
+2. Commit by path, push (the server and the website redeploy).
+3. Check the live server (the new routes answer "sign in" instead of "not found").
+4. Publish the shopper app update only.
+5. The founder's walk.
+
+Undo: revert the commit and push; publish the previous shopper bundle (237). The database change is additive and can stay.
 
 ## Part A — My orders shows a deal as one
 

@@ -69,7 +69,7 @@ async function settleCommerceTransaction(runner, transactionId) {
               ft.tcs_amount, ft.brand_settlement_status, ft.status, ft.checkout_id,
               COALESCE(ft.platform_fee_reversed, 0) AS platform_fee_reversed,
               b.tcs_applicable, fo.order_status, fo.delivered_at,
-              (fo.delivered_at + (ft.return_window_ends_at - ft.created_at) <= now()) AS window_closed
+              (GREATEST(fo.delivered_at, COALESCE(ft.return_window_restart_at, fo.delivered_at)) + (ft.return_window_ends_at - ft.created_at) <= now()) AS window_closed
          FROM follower_transactions ft
          JOIN brands b ON b.id = ft.brand_id
          LEFT JOIN follower_orders fo ON fo.id = ft.order_id

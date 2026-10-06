@@ -39,6 +39,7 @@ import OrdersScreen from '../screens/shop/order/OrdersScreen';
 import OrderDetailScreen from '../screens/shop/order/OrderDetailScreen';
 import CancelScreen from '../screens/shop/order/CancelScreen';
 import ReturnScreen from '../screens/shop/order/ReturnScreen';
+import ReplaceScreen from '../screens/shop/order/ReplaceScreen';
 
 /**
  * The shopper app (follower-app-v2 · boards F1–F13 · rules v1.7 §5.1).
@@ -126,6 +127,8 @@ export default function FollowerNavigator() {
       <Stack.Screen name="CancelItem" component={CancelScreen} />
       {/* Return (shopper-walk-fixes W14): a delivered item, inside INFLX's return window. */}
       <Stack.Screen name="ReturnItem" component={ReturnScreen} />
+      {/* Return or replace (shopper-deal-orders R1–R7): one item of a delivered deal is not right. */}
+      <Stack.Screen name="ReplaceItem" component={ReplaceScreen} />
     </Stack.Navigator>
   );
 }

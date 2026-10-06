@@ -21,21 +21,24 @@ import { followerApi } from '../../../services/api';
 import { TopBar, Loading, Empty } from '../../../components/shop/bitsShop';
 import { K, b } from '../../../components/shop/orderBits';
 import { CO, dayLabel } from '../../../components/shop/copyOrder';
-import { CR, refundWords, untilLabel } from '../../../components/shop/copyReturn';
+import { CR, refundWords, untilLabel, boxLine } from '../../../components/shop/copyReturn';
 import { CS, inr } from '../../../components/shop/copyShop';
 import { fonts } from '../../../theme/tokens';
 
 /** What her return is doing, on Order details. `back` is the item's `return` from the server. */
 export function ReturnBox({ back, testID }) {
   if (!back) return null;
+  // shopper-deal-orders (R8): the same box for a replacement and for a refund of one item.
+  const kind = back.kind || 'return';
   const refunded = back.status === 'refunded';
+  const good = refunded || back.status === 'replaced';
   const rejected = back.status === 'rejected';
   const money = refunded ? refundWords(back.refund, inr) : null;
   return (
     <View style={st.card} testID={testID || 'return-box'}>
-      <Text style={st.lab}>{CR.head}</Text>
-      <Text style={[st.word, rejected && { color: K.danger }, refunded && { color: K.ok }]} testID="return-word">{back.word}</Text>
-      <Text style={st.meta} testID="return-line">{CR.box[back.status] || ''}</Text>
+      <Text style={st.lab} testID="return-head">{CR.heads[kind] || CR.head}</Text>
+      <Text style={[st.word, rejected && { color: K.danger }, good && { color: K.ok }]} testID="return-word">{back.word}</Text>
+      <Text style={st.meta} testID="return-line">{boxLine(back, { day: dayLabel, money: inr })}</Text>
       {rejected && back.inflx_note ? (
         <View style={st.warn} testID="return-note"><Text style={st.warnText}>{CR.inflxNote(back.inflx_note)}</Text></View>
       ) : null}
@@ -47,9 +50,10 @@ export function ReturnBox({ back, testID }) {
 }
 
 export default function ReturnScreen({ navigation, route }) {
-  const { lineId } = route.params || {};
+  // `reason`: handed over by "Return or replace" when she got here from "no other size is in stock" (R7 → R6).
+  const { lineId, reason: handed = null } = route.params || {};
   const [pv, setPv] = useState(null);
-  const [reason, setReason] = useState(null);
+  const [reason, setReason] = useState(handed);
   const [note, setNote] = useState('');
   const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);

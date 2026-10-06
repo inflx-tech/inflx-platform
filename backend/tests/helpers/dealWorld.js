@@ -80,13 +80,14 @@ async function makePost(w) {
  * A signed collaboration (10% commission) on an offer of `kind`, with one approved live post.
  * A pick-any bundle publishes only when its costliest item is at most 1.5 × its cheapest, hence these prices.
  */
-async function world(kind, prices = [1399, 1499, 1999], { creator = 'Akshaya Reddy', brand = null } = {}) {
+async function world(kind, prices = [1399, 1499, 1999], { creator = 'Akshaya Reddy', brand = null, variants = null } = {}) {
   if (!t) throw new Error('call dealWorld.fresh() first');
   seq += 1;
   const b = await H.brand();
   if (brand) await query(`UPDATE brands SET business_name = $2 WHERE id = $1`, [b.brandId, brand]);
   const ids = [];
-  for (let i = 0; i < prices.length; i++) ids.push(await H.prod(b.brandId, t.jeans, `Piece ${seq}-${i}`, prices[i]));
+  // `variants`: the colours and sizes (with stock) every product is listed with — { colors: [{ color, images, sizes: [{ size, stock }] }] }
+  for (let i = 0; i < prices.length; i++) ids.push(await H.prod(b.brandId, t.jeans, `Piece ${seq}-${i}`, prices[i], null, variants ? { variants_json: variants } : {}));
   const deal = await offerOf(b, kind, ids);
   const c = await w10.campaign(b, { name: 'Diwali Denim' });
   const s = await w10.set(b, c.id, { goal: 'conversion', shoot_mode: 'shipment', go_live_date: day(12) });

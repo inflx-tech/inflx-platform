@@ -37,7 +37,9 @@ async function run() {
          SELECT 1 FROM follower_orders fo2
           WHERE fo2.id = ft.order_id AND (fo2.payment_method = 'cod' OR fo2.checkout_id IS NOT NULL)
             AND NOT (fo2.order_status = 'delivered' AND fo2.delivered_at IS NOT NULL
-                     AND fo2.delivered_at + (ft.return_window_ends_at - ft.created_at) <= NOW()))
+                     -- shopper-deal-orders (E10): once a replacement has been delivered, the window
+                     -- runs again from that delivery. Empty for every sale that never had one.
+                     AND GREATEST(fo2.delivered_at, COALESCE(ft.return_window_restart_at, fo2.delivered_at)) + (ft.return_window_ends_at - ft.created_at) <= NOW()))
        -- Item 17 (review): a shopper-checkout parcel still Confirmed/Packed can be cancelled and
        -- refunded in full; its commission stays pending (where a cancel takes it back) until it ships.
        AND NOT EXISTS (

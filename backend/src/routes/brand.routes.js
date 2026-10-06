@@ -76,6 +76,9 @@ router.get('/me/transactions',                 authenticate, requireRole('brand'
 router.get('/me/parcels',                      authenticate, requireRole('brand'), orderCtrl.brandParcels);
 router.patch('/me/orders/:id/status',          authenticate, requireRole('brand'), orderCtrl.brandStatus);
 router.post('/me/orders/lines/:id/cancel',     authenticate, requireRole('brand'), orderCtrl.brandCancel);
+// shopper-deal-orders (R9): a replacement INFLX approved — the brand sends it and marks it sent, then delivered.
+router.get('/me/replacements',                 authenticate, requireRole('brand'), orderCtrl.brandReplacements);
+router.patch('/me/replacements/:id/status',    authenticate, requireRole('brand'), orderCtrl.brandReplacementStatus);
 
 // Phase 4 — Brand conversion analytics
 router.get('/me/campaigns/:campaign_id/conversions', authenticate, requireRole('brand'), commissionCtrl.getConversions);

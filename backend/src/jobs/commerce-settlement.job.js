@@ -51,7 +51,8 @@ async function run() {
         -- runs from the delivery, with the length stamped on the sale, for an online payment exactly
         -- as for cash. (Item 17 had this for cash only.)
         AND fo.order_status = 'delivered' AND fo.delivered_at IS NOT NULL
-        AND fo.delivered_at + (ft.return_window_ends_at - ft.created_at) <= NOW()
+        -- shopper-deal-orders (E10): after a replacement is delivered the window runs again from then.
+        AND GREATEST(fo.delivered_at, COALESCE(ft.return_window_restart_at, fo.delivered_at)) + (ft.return_window_ends_at - ft.created_at) <= NOW()
         AND NOT EXISTS (
           SELECT 1 FROM follower_returns fr
            WHERE fr.transaction_id = ft.id

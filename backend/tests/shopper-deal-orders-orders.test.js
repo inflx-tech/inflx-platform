@@ -92,7 +92,9 @@ describe('My orders, by deal (AS1–AS6, AS9)', () => {
     const { items } = await cards(sh);
     for (const c of items) {
       for (const l of c.lines) {
-        expect(Object.keys(l).sort()).toEqual(['colour', 'id', 'image_url', 'name', 'normal', 'paid', 'qty', 'role', 'size']);
+        // part B added `state`: an item of a deal that went back (or was cancelled) while the rest stays; null otherwise
+        expect(Object.keys(l).sort()).toEqual(['colour', 'id', 'image_url', 'name', 'normal', 'paid', 'qty', 'role', 'size', 'state']);
+        expect(l.state).toBeNull();
       }
       expect(JSON.stringify(c)).not.toMatch(/commission|platform_fee|brand_net/);
     }

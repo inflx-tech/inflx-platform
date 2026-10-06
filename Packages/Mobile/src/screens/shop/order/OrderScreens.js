@@ -100,6 +100,8 @@ function DealItems({ lines, pair, prefix }) {
         <Text style={st.miniName} numberOfLines={1}>{l.role === 'gift' ? CO.freeGift(l.name) : l.name}</Text>
         <Text style={st.meta}>
           {[[l.colour, l.size].filter(Boolean).join(' · '), l.qty > 1 ? `×${l.qty}` : null].filter(Boolean).join(' ')}
+          {/* part B: an item of the deal that went back (its share was refunded) while the rest stays */}
+          {l.state && CR.itemState[l.state] ? <Text style={st.gone}>{`${l.colour || l.size || l.qty > 1 ? ' · ' : ''}${CR.itemState[l.state]}`}</Text> : null}
           {pair ? <Text style={l.role === 'free' ? st.free : null}>{`${l.colour || l.size ? ' · ' : ''}${l.role === 'free' ? CO.free : inr(l.paid)}`}</Text> : null}
         </Text>
       </View>
@@ -350,11 +352,15 @@ export function OrderDetailScreen({ navigation, route }) {
           <TouchableOpacity style={[b.secondary, { marginTop: 16, borderColor: K.danger }]} onPress={() => navigation.navigate('CancelItem', { lineId: d.id })} testID="order-cancel">
             <Text style={[b.secondaryText, { color: K.danger }]}>{deal ? CO.cancelDeal : CO.cancelItem}</Text>
           </TouchableOpacity>
-        ) : d.can_return ? (
+        ) : d.can_return || (deal && d.can_replace) ? (
           // W14 — delivered, and inside INFLX's return window: she can ask, and is told until when.
+          // shopper-deal-orders (O4, R1): a deal's one button is "Return or replace" — it asks first
+          // whether one item is not right or the whole deal goes back. (A server that does not say
+          // `can_replace` has no replacing: the button is "Return deal", as before.)
           <>
-            <TouchableOpacity style={[b.secondary, { marginTop: 16 }]} onPress={() => navigation.navigate('ReturnItem', { lineId: d.id })} testID="order-return">
-              <Text style={b.secondaryText}>{deal ? CR.returnDeal : CR.returnItem}</Text>
+            <TouchableOpacity style={[b.secondary, { marginTop: 16 }]} testID="order-return"
+              onPress={() => navigation.navigate(deal && d.can_replace !== undefined ? 'ReplaceItem' : 'ReturnItem', { lineId: d.id })}>
+              <Text style={b.secondaryText}>{deal ? (d.can_replace !== undefined ? CR.returnOrReplace : CR.returnDeal) : CR.returnItem}</Text>
             </TouchableOpacity>
             <Text style={st.hint} testID="order-return-until">{CR.openUntil(untilLabel(d.return_until))}</Text>
           </>
@@ -470,6 +476,7 @@ const st = StyleSheet.create({
   miniThumb: { width: 38, height: 46, borderRadius: 7, backgroundColor: '#EDECE6' },
   miniName: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ink },
   free: { fontFamily: fonts.sansBold, color: K.ok },
+  gone: { fontFamily: fonts.sansBold, color: K.ink2 },
   struck: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: K.ink3, textDecorationLine: 'line-through' },
   dealPaid: { backgroundColor: K.surface, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginTop: 10 },
   dealPaidText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: K.ink },

@@ -131,7 +131,9 @@ describe('asking, and what waits meanwhile', () => {
     expect(await W.money(w)).toMatchObject({ brand: m0.brand, her: m0.her });
     // the brand sees it on its parcel, and cannot decide it
     const parcel = (await api.get('/brands/me/parcels', w.b.token)).body.data.parcels.find((p) => p.id === o.parcel.id);
-    expect(parcel.items[0].return).toEqual({ status: 'requested', word: 'Return requested' });
+    // shopper-deal-orders (part B, 5 Oct 2026): the brand's parcel also says the KIND of request — this one is a return,
+    // as every request was. (Was: { status, word }.)
+    expect(parcel.items[0].return).toEqual({ status: 'requested', kind: 'return', word: 'Return requested' });
     const [row] = await returnsOf(o);
     expect((await api.post(`/admin/returns/${row.id}/approve`, w.b.token, {})).status).toBe(403);
   });

@@ -42,6 +42,18 @@
       "released": true,
       "go": "founder (chat 5 Oct 2026: \"Ok pls release part 2\")",
       "pre_release": "the whole phone suite (117 suites / 2716) and this part's server suites (6 suites / 131) run once more on the exact tree released, all passing"
+    },
+    "part_b": {
+      "what": "B — one item of a deal is replaced, or its share refunded (board R1–R10)",
+      "built_at": "2026-10-05",
+      "migration": "204_return_kinds_and_replacements.sql — APPLIED ON LIVE 6 Oct 2026 with backend/scripts/run-204.js (dry run read first). Before and after identical: 0 returns, 20 sales (the same window sum), 16 commissions added, 14 order items all active (₹17,883 paid), wallets 0.00 / 26,719.00, pending 2,145.96, stock 1,506. Every check OK: the eleven new fields and the new state are there; every request that exists is a return; no sale has a restarted window.",
+      "code": "server: shopperReturns (kinds, replacePreview/replaceRequest/splitUnit, decide/complete by kind, brandReplacements/setReplacementStatus, dealState), shopperOrders (deal request + item state on card and page; parcel wording), commission-confirm + commerce-settlement jobs + settlement.service + walletRead (window restart), returns.controller (lists), routes follower /orders/lines/:id/replace and brand /me/replacements. phone: new ReplaceScreen (route ReplaceItem), OrderScreens, ReturnScreen, copyReturn, services/api, FollowerNavigator. website: admin/returns, dashboard/fulfillment, dashboard/returns, lib/api. rules v1.21.",
+      "tests": "server shopper-deal-orders-replace 20/20; phone shopperDealOrdersReplace 34/34; 46 rules broken one at a time — 45 caught (4 only after assertions were added), 1 cannot show (double guard); phone whole suite 118 suites / 2750 passing; server whole suite in 06-diff/backend-compare.txt; the live-database script tried on a scratch database (dry, apply, apply again)",
+      "seen": "the admin Returns page, the brand Order Fulfillment page (Mark sent, Mark delivered) and the brand Returns page, in the local preview on a private database. Nothing on a phone.",
+      "not_built": "a damaged free gift being replaced (one cell of the board's table)",
+      "released": false,
+      "go": "founder (chat 6 Oct 2026: \"pls go and release\")",
+      "pre_release": "the whole phone suite (118 suites / 2750) and this part's server suites (7 suites / 145) run once more on the exact tree released, all passing"
     }
   },
   "deployed_to_production": {

@@ -11,14 +11,28 @@ import { adminApi, fmtMoney } from '../../../lib/api';
 // is set) is decided here the same way, with three differences the server enforces: the refund is
 // what was paid for the item (never a typed amount); items returned together are approved, rejected
 // and refunded together; and "Mark refunded" itself undoes the item and sends an online payment back.
+//
+// shopper-deal-orders (board R10): a request has a KIND, named in its row —
+//   Return           the items go back and are refunded (everything above)
+//   Replace          one item of a deal is exchanged; no money moves. Approving takes the replacement
+//                    from stock and tells the store, which sends it and marks it delivered — there is
+//                    nothing to "mark refunded". If it sold out meanwhile, the request closes itself.
+//   Refund one item  the store's fault and it has no more: that item's share, decided and marked
+//                    refunded like a return of that one item; she keeps the rest of the deal.
 
 const TABS = [
   { key: 'requested', label: 'Requested' },
   { key: 'approved',  label: 'Approved' },
   { key: 'received',  label: 'Received' },
   { key: 'refunded',  label: 'Refunded' },
+  { key: 'replaced',  label: 'Replaced' },
   { key: 'rejected',  label: 'Rejected' },
 ];
+
+const KIND_LABEL = { return: 'Return', replace: 'Replace', refund_item: 'Refund one item' };
+const kindOf = (r) => r.kind || 'return';
+const SEND_LABEL = { to_send: 'The store has it to send', sent: 'The store has sent it', delivered: 'Delivered' };
+const variant = (colour, size) => [colour, size].filter(Boolean).join(' · ');
 
 const REASON_LABEL = {
   wrong_size:       'Wrong size',
@@ -34,6 +48,7 @@ function StatusBadge({ status }) {
     approved:  'bg-navy-pale text-navy',
     received:  'bg-navy-pale text-navy',
     refunded:  'bg-teal-pale text-teal-deep',
+    replaced:  'bg-teal-pale text-teal-deep',
     rejected:  'bg-red-pale text-red',
   };
   return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${cfg[status] || 'bg-surface2 text-t3'}`}>{status}</span>;
@@ -103,9 +118,11 @@ export default function AdminReturnsPage() {
     setProcessing(false);
     if (res.success || res.ok) {
       const rf = res.data?.refund;
+      const kind = kindOf(modal.ret);
       showToast(
-        modal.action === 'approve' ? 'Return approved' :
-        modal.action === 'reject'  ? 'Return rejected' :
+        res.data?.sold_out         ? res.data.message :
+        modal.action === 'approve' ? (kind === 'replace' ? 'Replacement approved — the store has been told to send it' : kind === 'refund_item' ? 'Refund approved — the store collects the item' : 'Return approved') :
+        modal.action === 'reject'  ? (kind === 'replace' ? 'Replacement not accepted' : kind === 'refund_item' ? 'Refund not accepted' : 'Return rejected') :
         rf?.status === 'issued'    ? `Refunded ${fmtMoney(rf.amount)} to the shopper` :
         rf?.status === 'manual'    ? `Returned. Pay ${fmtMoney(rf.amount)} to the shopper by hand (cash order)` :
         rf?.status === 'failed'    ? `Returned, but the refund of ${fmtMoney(rf.amount)} FAILED — send it from Razorpay` :
@@ -118,7 +135,7 @@ export default function AdminReturnsPage() {
     }
   }
 
-  const gridCols = 'grid-cols-[1.4fr_1fr_110px_110px_100px_120px_160px]';
+  const gridCols = 'grid-cols-[100px_2fr_0.9fr_92px_116px_84px_84px_150px]';
 
   return (
     <div className="max-w-6xl">
@@ -145,6 +162,7 @@ export default function AdminReturnsPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-border overflow-hidden">
         <div className={`grid ${gridCols} gap-2 px-4 py-2.5 bg-surface2 border-b border-border text-[10px] font-bold uppercase tracking-wider text-t3`}>
+          <div>Type</div>
           <div>Product</div>
           <div>Customer</div>
           <div>Reason</div>
@@ -163,7 +181,9 @@ export default function AdminReturnsPage() {
           </div>
         ) : (
           returns.map(r => (
-            <div key={r.id} className={`grid ${gridCols} gap-2 px-4 py-3 border-b border-border last:border-0 items-center`}>
+            <div key={r.id} data-testid={`return-row-${r.id}`} className={`grid ${gridCols} gap-2 px-4 py-3 border-b border-border last:border-0 items-center`}>
+              {/* Type — R10: each request names its kind */}
+              <div><span data-testid="return-kind" className="px-2 py-0.5 rounded-md border border-border text-[10px] font-bold text-t1 whitespace-nowrap">{KIND_LABEL[kindOf(r)] || kindOf(r)}</span></div>
               {/* Product */}
               <div className="flex items-center gap-2 min-w-0">
                 {r.product_image_url ? (
@@ -173,7 +193,12 @@ export default function AdminReturnsPage() {
                 )}
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-t1 truncate">{r.product_name || 'Item'}{r.line_qty > 1 ? ` ×${r.line_qty}` : ''}</div>
-                  <div className="text-[10px] text-t3 truncate">{r.brand_name}{(r.variant_size || r.variant_color) ? ` · ${[r.variant_size, r.variant_color].filter(Boolean).join(' / ')}` : ''}</div>
+                  {kindOf(r) === 'replace' ? (
+                    // what she has → what she gets
+                    <div className="text-[10px] text-t1 font-semibold leading-snug" data-testid="return-swap">{variant(r.from_colour, r.from_size) || '—'} → {variant(r.to_colour, r.to_size) || '—'}</div>
+                  ) : null}
+                  <div className="text-[10px] text-t3 truncate">{r.brand_name}{kindOf(r) !== 'replace' && (r.variant_size || r.variant_color) ? ` · ${[r.variant_size, r.variant_color].filter(Boolean).join(' / ')}` : ''}</div>
+                  {r.deal_line ? <div className="text-[10px] text-t3 leading-snug" data-testid="return-deal">{r.deal_line}</div> : null}
                 </div>
               </div>
               {/* Customer */}
@@ -185,8 +210,10 @@ export default function AdminReturnsPage() {
               <div className="text-[11px] text-t2">{REASON_LABEL[r.reason] || r.reason}</div>
               {/* Amount */}
               <div className="font-display text-xs">
-                <div className="font-bold text-t1">{fmtMoney(r.transaction_amount)}</div>
-                {r.refund_amount != null && <div className="text-[10px] text-teal-deep">↳ {fmtMoney(r.refund_amount)}</div>}
+                <div className="font-bold text-t1">{fmtMoney(kindOf(r) !== 'return' && r.deal_paid != null ? r.deal_paid : r.transaction_amount)}</div>
+                {kindOf(r) === 'replace' ? <div className="text-[10px] text-t3" data-testid="return-money">No money moves</div>
+                  : kindOf(r) === 'refund_item' ? <div className="text-[10px] text-teal-deep" data-testid="return-money">Refund {fmtMoney(r.refund_amount)}</div>
+                  : r.refund_amount != null && <div className="text-[10px] text-teal-deep">↳ {fmtMoney(r.refund_amount)}</div>}
                 {r.order_line_id && <div className="text-[10px] text-t3">{r.payment_method === 'cod' ? 'Cash on delivery' : 'Paid online'}{r.request_items > 1 ? ` · ${r.request_items} items together` : ''}</div>}
               </div>
               {/* Status */}
@@ -201,10 +228,14 @@ export default function AdminReturnsPage() {
                     <button onClick={() => openModal(r, 'reject')} className="px-2 py-1 text-[10px] font-bold bg-red-pale text-red border border-red/20 rounded-lg hover:bg-red hover:text-white transition-colors">Reject</button>
                   </>
                 )}
-                {canAction && (r.return_status === 'approved' || r.return_status === 'received') && (
+                {canAction && kindOf(r) !== 'replace' && (r.return_status === 'approved' || r.return_status === 'received') && (
                   <button onClick={() => openModal(r, 'refund')} className="px-2 py-1 text-[10px] font-bold bg-navy-pale text-navy border border-navy/20 rounded-lg hover:bg-navy hover:text-white transition-colors">Mark Refunded</button>
                 )}
-                {(r.return_status === 'refunded' || r.return_status === 'rejected') && (
+                {/* A replacement has no refund: the store sends it and marks it delivered. */}
+                {kindOf(r) === 'replace' && r.return_status === 'approved' && (
+                  <span className="text-[10px] text-t3" data-testid="return-sending">{SEND_LABEL[r.replacement_status] || 'With the store'}</span>
+                )}
+                {(r.return_status === 'refunded' || r.return_status === 'rejected' || r.return_status === 'replaced') && (
                   <span className="text-[10px] text-t3">{r.admin_notes ? r.admin_notes.slice(0, 24) : '--'}</span>
                 )}
               </div>
@@ -218,7 +249,8 @@ export default function AdminReturnsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-96 shadow-2xl">
             <h3 className="font-display text-base font-bold text-t1 mb-1">
-              {modal.action === 'approve' ? 'Approve Return' : modal.action === 'reject' ? 'Reject Return' : 'Mark Refunded'}
+              {modal.action === 'refund' ? 'Mark Refunded'
+                : `${modal.action === 'approve' ? 'Approve' : 'Reject'} ${kindOf(modal.ret) === 'replace' ? 'Replacement' : kindOf(modal.ret) === 'refund_item' ? 'Refund of One Item' : 'Return'}`}
             </h3>
             <p className="text-xs text-t3 mb-3">{modal.ret.product_name || 'Item'} · {modal.ret.brand_name}</p>
 
@@ -242,7 +274,18 @@ export default function AdminReturnsPage() {
 
             {modal.action === 'approve' && (
               <>
-                {modal.ret.order_line_id ? (
+                {kindOf(modal.ret) === 'replace' ? (
+                  <p className="text-xs text-t2 mb-3" data-testid="approve-says">
+                    {variant(modal.ret.from_colour, modal.ret.from_size) || 'This item'} is replaced with {variant(modal.ret.to_colour, modal.ret.to_size) || 'the same item'}.
+                    Approving takes the replacement from stock and tells the store to bring it and collect the other. No money moves.
+                    If it has sold out meanwhile, the request closes itself and the shopper is told she can choose again.
+                  </p>
+                ) : kindOf(modal.ret) === 'refund_item' ? (
+                  <p className="text-xs text-t2 mb-3" data-testid="approve-says">
+                    The store is at fault and has no more of it, so only this item&apos;s share is refunded: {fmtMoney(modal.ret.refund_amount)}. She keeps the rest of the deal.
+                    Approving tells the shopper and the store; the store collects it. Nothing is refunded until you mark it refunded.
+                  </p>
+                ) : modal.ret.order_line_id ? (
                   <p className="text-xs text-t2 mb-3">
                     The refund is what was paid for {modal.ret.request_items > 1 ? `these ${modal.ret.request_items} items, returned together` : 'this item'}.
                     Approving tells the shopper and the store; the store collects it. Nothing is refunded until you mark it refunded.
@@ -275,7 +318,7 @@ export default function AdminReturnsPage() {
                 <textarea
                   value={adminNotes}
                   onChange={e => setAdminNotes(e.target.value)}
-                  placeholder="Shown to the customer — explain why the return was declined"
+                  placeholder="Shown to the customer — explain why it was declined"
                   className="w-full border-2 border-border2 rounded-xl p-2.5 text-sm text-t1 outline-none focus:border-gold resize-none"
                   rows={3}
                 />
@@ -313,7 +356,7 @@ export default function AdminReturnsPage() {
                 }`}
               >
                 {processing ? 'Working...' :
-                  modal.action === 'approve' ? 'Approve Return' :
+                  modal.action === 'approve' ? (kindOf(modal.ret) === 'replace' ? 'Approve Replacement' : kindOf(modal.ret) === 'refund_item' ? 'Approve Refund' : 'Approve Return') :
                   modal.action === 'reject'  ? 'Confirm Rejection' :
                                                'Mark Refunded'}
               </button>
