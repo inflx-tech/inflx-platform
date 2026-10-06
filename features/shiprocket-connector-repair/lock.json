@@ -21,5 +21,18 @@
     "honest_note": "A first, PARALLEL run of seven suites showed one failure in item11-remote-return (check 27). That was my run, not the code: backend jest shares one database and must run --runInBand. Serially the file is 34/34, alone and in the full suite.",
     "not_provable_without_the_account": "The tests prove INFLX sends what Shiprocket's reference requires and reads what it documents. They cannot prove Shiprocket behaves as its reference says. Five questions wait for one real parcel — listed at the foot of 01-spec.md.",
     "note": "released stays false per GOVERNANCE.md §5 — the 177 pre-existing failures are unchanged debt; the certification is no-regression, never green."
+  },
+  "deployed_to_production": {
+    "at": "2026-10-06",
+    "by": "founder go (chat, 6 Oct 2026: \"pls push\")",
+    "commit": "d0033fad (pushed 460bb5b5..d0033fad)",
+    "migration": "none",
+    "render": "live, proved by route existence, watched in: POST /v1/webhooks/shipping/courier answered 404 before the push and 401 (\"Signature check failed.\") about two minutes after it; a wrong secret is 401; a made-up sibling (/shipping/nobody) is still 404; the old address (/shipping/shiprocket) still 401; item 11's admin test-parcels route still 401 without a session.",
+    "secret": "the secret the founder saved on Render on 6 Oct is the one the server holds: the new address, called with it and a tracking number that belongs to no parcel, answered 200 {received:true, duplicate:false, applied:false}. That call writes nothing — an update for a parcel that is not ours is acknowledged and dropped.",
+    "ota": "none — no phone screen changed",
+    "websites": "the push redeploys Vercel with no website change in it; not separately verified",
+    "env": "SHIPROCKET_EMAIL, SHIPROCKET_PASSWORD, SHIPROCKET_WEBHOOK_SECRET set by the founder. SHIPPING_PROVIDER and SHIPROCKET_ENABLED deliberately NOT set — the platform is still on the simulator and no call reaches Shiprocket.",
+    "money": "NO MONEY MOVED — no migration, no job that runs while the switches are off, no parcel on a real courier.",
+    "open_for_the_founder": "paste https://inflx-platform.onrender.com/v1/webhooks/shipping/courier and the secret word into Shiprocket (Settings -> API -> Webhooks); recharge the Shiprocket wallet; then the two switches and ONE real test parcel between two of his own addresses, which is what answers the five questions at the foot of 01-spec.md."
   }
 }
