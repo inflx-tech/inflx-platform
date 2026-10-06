@@ -9,7 +9,9 @@ The round is built in three parts (01-spec.md §6). This file is added to as eac
 |---|---|---|
 | C — buying one item of an offer alone (B1–B7) | **yes**, 5 Oct 2026 | **LIVE 5 Oct 2026** on his go ("pls relese this part"): commits `783b2bd9` + `ba579bc5`, shopper app update **236** (brand 242, creator 231 not touched); no migration |
 | A — My orders by deal (O1–O4) | **yes**, 5 Oct 2026 | **LIVE 5 Oct 2026** on his go ("Ok pls release part 2"): commit `e9e6bf21`, shopper app update **237** (brand 242, creator 231 not touched); no migration. The server's part is behind sign-in and cannot be read from outside — the proving click is My orders on the phone |
-| B — replace one item / refund its share (R1–R10) | **yes**, 5 Oct 2026 | **on his go of 6 Oct 2026** ("pls go and release") — database change applied on live first (nothing moved), then server, website, shopper app update |
+| B — replace one item / refund its share (R1–R10) | **yes**, 5 Oct 2026 | **LIVE 6 Oct 2026** on his go ("pls go and release"): migration 204 applied on live first (nothing moved), commit `16a578c8`, shopper app update **238** (brand 242, creator 231 not touched). The website's three pages were confirmed by content; the server's part is behind sign-in and cannot be read from outside |
+
+**All three parts are live. Nothing of the round has been seen on a phone** — the founder's walk is owed.
 
 Nothing of part C has been seen on a phone. The website switch was seen in the local preview, and its words are in the live website's scripts. The live server was read as a guest after each push: every post says whether a product can be bought alone, and what one costs alone equals what the bag charges for it.
 

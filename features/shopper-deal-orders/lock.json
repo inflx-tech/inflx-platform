@@ -51,7 +51,7 @@
       "tests": "server shopper-deal-orders-replace 20/20; phone shopperDealOrdersReplace 34/34; 46 rules broken one at a time — 45 caught (4 only after assertions were added), 1 cannot show (double guard); phone whole suite 118 suites / 2750 passing; server whole suite in 06-diff/backend-compare.txt; the live-database script tried on a scratch database (dry, apply, apply again)",
       "seen": "the admin Returns page, the brand Order Fulfillment page (Mark sent, Mark delivered) and the brand Returns page, in the local preview on a private database. Nothing on a phone.",
       "not_built": "a damaged free gift being replaced (one cell of the board's table)",
-      "released": false,
+      "released": true,
       "go": "founder (chat 6 Oct 2026: \"pls go and release\")",
       "pre_release": "the whole phone suite (118 suites / 2750) and this part's server suites (7 suites / 145) run once more on the exact tree released, all passing"
     }
@@ -90,6 +90,24 @@
       },
       "money": "none moved; nothing about cancelling, returning or refunds changed",
       "pending": "the founder's device walk (06-diff/notes.md, part A). release.released stays false until the whole round is walked. Q2 (the refund-policy sentence) is still his: asked a third time at this release, not yet answered."
+    },
+    "part_b": {
+      "at": "2026-10-06",
+      "by": "founder go (chat 6 Oct 2026: \"pls go and release\")",
+      "migration": "204_return_kinds_and_replacements.sql applied on live BEFORE the push (backend/scripts/run-204.js: dry run read, then apply). Every check OK; nothing moved: 0 returns, 20 sales, 16 commissions added, 14 order items (₹17,883), wallets and stock identical before and after. The live shop was read as a guest after it and answered as before.",
+      "commit": "16a578c8 (pushed 9cbb7bae..16a578c8; gov-check OK; 33 files staged by path, nothing of another window)",
+      "render": "NOT proved from outside, and it cannot be: everything this part changes on the server is behind sign-in, and on this server every unknown path under /v1/follower and /v1/brands/me already answers \"sign in\", so the new routes prove nothing either. After the push the live server answered healthy for five minutes without one failed answer, and the public shop read as a guest was as it should be. An older server would not say can_replace, and the new app would then show \"Return deal\" as in part A — nothing breaks either way. The proving click: a delivered deal's button reads \"Return or replace\".",
+      "vercel": "PROVED by content: the brand's Order Fulfillment page carries \"Replacement to send\", \"Mark delivered\" and \"at your own cost\"; its Returns page \"Refund one item\" and \"No money moves\"; the admin Returns page (admin.inflx.in) \"Refund one item\", \"Approve Replacement\" and \"The store has it to send\".",
+      "ota": {
+        "follower": 238,
+        "brand": "242 — unchanged, not published",
+        "influencer": "231 — unchanged, not published",
+        "native_runtime": "3",
+        "note": "published five minutes after the push, from the committed tree (phone source clean, otaUpdater untouched). The manifest read back says 238 and the live bundle carries this part (Return or replace, One item is not right, Request replacement, Request refund for this item, the ReplaceItem route)."
+      },
+      "money": "none moved by the release. From now on: a replacement moves none; a one-item refund undoes that item only; a sale with an open request waits; after a replacement is delivered the sale's window runs again.",
+      "not_built": "a damaged free gift being replaced (one cell of the board's table)",
+      "pending": "the founder's device walk of the whole round (06-diff/notes.md has a checklist per part); a bundle post is needed on live to walk the bundle screens. release.released stays false until then. Q2 (the refund-policy sentence) is still his."
     }
   }
 }
