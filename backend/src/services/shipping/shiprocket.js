@@ -281,12 +281,23 @@ async function quote({ pickupPincode, deliveryPincode, weightKg, box, declaredVa
  * It is the start of the name, for the person reading Shiprocket's panel, and a fingerprint of
  * the whole address, for uniqueness: the same address always gives the same code.
  */
-function pickupCode({ name: n, phone, street, pincode, cityName, stateName }) {
+function pickupCode({ name: n, phone, street, pincode, cityName, stateName, landmark }) {
   const slug = String(n || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 10) || 'Store';
   const print = crypto.createHash('sha256')
-    .update([n, phone, street, pincode, cityName, stateName].map((x) => String(x || '')).join('|'))
+    .update([n, phone, street, pincode, cityName, stateName, landmark].map((x) => String(x || '')).join('|'))
     .digest('hex').slice(0, 22);
   return `${slug}${print}`;
+}
+
+/**
+ * A store's two address lines. Shiprocket holds the pair to 190 characters TOGETHER, and takes
+ * a second line only when it is at least 3 — so a landmark that is too short is left off rather
+ * than getting the whole address refused.
+ */
+function addressLines(street, landmark) {
+  const second = clip(landmark, 45);
+  const line2 = second.length >= 3 ? second : '';
+  return { line1: clip(street, 190 - line2.length), line2 };
 }
 
 async function findPickup(code) {
@@ -305,14 +316,18 @@ async function registerPickup(address) {
   const cleaned = clip(String(address.name || '').replace(/[^A-Za-z0-9 ]/g, ' ').replace(/\s+/g, ' '), 60);
   const contact = cleaned.length >= 3 && /[A-Za-z]/.test(cleaned) ? cleaned : `Store ${cleaned}`.trim();
 
+  const { line1, line2 } = addressLines(address.street, address.landmark);
+
   try {
     const d = await call('POST', `${API}/settings/company/addpickup`, {
       pickup_location: code,
       name: contact,
       email: 'ops@inflx.in',
       phone: phone10(address.phone),
-      // 10 to 190 characters, and it must contain a house, flat or road number.
-      address: clip(address.street, 190),
+      // 10 to 190 characters, and it must contain a house, flat or road number — which is the
+      // rule INFLX now holds a store's street address to when it is typed.
+      address: line1,
+      ...(line2 ? { address_2: line2 } : {}),
       city: clip(address.cityName, 50),
       state: clip(address.stateName, 50),
       country: 'India',
@@ -402,13 +417,16 @@ async function requestPickup(shipmentId, day = null) {
 
 const channel = () => (env.SHIPROCKET_CHANNEL_ID ? { channel_id: idOf(env.SHIPROCKET_CHANNEL_ID) } : {});
 
-async function book(shipment, { pickupLocationName, items = [] } = {}) {
+async function book(shipment, { pickupLocationName, items = [], senderName = null } = {}) {
   const value = orderValue(shipment, items);
   const order = await call('POST', `${API}/orders/create/adhoc`, {
     order_id: String(shipment.id),
     order_date: todayIST(),
     pickup_location: pickupLocationName,
     ...channel(),
+    // One INFLX account ships for every brand. This is the name the label prints as the sender
+    // — the brand's — instead of the account's own.
+    ...(clip(senderName, 60) ? { reseller_name: clip(senderName, 60) } : {}),
     billing_customer_name: clip(shipment.to_name, 60) || 'Customer',
     billing_last_name: '',                    // a required KEY; the value may be empty
     billing_address: clip(shipment.to_street, 190),
@@ -462,8 +480,10 @@ async function book(shipment, { pickupLocationName, items = [] } = {}) {
  * registered pickup location. `items` are the lines going back; without them Shiprocket refuses
  * the order.
  */
-async function bookReturn(shipment, { pickupDay = null, items = [] } = {}) {
+async function bookReturn(shipment, { pickupDay = null, items = [], senderName = null } = {}) {
   const value = orderValue(shipment, items);
+  // Who the return is delivered TO: the brand, at this branch — not just "Main Branch".
+  const store = [clip(senderName, 60), clip(shipment.to_name, 60)].filter(Boolean).join(' - ');
   const order = await call('POST', `${API}/orders/create/return`, {
     order_id: `${shipment.id}-R`,
     order_date: todayIST(),                   // when the ORDER was made; the pickup day goes below
@@ -477,7 +497,7 @@ async function bookReturn(shipment, { pickupDay = null, items = [] } = {}) {
     pickup_pincode: pin6(shipment.from_pincode),
     pickup_email: 'creators@inflx.in',
     pickup_phone: phone10(shipment.from_phone),
-    shipping_customer_name: clip(shipment.to_name, 60) || 'Store',
+    shipping_customer_name: clip(store, 60) || 'Store',
     shipping_last_name: '',
     shipping_address: clip(shipment.to_street, 190),
     shipping_city: clip(shipment.to_city_name, 30),

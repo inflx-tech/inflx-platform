@@ -17,6 +17,9 @@
  *   stateName, cityName      fallback labels when the saved city is not on the offered list
  *                            (older accounts keep resolving and keep showing their city)
  *   cityLabel, cityHint      the mockup wording per screen; hint '' hides the line
+ *   citySheetTitle           the heading of the city list. A STORE's screens say "City"
+ *                            (features/courier-ready-addresses, founder 7 Oct 2026: "simply ask
+ *                            city" — someone whose town is not listed picks the nearest one)
  *   beside                   a node drawn in a two-column row beside State (B1/B6: the pincode)
  *   labelStyle, fieldStyle, hintStyle   the auth screens' own yellow-world styles
  */
@@ -87,7 +90,7 @@ export function SinglePickSheet({ visible, title, items, value, onPick, onClose,
 
 export default function OfferedStateCityFields({
   stateId, cityId, onChange, errors = {}, testIDPrefix = 'reg', stateName, cityName,
-  cityLabel = CITY_LABEL, cityHint = CITY_HINT, beside, labelStyle, fieldStyle, hintStyle, placeholderColor,
+  cityLabel = CITY_LABEL, cityHint = CITY_HINT, citySheetTitle = 'Nearest major city', beside, labelStyle, fieldStyle, hintStyle, placeholderColor,
 }) {
   const [states, setStates] = useState([]);
   const [open, setOpen] = useState(null); // 'state' | 'city' | null
@@ -167,7 +170,7 @@ export default function OfferedStateCityFields({
       />
       <SinglePickSheet
         visible={open === 'city'}
-        title="Nearest major city"
+        title={citySheetTitle}
         items={cities}
         value={cityId}
         onPick={pickCity}

@@ -33,7 +33,7 @@ const BRAND_ITEMS = Object.freeze([
   { key: 'address_line',   label: 'street address' },
   { key: 'pincode',        label: 'pincode' },
   { key: 'state',          label: 'state' },
-  { key: 'city',           label: 'nearest major city' },
+  { key: 'city',           label: 'city' },
   { key: 'logo',           label: 'logo' },
   { key: 'about',          label: 'about' },
   { key: 'contact_person', label: 'contact person' },

@@ -28,6 +28,7 @@ import { COPY } from '../../components/settings/copy';
 // to" and is a different question entirely.
 import OfferedStateCityFields, { MSG_STATE, MSG_CITY } from '../../components/registration/OfferedStateCityFields';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
+import { DELIVERY_STREET_MAX } from '../../utils/storeAddress';
 import { StateBox7 } from '../../components/agreement/bits7';
 import { C11, MSG11 } from '../../components/remote/copy11';
 
@@ -129,7 +130,10 @@ export default function RemoteAddressScreen({ navigation, route }) {
           <Field label={C11.creator.phoneLabel} value={form.phone} onChange={(v) => set('phone', v)}
             hint={C11.creator.phoneHint} keyboardType="phone-pad" maxLength={10} error={errors.phone} testID="f-phone" />
 
+          {/* features/courier-ready-addresses: 190 is all a courier keeps of an address. */}
           <Field label={C11.creator.streetLabel} value={form.street} onChange={(v) => set('street', v)}
+            hint={C11.creator.streetHint} maxLength={DELIVERY_STREET_MAX}
+            counter={`${String(form.street || '').length}/${DELIVERY_STREET_MAX}`}
             multiline error={errors.street} testID="f-street" />
 
           <Field label={C11.creator.pincodeLabel} value={form.pincode} onChange={(v) => set('pincode', v.replace(/\D/g, '').slice(0, 6))}

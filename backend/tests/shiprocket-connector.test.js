@@ -677,6 +677,11 @@ describe('item 11 through its own routes, with the platform on the real courier'
     expect(reg.body.pickup_location).toMatch(/^[A-Za-z0-9]{1,36}$/);
     expect(order.body.pickup_location).toBe(reg.body.pickup_location);
     expect(order.body.pickup_location).not.toBe(w.br.name);
+    // features/courier-ready-addresses: the courier is told WHOSE store it is, and the label's
+    // sender is the brand.
+    expect(reg.body.name).toContain(w.br.name);
+    expect(reg.body.name).toContain(w.b.name.split(' ')[0]);
+    expect(order.body.reseller_name).toBe(w.b.name);
     for (const k of OUTBOUND_REQUIRED) expect(order.body).toHaveProperty(k);
     expect(order.body.order_id).toBe(parcel.id);
     expect(order.body.billing_phone).toMatch(/^\d{10}$/);
@@ -845,5 +850,78 @@ describe('item 11 through its own routes, with the platform on the real courier'
     expect(returns).toHaveLength(2);
     expect(returns.filter((s) => !s.cancelled_at)).toHaveLength(1);
     expect(returns.find((s) => !s.cancelled_at).tracking_number).toBe(f.RET);
+  });
+});
+
+/* ═════════════════════════════════════════ what the courier is told about a store
+   (features/courier-ready-addresses · checks 9, 10, 11) */
+
+describe('what the courier is told about a store', () => {
+  const STORE = {
+    name: 'Aveen Fashion - Main Branch', phone: '9000012345',
+    street: 'Shop 12, Sri Sai Complex, Road No 3, KPHB Phase 1, Kukatpally', landmark: 'Opposite JNTU metro station',
+    pincode: '500072', cityName: 'Hyderabad', stateName: 'Telangana',
+  };
+
+  it('9 · the landmark goes as the second address line, with the store’s own phone and the brand’s name', async () => {
+    const f = fakeShiprocket();
+    await shiprocket.registerPickup(STORE);
+    const [{ body }] = f.of('POST /settings/company/addpickup');
+    expect(body.address).toBe('Shop 12, Sri Sai Complex, Road No 3, KPHB Phase 1, Kukatpally');
+    expect(body.address_2).toBe('Opposite JNTU metro station');
+    expect(body.phone).toBe('9000012345');
+    expect(body.name).toBe('Aveen Fashion Main Branch');          // letters, digits and spaces — whose store it is
+    expect((body.address + body.address_2).length).toBeLessThanOrEqual(190);
+  });
+
+  it('9 · no landmark, or one too short to be a line, sends no second line at all', async () => {
+    const f = fakeShiprocket();
+    await shiprocket.registerPickup({ ...STORE, landmark: null });
+    await shiprocket.registerPickup({ ...STORE, landmark: 'A1' });
+    for (const c of f.of('POST /settings/company/addpickup')) expect(c.body).not.toHaveProperty('address_2');
+  });
+
+  it('9 · an old, long address and its landmark still fit the 190 a courier keeps', async () => {
+    const f = fakeShiprocket();
+    await shiprocket.registerPickup({ ...STORE, street: `Shop 12, ${'A'.repeat(180)}`, landmark: 'L'.repeat(45) });
+    const [{ body }] = f.of('POST /settings/company/addpickup');
+    expect(body.address_2).toHaveLength(45);
+    expect(body.address.length + body.address_2.length).toBeLessThanOrEqual(190);
+    expect(body.address.startsWith('Shop 12, ')).toBe(true);     // the shop number is what survives
+  });
+
+  it('11 · a new landmark or a new phone is a new address to the courier — the store gets a new code', () => {
+    const base = shiprocket.pickupCode(STORE);
+    expect(shiprocket.pickupCode({ ...STORE })).toBe(base);
+    expect(shiprocket.pickupCode({ ...STORE, landmark: 'Next to the flyover' })).not.toBe(base);
+    expect(shiprocket.pickupCode({ ...STORE, landmark: null })).not.toBe(base);
+    expect(shiprocket.pickupCode({ ...STORE, phone: '9000099999' })).not.toBe(base);
+    expect(shiprocket.pickupCode({ ...STORE, landmark: 'Next to the flyover' })).toMatch(/^[A-Za-z0-9]{1,36}$/);
+  });
+
+  it('9 · the label’s sender is the brand — and only when a brand was named', async () => {
+    const f = fakeShiprocket();
+    await shiprocket.book(PARCEL, { pickupLocationName: 'X', items: LINES, senderName: 'Aveen Fashion Boutique' });
+    await shiprocket.book({ ...PARCEL, id: '11111111-2222-4333-8444-555555555555' }, { pickupLocationName: 'X', items: LINES });
+    const [named, bare] = f.of('POST /orders/create/adhoc');
+    expect(named.body.reseller_name).toBe('Aveen Fashion Boutique');
+    expect(bare.body).not.toHaveProperty('reseller_name');
+  });
+
+  it('10 · a return is delivered to the brand at that branch, not to "Main Branch"', async () => {
+    const f = fakeShiprocket();
+    const ret = {
+      ...PARCEL, id: '7a6b5c4d-3e2f-4a1b-9c0d-8e7f6a5b4c3d', declared_value: null,
+      from_name: 'Tanvi Suresh', from_phone: '9876511111', from_street: '11 Gandhi Road, Brodipet', from_pincode: '522002',
+      from_city_name: 'Guntur', from_state_name: 'Andhra Pradesh',
+      to_name: 'Main Branch', to_phone: '9000012345',
+      to_street: 'Shop 12, Sri Sai Complex, Road No 3, KPHB Phase 1, Kukatpally, Opposite JNTU metro station',
+      to_pincode: '500072', to_city_name: 'Hyderabad', to_state_name: 'Telangana',
+    };
+    await shiprocket.bookReturn(ret, { pickupDay: '2026-10-09', items: LINES, senderName: 'Aveen Fashion Boutique' });
+    const [{ body }] = f.of('POST /orders/create/return');
+    expect(body.shipping_customer_name).toBe('Aveen Fashion Boutique - Main Branch');
+    expect(body.shipping_address).toBe('Shop 12, Sri Sai Complex, Road No 3, KPHB Phase 1, Kukatpally, Opposite JNTU metro station');
+    expect(body.shipping_phone).toBe('9000012345');
   });
 });

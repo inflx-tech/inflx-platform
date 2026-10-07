@@ -82,7 +82,9 @@ describe('Registration (checks 5–10)', () => {
 
   it('brand: an unresolvable typed city, a city outside its state, a bad pincode (6, 8)', async () => {
     const { token } = await createBrandUser();
-    const base = { name: 'R', business_name: 'B', sub_categories: ['WOMEN'], address_line: 'x', pincode: '500001' };
+    // features/courier-ready-addresses: a registration address must be one a courier can find, so
+    // the fixture carries a real one — these checks are about the CITY and the PINCODE.
+    const base = { name: 'R', business_name: 'B', sub_categories: ['WOMEN'], address_line: 'Shop 12, Road No. 4', pincode: '500001' };
     let r = await api.post('/brands/register', token, { ...base, city: 'Atlantis', state: 'Telangana' });
     expect(r.status).toBe(422); expect(r.body.error.field).toBe('city_id'); expect(r.body.error.details.fields[0].code).toBe('CITY_REQUIRED');
     const tg = await ids('Telangana', 'Warangal'); const ka = await ids('Karnataka', 'Mysuru');
@@ -370,7 +372,7 @@ describe('Branches (checks 30–32)', () => {
     let r = await api.post('/brands/me/branches', b.token, { name: 'Jubilee Hills', place_id: 'ChIJ' });
     expect(r.status).toBe(422); expect(r.body.error.field).toBe('address_text');
     r = await api.post('/brands/me/branches', b.token, { name: 'Jubilee Hills', address_text: 'Plot 8, Road No. 36', pincode: '500033' });
-    expect(r.status).toBe(422); expect(r.body.error.field).toBe('city_id'); expect(r.body.error.message).toBe('Pick the state, then the nearest major city.');
+    expect(r.status).toBe(422); expect(r.body.error.field).toBe('city_id'); expect(r.body.error.message).toBe('Pick the state, then the city.');
     r = await api.post('/brands/me/branches', b.token, { name: 'Jubilee Hills', address_text: 'Plot 8, Road No. 36', pincode: '500033', ...tg });
     expect(r.status).toBe(422); expect(r.body.error.field).toBe('is_main'); expect(r.body.error.details.fields[0].code).toBe('MAIN_CHOICE_REQUIRED');
     expect(r.body.error.message).toBe('Which one is your main branch?');
@@ -380,7 +382,8 @@ describe('Branches (checks 30–32)', () => {
     let list = (await api.get('/brands/me/branches', b.token)).body.data.branches;
     expect(list.filter(x => x.isMain)).toHaveLength(1); expect(list.find(x => x.isMain).name).toBe('Jubilee Hills');
     const kl = await ids('Kerala', 'Kochi');
-    r = await api.post('/brands/me/branches', b.token, { name: 'Kochi', address_text: 'MG Road', pincode: '682001', ...kl });
+    // features/courier-ready-addresses: a branch address needs a shop or door number.
+    r = await api.post('/brands/me/branches', b.token, { name: 'Kochi', address_text: '12 MG Road, Ernakulam', pincode: '682001', ...kl });
     expect(r.status).toBe(201); expect(r.body.data.branch.isMain).toBe(false);
     r = await api.put(`/brands/me/branches/${r.body.data.branch.id}`, b.token, { pincode: '12' });
     expect(r.status).toBe(422); expect(r.body.error.field).toBe('pincode');
@@ -388,7 +391,7 @@ describe('Branches (checks 30–32)', () => {
     expect(list).toHaveLength(3);
     // with is_main:false on the second branch the first stays main
     const b2 = await brand();
-    r = await api.post('/brands/me/branches', b2.token, { name: 'Two', address_text: 'x', pincode: '500001', ...tg, is_main: false });
+    r = await api.post('/brands/me/branches', b2.token, { name: 'Two', address_text: 'Shop 2, Abids Road', pincode: '500001', ...tg, is_main: false });
     expect(r.status).toBe(201); expect(r.body.data.branch.isMain).toBe(false);
   });
 });

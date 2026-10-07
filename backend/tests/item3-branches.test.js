@@ -53,14 +53,15 @@ describe('A4 · A5 — branches', () => {
     r = await api.post('/brands/me/branches', b.token, { name: 'Second store', place_id: 'hyd' });
     expect(r.status).toBe(422);
     expect(r.body.error.field).toBe('address_text');
-    r = await api.post('/brands/me/branches', b.token, { name: 'Second store', address_text: 'Plot 8' });
+    r = await api.post('/brands/me/branches', b.token, { name: 'Second store', address_text: 'Plot 8, Road No. 36' });
     expect(r.status).toBe(422);
     expect(r.body.error.field).toBe('pincode');
     expect(r.body.error.message).toBe('Enter a 6-digit PIN code.');
-    r = await api.post('/brands/me/branches', b.token, { name: 'Second store', address_text: 'Plot 8', pincode: '500033' });
+    r = await api.post('/brands/me/branches', b.token, { name: 'Second store', address_text: 'Plot 8, Road No. 36', pincode: '500033' });
     expect(r.status).toBe(422);
     expect(r.body.error.field).toBe('city_id');
-    expect(r.body.error.message).toBe('Pick the state, then the nearest major city.');
+    // features/courier-ready-addresses (founder, 7 Oct 2026): the field is simply "City".
+    expect(r.body.error.message).toBe('Pick the state, then the city.');
   });
 
   it('create stores the four parts, adds no city and no coordinates; a city outside its state is refused (check 8)', async () => {
@@ -142,13 +143,13 @@ describe('A4 · A5 — branches', () => {
     expect(r.status).toBe(422);
     expect(r.body.error.field).toBe('pincode');
     const kochi = await four({ state: 'Kerala', city: 'Kochi' });
-    r = await api.put(`/brands/me/branches/${second.id}`, b.token, { name: 'Kochi store', address_text: 'MG Road', pincode: '682001', state_id: kochi.state_id, city_id: kochi.city_id, is_main: true });
+    r = await api.put(`/brands/me/branches/${second.id}`, b.token, { name: 'Kochi store', address_text: '12 MG Road, Ernakulam', pincode: '682001', state_id: kochi.state_id, city_id: kochi.city_id, is_main: true });
     expect(r.status).toBe(200);
-    expect(r.body.data.branch).toMatchObject({ name: 'Kochi store', formattedAddress: 'MG Road', pincode: '682001', cityName: 'Kochi', stateName: 'Kerala', isMain: true });
+    expect(r.body.data.branch).toMatchObject({ name: 'Kochi store', formattedAddress: '12 MG Road, Ernakulam', pincode: '682001', cityName: 'Kochi', stateName: 'Kerala', isMain: true });
     expect((await query(`SELECT count(*)::int AS n FROM brand_branches WHERE brand_id=$1 AND is_main`, [b.brandId])).rows[0].n).toBe(1);
     // the street alone keeps the pincode; the city alone keeps the street
-    r = await api.put(`/brands/me/branches/${second.id}`, b.token, { address_text: 'Marine Drive' });
-    expect(r.body.data.branch).toMatchObject({ formattedAddress: 'Marine Drive', pincode: '682001', cityName: 'Kochi' });
+    r = await api.put(`/brands/me/branches/${second.id}`, b.token, { address_text: '3 Marine Drive, Kochi' });
+    expect(r.body.data.branch).toMatchObject({ formattedAddress: '3 Marine Drive, Kochi', pincode: '682001', cityName: 'Kochi' });
   });
 
   it('a creator cannot read or write branches', async () => {

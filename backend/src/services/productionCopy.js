@@ -31,6 +31,8 @@ const MSG = {
   PLAN_ALREADY_SENT: (name) => `A plan is already with ${name}.`,
   PLAN_LOCKED: 'Send a new time instead of changing this one.',
   BRANCH_NO_ADDRESS: (branch) => `Add the street address to ${branch} first. You can do that under Branches and come straight back.`,
+  // courier-ready-addresses — a parcel cannot be collected from an address a courier cannot find.
+  BRANCH_ADDRESS_INCOMPLETE: (branch) => `Add the shop or door number to ${branch} first — the courier needs it to find the store. You can do that under Branches and come straight back.`,
   NO_POSTING_DATE: "This is an older collaboration with no posting date. It can't take a shoot plan.",
   // The time
   TIME_ALREADY_AGREED: 'The time is already agreed. Ask to move it instead.',
@@ -61,6 +63,8 @@ const MSG = {
   NAME_REQUIRED: 'Enter your name.',
   PHONE_REQUIRED: 'Enter a 10-digit mobile number.',
   STREET_REQUIRED: 'Enter your street and house.',
+  // courier-ready-addresses — a courier keeps 190 characters of an address and no more.
+  STREET_LONG: 'Keep it under 190 characters.',
   PINCODE_REQUIRED: 'Enter a 6-digit pincode.',
   STATE_REQUIRED: 'Choose your state.',
   CITY_REQUIRED: 'Choose your nearest major city.',

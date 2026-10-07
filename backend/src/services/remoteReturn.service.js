@@ -23,6 +23,7 @@ const shipping = require('./shipping');
 const money = require('./remoteMoney.service');
 const shoot = require('./remoteShoot.service');
 const address = require('./remoteAddress.service');
+const branches = require('./brandBranches.service');
 const platformSettings = require('./platformSettings.service');
 const { MSG, NOTIFY11, nextStepWords } = require('./productionCopy');
 const { longDate } = require('./campaignCopy');
@@ -314,7 +315,8 @@ async function bookReturn(ciId, scope, body = {}, conn = db) {
     [r.id, provider.name, branch ? branch.id : null,
      // FROM her door, TO the branch — the mirror of the outbound parcel.
      r.ship_to_name, r.ship_to_phone, r.ship_to_street, r.ship_to_pincode, r.ship_to_city_name, r.ship_to_state_name,
-     branch ? branch.name : null, r.brand_phone, branch ? branch.formatted_address : null,
+     // courier-ready-addresses: the store's own phone when it has one, and its landmark with the street.
+     branch ? branch.name : null, (branch && branch.phone) || r.brand_phone, branch ? branches.fullStreet(branch) : null,
      branch ? branch.pincode : null, branch ? branch.city_name : null, branch ? branch.state_name : null,
      parcel ? parcel.box_preset : null, parcel ? parcel.box_l_cm : null, parcel ? parcel.box_w_cm : null,
      parcel ? parcel.box_h_cm : null, parcel ? parcel.weight_kg : null, day]);
@@ -324,7 +326,7 @@ async function bookReturn(ciId, scope, body = {}, conn = db) {
   try {
     // The lines going back travel with the booking — a real courier refuses a return that
     // does not say what is in it (features/shiprocket-connector-repair, check 13).
-    booked = await provider.api.bookReturn(ret, { pickupDay: day, items: expected });
+    booked = await provider.api.bookReturn(ret, { pickupDay: day, items: expected, senderName: r.brand_name });
   } catch (e) {
     // The row above is what "already booked" is read from. Left standing after a refusal, it
     // would stop her ever booking again — so it is withdrawn, and she is told to retry.

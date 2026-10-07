@@ -67,7 +67,9 @@ function newProvider() {
 /* ───────────────────────────────────────────── pickup registration (§2.5) */
 
 const addressHash = (a) => crypto.createHash('sha256')
-  .update([a.name, a.phone, a.street, a.pincode, a.cityName, a.stateName].map((x) => String(x || '')).join('|'))
+  // The landmark is part of the address a courier is given, so adding or changing one is an
+  // address change like any other (features/courier-ready-addresses).
+  .update([a.name, a.phone, a.street, a.pincode, a.cityName, a.stateName, a.landmark].map((x) => String(x || '')).join('|'))
   .digest('hex');
 
 /**

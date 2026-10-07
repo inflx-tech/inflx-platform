@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { api, brandApi } from '../../../../lib/api';
+import { streetError, STREET_MAX, STORE_COPY } from '../../../../lib/storeAddress';
 import useEntitlements from '../../../../lib/useEntitlements';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -311,9 +312,11 @@ export default function ProfilePage() {
       mainBranch.cityId  !== savedAddress.cityId;
     if (addressChanged) {
       if (!mainAddr) { showToast('Business address is required', 'err'); setSaving(false); return; }
+      // features/courier-ready-addresses — a courier has to find the store: a shop or door number.
+      if (streetError(mainAddr)) { showToast(streetError(mainAddr), 'err'); setSaving(false); return; }
       if (!/^[0-9]{6}$/.test(mainPin)) { showToast('Pincode must be 6 digits', 'err'); setSaving(false); return; }
       if (!mainBranch.stateId) { showToast('Select your state', 'err'); setSaving(false); return; }
-      if (!mainBranch.cityId) { showToast('Pick your nearest major city', 'err'); setSaving(false); return; }
+      if (!mainBranch.cityId) { showToast(STORE_COPY.cityRequired, 'err'); setSaving(false); return; }
       payload.address_line = mainAddr;
       payload.pincode      = mainPin;
       payload.state_id     = mainBranch.stateId;
@@ -531,9 +534,10 @@ export default function ProfilePage() {
               type="text"
               value={mainBranch.address}
               onChange={(e) => handleMainBranchChange('address', e.target.value)}
-              placeholder="Building, street, area"
+              placeholder={STORE_COPY.streetPlaceholder}
+              maxLength={STREET_MAX}
             />
-            <div className="field-help">Your main branch. Other branches are managed in the INFLX Brand app.</div>
+            <div className="field-help">{STORE_COPY.streetHint} This is your main branch; a landmark, the store phone and other branches are managed in the INFLX Brand app.</div>
           </div>
 
           <div className="field-row">
@@ -559,16 +563,16 @@ export default function ProfilePage() {
           </div>
 
           <div className="field">
-            <label className="field-l">Your nearest major city<span className="req">*</span></label>
+            <label className="field-l">{STORE_COPY.city}<span className="req">*</span></label>
             <select
               value={mainBranch.cityId ?? ''}
               onChange={(e) => handleMainBranchChange('cityId', toId(e.target.value))}
               disabled={!selectedState}
             >
-              <option value="">{selectedState ? 'Select your nearest major city' : 'Pick a state first'}</option>
+              <option value="">{selectedState ? STORE_COPY.cityPick : 'Pick a state first'}</option>
               {cityOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <div className="field-help">The closest big city to you — not your exact town or area.</div>
+            <div className="field-help">{STORE_COPY.cityHint}</div>
           </div>
 
           <div className="prf-save">

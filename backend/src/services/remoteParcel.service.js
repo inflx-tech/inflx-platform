@@ -21,6 +21,7 @@ const shipping = require('./shipping');
 const money = require('./remoteMoney.service');
 const shoot = require('./remoteShoot.service');
 const address = require('./remoteAddress.service');
+const branches = require('./brandBranches.service');
 const storage = require('./storage.service');
 const { MSG, NOTIFY11 } = require('./productionCopy');
 const { logAction } = require('./production.service');
@@ -330,6 +331,12 @@ async function validateBooking(r, body, conn) {
   if (!branch.formatted_address || !branch.pincode) {
     throw new AppError('BRANCH_NO_ADDRESS', MSG.BRANCH_NO_ADDRESS(branch.name), 422, 'branchId');
   }
+  // courier-ready-addresses: an address a courier would refuse — no shop or door number — is
+  // refused HERE, in a sentence that says what to add, rather than at the courier with
+  // "could not be booked". R6 greys the same branch from the same answer (`courierProblem`).
+  if (branches.courierProblem(branch)) {
+    throw new AppError('BRANCH_ADDRESS_INCOMPLETE', MSG.BRANCH_ADDRESS_INCOMPLETE(branch.name), 422, 'branchId');
+  }
 
   const box = boxOf(body.boxPreset ? { preset: body.boxPreset } : { l: body.boxL, w: body.boxW, h: body.boxH });
   if (!box) throw new AppError('VALIDATION_ERROR', MSG.BOX_REQUIRED, 422, 'box');
@@ -404,7 +411,8 @@ async function book(ciId, scope, body = {}, conn = db) {
                $22,$22,$23,$24,now(),$25)
        RETURNING *`,
       [r.id, provider.name, branch.id,
-       branch.name, r.brand_phone, branch.formatted_address, branch.pincode, branch.city_name, branch.state_name,
+       // courier-ready-addresses: the store's own phone when it has one, and its landmark with the street.
+       branch.name, branch.phone || r.brand_phone, branches.fullStreet(branch), branch.pincode, branch.city_name, branch.state_name,
        r.ship_to_name, r.ship_to_phone, r.ship_to_street, r.ship_to_pincode, r.ship_to_city_name, r.ship_to_state_name,
        box.preset, box.l, box.w, box.h, weightKg, declaredValue,
        q.outbound, q.gst, recordHold, body.rebookedFromId || null]);
@@ -417,11 +425,14 @@ async function book(ciId, scope, body = {}, conn = db) {
   try {
     // What the provider registered the branch AS is what a booking must quote back to it —
     // not the branch's name, which two brands can share (features/shiprocket-connector-repair).
+    // courier-ready-addresses: the courier is told WHOSE store it is — every brand has a "Main
+    // Branch" — and is given that store's phone and its landmark as a second address line.
     const pickupCode = await shipping.ensurePickup(branch.id, {
-      name: branch.name, phone: r.brand_phone, street: branch.formatted_address,
+      name: `${r.brand_name} - ${branch.name}`, phone: branch.phone || r.brand_phone,
+      street: branch.formatted_address, landmark: branch.landmark || null,
       pincode: branch.pincode, cityName: branch.city_name, stateName: branch.state_name,
     }, conn);
-    booked = await provider.api.book(created, { pickupLocationName: pickupCode, items: lines });
+    booked = await provider.api.book(created, { pickupLocationName: pickupCode, items: lines, senderName: r.brand_name });
   } catch (e) {
     // The provider refused after the money moved. Put it all back and say so — a brand must
     // never be left having paid for a parcel that does not exist.

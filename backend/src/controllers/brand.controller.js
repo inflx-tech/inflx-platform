@@ -126,15 +126,15 @@ async function resolvePickedCity({ state_id, city_id, state, city }, field = 'ci
   let resolved = null;
   if (state_id != null || city_id != null) {
     resolved = await referenceLists.resolveStateCity(state_id, city_id);
-    if (!resolved) throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+    if (!resolved) throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your city.');
     return resolved;
   }
   if (state && city) {
     resolved = await referenceLists.resolveStateCityNames(state, city);
-    if (!resolved) throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+    if (!resolved) throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your city.');
     return resolved;
   }
-  throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+  throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your city.');
 }
 
 const register = asyncHandler(async (req, res) => {
@@ -164,6 +164,13 @@ const register = asyncHandler(async (req, res) => {
   }
   if (!address_line || !address_line.trim()) {
     throw new AppError('VALIDATION_ERROR', 'address_line is required', 422, 'address_line');
+  }
+  // courier-ready-addresses (founder, 7 Oct 2026): the registration address IS the Main Branch,
+  // and a courier has to be able to find it — the same rule Add / Edit branch applies.
+  const streetCode = branchesService.streetProblem(address_line);
+  if (streetCode) {
+    throw new AppError('VALIDATION_ERROR', branchesService.streetMessage(streetCode), 422, 'address_line',
+      { fields: [{ field: 'address_line', code: streetCode, message: branchesService.streetMessage(streetCode) }] });
   }
   if (!pincode || !/^[0-9]{6}$/.test(String(pincode).trim())) {
     throw new AppError('VALIDATION_ERROR', 'pincode must be a 6-digit number', 422, 'pincode');

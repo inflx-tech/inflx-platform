@@ -529,18 +529,23 @@ describe('C5 · C6 — the creator profile forms', () => {
 // ── B6 · B7 — the second branch ──────────────────────────────────────────────
 
 describe('B6 · B7 — adding a branch', () => {
+  // features/courier-ready-addresses: a branch now carries a landmark and a store phone, and
+  // the phone starts as the brand's login number — so the screen asks who is signed in.
+  beforeEach(() => { brandApi.getMe.mockResolvedValue(ok({ brand: { login_phone: '+919876543210' } })); });
+
   async function fillBranch(r) {
     fireEvent.changeText(r.getByTestId('branch-name'), 'Jubilee Hills');
     fireEvent.changeText(r.getByTestId('branch-address-text'), 'Plot 8, Road No. 36');
     fireEvent.changeText(r.getByTestId('branch-pin'), '500033');
     await pickStateAndCity(r, 'branch', 1, 10);
+    await waitFor(() => expect(r.getByTestId('branch-phone').props.value).toBe('9876543210'));
   }
 
   it('the second branch asks "Which is your main branch?" before saving, then saves both with is_main', async () => {
     brandApi.createBranch.mockResolvedValue(ok({ branch: { id: 'b2' } }));
     const n = nav();
     const r = render(<BrandBranchEditScreen navigation={n} route={{ params: { branchCount: 1, mainBranch: { id: 'b1', name: 'Banjara Hills', cityName: 'Hyderabad', isMain: true } } }} />);
-    r.getByText("A store visit can't be planned to a branch with no street address — so this one is required.");
+    r.getByText("A store visit or a courier pickup can't be planned to a branch with no street address — so this one is required.");
     expect(r.queryByTestId('branch-type-instead')).toBeNull();
     expect(r.queryByTestId('branch-search-instead')).toBeNull();
     await fillBranch(r);
@@ -552,7 +557,7 @@ describe('B6 · B7 — adding a branch', () => {
     expect(r.getByTestId('main-branch-save').props.accessibilityState.disabled).toBe(true);
     fireEvent.press(r.getByTestId('main-choice-new'));
     fireEvent.press(r.getByTestId('main-branch-save'));
-    await waitFor(() => expect(brandApi.createBranch).toHaveBeenCalledWith({ name: 'Jubilee Hills', address_text: 'Plot 8, Road No. 36', pincode: '500033', state_id: 1, city_id: 10, is_main: true }));
+    await waitFor(() => expect(brandApi.createBranch).toHaveBeenCalledWith({ name: 'Jubilee Hills', address_text: 'Plot 8, Road No. 36', landmark: '', phone: '9876543210', pincode: '500033', state_id: 1, city_id: 10, is_main: true }));
     await waitFor(() => expect(n.navigate).toHaveBeenCalledWith('BrandBranches', { toast: 'Saved.' }));
   });
 
@@ -562,9 +567,10 @@ describe('B6 · B7 — adding a branch', () => {
     let r = render(<BrandBranchEditScreen navigation={n} route={{ params: { branchCount: 0, mainBranch: null } }} />);
     await fillBranch(r);
     fireEvent.press(r.getByTestId('save-button'));
-    await waitFor(() => expect(brandApi.createBranch).toHaveBeenCalledWith({ name: 'Jubilee Hills', address_text: 'Plot 8, Road No. 36', pincode: '500033', state_id: 1, city_id: 10 }));
+    await waitFor(() => expect(brandApi.createBranch).toHaveBeenCalledWith({ name: 'Jubilee Hills', address_text: 'Plot 8, Road No. 36', landmark: '', phone: '9876543210', pincode: '500033', state_id: 1, city_id: 10 }));
     expect(r.queryByText('Which is your main branch?')).toBeNull();
     r.unmount(); jest.clearAllMocks();
+    brandApi.getMe.mockResolvedValue(ok({ brand: { login_phone: '+919876543210' } }));
 
     brandApi.createBranch.mockResolvedValueOnce({ success: false, error: { code: 'MAIN_CHOICE_REQUIRED', field: 'is_main', message: 'Say which is main.' } });
     r = render(<BrandBranchEditScreen navigation={nav()} route={{ params: { branchCount: 2, mainBranch: { id: 'b1', name: 'Banjara Hills', cityName: 'Hyderabad', isMain: true } } }} />);

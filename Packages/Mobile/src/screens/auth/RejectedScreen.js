@@ -17,6 +17,7 @@ import { brandApi, influencerApi, clearSession } from '../../services/api';
 import { AuthContext } from '../../../App';
 import APP_ROLE from '../../config/appRole';
 import OfferedStateCityFields, { MSG_STATE, MSG_CITY } from '../../components/registration/OfferedStateCityFields';
+import { streetError, STREET_MAX, MSG_STORE, STORE_COPY } from '../../utils/storeAddress';
 import { MSG3B, validInstagram, validYoutube } from '../../components/social/copy3b';
 
 const P = {
@@ -129,7 +130,9 @@ export default function RejectedScreen({ navigation, route }) {
     const e = {};
     if (role === 'brand') {
       if (!f.business_name.trim()) e.business_name = 'Enter your business name.';
+      // features/courier-ready-addresses: the same rule registration and Edit branch apply.
       if (!f.address_line.trim()) e.address_line = 'Enter your street address.';
+      else if (streetError(f.address_line)) e.address_line = streetError(f.address_line);
       if (!/^[0-9]{6}$/.test(String(f.pincode).trim())) e.pincode = 'Enter a 6-digit pincode.';
     } else {
       if (!f.full_name.trim()) e.full_name = 'Enter your full name.';
@@ -139,7 +142,7 @@ export default function RejectedScreen({ navigation, route }) {
       if (yt && !validYoutube(yt)) e.youtube_handle = MSG3B.YOUTUBE_INVALID;
     }
     if (f.state_id == null) e.state_id = MSG_STATE;
-    if (f.city_id == null) e.city_id = MSG_CITY;
+    if (f.city_id == null) e.city_id = role === 'brand' ? MSG_STORE.CITY : MSG_CITY;
     return e;
   }
 
@@ -219,8 +222,10 @@ export default function RejectedScreen({ navigation, route }) {
             {errs.business_name ? <Text style={styles.fieldError}>{errs.business_name}</Text> : null}
 
             <Text style={styles.label}>Street address</Text>
-            <TextInput style={[styles.input, styles.multi, errs.address_line && styles.inputError]} value={f.address_line} onChangeText={set('address_line')} multiline placeholderTextColor={P.muted3} autoCorrect={false} testID="rej-street" />
-            {errs.address_line ? <Text style={styles.fieldError}>{errs.address_line}</Text> : null}
+            <TextInput style={[styles.input, styles.multi, errs.address_line && styles.inputError]} value={f.address_line} onChangeText={set('address_line')} multiline maxLength={STREET_MAX} placeholder={STORE_COPY.streetPlaceholder} placeholderTextColor={P.muted3} autoCorrect={false} testID="rej-street" />
+            {errs.address_line
+              ? <Text style={styles.fieldError} testID="rej-street-error">{errs.address_line}</Text>
+              : <Text style={styles.streetHint} testID="rej-street-hint">{STORE_COPY.streetHint}</Text>}
 
             <View style={{ height: 14 }} />
             <OfferedStateCityFields
@@ -231,8 +236,9 @@ export default function RejectedScreen({ navigation, route }) {
               onChange={({ stateId, cityId }) => { setF((p) => ({ ...p, state_id: stateId, city_id: cityId })); setErrs((e) => ({ ...e, state_id: '', city_id: '' })); }}
               errors={{ state: errs.state_id, city: errs.city_id }}
               testIDPrefix="rej"
-              cityLabel="Nearest major city"
-              cityHint=""
+              cityLabel={STORE_COPY.city}
+              cityHint={STORE_COPY.cityHint}
+              citySheetTitle={STORE_COPY.city}
               labelStyle={styles.pickerLabel}
               fieldStyle={styles.pickerField}
               placeholderColor={P.muted2}
@@ -327,6 +333,7 @@ const styles = StyleSheet.create({
   atSign:      { fontSize: 16, color: P.yellowHover, fontWeight: '700', marginRight: 4, fontFamily: MONO },
   handleInput: { flex: 1, paddingVertical: 13, fontSize: 14.5, color: P.ink, fontFamily: MONO },
   fieldError:  { fontSize: 12, color: P.dangerDeep, fontWeight: '600', marginTop: 6 },
+  streetHint:  { fontSize: 11.5, color: P.muted2, marginTop: 6, lineHeight: 16 },
 
   incomplete:  { backgroundColor: P.greenPale, borderRadius: 10, padding: 12, marginTop: 16 },
   incompleteText: { fontSize: 12.5, color: P.greenText, lineHeight: 18, fontWeight: '600' },

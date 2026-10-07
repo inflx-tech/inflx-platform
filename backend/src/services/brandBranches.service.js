@@ -12,6 +12,13 @@
  * search is gone from branch add and edit; a branch carries no place id and no coordinates.
  * When a brand adds its SECOND branch it must say which of the two is the main one — never
  * assumed. From the third branch on, make-main covers it.
+ *
+ * courier-ready-addresses (founder, 7 Oct 2026): the street address is held to what a courier
+ * will accept as a pickup — 10 to 140 characters, with a shop or door number — because Shiprocket
+ * refuses anything less and, on 6 Oct 2026, would have refused ten of the fourteen branches on
+ * the platform. A branch also carries a landmark (the courier's second address line) and its
+ * own phone. Branches that already exist are not rewritten: `courierProblem` says what each
+ * lacks, and the two moments it matters — saving that branch, shipping from it — say it too.
  */
 
 const db = require('../config/db');
@@ -20,12 +27,85 @@ const ref = require('./referenceLists.service');
 const MSG = Object.freeze({
   NAME_REQUIRED: 'Enter a branch name.',
   ADDRESS_REQUIRED: 'Enter the street address.',
-  ADDRESS_LONG: 'Keep the address under 200 characters.',
+  ADDRESS_SHORT: 'Add the shop or door number, building and street. A courier has to find it.',
+  ADDRESS_NUMBER: 'Add the shop or door number. Couriers need it to find the store.',
+  ADDRESS_LONG: 'Keep the address under 140 characters.',
+  LANDMARK_LONG: 'Keep the landmark under 45 characters.',
+  PHONE: 'Enter a 10-digit mobile number.',
   PINCODE: 'Enter a 6-digit PIN code.',
-  CITY_REQUIRED: 'Pick the state, then the nearest major city.',
+  CITY_REQUIRED: 'Pick the state, then the city.',
+  // What a branch a courier would refuse says on the booking screen's branch list.
+  NEEDS_ADDRESS: 'Needs a street address and pincode',
+  NEEDS_NUMBER: 'Needs a shop or door number',
   MAIN_CHOICE_REQUIRED: 'Which one is your main branch?',
   MAIN_BRANCH: "The main branch can't be removed. Make another branch the main one first.",
 });
+
+const STREET_MIN = 10;
+const STREET_MAX = 140;
+const LANDMARK_MAX = 45;
+
+const STREET_MESSAGE = Object.freeze({
+  BRANCH_ADDRESS_REQUIRED: MSG.ADDRESS_REQUIRED,
+  BRANCH_ADDRESS_LONG: MSG.ADDRESS_LONG,
+  BRANCH_ADDRESS_SHORT: MSG.ADDRESS_SHORT,
+  BRANCH_ADDRESS_NUMBER: MSG.ADDRESS_NUMBER,
+});
+
+/**
+ * What is wrong with a street address as somewhere a courier must find — a code, or null. Pure.
+ *
+ * "A number" means a shop, door, plot or road number. A six-digit run is a pincode and does not
+ * count: "MG Road, Vijayawada 520010" tells a courier nothing "MG Road, Vijayawada" did not.
+ */
+function streetProblem(text) {
+  const t = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+  if (!t) return 'BRANCH_ADDRESS_REQUIRED';
+  if (t.length > STREET_MAX) return 'BRANCH_ADDRESS_LONG';
+  if (t.length < STREET_MIN) return 'BRANCH_ADDRESS_SHORT';
+  if (!/\d/.test(t.replace(/(^|\D)\d{6}(?!\d)/g, '$1 '))) return 'BRANCH_ADDRESS_NUMBER';
+  return null;
+}
+const streetMessage = (code) => STREET_MESSAGE[code] || MSG.ADDRESS_REQUIRED;
+
+/**
+ * Why a courier would refuse to collect from this branch, in the words the booking screen
+ * shows — or null when it would not. Takes a row or a shaped branch.
+ *
+ * An address written before this rule may be longer than 140 characters; that alone is not a
+ * reason to refuse it (the courier's own limit is 190, and the connector keeps to it).
+ */
+function courierProblem(b) {
+  const street = b && (b.formatted_address !== undefined ? b.formatted_address : b.formattedAddress);
+  if (!street || !String(street).trim() || !(b && b.pincode)) return MSG.NEEDS_ADDRESS;
+  const code = streetProblem(street);
+  return code === 'BRANCH_ADDRESS_SHORT' || code === 'BRANCH_ADDRESS_NUMBER' ? MSG.NEEDS_NUMBER : null;
+}
+
+/** The landmark as stored: trimmed, or null. undefined in → undefined out (not sent, not changed). */
+function landmarkOf(v) {
+  if (v === undefined) return undefined;
+  const t = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+  if (t.length > LANDMARK_MAX) throw validationError('landmark', 'BRANCH_LANDMARK_LONG', MSG.LANDMARK_LONG);
+  return t || null;
+}
+
+/** The store phone as stored: ten digits, or null (= the brand's login number). */
+function phoneOf(v) {
+  if (v === undefined) return undefined;
+  const raw = String(v == null ? '' : v).trim();
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, '');
+  const ten = digits.length > 10 ? digits.slice(-10) : digits;
+  if (!/^[6-9]\d{9}$/.test(ten)) throw validationError('phone', 'BRANCH_PHONE', MSG.PHONE);
+  return ten;
+}
+
+/** The street and its landmark as one line — what a label or a return address prints. */
+function fullStreet(b) {
+  const street = b && (b.formatted_address !== undefined ? b.formatted_address : b.formattedAddress);
+  return [street, b && b.landmark].map((x) => String(x || '').trim()).filter(Boolean).join(', ');
+}
 
 /**
  * Item 10 (founder, 18 Sep): the Google search is not answering, and a Store Visit set now needs
@@ -38,8 +118,8 @@ const MSG = Object.freeze({
  */
 function typedAddress(body, { requirePin = true } = {}) {
   const text = String(body.address_text || '').replace(/\s+/g, ' ').trim();
-  if (!text) throw validationError('address_text', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
-  if (text.length > 200) throw validationError('address_text', 'BRANCH_ADDRESS_LONG', MSG.ADDRESS_LONG);
+  const problem = streetProblem(text);
+  if (problem) throw validationError('address_text', problem, streetMessage(problem));
   const pin = body.pincode == null || body.pincode === '' ? null : String(body.pincode).trim();
   if ((pin == null && requirePin) || (pin != null && !/^\d{6}$/.test(pin))) throw validationError('pincode', 'BRANCH_PINCODE', MSG.PINCODE);
   return { formattedAddress: text, pincode: pin };
@@ -57,7 +137,12 @@ function shape(r) {
     id: r.id,
     name: r.name,
     formattedAddress: r.formatted_address || null,
+    landmark: r.landmark || null,
+    // The store's own number; null means the brand's login number is what a courier is given.
+    phone: r.phone || null,
     pincode: r.pincode || null,
+    courierReady: !courierProblem(r),
+    courierProblem: courierProblem(r),
     lat: r.lat == null ? null : Number(r.lat),
     lng: r.lng == null ? null : Number(r.lng),
     googlePlaceId: r.google_place_id || null,
@@ -123,6 +208,8 @@ async function create(brandId, body) {
   if (!name) throw validationError('name', 'BRANCH_NAME_REQUIRED', MSG.NAME_REQUIRED);
   if (body?.place_id && !body?.address_text) throw validationError('address_text', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
   const t = typedAddress(body || {});
+  const landmark = landmarkOf(body.landmark) || null;
+  const phone = phoneOf(body.phone) || null;
   const place = await pickedCity(body || {});
   const existing = await count(brandId);
   if (existing === 1 && typeof body.is_main !== 'boolean') throw validationError('is_main', 'MAIN_CHOICE_REQUIRED', MSG.MAIN_CHOICE_REQUIRED);
@@ -130,9 +217,9 @@ async function create(brandId, body) {
   const branch = await db.withTransaction(async (tx) => {
     if (makeMain) await tx.query(`UPDATE brand_branches SET is_main = false, updated_at = now() WHERE brand_id = $1 AND is_main`, [brandId]);
     const { rows } = await tx.query(
-      `INSERT INTO brand_branches (brand_id, name, google_place_id, formatted_address, pincode, lat, lng, city_id, state_id, is_main)
-       VALUES ($1,$2,NULL,$3,$4,NULL,NULL,$5,$6,$7) RETURNING id`,
-      [brandId, name, t.formattedAddress, t.pincode, place.cityId, place.stateId, makeMain]
+      `INSERT INTO brand_branches (brand_id, name, google_place_id, formatted_address, pincode, lat, lng, city_id, state_id, is_main, landmark, phone)
+       VALUES ($1,$2,NULL,$3,$4,NULL,NULL,$5,$6,$7,$8,$9) RETURNING id`,
+      [brandId, name, t.formattedAddress, t.pincode, place.cityId, place.stateId, makeMain, landmark, phone]
     );
     return rows[0].id;
   });
@@ -157,6 +244,11 @@ async function update(brandId, id, body) {
                              pincode: body.pincode !== undefined ? body.pincode : current.pincode });
     sets.push(`google_place_id = NULL`, `formatted_address = ${p(t.formattedAddress)}`, `pincode = ${p(t.pincode)}`, `lat = NULL`, `lng = NULL`);
   }
+  // Not sent → not changed: an app that predates the two fields must not wipe them.
+  const landmark = landmarkOf(body.landmark);
+  if (landmark !== undefined) sets.push(`landmark = ${p(landmark)}`);
+  const phone = phoneOf(body.phone);
+  if (phone !== undefined) sets.push(`phone = ${p(phone)}`);
   if (body.state_id !== undefined || body.city_id !== undefined) {
     const place = await pickedCity({ state_id: body.state_id !== undefined ? body.state_id : current.stateId,
                                      city_id: body.city_id !== undefined ? body.city_id : current.cityId });
@@ -261,4 +353,7 @@ async function ensureMainFromBrandRow(brandId, ids = null) {
   return get(brandId, ins[0].id);
 }
 
-module.exports = { MSG, list, get, count, cityNames, mainCity, create, update, setMainAddress, makeMain, remove, shape, ensureMainFromBrandRow };
+module.exports = {
+  MSG, list, get, count, cityNames, mainCity, create, update, setMainAddress, makeMain, remove, shape, ensureMainFromBrandRow,
+  streetProblem, streetMessage, courierProblem, fullStreet, STREET_MIN, STREET_MAX, LANDMARK_MAX,
+};

@@ -225,6 +225,19 @@ describe('her address screen', () => {
   // ui-walk-fixes (closing pass, drift/K2.md): this box showed "What was wrong?" — the grey words
   // of the damaged-item note on her Remote screen, written under the same key further down the
   // copy file. Each box has its own words again.
+  // features/courier-ready-addresses (check 18): 190 characters is all a courier keeps.
+  it('18 · the House and street box says what to type, counts, and stops at 190', async () => {
+    api.influencerApi.myRemote.mockResolvedValue(ok(shoot()));
+    const r = render(<RemoteAddressScreen navigation={nav} route={HER_ROUTE} />);
+    await waitFor(() => expect(r.getByTestId('remote-address')).toBeTruthy());
+    expect(r.getByTestId('f-street').props.maxLength).toBe(190);
+    const before = JSON.stringify(r.toJSON());
+    expect(before).toContain('House or flat number, building, street and area.');
+    expect(before).toContain('0/190');
+    fireEvent.changeText(r.getByTestId('f-street'), 'Flat 302, Lakshmi Residency, 11 Gandhi Road, Brodipet');
+    expect(JSON.stringify(r.toJSON())).toContain('53/190');
+  });
+
   it('R3 · the empty Delivery note box suggests a landmark or a good time — not "What was wrong?"', async () => {
     api.influencerApi.myRemote.mockResolvedValue(ok(shoot()));
     const r = render(<RemoteAddressScreen navigation={nav} route={HER_ROUTE} />);
@@ -438,6 +451,29 @@ describe('the brand’s booking screen (R6, R6b)', () => {
     const dead = r.getByTestId('branch-b2');
     expect(dead.props.accessibilityState.disabled).toBe(true);
     expect(JSON.stringify(r.toJSON())).toMatch(/Needs a street address and pincode/);
+  });
+
+  // features/courier-ready-addresses (check 17): an address a courier would refuse is greyed
+  // BEFORE the tap, in the server's own words — not refused after it.
+  it('17 · a branch with no shop or door number cannot be selected, and says exactly that', async () => {
+    api.brandApi.remote.mockResolvedValue(ok(shoot({ stage: 'sent', address: ADDRESS, lines: [LINE], can: { book: true } })));
+    api.brandApi.listBranches.mockResolvedValue({ success: true, data: { branches: [
+      { id: 'b1', name: 'Banjara Hills', isMain: true, formattedAddress: 'Road No. 12, Banjara Hills', pincode: '500034', cityName: 'Hyderabad', courierReady: true, courierProblem: null },
+      { id: 'b3', name: 'Guntur store', isMain: false, formattedAddress: 'Guntur, Andhra Pradesh, India', pincode: '522006', cityName: 'Guntur', courierReady: false, courierProblem: 'Needs a shop or door number' },
+      { id: 'b2', name: 'No Address Branch', isMain: false, formattedAddress: null, pincode: null, cityName: null, courierReady: false, courierProblem: 'Needs a street address and pincode' },
+    ] } });
+    const r = render(<BrandRemoteBookScreen navigation={nav} route={BRAND_ROUTE} />);
+    await waitFor(() => expect(r.getByTestId('brand-remote-book')).toBeTruthy());
+    expect(r.getByTestId('branch-b1').props.accessibilityState.disabled).toBe(false);
+    expect(r.getByTestId('branch-b3').props.accessibilityState.disabled).toBe(true);
+    expect(r.getByTestId('branch-b2').props.accessibilityState.disabled).toBe(true);
+    const shown = JSON.stringify(r.toJSON());
+    expect(shown).toContain('Needs a shop or door number');
+    expect(shown).toContain('Needs a street address and pincode');
+    expect(shown).toContain('Hyderabad, 500034');
+    // Tapping the greyed branch selects nothing.
+    fireEvent.press(r.getByTestId('branch-b3'));
+    expect(r.getByTestId('branch-b3').props.accessibilityState.selected).toBe(false);
   });
 
   it('R6 · the price appears with GST included and the return lock named', async () => {

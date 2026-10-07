@@ -1,0 +1,29 @@
+{
+  "feature": "courier-ready-addresses",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 7 Oct 2026: \"Remove label 'Nearest major city' instead simply ask city … I agree all your recommendations\" — the recommendations being: approve the screens shown, apply the shop-number rule at registration too, add the store phone field now)",
+  "approved_at": "2026-10-07T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat, 7 Oct 2026 — the Edit branch and creator-address screens shown inline on 6 Oct, approved with one change: the label is \"City\". Recorded in 04-preview/mockups/courier-ready-addresses.html.)",
+  "mockup_locked_at": "2026-10-07T00:00:00+05:30",
+  "notes": "Came out of the Shiprocket work (features/shiprocket-connector-repair): Shiprocket refuses a pickup address under 10 characters or with no number, and on 6 Oct 2026 ten of the fourteen live store branches would have been refused. One helper line was added beyond what the founder saw — \"Not on the list? Pick the nearest city.\" under City — because his own example (a store in Gannavaram picking Vijayawada) is exactly what it tells the user; reported back to him. The creator's own registration and profile still say \"Your nearest major city\" — out of scope, asked back. Migration 205 (additive). Production-impacting — explicit go required before migrate / push / OTA.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-10-07T00:00:00+05:30",
+    "checks": "19 in 03-expected-outputs.md. 1-8, 12, 13: backend/tests/courier-ready-addresses.test.js, 21 assertions, all passing. 9-11: backend/tests/shiprocket-connector.test.js, 6 new assertions (51 in the file), all passing. 14-16: Packages/Mobile courierReadyAddresses.test.js, 13 assertions, all passing. 17, 18: remoteScreens.test.js, 2 new assertions, passing. 19 (the website's two pages) is NOT proved by a test — it waits on the founder's look at the pages.",
+    "backend_tests": "full suite, serial, vs the run of 6 Oct at d0033fad: suites 148 -> 149, tests 2053 -> 2080. That run showed 5 newly failing, every one in a test pinned to what this contract changes, classified and updated to the new truth, none loosened: item2-settings-api check 15 and registration-profile checks 6/8 (STALE FIXTURE — registered with the addresses '1 Road' and 'x', which the approved rule now refuses; given real addresses); item3-branches create and update, registration-profile checks 30-32 (STALE FIXTURE — branch addresses 'Plot 8', 'MG Road', 'Marine Drive', 'x'; and ASSERTION DRIFT — the old sentence 'Pick the state, then the nearest major city.'). Re-run after the updates, serially: registration-profile 20/20, item2-settings-api, item3-branches, item3-profile, influencer, courier-ready-addresses 21/21, shiprocket-connector 51/51 all green. 0 failing tests the baseline did not have. brand.test 'returns 201 and creates a brand profile' fails today exactly as it failed on 6 Oct before this work (pre-existing debt, untouched). The code under test did not change between the full run and the targeted re-runs — only the five tests did.",
+    "mobile_tests": "119 suites / 2765 tests, all passing. Three existing assertions in registrationProfile.test.js were updated to the approved new words and payload (the blue note's sentence; a branch save now carries landmark and phone) — assertion drift caused by an approved change.",
+    "not_seen": "No screen has been looked at on a phone or in a browser. See 06-diff/notes.md.",
+    "note": "released stays false per GOVERNANCE.md §5 — the pre-existing backend failures are unchanged debt; the certification is no-regression, never green."
+  }
+}

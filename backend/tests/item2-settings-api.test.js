@@ -346,7 +346,7 @@ describe('A7 — enforced on send', () => {
 describe('the two in-scope additions', () => {
   it('check 15: a new brand cannot finish registration without a sub-category; unknown codes are refused', async () => {
     const { token } = await createBrandUser();
-    const base = { name: 'Owner', business_name: 'Urban Threads', category: 'fashion', address_line: '1 Road', city: 'Hyderabad', state: 'Telangana', pincode: '500001' };
+    const base = { name: 'Owner', business_name: 'Urban Threads', category: 'fashion', address_line: '12 MG Road, Abids', city: 'Hyderabad', state: 'Telangana', pincode: '500001' };
     let r = await request(app).post('/v1/brands/register').set(auth(token)).send(base);
     expect(r.status).toBe(422);
     expect(r.body.error.field).toBe('sub_categories');

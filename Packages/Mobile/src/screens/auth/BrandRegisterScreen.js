@@ -2,7 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { brandApi, referenceApi } from '../../services/api';
 import { AuthContext } from '../../../App';
-import OfferedStateCityFields, { MSG_STATE, MSG_CITY } from '../../components/registration/OfferedStateCityFields';
+import OfferedStateCityFields, { MSG_STATE } from '../../components/registration/OfferedStateCityFields';
+import { streetError, STREET_MAX, MSG_STORE, STORE_COPY } from '../../utils/storeAddress';
 
 const P = {
   bg:          '#FAFAFA',
@@ -50,7 +51,8 @@ export const MSG_B1 = {
 /**
  * Brand registration on the phone — B1: seven fields, one screen, all mandatory.
  * Your name · Business name · Business type (stated: Fashion) · What do you sell? ·
- * Street address · Pincode · State · Nearest major city.
+ * Street address · Pincode · State · City (features/courier-ready-addresses: the street must
+ * hold a shop or door number, and the city field is simply "City").
  *
  * Gone (spec §2.2, §9): the Google place search, the Maps-link box, coordinate capture and
  * the referral code. State and city are ids from the offered lists, never typed names, so
@@ -66,6 +68,7 @@ export default function BrandRegisterScreen({ navigation }) {
   const [subCategoryOptions, setSubCategoryOptions] = useState(SUB_CATEGORIES_FALLBACK);
   const [street, setStreet]             = useState('');
   const [pincode, setPincode]           = useState('');
+  const [streetLeft, setStreetLeft]     = useState(false);
   const [stateId, setStateId]           = useState(null);
   const [cityId, setCityId]             = useState(null);
   const [fieldErr, setFieldErr]         = useState({});
@@ -87,10 +90,13 @@ export default function BrandRegisterScreen({ navigation }) {
     if (!fullName.trim()) errs.name = MSG_B1.NAME;
     if (!businessName.trim()) errs.business = MSG_B1.BUSINESS;
     if (subCategories.length === 0) errs.subs = MSG_B1.SUBS;
+    // features/courier-ready-addresses: the registration address is the Main Branch, and a
+    // courier has to find it — a shop or door number, 10 to 140 characters.
     if (!street.trim()) errs.street = MSG_B1.STREET;
+    else if (streetError(street)) errs.street = streetError(street);
     if (!/^[0-9]{6}$/.test(pincode.trim())) errs.pincode = MSG_B1.PINCODE;
     if (stateId == null) errs.state = MSG_STATE;
-    if (cityId == null) errs.city = MSG_CITY;
+    if (cityId == null) errs.city = MSG_STORE.CITY;
     return errs;
   }
 
@@ -125,6 +131,10 @@ export default function BrandRegisterScreen({ navigation }) {
 
   const allValid = Object.keys(validate()).length === 0;
   const canSubmit = allValid && !loading;
+  // The button stays off while the street has no shop or door number, so the reason has to be
+  // on the screen: once the brand has left the box, the red line says what a courier needs
+  // (features/courier-ready-addresses).
+  const streetLive = streetLeft && street.trim() ? streetError(street) : '';
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: P.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -162,9 +172,12 @@ export default function BrandRegisterScreen({ navigation }) {
         {fieldErr.subs ? <Text style={styles.fieldError} testID="err-subs">{fieldErr.subs}</Text> : null}
 
         <Text style={styles.label}>Street address <Text style={styles.req}>*</Text></Text>
-        <TextInput style={[styles.input, styles.multi, fieldErr.street && styles.inputError]} value={street} onChangeText={(t) => { setStreet(t); clear('street'); }}
-          placeholder="Shop no., street, area" placeholderTextColor={P.muted3} autoCorrect={false} multiline testID="reg-street" />
-        {fieldErr.street ? <Text style={styles.fieldError} testID="err-street">{fieldErr.street}</Text> : null}
+        <TextInput style={[styles.input, styles.multi, (fieldErr.street || streetLive) && styles.inputError]} value={street} onChangeText={(t) => { setStreet(t); clear('street'); }}
+          onBlur={() => setStreetLeft(true)}
+          placeholder={STORE_COPY.streetPlaceholder} placeholderTextColor={P.muted3} autoCorrect={false} multiline maxLength={STREET_MAX} testID="reg-street" />
+        {fieldErr.street || streetLive
+          ? <Text style={styles.fieldError} testID="err-street">{fieldErr.street || streetLive}</Text>
+          : <Text style={styles.hint} testID="reg-street-hint">{STORE_COPY.streetHint}</Text>}
 
         <View style={{ height: 14 }} />
         <OfferedStateCityFields
@@ -173,8 +186,9 @@ export default function BrandRegisterScreen({ navigation }) {
           onChange={({ stateId: s, cityId: c }) => { setStateId(s); setCityId(c); setFieldErr(e => ({ ...e, state: '', city: '' })); }}
           errors={{ state: fieldErr.state, city: fieldErr.city }}
           testIDPrefix="reg"
-          cityLabel="Nearest major city"
-          cityHint="The closest big city — not your exact area."
+          cityLabel={STORE_COPY.city}
+          cityHint={STORE_COPY.cityHint}
+          citySheetTitle={STORE_COPY.city}
           labelStyle={styles.pickerLabel}
           fieldStyle={styles.pickerField}
           hintStyle={styles.hint}

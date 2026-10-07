@@ -115,7 +115,13 @@ export default function BrandRemoteBookScreen({ navigation, route }) {
         {/* §11.2 — collected from the main branch unless the brand picks another. */}
         <Card7 title={C11.brand.collectedFrom} tone="plain" testID="branches">
           {branches.map((b) => {
-            const usable = !!(b.formattedAddress) && !!b.pincode;
+            // features/courier-ready-addresses: the server says whether a courier would collect
+            // from this branch and, when not, why (`courierProblem`) — an address with no shop or
+            // door number is greyed here rather than refused after the tap. A server that predates
+            // the answer leaves both undefined, and the old "has an address" test still stands.
+            const hasAddress = !!(b.formattedAddress) && !!b.pincode;
+            const usable = hasAddress && b.courierReady !== false;
+            const why = b.courierProblem || C11.brand.branchNeedsAddress;
             const on = branchId === b.id;
             return (
               <Pressable key={b.id} onPress={() => { if (usable) { setBranchId(b.id); setQuote(null); } }}
@@ -125,7 +131,7 @@ export default function BrandRemoteBookScreen({ navigation, route }) {
                 <View style={{ flex: 1 }}>
                   <Text style={s.branchName}>{b.name}{b.isMain ? ' · Main' : ''}</Text>
                   <Text style={s.branchSub}>
-                    {usable ? [b.cityName, b.pincode].filter(Boolean).join(', ') : C11.brand.branchNeedsAddress}
+                    {usable ? [b.cityName, b.pincode].filter(Boolean).join(', ') : why}
                   </Text>
                 </View>
               </Pressable>

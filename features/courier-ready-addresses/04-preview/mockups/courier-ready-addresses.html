@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Courier-ready addresses — locked screens</title>
+<style>
+  :root { --ink:#1A1A17; --ink2:#55544D; --ink3:#8A897F; --line:#DAD8CE; --bg:#FFFFFF; --page:#F4F3EE; --yellow:#FFC700; --red:#B3261E; --blueBg:#E6F0FB; --blueFg:#0C447C; --greenBg:#E7F4E4; --greenFg:#27500A; --amberBg:#FAEEDA; --amberFg:#633806; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; background:var(--page); color:var(--ink); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  h1 { font-size:18px; margin:0 0 4px; } .sub { color:var(--ink2); font-size:13px; margin:0 0 20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; align-items:start; }
+  .cap { font-size:12px; color:var(--ink2); margin:0 0 8px; }
+  .phone { background:var(--bg); border:1px solid var(--line); border-radius:16px; padding:18px; }
+  .title { font-size:17px; font-weight:700; margin:0 0 16px; }
+  label { display:block; font-size:13px; font-weight:600; margin:0 0 6px; }
+  .req { color:var(--red); }
+  .in { border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-size:14px; min-height:42px; }
+  .multi { min-height:64px; }
+  .ph { color:var(--ink3); }
+  .row { display:flex; justify-content:space-between; gap:8px; margin:5px 0 14px; }
+  .hint { font-size:12px; color:var(--ink2); line-height:1.45; }
+  .count { font-size:12px; color:var(--ink3); white-space:nowrap; }
+  .gap { height:14px; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  .sel { display:flex; justify-content:space-between; }
+  .blue { background:var(--blueBg); color:var(--blueFg); border-radius:10px; padding:12px; font-size:12.5px; line-height:1.45; margin:16px 0; }
+  .btn { background:var(--yellow); border-radius:12px; padding:13px; text-align:center; font-weight:700; font-size:15px; }
+  .tag { font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:6px; margin-left:6px; vertical-align:1px; }
+  .new { background:var(--greenBg); color:var(--greenFg); } .chg { background:var(--amberBg); color:var(--amberFg); }
+  .err { border-color:var(--red); } .errText { color:var(--red); font-size:12px; margin:5px 0 0; }
+  .branch { border:1px solid var(--line); border-radius:10px; padding:11px 12px; margin-bottom:8px; display:flex; gap:10px; }
+  .dead { opacity:.55; } .radio { width:16px; height:16px; border:2px solid var(--ink3); border-radius:50%; margin-top:2px; flex:none; }
+  .on { border-color:var(--ink); background:var(--ink); }
+  .bn { font-size:14px; font-weight:600; } .bs { font-size:12px; color:var(--ink2); }
+</style>
+</head>
+<body>
+<h1>Courier-ready addresses</h1>
+<p class="sub">Locked by the founder, 7 Oct 2026, with one change: the label is "City". Brand and creator screens are white and black with one yellow main button.</p>
+
+<div class="grid">
+
+  <div>
+    <p class="cap">A · Brand app — Edit branch (and Add a branch)</p>
+    <div class="phone">
+      <p class="title">‹ &nbsp;Edit branch</p>
+
+      <label>Branch name <span class="req">*</span></label>
+      <div class="in">Main Branch</div>
+      <div class="gap"></div>
+
+      <label>Street address <span class="req">*</span><span class="tag chg">changed</span></label>
+      <div class="in multi">Shop 12, Sri Sai Complex, Road No 3, KPHB Phase 1, Kukatpally</div>
+      <div class="row"><span class="hint">Shop or door number, building, street and area. A courier has to find it.</span><span class="count">61/140</span></div>
+
+      <label>Landmark<span class="tag new">new</span></label>
+      <div class="in ph">Opposite JNTU metro station</div>
+      <div class="row"><span class="hint">Optional.</span><span class="count">0/45</span></div>
+
+      <div class="two">
+        <div><label>Pincode <span class="req">*</span></label><div class="in">500072</div></div>
+        <div><label>State <span class="req">*</span></label><div class="in sel"><span>Telangana</span><span>›</span></div></div>
+      </div>
+
+      <label>City <span class="req">*</span><span class="tag chg">was "Nearest major city"</span></label>
+      <div class="in sel"><span>Hyderabad</span><span>›</span></div>
+      <div class="row"><span class="hint">Not on the list? Pick the nearest city.</span></div>
+
+      <label>Store phone <span class="req">*</span><span class="tag new">new</span></label>
+      <div class="in">9876543210</div>
+      <div class="row"><span class="hint">The courier calls this number at pickup. Starts as your login number.</span></div>
+
+      <div class="blue">A store visit or a courier pickup can't be planned to a branch with no street address — so this one is required.</div>
+      <div class="btn">Save branch</div>
+    </div>
+  </div>
+
+  <div>
+    <p class="cap">B · The same box when the address is not enough (registration, re-submit, Add / Edit branch, website)</p>
+    <div class="phone" style="margin-bottom:20px">
+      <label>Street address <span class="req">*</span></label>
+      <div class="in multi err">Benz Circle, Vijayawada</div>
+      <p class="errText">Add the shop or door number. Couriers need it to find the store.</p>
+    </div>
+
+    <p class="cap">C · Brand app — Book the parcel, "Collected from"</p>
+    <div class="phone" style="margin-bottom:20px">
+      <div class="branch"><div class="radio on"></div><div><div class="bn">Jubilee Hills · Main</div><div class="bs">Hyderabad, 500033</div></div></div>
+      <div class="branch dead"><div class="radio"></div><div><div class="bn">Guntur store<span class="tag chg">changed</span></div><div class="bs">Needs a shop or door number</div></div></div>
+    </div>
+
+    <p class="cap">D · Creator app — Your delivery address (one field changes)</p>
+    <div class="phone">
+      <label>House and street<span class="tag chg">changed</span></label>
+      <div class="in multi">Flat 302, Lakshmi Residency, 11 Gandhi Road, Brodipet</div>
+      <div class="row"><span class="hint">House or flat number, building, street and area.</span><span class="count">53/190</span></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

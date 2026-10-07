@@ -19,6 +19,8 @@ export const MSG11 = {
   NAME_REQUIRED: 'Enter your name.',
   PHONE_REQUIRED: 'Enter a 10-digit mobile number.',
   STREET_REQUIRED: 'Enter your street and house.',
+  // features/courier-ready-addresses — a courier keeps 190 characters of an address and no more.
+  STREET_LONG: 'Keep it under 190 characters.',
   PINCODE_REQUIRED: 'Enter a 6-digit pincode.',
   STATE_REQUIRED: 'Choose your state.',
   CITY_REQUIRED: 'Choose your nearest major city.',
@@ -153,6 +155,7 @@ export const C11 = {
     phoneLabel: 'Contact number',
     phoneHint: 'Your login number. Change it if the courier should call someone else.',
     streetLabel: 'House and street',
+    streetHint: 'House or flat number, building, street and area.',
     pincodeLabel: 'Pincode',
     stateLabel: 'State',
     cityLabel: 'Your nearest major city',

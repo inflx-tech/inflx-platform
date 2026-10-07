@@ -36,15 +36,17 @@
  *     → or null for a return the provider will not price (approval §2.3 — the caller then
  *       falls back to the outbound price for the same box and weight)
  *
- *   registerPickup({ name, phone, street, pincode, cityName, stateName })
+ *   registerPickup({ name, phone, street, landmark, pincode, cityName, stateName })
  *     → { providerPickupId }   — whatever the provider needs quoted back on a booking from
  *                                that address; the caller hands it to book() unchanged
  *
- *   book(shipment, { pickupLocationName, items })
+ *   book(shipment, { pickupLocationName, items, senderName })
  *     → { courierName, trackingNumber, providerRef }
+ *     `senderName` is whose parcel it is (the layer does not know what a brand is — it is told
+ *     a name to print as the sender, and that is all)
  *   cancel(shipment) → { cancelled: true }   — THROWS when the provider will not cancel; the
  *                                              caller must not refund a courier still coming
- *   bookReturn(shipment, { pickupDay, items }) → { courierName, trackingNumber, providerRef }
+ *   bookReturn(shipment, { pickupDay, items, senderName }) → { courierName, trackingNumber, providerRef }
  *   label(shipment)  → { buffer: Buffer, contentType: 'application/pdf' }
  */
 

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, authApi, brandApi, setSessionCookie } from '../../lib/api';
+import { streetError, STREET_MAX, STORE_COPY } from '../../lib/storeAddress';
 import Logo from '../../../shared/components/Logo';
 
 // Device-local draft of the registration step. Cleared on successful
@@ -206,9 +207,11 @@ export default function LoginPage() {
     if (!businessName.trim()) { setError('Please enter your business name'); return; }
     if (subCategories.length === 0) { setError('Pick at least one category your brand sells'); return; }
     if (!addressLine.trim()) { setError('Please enter your business address'); return; }
+    // features/courier-ready-addresses — a courier has to find the store: a shop or door number.
+    if (streetError(addressLine)) { setError(streetError(addressLine)); return; }
     if (!/^[0-9]{6}$/.test(pincode.trim())) { setError('Pincode must be 6 digits'); return; }
     if (!stateId) { setError('Please select your state'); return; }
-    if (!cityId) { setError('Please pick your nearest major city'); return; }
+    if (!cityId) { setError(STORE_COPY.cityRequired); return; }
 
     setLoading(true);
 
@@ -497,7 +500,8 @@ export default function LoginPage() {
                 <div className="mb-3.5">
                   <label className={labelClass}>Business address{reqAst}</label>
                   <input type="text" value={addressLine} onChange={e => setAddressLine(e.target.value)}
-                    placeholder="Building, street, area" className={inputClass} required />
+                    placeholder={STORE_COPY.streetPlaceholder} maxLength={STREET_MAX} className={inputClass} required />
+                  <div className="mt-1.5 text-[11px] text-[#71717A]">{STORE_COPY.streetHint}</div>
                 </div>
                 <div className="mb-3.5">
                   <label className={labelClass}>Pincode{reqAst}</label>
@@ -514,13 +518,13 @@ export default function LoginPage() {
                   </select>
                 </div>
                 <div className="mb-4">
-                  <label className={labelClass}>Your nearest major city{reqAst}</label>
+                  <label className={labelClass}>{STORE_COPY.city}{reqAst}</label>
                   <select value={cityId ?? ''} onChange={e => setCityId(toId(e.target.value))}
                     className={selectClass} disabled={!selectedState} required>
-                    <option value="">{selectedState ? 'Select your nearest major city' : 'Pick a state first'}</option>
+                    <option value="">{selectedState ? STORE_COPY.cityPick : 'Pick a state first'}</option>
                     {cityOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
-                  <div className="mt-1.5 text-[11px] text-[#71717A]">The closest big city to you — not your exact town or area.</div>
+                  <div className="mt-1.5 text-[11px] text-[#71717A]">{STORE_COPY.cityHint}</div>
                 </div>
               </div>
 

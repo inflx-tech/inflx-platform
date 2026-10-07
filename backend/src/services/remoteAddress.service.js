@@ -185,7 +185,10 @@ async function validate(body) {
   if (!phone) throw new AppError('VALIDATION_ERROR', MSG.PHONE_REQUIRED, 422, 'phone');
 
   const street = trim(body.street);
-  if (!street || street.length > 300) throw new AppError('VALIDATION_ERROR', MSG.STREET_REQUIRED, 422, 'street');
+  if (!street) throw new AppError('VALIDATION_ERROR', MSG.STREET_REQUIRED, 422, 'street');
+  // courier-ready-addresses: 190 is all a courier keeps of an address. Anything past it would be
+  // cut off the label without her knowing — usually the landmark, which is the useful part.
+  if (street.length > 190) throw new AppError('VALIDATION_ERROR', MSG.STREET_LONG, 422, 'street');
 
   const pincode = trim(body.pincode);
   if (!/^\d{6}$/.test(pincode)) throw new AppError('VALIDATION_ERROR', MSG.PINCODE_REQUIRED, 422, 'pincode');
