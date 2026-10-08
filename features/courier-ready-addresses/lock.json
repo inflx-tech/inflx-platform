@@ -25,5 +25,22 @@
     "mobile_tests": "119 suites / 2765 tests, all passing. Three existing assertions in registrationProfile.test.js were updated to the approved new words and payload (the blue note's sentence; a branch save now carries landmark and phone) — assertion drift caused by an approved change.",
     "not_seen": "No screen has been looked at on a phone or in a browser. See 06-diff/notes.md.",
     "note": "released stays false per GOVERNANCE.md §5 — the pre-existing backend failures are unchanged debt; the certification is no-regression, never green."
+  },
+  "deployed_to_production": {
+    "at": "2026-10-08",
+    "by": "founder go (chat, 8 Oct 2026: \"pls release it\")",
+    "commit": "51a88a6c (pushed 760bbc46..51a88a6c)",
+    "migration": "205 applied to production 8 Oct 2026 via run-205.js --apply, BEFORE the push (the new server writes the two columns). PG 17.6. 5 structural checks OK: brand_branches.landmark, brand_branches.phone, the two CHECKs, and no branch carrying either. Read before and after, identical: 15 branches / 15 main, the fingerprint of every branch's name + address + pincode + city + state, 15 brands, brand wallets Rs 25,000.00, creator wallets Rs 26,719.00, 1 parcel, 1 store code.",
+    "websites": "PROVED BY CONTENT. Before the push the sign-up page's bundles carried \"Your nearest major city\" and not \"Not on the list? Pick the nearest city.\"; 118 seconds after the push they carried the new sentence.",
+    "render": "NOT PROVABLE FROM OUTSIDE. This release adds no route and changes only signed-in behaviour (every unknown path under /v1/brands/me answers 401). /health answered 200 on every probe for four minutes after the push, and the website — built from the same commit — had landed by then. The click that proves it: the brand opens Edit branch, saves a landmark, reopens the branch and sees it there (an old server ignores the field).",
+    "ota": {
+      "brand": 243,
+      "influencer": 232,
+      "native_runtime": "3 — unchanged; no native code",
+      "note": "published one at a time, after the backend had been back for four minutes; brand was 242 and influencer 231 before. The shopper app is untouched."
+    },
+    "money": "NO MONEY MOVED — the wallet totals above are the same before and after; no job, no parcel.",
+    "not_seen": "No screen has been looked at on a phone or in a browser. The founder's walk: Edit branch (brand app), registration is not re-walkable without a new number, Book the parcel's branch list, the creator's delivery address, the website's Settings → Profile.",
+    "open_for_the_founder": "(1) \"Not on the list? Pick the nearest city.\" was added under City without his having seen it — one word removes it. (2) The creator's own registration and profile still say \"Your nearest major city\". (3) 11 of the 15 live branches do not meet the rule (10 of 14 on 6 Oct, plus whatever the 15th holds — not re-counted); each is asked to complete its address the next time it is edited or shipped from."
   }
 }
