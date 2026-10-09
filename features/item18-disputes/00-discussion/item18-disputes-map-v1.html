@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- preview-size: desktop -->
+<title>INFLX Disputes Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:18px;padding-bottom:70px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(28px,5vw,42px);font-weight:800;line-height:1.08}
+h2{font-size:clamp(20px,3vw,26px);font-weight:800;line-height:1.2}
+h3{font-size:16px;font-weight:800}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:74ch}
+.prose{color:var(--ink2);max-width:78ch}
+.mark{background:linear-gradient(transparent 62%,var(--primary) 62%)}
+header.top{padding-block:34px 10px;display:grid;gap:10px}
+section{padding-block:30px 4px;display:grid;gap:14px}
+section>header{display:grid;gap:6px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;padding-top:6px}
+nav.toc a{font-size:13px;font-weight:700;color:var(--ink);text-decoration:none;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 12px}
+nav.toc a:hover{border-color:var(--ink)}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.tile{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:16px;display:grid;gap:4px;align-content:start}
+.tile .n{font-size:34px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.tile b{font-size:14px}
+.tile span{font-size:13px;color:var(--ink2)}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;counter-reset:st}
+.step{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:16px;display:grid;gap:6px;align-content:start;counter-increment:st}
+.step::before{content:counter(st);font-family:var(--mono);font-size:12px;font-weight:500;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center}
+.step p{font-size:13.5px;color:var(--ink2)}
+
+.chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.c-none{color:var(--no-fg);background:var(--no-bg)}
+.c-nowhere{color:var(--move-fg);background:var(--move-bg)}
+.c-works{color:var(--active-fg);background:var(--active-bg)}
+.c-part{color:var(--wait-fg);background:var(--wait-bg)}
+.c-who{color:var(--ended-fg);background:var(--ended-bg)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--ink2);align-items:center}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+
+.fam{background:var(--bg);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+.fam>header{padding:16px 18px 12px;display:grid;gap:4px;border-bottom:1px solid var(--border)}
+.fam>header .row{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.fam>header p{font-size:13.5px;color:var(--ink2);max-width:90ch}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:13.5px}
+th{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:10px 12px;background:var(--surface);border-bottom:1px solid var(--border)}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.what{font-weight:700;width:25%}
+td.who{width:11%}
+td.today{width:32%;color:var(--ink2)}
+td.today .chip{margin-bottom:5px}
+td.then{width:32%}
+td.today div,td.then div{max-width:52ch}
+
+.list{background:var(--bg);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+.drow{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.drow:last-child{border-bottom:0}
+.drow .num{font-family:var(--mono);font-size:12px;color:var(--ink3);padding-top:2px}
+.drow b{display:block;margin-bottom:2px}
+.drow p{font-size:13.5px;color:var(--ink2);max-width:92ch}
+.drow .rec{margin-top:6px;font-size:13.5px;color:var(--ink);background:var(--primary-soft);border-radius:10px;padding:8px 10px;max-width:92ch}
+.drow .rec i{font-style:normal;font-weight:800}
+.warn{background:var(--no-bg);color:var(--no-fg);border-radius:14px;padding:14px 16px;font-size:14px;max-width:96ch}
+.warn b{color:var(--no-fg)}
+.rounds{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.round{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:16px;display:grid;gap:8px;align-content:start}
+.round ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink2);display:grid;gap:4px}
+.foot{font-size:12.5px;color:var(--ink3);max-width:96ch}
+</style></head>
+<body><div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">INFLX rebuild · Item 18 · Discussion, before any rules or screens</div>
+  <h1>Disputes: <span class="mark">what can go wrong</span>, and how INFLX settles it.</h1>
+  <p class="lede">Every point after a commitment (two signatures on an agreement, or a shopper's placed order) where one side can be let down by the other and the normal buttons cannot settle it. Found by reading the master rules v1.31, the Offers · Terms · Posts rules and the code as it runs today, each part read twice. Nothing here is built or decided.</p>
+  <nav class="toc">
+    <a href="#today">Where we stand today</a>
+    <a href="#map">The map: 8 families</a>
+    <a href="#model">How we handle them</a>
+    <a href="#decisions">Decisions for you</a>
+    <a href="#fix">Things that disagree today</a>
+    <a href="#order">Order of work</a>
+  </nav>
+</header>
+
+<section id="today">
+  <header><h2>Where we stand today</h2>
+  <p class="prose">The flows were built so that nothing ever stops. That was right for building them, and it leaves disputes with almost nowhere to go.</p></header>
+  <div class="tiles">
+    <div class="tile"><div class="n">6</div><b>places a person can raise a problem</b><span>Four on the brand's phone, one on the creator's, and the shopper's Return.</span></div>
+    <div class="tile"><div class="n">1</div><b>of them reaches INFLX</b><span>Only the shopper's return request. The five collaboration reports alert nobody and appear on no admin screen.</span></div>
+    <div class="tile"><div class="n">3</div><b>by-hand money tools</b><span>Release the next payment to her, return everything still locked to the brand, correct one balance. Whole payments only, no undo.</span></div>
+    <div class="tile"><div class="n">0</div><b>ways to end a collaboration</b><span>Other than Completed. After INFLX moves the money by hand, both apps carry on and the reminders keep coming.</span></div>
+  </div>
+  <p class="prose">Three more facts shape everything below. A brand's content report freezes the collaboration and nothing can lift it. Most stuck moments have no button at all, for either side. And the signed agreement and the public legal pages already promise an INFLX dispute process, with every complaint acknowledged within 24 hours and resolved within 7 days.</p>
+</section>
+
+<section id="map">
+  <header><h2>The map: eight families of dispute</h2>
+  <p class="prose">About 220 situations were found; many are the same problem seen from two sides. They reduce to the rows below. “Today” is what the app does now. “With item 18” is how the proposed handling would treat it.</p></header>
+  <div class="legend">
+    <span><i class="chip c-none">No way to raise it</i> the person is stuck</span>
+    <span><i class="chip c-nowhere">Button, reaches nobody</i> saved, INFLX is not told</span>
+    <span><i class="chip c-part">Partly</i> one side only, or one case only</span>
+    <span><i class="chip c-works">Works</i> reaches INFLX and gets decided</span>
+  </div>
+  <div id="families" style="display:grid;gap:18px"></div>
+</section>
+
+<section id="model">
+  <header><h2>How we handle them: one case, five steps</h2>
+  <p class="prose">Not eighty separate fixes. One way of working that every row above goes through, so both sides always know where a complaint stands and INFLX works from one list.</p></header>
+  <div class="steps">
+    <div class="step"><h3>Raise</h3><p>“Tell INFLX” on every screen of a signed collaboration, for both sides, at every stage. A short list of reasons that fits the stage, a note, photos. When a step has been stuck too long, the system raises it by itself.</p></div>
+    <div class="step"><h3>Hear</h3><p>The other side is told exactly what was said and has a set number of days to answer with their own proof. Either side can say “we have sorted it out” and the case closes.</p></div>
+    <div class="step"><h3>Hold</h3><p>While a case is open, that collaboration's locked payments wait; nothing pays out by itself. The work can carry on, and her shop posts keep selling.</p></div>
+    <div class="step"><h3>Decide</h3><p>INFLX works from one list, Admin → Disputes, oldest first, with the whole file in one place: agreement, diary, content rounds, parcel record, money. It picks one decision and writes a reason both sides read.</p></div>
+    <div class="step"><h3>Close</h3><p>The money moves in the same step, tied to the case. The collaboration gets a named ending both sides see, the reminders stop, and the campaign can finish.</p></div>
+  </div>
+  <div class="fam">
+    <header><div class="row"><h3>The decisions INFLX can make</h3></div><p>A small fixed set, so every case ends in a way the apps understand.</p></header>
+    <div class="tablewrap"><table>
+      <tr><th>Decision</th><th>What happens to the collaboration</th><th>What happens to the money</th></tr>
+      <tr><td class="what">Carry on</td><td>The complaint is closed with a reason. INFLX may set one new final date, or do the missing step in place of a side that stayed silent (confirm the visit, approve the content, confirm it is live).</td><td>Nothing moves by hand. The normal payments run again.</td></tr>
+      <tr><td class="what">Ended, in the creator's favour</td><td>Closed by INFLX. Her work is treated as done.</td><td>What is still locked goes to her, all of it or the part INFLX decides.</td></tr>
+      <tr><td class="what">Ended, in the brand's favour</td><td>Closed by INFLX. The brand owes nothing more.</td><td>What is still locked goes back to the brand, all of it or the part INFLX decides.</td></tr>
+      <tr><td class="what">Ended by agreement, or nobody's fault</td><td>Closed by INFLX with both sides' consent, or for a reason outside their control.</td><td>Split as the two agreed, or as INFLX decides.</td></tr>
+    </table></div>
+  </div>
+  <p class="prose">Two clocks sit on top. One on the two sides: after a set number of days of silence the waiting side may raise it, and after a longer number the system raises it. One on INFLX itself: acknowledge within 24 hours, decide within 7 days, with late cases marked in the list.</p>
+</section>
+
+<section id="decisions">
+  <header><h2>Decisions for you</h2>
+  <p class="prose">These shape the rules. Each has a recommendation; several change a rule already written, and those are marked.</p></header>
+  <div class="list" id="dlist"></div>
+</section>
+
+<section id="fix">
+  <header><h2>Things that disagree today</h2>
+  <p class="prose">Places where the two rules documents, the signed agreement, the public pages and the app say different things. A dispute would turn on each of them, so each needs one answer whatever we build.</p></header>
+  <div class="warn"><b>Cash on delivery is the one with money at risk now.</b> The master rules (17A) say INFLX collects the cash through the delivery partner. The Offers rules and the brand website say the store's courier collects it and the store owes INFLX the two shares. Today the store ships with its own courier and keeps the cash, and after the return window INFLX also adds the store's share and the creator's commission to their wallets. Nothing takes the shares back from the store. Cash on delivery is on, up to ₹5,000 a checkout.</div>
+  <div class="list" id="flist"></div>
+</section>
+
+<section id="order">
+  <header><h2>Suggested order of work</h2>
+  <p class="prose">The build sequence scopes item 18 as brand and creator disputes with an admin resolution screen. The same case list can take the rest afterwards without being rebuilt.</p></header>
+  <div class="rounds">
+    <div class="round"><span class="chip c-works" style="width:max-content">Round 1 · item 18</span><h3>Brand and creator</h3><ul><li>The case: raise, hear, hold, decide, close</li><li>“Tell INFLX” on every collaboration screen, both sides</li><li>Silence clocks, and INFLX acting for a silent side</li><li>Admin → Disputes with the whole file</li><li>Money decisions of any size, tied to the case</li><li>Named endings, so collaborations and campaigns can finish</li><li>The existing five reports moved into the case list</li></ul></div>
+    <div class="round"><span class="chip c-part" style="width:max-content">Round 2</span><h3>Shopper orders and wallet questions</h3><ul><li>“Need help with this order” for the shopper</li><li>Refund and close an order that shipped and never arrived</li><li>The store's answer on a return</li><li>A list of refunds that failed</li><li>“Ask about this” on a wallet line or a withdrawal</li></ul></div>
+    <div class="round"><span class="chip c-who" style="width:max-content">Round 3</span><h3>Behaviour and live posts</h3><ul><li>Report a person or a post</li><li>Take an approved post out of the shop, and put it back</li><li>What suspending an account does to open work and money</li><li>Outcomes kept on each account's record</li></ul></div>
+  </div>
+  <p class="foot">Source: read-only survey of 9 October 2026, eleven areas each read twice against the code, plus two completeness passes (one walking the whole process as each party, one following every bucket of money). Master rules v1.31; Docs/OFFER_TERMS_POSTS_RULES.md. Production data was not read.</p>
+</section>
+
+</div>
+<script>
+var CH = { none:["c-none","No way to raise it"], nowhere:["c-nowhere","Button, reaches nobody"], part:["c-part","Partly"], works:["c-works","Works"] };
+// [what goes wrong, who raises it, status, today, with item 18]
+var FAMILIES = [
+ { t:"1 · One side stops after signing", who:"Brand ↔ Creator", d:"There is no cancel after both sign, by design. So when a side stops, the only route is INFLX, and today that route does not exist until the content step.", rows:[
+  ["She takes the first 25% and goes silent before the shoot","Brand","none","Reminders run until the posting date, then a Delayed label. 75% stays locked with no time limit.","Silence clock, then a case. INFLX gives one final date or ends it and returns what is locked."],
+  ["She says she will not continue","Brand or creator","none","Nothing. Her Decline closes the moment she signs.","A case. Ended in the brand's favour, or by agreement."],
+  ["The brand signs and never starts: no visit plan, no parcel","Creator","none","She sees “No visit planned yet” and waits. Her only report opens after she has posted.","Silence clock, then a case. Final date for the brand, or ended in her favour."],
+  ["Both sides agree to call it off","Both","none","Cancel is refused; there is no “we both agree”.","Either side proposes, the other accepts, INFLX records it and moves the money as they agreed."],
+  ["Nobody's fault: illness, a family emergency, a flood","Either","none","It reads exactly like going silent, and the Delayed label points at her.","“I cannot, here is why” with a new date both accept, or ended as nobody's fault."],
+  ["The brand cannot pay for the parcel after signing","Creator","none","The booking is refused and she waits.","Silence clock on the brand, then a case."],
+  ["The brand ends the campaign or the offer from the website while she is midway","Creator","none","The website still allows it. Her posts leave the shop.","Close those doors for signed collaborations; anything left is a case."],
+  ["Pay for Sale: a side stops and no money is locked","Either","none","Nothing to raise and nothing to return.","Same case; the decision is an ending and a record, with no money to move."],
+  ["One stuck collaboration keeps the whole campaign open","Brand","none","A campaign finishes only when every collaboration is Completed.","A named ending lets the campaign finish and the brand invite a replacement."],
+ ]},
+ { t:"2 · The store visit", who:"Brand ↔ Creator", d:"The only step with no door to INFLX for either side. Every awkward moment is treated as “nobody is blamed, send a new time”.", rows:[
+  ["She agreed a time and did not come","Brand","none","Only “Send a new time” and a call button. No record of a missed visit.","The brand marks a missed visit. Twice, or once past the posting date, it becomes a case."],
+  ["She came; the brand never confirms, or says she did not","Creator","none","Only the brand can confirm (your 1 Oct decision). Her screen has no button; her next step and 75% stay shut.","After the silence days she tells INFLX with her proof; INFLX can confirm in the brand's place."],
+  ["She arrives and the store is closed, the contact is missing, or the products are not ready","Creator","none","A call button to the contact. Nothing is recorded.","“The visit could not happen” with a photo. The brand answers; a wasted trip goes on the record."],
+  ["They cannot agree a time, or one side keeps moving it","Either","none","When the counters are used up, only Accept is left.","A case; INFLX sets the time or ends it."],
+  ["The posting date has passed and the visit never happened","Either","none","A dead end: no new time can be saved after the posting date.","INFLX sets a new date for this one collaboration, or ends it."],
+  ["The brand says the shoot was not what was agreed, or asks for more at the store","Either","none","The brand can only hold back its confirmation.","A case with both accounts. The agreement's content list decides."],
+  ["Products lent or given to her at the store","Either","none","Nothing is recorded: what left, loan or gift, when it is due back.","A short hand-over list at the visit (a small addition; to decide)."],
+  ["Bad conduct at the store: she feels unsafe, or the brand says she caused damage","Either","none","Nothing.","An urgent reason that goes to the top of INFLX's list."],
+ ]},
+ { t:"3 · The Remote parcel", who:"Brand ↔ Creator, with the courier in the middle", d:"Built so nothing blocks her shoot. The brand has three one-time reports that write a date and do nothing else; the creator has none.", rows:[
+  ["She never sends her delivery address","Brand","none","A waiting box and a disabled button.","Silence clock, then a case."],
+  ["The brand never books the parcel, or books it too late","Creator","none","Nothing.","Silence clock, then a case. A late booking is the brand's delay, not hers."],
+  ["The courier loses the parcel, brings it back, or cancels the booking","Either","none","No report either way. A courier-side cancel refunds the brand nothing.","INFLX marks it lost, refunds the courier money and allows a replacement parcel."],
+  ["The courier says delivered; she says nothing came","Creator","part","Her only door is marking every item Missing.","“Nothing arrived” as its own reason; INFLX takes it up with the courier."],
+  ["Something is missing, wrong or damaged on arrival","Creator records it; the brand may report","nowhere","Recorded; her shoot is not blocked. The brand's report is saved and its screen says “Item 18 picks it up”.","The brand's report becomes a case with her item-by-item answers. She can also add a note or photo later."],
+  ["She has the products and goes silent","Brand","none","The brand's report never opens, because Overdue starts only once she marks the shoot done.","The return falls due from the posting date as the rules say; then a case."],
+  ["She did the shoot and has not sent the Return items back","Brand","nowhere","“Report it to INFLX” saves a date. Nobody is told.","A case. INFLX gives a final date, then decides the value."],
+  ["The return arrives short or damaged, or the problem is found after it confirmed itself","Brand","part","The server accepts a report; the phone has no button for it.","The brand's per-item answer opens a case when an item is missing or damaged."],
+  ["The return is lost in transit, never collected, or “I sent it” against “it never came”","Either","none","Nothing. A booked return that is never collected can never become overdue.","A case with the tracking record; INFLX can rebook or mark it lost."],
+  ["What is a lost or ruined product worth, and who pays","Brand","none","No tool can value a product, charge her or touch her fee.","A decision for you (D7)."],
+  ["She keeps the Gift items and never does the shoot","Brand","none","A Gift cannot be turned back into a Return.","Part of the case about the missing work."],
+  ["The brand disputes a courier charge taken from its wallet","Brand","none","Charges are automatic. Admin can only correct a balance.","“Ask about this” on the wallet line (Round 2)."],
+ ]},
+ { t:"4 · Content, on Pay for Content", who:"Brand ↔ Creator", d:"Three “tell INFLX” doors exist. A brand's report freezes the whole step and holds the money; hers freezes nothing; neither reaches INFLX.", rows:[
+  ["She never sends the content, or the changes asked for","Brand","none","The brand's report accepts only two reasons, and this is not one.","Silence clock, then a case."],
+  ["The package is wrong or thin","Brand","part","Only “Ask for changes”, which uses a round.","The rounds first, as now."],
+  ["The change rounds are used up and the brand still says no","Brand","nowhere","“Report to INFLX”. The step freezes for good; INFLX is not told.","A case. INFLX looks at the files against the agreement and decides: approve for the brand, one more round, or end."],
+  ["The brand never reviews what she sent","Creator","none","Her screen says the brand is reviewing. No time limit.","Silence clock, then INFLX may approve in the brand's place."],
+  ["The brand asks for changes beyond what was agreed","Creator","none","She can only change the files and send again.","“This is beyond the agreement” as a reason; it does not use a round while INFLX looks."],
+  ["She posts before approval, or is approved and never posts","Brand","none","No reason fits on Pay for Content.","A reason for each. Silence clock for the second."],
+  ["What she posted is wrong, incomplete, or a link is dead","Brand","nowhere","“Something's wrong, tell INFLX”. Freezes; reaches nobody.","A case. She may fix the post and the case closes, or INFLX decides."],
+  ["She posted and the brand never confirms it is live","Creator","nowhere","“Ask INFLX to look” from day 7. Saved; nobody is told.","INFLX confirms in the brand's place. This is the one thing it can already do by hand."],
+  ["The brand reports instead of paying, and she says that is unfair","Creator","none","She cannot answer. Once the brand has reported, her own report is refused.","The Hear step: her answer and proof go into the same case."],
+  ["They sort it out themselves, or the report was a mistake","Either","none","A report can never be taken back.","The one who raised it can withdraw it; the step unfreezes."],
+  ["She deletes or changes the post during the wait for the final 50%, or after she is paid","Brand","none","The brand's report closes when it confirms. The final 50% pays on its date regardless.","During the wait the brand can raise it and the final payment holds. After payment: a decision for you (D12)."],
+  ["Instagram or YouTube removes the post, or her account is hacked","Either","none","Nothing.","Nobody's fault; INFLX decides with her proof."],
+  ["The brand uses her content without paying, or beyond the agreed usage rights","Creator","none","Nothing.","A case that can be raised after the collaboration has ended."],
+  ["The collaboration fails and the brand wants INFLX's campaign fee back","Brand","none","Not part of what the return tool gives back.","A decision for you (D8)."],
+ ]},
+ { t:"5 · Going live, on Pay for Sale and Hybrid", who:"Brand ↔ Creator, with INFLX checking her shop posts", d:"Two buttons exist for the social step. Everything on the selling side has no door at all.", rows:[
+  ["She makes no shoppable post, or fewer than the minimum, by the posting date","Brand","none","The brand's report opens only once her social version is approved.","Silence clock, then a case."],
+  ["INFLX keeps sending her post back, or is slow to check it","Creator","none","No limit on send-backs and no clock on INFLX. She is the one who gets nudged.","INFLX's own clock. Time lost to INFLX is not counted against her."],
+  ["The brand never reviews her social version","Creator","none","Her only report is for silence after posting.","Silence clock, then INFLX may approve in the brand's place."],
+  ["Rounds used, posted wrong, something missing, or never posted","Brand","nowhere","A report with four reasons. It freezes the step, and a Hybrid can then never complete.","A case. Decide, then lift the freeze."],
+  ["She posted and the brand does not confirm it is live","Creator","part","Pay for Sale confirms itself after 7 days. Hybrid: “Ask INFLX to look”, which reaches nobody.","INFLX confirms in the brand's place and the second 25% is released."],
+  ["She takes her shoppable post down after it was counted","Brand","none","She can, and it still counts toward her minimum. The two rules documents disagree.","One rule first (see below); then a reason the brand can raise."],
+  ["The brand ends the offer early, pulls the products, zeroes the stock or changes the price","Creator","none","She gets a notification. No button.","“The brand has stopped my selling” as a reason; INFLX can have the offer restored or record the loss."],
+  ["The offer reaches its own end date before she could go live, and the delay was not hers","Either","none","No post can be approved, so the collaboration can never finish.","Nobody's fault: the brand extends, or it ends by agreement."],
+  ["The brand cancels orders that came through her post, or sells to her audience directly","Creator","none","She never sees it happen.","A reason she can raise; INFLX can see every cancelled order from her posts."],
+  ["She disputes her commission numbers","Creator","none","No “ask about this sale”.","“Ask about this” on the sale (Round 2)."],
+  ["A live post has to come down: a complaint, a false claim, or INFLX's approval was wrong","Brand, shopper or INFLX","none","INFLX can only act on a post still waiting for review.","Take down and put back, with a reason (Round 3)."],
+  ["Something goes wrong after Completed, while her posts still sell","Either","none","Every report belongs to a step that is finished.","A case can be raised on a completed collaboration."],
+ ]},
+ { t:"6 · The shopper's order", who:"Shopper ↔ Store", d:"A different kind of dispute, with the creator's commission and INFLX's share riding on it. The return flow works; around it there is nothing.", rows:[
+  ["Paid, and the store never ships","Shopper","part","She can cancel herself. No deadline on the store; the “Arrives by” date is not watched.","A clock on the store tied to that date, then “Need help with this order”."],
+  ["Shipped and never arrived, or marked Delivered when it was not","Shopper","none","Once it is Shipped nobody can cancel or refund it, not even INFLX.","INFLX can refund and close a shipped order, with the stock handled."],
+  ["Wrong, damaged, fake or missing item","Shopper","works","Return request → INFLX approves or rejects with a reason she reads → refund.","Keep. Add photos, and a way to ask about a free gift alone."],
+  ["She asks to return and nobody answers; or it is approved and the store never collects","Shopper","part","Reaches INFLX, with no clock on INFLX or the store.","Clocks on both, with late ones marked."],
+  ["The item went back and the store says it never came, or came back used or swapped","Store","none","The store only reads returns; it has no voice.","The store answers “received”, “received damaged” or “not received”, and INFLX decides."],
+  ["Return approved, but she keeps the item; or she abuses returns","Store","none","An approved request can only end in a full refund.","Finish a return without a refund; a note on the shopper's record."],
+  ["Refund promised and not received, or the amount is disputed, or INFLX said no and she disagrees","Shopper","none","Failed refunds sit in no list. A second request is refused.","A “refunds to sort out” list, and one second look."],
+  ["A cash-on-delivery parcel is refused at the door","Store","none","Nobody can cancel after Shipped.","The store marks it refused; the order closes and the stock returns."],
+  ["A problem after the return window, when the money is already in the wallets","Shopper","none","The app refuses and points to Money, which cannot undo a sale.","Undo a sale after payout as one recorded step."],
+  ["She disputes the payment with her bank; or she paid and no order shows","Shopper or her bank","none","Not tracked anywhere.","Take these in from the payment provider and hold the money they touch."],
+ ]},
+ { t:"7 · Money, and INFLX's own decisions", who:"Brand or Creator ↔ INFLX", d:"INFLX holds every rupee, so every money complaint is about INFLX's records. Nobody can raise one from inside the app.", rows:[
+  ["A withdrawal is marked Processed and the money never arrived, or the amount was wrong","Brand or creator","none","Processed is final. Nothing to tap.","“Ask about this” on the request; INFLX can reopen it."],
+  ["A withdrawal is marked Could not process, or is late past the promised 24 hours","Brand or creator","none","Nothing to tap, and no way to take a waiting request back.","Same door. Late requests are marked in INFLX's list."],
+  ["A balance looks wrong, a movement is not recognised, or money added was not credited","Brand or creator","none","Nothing to tap. Admin can see the person's whole money picture.","“Ask about this” on any wallet line."],
+  ["A promised automatic payment did not arrive on its date","Brand or creator","none","A failed payment is tried again the next hour. Nobody is told.","An overdue list for INFLX."],
+  ["Someone says INFLX's decision was wrong","Any","none","No undo and no appeal.","One second look within a set number of days, by a different admin where there is one."],
+  ["INFLX is the slow one: a post review, a withdrawal, an unanswered report","Any","none","No clock on INFLX anywhere.","The 24-hour and 7-day clocks, visible in the list."],
+  ["INFLX decides someone must pay back, and the money has already left their wallet","INFLX","none","A correction cannot go below zero. Nothing is recorded as owed.","An “owes INFLX” record taken from their next earnings; a hold on withdrawals while a case is open (D10)."],
+  ["A bank reverses money a brand added, after it was locked or paid to her","The brand's bank","none","Not tracked.","Take it in from the payment provider and hold what it touches."],
+ ]},
+ { t:"8 · Behaviour and accounts", who:"Anyone", d:"The rules are almost silent here: one catch-all line, “other material violation of signed agreement”.", rows:[
+  ["Her follower numbers turn out to be fake, or she switches account midway","Brand","none","Nothing for the brand.","A reason the brand can raise; INFLX checks its own measurements."],
+  ["Harassment, or misuse of a phone number or address (brand and creator, or a store and a shopper)","Any","part","Brand and creator can block each other. Nothing reaches INFLX.","An urgent report that goes to the top of the list."],
+  ["An account is suspended or closed while work is open or money is held","INFLX","none","The other side is told nothing and waits. Posts keep selling.","Suspending makes INFLX decide each open collaboration, and tells the other side."],
+  ["The deal is taken off INFLX after the introduction","INFLX","none","Nothing.","A rule to write, not a screen."],
+  ["A creator who owns the brand, or someone buying through their own post","INFLX","none","Nothing.","Item 20."],
+  ["“That was not me”: a signature or a withdrawal the owner denies","Brand or creator","none","Nothing. The agreement does record who signed and from which device.","A case with that record."],
+  ["A paid post not labelled as paid; a creator under 18; an account deletion with open work","Any","none","Nothing.","Rules to write."],
+ ]},
+];
+var fam = document.getElementById("families");
+fam.innerHTML = FAMILIES.map(function(f){
+  return '<div class="fam"><header><div class="row"><h3>'+f.t+'</h3><span class="chip c-who">'+f.who+'</span></div><p>'+f.d+'</p></header><div class="tablewrap"><table><tr><th>What goes wrong</th><th>Who raises it</th><th>Today</th><th>With item 18</th></tr>'+
+    f.rows.map(function(r){ var c = CH[r[2]]; return '<tr><td class="what">'+r[0]+'</td><td class="who">'+r[1]+'</td><td class="today"><span class="chip '+c[0]+'">'+c[1]+'</span><div>'+r[3]+'</div></td><td class="then"><div>'+r[4]+'</div></td></tr>'; }).join("")+
+    '</table></div></div>';
+}).join("");
+
+// [title, the question, recommendation, changes a written rule?]
+var DECISIONS = [
+ ["Scope and order","Item 18 covers brand and creator disputes and the case list. Shopper order problems and wallet questions join the same list in a second round; behaviour reports and taking a live post down in a third.","Yes, in that order.",""],
+ ["What INFLX may do with locked money","Today it can only release the next whole payment or return everything. A decision often needs something between: part to her for the work done, the rest back to the brand.","Any split of what is still locked, in one recorded decision.",""],
+ ["The first 25% already paid to her","The rules and the app tell her it stays hers. Five parts of the survey show brands asking for it back when she did nothing at all.","It stays hers, except when she did no work at all; then INFLX may recover it from her wallet or her next earnings.","Changes rule 17A."],
+ ["What waits while a case is open","Today a brand's report freezes the work and hers freezes nothing.","The locked payments wait. The work carries on unless INFLX stops it. Her shop posts keep selling and commission keeps counting.",""],
+ ["Silence","How long before the waiting side may tell INFLX, and how long before the system raises it by itself. Today only one wait has a number (7 days, brand silent after she posted).","One Admin number for raising, 3 days; one for the system, 7 days. Both changeable.",""],
+ ["INFLX's own promise","The public legal pages already say every complaint is acknowledged within 24 hours with a reference number and resolved within 7 days.","Adopt it as the working clock, with a reference number on every case and late ones marked.",""],
+ ["Products that do not come back","The rules say she is never charged and a return never holds a payment. So a brand that loses a product has only words.","As a dispute decision only, never automatic: INFLX may take the product's recorded price out of her fee that is still locked.","Changes rule 11.2."],
+ ["INFLX's campaign fee","Charged to the brand at signing on Pay for Content. Not returned by any tool today.","Returned when the creator did no work at all; kept otherwise.",""],
+ ["INFLX acting for a silent side","Confirming a store visit, approving content, confirming it is live. Today INFLX can do only the last, by hand.","Yes, after a case is raised and the silent side has had its days to answer.","Sits beside your 1 Oct decision that only the brand confirms a visit."],
+ ["Holding withdrawals during a case","Rule 17A says a withdrawal has no approval step. The public pages say INFLX may hold a payout while it investigates.","INFLX may hold one person's withdrawals while a case with money at risk is open against them.","Changes rule 17A."],
+ ["A record of outcomes","Whether a no-show, a non-return or an unfair report follows the account.","Kept on each account for INFLX only, for now. Not shown to brands or creators.",""],
+ ["How long a paid post must stay up","The agreement labels the final 50% “After it stays live”; the rules say nothing is checked during the wait.","It must stay up until the final 50% is paid; the brand can raise it during the wait and the payment holds. After that it is a usage-rights matter with no money held.",""],
+ ["Cash on delivery","Who holds the shopper's cash. See the red box in the next section.","Decide this before real orders: either pause cash on delivery until INFLX's courier collects it, or take the two shares from the store's next sales money.","The two rules documents disagree."],
+];
+document.getElementById("dlist").innerHTML = DECISIONS.map(function(d,i){
+  return '<div class="drow"><span class="num">D'+(i+1)+'</span><div><b>'+d[0]+(d[3]?' <span class="chip c-nowhere">'+d[3]+'</span>':'')+'</b><p>'+d[1]+'</p><div class="rec"><i>Recommended:</i> '+d[2]+'</div></div></div>';
+}).join("");
+
+var FIX = [
+ ["A store visit after a silent brand","The rules say the visit confirms itself after three days. The app, by your 1 Oct decision, lets only the brand confirm. Her way out of a silent brand has to be one or the other, or INFLX (D9)."],
+ ["A store visit after the posting date","One rule says the shoot plan stays fully usable once Delayed; another caps every time at the posting date, and the server refuses a later time. Both phones still offer a new time."],
+ ["Taking a live shop post down","The master rules say she cannot delete a live shoppable post. The Offers rules and the app let her take it down, and it still counts toward her minimum."],
+ ["What the final 50% waits for","The agreement prints “After it stays live”. The rules say nothing is checked during the wait."],
+ ["Tax at withdrawal","The standard terms printed in every agreement (version 1.0 as first written) and the Offers rules still say 10% is deducted at withdrawal. The master rules and the app deduct nothing."],
+ ["Two makers of the agreement","The brand website's Regenerate button replaces the stored signed document with an older format that says 30 days where the rules say 7. The website can also add clauses and a bonus that the real agreement never shows and no money is locked for."],
+ ["Ending a campaign with signed collaborations","Cancel is refused since item 17. The website's End campaign and End offer buttons are still open."],
+ ["An old release door in Admin","The older single-payment release still works beside the new Money tools, with none of their checks and no record in the corrections list."],
+ ["Who escalates when the change rounds run out","The rules name the creator or the system. In the app only the brand can, and once it has, her own report is refused."],
+ ["How many times INFLX may send a shop post back","The rules say two rounds. The app keeps no count."],
+ ["What INFLX does with a dispute","Described four ways: settled outside the platform with INFLX only recording it; the locked 75% released to her; released or returned; and, on the public pages, acknowledged in 24 hours and resolved in 7 days."],
+ ["A line on a live screen","After a parcel report the brand's phone reads “Item 18 picks it up”."],
+];
+document.getElementById("flist").innerHTML = FIX.map(function(d,i){
+  return '<div class="drow"><span class="num">'+(i+1)+'</span><div><b>'+d[0]+'</b><p>'+d[1]+'</p></div></div>';
+}).join("");
+</script>
+</body></html>
