@@ -54,10 +54,12 @@ jest.mock('react-native-safe-area-context', () => {
 jest.mock('../../services/api', () => ({
   brandApi: {}, influencerApi: {}, referenceApi: {}, clearSession: jest.fn(), uploadFile: jest.fn(), emitAccountGate: jest.fn(),
 }));
+// Item 19: Home is the first screen of its own stack now. The stand-in also hands its real
+// navigation object to the tests, so a jump can be made exactly as Home makes one.
 jest.mock('../../components/shell/PendingHomeScreen', () => {
   const mockReact = require('react');
   const { Text: MockText } = require('react-native');
-  return () => mockReact.createElement(MockText, { testID: 'page' }, 'Home');
+  return ({ navigation }) => { global.__homeNav = navigation; return mockReact.createElement(MockText, { testID: 'page' }, 'Home'); };
 });
 jest.mock('../../components/shell/PendingSheetHost', () => () => null);
 
@@ -115,25 +117,36 @@ const back = (ref) => act(() => { ref.goBack(); });
 
 const APPS = [
   {
-    label: 'brand app', file: 'BrandNavigator.js', first: 'CreatorsTab',
-    roots: { CampaignsTab: 'BrandCampaigns', CreatorsTab: 'BrandCreators', WalletTab: 'BrandWallet', ProfileTab: 'BrandProfile' },
-    pushed: { CampaignsTab: ['BrandCampaignDetail', 'BrandSetDetail', 'BrandSetPickCreators'], CreatorsTab: ['BrandCreatorProfile', 'SocialDetail'], WalletTab: ['BrandWalletLocked', 'BrandWalletCollab'], ProfileTab: ['BrandPitchSettings', 'BrandBlockedCreators'] },
+    // Item 19 (H3): an approved account opens on Home; Home is a stack with two lists pushed over it.
+    label: 'brand app', file: 'BrandNavigator.js', first: 'HomeTab',
+    roots: { CampaignsTab: 'BrandCampaigns', CreatorsTab: 'BrandCreators', WalletTab: 'BrandWallet', ProfileTab: 'BrandProfile', HomeTab: 'BrandHome' },
+    pushed: { CampaignsTab: ['BrandCampaignDetail', 'BrandSetDetail', 'BrandSetPickCreators'], CreatorsTab: ['BrandCreatorProfile', 'SocialDetail'], WalletTab: ['BrandWalletLocked', 'BrandWalletCollab'], HomeTab: ['BrandNeedsYou', 'BrandWaiting'], ProfileTab: ['BrandPitchSettings', 'BrandBlockedCreators'] },
     // every jump a screen makes into ANOTHER tab's inner screen: from → tab › screen
     jumps: [
       ['WalletTab', 'CampaignsTab', 'BrandSetDetail'],
       ['CreatorsTab', 'CampaignsTab', 'BrandPool'],
       ['CreatorsTab', 'CampaignsTab', 'BrandCampaignNew'],
       ['CampaignsTab', 'CreatorsTab', 'BrandCreatorProfile'],
+      // Item 19: what a Home row opens (components/home/open19.js brandTarget).
+      ['HomeTab', 'CampaignsTab', 'BrandAgreement'],
+      ['HomeTab', 'CreatorsTab', 'BrandPitches'],
+      ['HomeTab', 'WalletTab', 'BrandWithdrawals'],
     ],
+    homeJump: { tab: 'CampaignsTab', screen: 'BrandAgreement', deeper: 'BrandAddMoney', other: 'WalletTab' },
   },
   {
-    label: 'creator app', file: 'InfluencerNavigator.js', first: 'CollabsTab',
-    roots: { CollabsTab: 'Collabs', CreateTab: 'CreateHome', WalletTab: 'CreatorWallet', ProfileTab: 'ProfileMain' },
-    pushed: { CollabsTab: ['FindBrands', 'BrandOverview', 'PitchForm'], CreateTab: ['PostBrand', 'PostType'], WalletTab: ['CreatorWalletPayments', 'CreatorWithdraw'], ProfileTab: ['ProfileInfo', 'YourNumbers'] },
+    label: 'creator app', file: 'InfluencerNavigator.js', first: 'HomeTab',
+    roots: { CollabsTab: 'Collabs', CreateTab: 'CreateHome', WalletTab: 'CreatorWallet', ProfileTab: 'ProfileMain', HomeTab: 'CreatorHome' },
+    pushed: { CollabsTab: ['FindBrands', 'BrandOverview', 'PitchForm'], CreateTab: ['PostBrand', 'PostType'], WalletTab: ['CreatorWalletPayments', 'CreatorWithdraw'], ProfileTab: ['ProfileInfo', 'YourNumbers'], HomeTab: ['CreatorNeedsYou', 'CreatorWaiting'] },
     jumps: [
       ['CollabsTab', 'CreateTab', 'PostType'],
       ['CollabsTab', 'CreateTab', 'PostStatus'],
+      // Item 19: what a Home row opens (components/home/open19.js creatorTarget).
+      ['HomeTab', 'CollabsTab', 'Agreement'],
+      ['HomeTab', 'CreateTab', 'PostType'],
+      ['HomeTab', 'ProfileTab', 'YourNumbers'],
     ],
+    homeJump: { tab: 'CollabsTab', screen: 'Agreement', deeper: 'Thread', other: 'WalletTab' },
   },
 ];
 
@@ -223,6 +236,56 @@ describe.each(APPS)('$label — the real tab bar', (cfg) => {
     go(app.ref, tab, { screen, params: { id: 'x' }, initial: false });
     expect(where(app.ref)).toEqual({ tab, stack: [cfg.roots[tab], screen], top: screen });
     expect(barHidden(app.tree)).toBe(true);
+  });
+
+  /* ── item 19: Back from a screen Home opened returns to Home ── */
+  describe('a jump made from Home (jumpFromHome)', () => {
+    const { jumpFromHome, _disarmReturnHome } = require('../../components/home/open19');
+    const J = cfg.homeJump;
+    const jump = () => act(() => { jumpFromHome(global.__homeNav, { tab: J.tab, screen: J.screen, params: { ciId: 'x' } }); });
+    afterEach(() => _disarmReturnHome());
+
+    it('lands on the screen with the tab\'s main page underneath and no bar; Back returns to HOME, not to that tab\'s main page', () => {
+      expect(where(app.ref).tab).toBe('HomeTab');
+      jump();
+      expect(where(app.ref)).toEqual({ tab: J.tab, stack: [cfg.roots[J.tab], J.screen], top: J.screen });
+      expect(barHidden(app.tree)).toBe(true);
+      expect(app.ref.getCurrentRoute()).toMatchObject({ name: J.screen, params: { ciId: 'x' } });
+      back(app.ref);
+      expect(where(app.ref).tab).toBe('HomeTab');
+      expect(barShown(app.tree)).toBe(true);
+      // the tab it visited is left on its main page, with its bar
+      go(app.ref, J.tab);
+      expect([where(app.ref).top, barShown(app.tree)]).toEqual([cfg.roots[J.tab], true]);
+    });
+
+    it('a screen pushed further in does not send her Home early: only leaving the last one does', () => {
+      jump();
+      go(app.ref, J.tab, { screen: J.deeper });
+      expect(where(app.ref).stack).toEqual([cfg.roots[J.tab], J.screen, J.deeper]);
+      back(app.ref);
+      expect(where(app.ref)).toMatchObject({ tab: J.tab, top: J.screen });
+      back(app.ref);
+      expect(where(app.ref).tab).toBe('HomeTab');
+    });
+
+    it('it lets go once she is on another tab: a later Back in that tab is an ordinary Back', () => {
+      jump();
+      go(app.ref, J.other);                       // she left by another route (a link on the screen)
+      go(app.ref, J.tab);
+      expect(where(app.ref)).toMatchObject({ tab: J.tab, top: J.screen });
+      back(app.ref);
+      expect(where(app.ref)).toMatchObject({ tab: J.tab, top: cfg.roots[J.tab] });
+    });
+
+    it('a section heading opens a tab\'s main page and arms nothing', () => {
+      act(() => { jumpFromHome(global.__homeNav, { tab: J.tab, root: cfg.roots[J.tab], params: { segment: 'x' } }); });
+      expect(where(app.ref)).toMatchObject({ tab: J.tab });
+      expect(barShown(app.tree)).toBe(true);
+      go(app.ref, J.tab, { screen: J.screen });
+      back(app.ref);
+      expect(where(app.ref).tab).toBe(J.tab);
+    });
   });
 
   it('WITHOUT `initial: false` the inner screen would be the tab\'s only screen — the case the safety net is for', () => {
@@ -324,6 +387,8 @@ describe('the cross-tab jumps in the code all ask for the main page underneath',
     expect(inner.map((j) => j.file).sort()).toEqual([
       'BrandGroupDetailScreen.js', 'BrandPitchScreen.js', 'BrandPoolScreen.js', 'BrandSetDetailScreen.js',
       'BrandWalletLockedScreen.js', 'CreatorNotificationsScreen.js', 'PitchThreadScreen.js', 'SaleLiveScreen.js',
+      // Item 19: every jump Home makes goes through this one line (jumpFromHome).
+      'open19.js',
     ]);
     expect(inner.filter((j) => !/initial:\s*false/.test(j.line)).map((j) => j.at)).toEqual([]);
     expect([...new Set(jumps.filter((j) => SHELLS.includes(j.file)).map((j) => j.file))].sort()).toEqual(SHELLS.slice().sort());

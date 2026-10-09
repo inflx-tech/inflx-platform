@@ -180,6 +180,9 @@ router.use('/', item14Routes);
 // Contract: features/item17-wallet
 const item17Routes = require('./item17.routes');
 router.use('/', item17Routes);
+// Item 19 — Home and Needs You: /brands/me/home*, /influencers/me/home* (rules v1.32 §24).
+// Mounted here, above the brand and influencer routers, for the same reason as item 17.
+router.use('/', require('./item19.routes'));
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

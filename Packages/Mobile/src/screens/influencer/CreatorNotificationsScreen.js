@@ -11,6 +11,8 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { Skeleton, LoadError } from '../../components/settings/feedback';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
+import { noticeTarget } from '../../components/home/open19';
+import { setHomeCount, getHomeCount } from '../../services/homeCount';
 
 /** Where a notice goes, from its data (the server sends data_json.screen). */
 export function targetOf(n) {
@@ -25,6 +27,20 @@ export function targetOf(n) {
   // Item 14: Pay for Sale going live.
   if (d.screen === 'my_going_live') return { name: 'SaleLive', params: { ciId: ci } };
   return null;
+}
+
+/**
+ * Item 19 (H4) — every other notice she is sent. Eight screen codes carried a destination and
+ * opened nothing: her content, her shoot, her Remote shoot, her pitch, a negotiation thread, the
+ * wallet (two codes) and Collabs. They go through the one map both apps now share
+ * (components/home/open19 noticeTarget); the five codes above keep the routes they always had.
+ */
+export function anyTargetOf(n) {
+  const own = targetOf(n);
+  if (own) return own;
+  const t = noticeTarget(n);
+  if (!t || !t.tab) return null;
+  return { name: t.tab, params: t.screen ? { screen: t.screen, params: t.params || {}, initial: false } : undefined };
 }
 
 const ago = (iso) => {
@@ -47,7 +63,7 @@ export default function CreatorNotificationsScreen({ navigation }) {
     const r = await influencerApi.getNotifications();
     if (!r.success) { setStatus('error'); return; }
     setRows(r.data.notifications || []); setStatus('ready');
-    influencerApi.markAllNotificationsRead().catch(() => {});
+    influencerApi.markAllNotificationsRead().then(() => setHomeCount({ ...getHomeCount(), unread: 0 })).catch(() => {});
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -63,7 +79,7 @@ export default function CreatorNotificationsScreen({ navigation }) {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
         ListEmptyComponent={<Text style={s.empty}>Nothing yet. You'll be told here when a brand's offer or product you sell changes.</Text>}
         renderItem={({ item }) => {
-          const to = targetOf(item);
+          const to = anyTargetOf(item);
           return (
             <TouchableOpacity style={s.row} disabled={!to} onPress={() => to && navigation.navigate(to.name, to.params)} testID={`notice-${item.id}`}>
               {!item.is_read ? <View style={s.dot} /> : <View style={s.dotOff} />}

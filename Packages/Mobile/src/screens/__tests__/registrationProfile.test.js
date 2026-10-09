@@ -431,7 +431,7 @@ describe('C3 · B2 — pending home', () => {
     expect(r2.queryByText('Finish your profile')).toBeNull();
   });
 
-  it('brand: locked tiles and the business wording; approved → the existing Coming soon screen', async () => {
+  it('brand: locked tiles and the business wording; approved → Home (item 19; it was the Coming soon screen)', async () => {
     brandApi.getMe.mockResolvedValue(ok({ brand: { business_name: 'Label Fern' }, user_status: 'pending', completeness: { total: 10, done: 7, complete: false, missing_labels: ['logo', 'an about line', 'a contact person'] } }));
     let r = render(<PendingHomeScreen navigation={nav()} route={{ params: { kind: 'brandHome', tabTitle: 'Home' } }} />);
     await waitFor(() => r.getByTestId('pending-home-brand'));
@@ -442,9 +442,16 @@ describe('C3 · B2 — pending home', () => {
     r.unmount();
 
     brandApi.getMe.mockResolvedValue(ok({ brand: { business_name: 'Label Fern' }, user_status: 'approved', completeness: { total: 10, done: 10, complete: true } }));
+    brandApi.getHome = jest.fn().mockResolvedValue(ok({
+      me: { name: 'Label Fern' }, unread: 0, firstDay: false, needs: { total: 0, rows: [] }, waiting: { total: 0, groups: [], rows: [] },
+      money: { lines: [{ key: 'available', amount: 0 }] }, running: { kind: 'campaigns', total: 0, counts: { live: 0, draft: 1 }, rows: [] },
+    }));
     r = render(<PendingHomeScreen navigation={nav()} route={{ params: { kind: 'brandHome', tabTitle: 'Home' } }} />);
-    await waitFor(() => r.getByTestId('coming-soon-brandHome'));
-    r.getByText('Home is coming soon');
+    await waitFor(() => r.getByTestId('home-brand'));
+    r.getByText('Label Fern');                       // the brand's name heads its Home
+    r.getByText('Nothing needs you right now.');
+    expect(r.queryByText('Home is coming soon')).toBeNull();
+    expect(r.queryByText('Under review')).toBeNull();
   });
 
   it('brand: a tapped locked tile raises the under-review sheet with the server\'s words — not silently dead', async () => {

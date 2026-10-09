@@ -585,6 +585,10 @@ export const brandApi = {
   rejectApplication:     (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/reject-application`),
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
+  // Item 19 — Home and Needs You (features/item19-home): the four sections, the two full lists, the tab count.
+  getHome: () => api.get('/brands/me/home'),
+  getHomeList: (list) => api.get(`/brands/me/home/${list === 'waiting' ? 'waiting' : 'needs'}`),
+  getHomeCount: () => api.get('/brands/me/home/count'),
   // Conversions — all follower transactions across every campaign (paginated,
   // filterable by type / campaign_id / influencer_id / status).
   listTransactions: (params) => api.get(`/brands/me/transactions${params ? '?' + new URLSearchParams(params) : ''}`),
@@ -848,6 +852,10 @@ export const influencerApi = {
   getTdsCertificateUrl: (fy) => `${API_BASE_URL}/influencers/me/tds-certificate${fy ? `?fy=${fy}` : ''}`,
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
+  // Item 19 — Home and Needs You (features/item19-home): the four sections, the two full lists, the tab count.
+  getHome: () => api.get('/influencers/me/home'),
+  getHomeList: (list) => api.get(`/influencers/me/home/${list === 'waiting' ? 'waiting' : 'needs'}`),
+  getHomeCount: () => api.get('/influencers/me/home/count'),
   getBrandPublicProfile: (brandId) => api.get(`/brands/${brandId}/public`),
   listMyContracts: () => api.get('/influencers/me/contracts'),
 

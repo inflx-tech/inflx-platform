@@ -83,18 +83,14 @@ async function setsFor(campaignIds) {
  * handful of campaigns, so all of them are read once and paged in memory; the per-set counts
  * are still one grouped query.
  */
-const listSummary = asyncHandler(async (req, res) => {
-  const brandId = await brandIdOf(req.user.sub);
-  const filter = String(req.query.state || '').toLowerCase();
-  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
-
+/** Every campaign of a brand with its derived state, set count, next posting date and counts. */
+async function summariesForBrand(brandId) {
   const { rows: camps } = await db.query(
     `SELECT c.*, g.name AS group_name FROM campaigns c LEFT JOIN influencer_groups g ON g.id = c.started_from_group_id
       WHERE c.brand_id = $1 ORDER BY COALESCE(c.updated_at, c.created_at) DESC`, [brandId]);
   const { byCampaign, counts } = await setsFor(camps.map(c => c.id));
 
-  const all = camps.map(c => {
+  return camps.map(c => {
     const sets = (byCampaign.get(c.id) || []).map(s => shapeSet(s, counts.get(s.id) || state.EMPTY_COUNTS, null));
     const st = state.campaignStateFrom(sets);
     const live = sets.filter(s => !s.isPast);
@@ -105,7 +101,17 @@ const listSummary = asyncHandler(async (req, res) => {
       counts: { invited: total.invited, signed: total.signed, waiting: total.waiting, declined: total.declined },
     };
   });
-  const bucket = (s) => (s === 'live' ? 'live' : s === 'draft' ? 'draft' : 'past');
+}
+const bucket = (s) => (s === 'live' ? 'live' : s === 'draft' ? 'draft' : 'past');
+
+/** The handler for GET /campaigns/summary (above): filtered and paged in memory. */
+const listSummary = asyncHandler(async (req, res) => {
+  const brandId = await brandIdOf(req.user.sub);
+  const filter = String(req.query.state || '').toLowerCase();
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+
+  const all = await summariesForBrand(brandId);
   const filtered = ['live', 'draft', 'past'].includes(filter) ? all.filter(c => bucket(c.state) === filter) : all;
   const start = (page - 1) * limit;
   return success(res, {
@@ -153,4 +159,4 @@ const setSummary = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { listSummary, campaignSummary, setSummary, shapeSet, SET_SELECT };
+module.exports = { listSummary, campaignSummary, setSummary, shapeSet, SET_SELECT, summariesForBrand, campaignBucket: bucket };

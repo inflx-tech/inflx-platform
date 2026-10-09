@@ -1,0 +1,1432 @@
+[
+ {
+  "label": "content · approved",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "her_posting"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": {
+    "move": "post_and_link",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": {
+    "stage": "complete",
+    "line": "x",
+    "yourMove": false,
+    "visitAt": null
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "content · approved",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "post_and_link"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": {
+    "move": "post_and_link",
+    "yourMove": true,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "content · live",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "final_payment"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": {
+    "move": "live",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": {
+    "stage": "complete",
+    "line": "x",
+    "yourMove": false,
+    "visitAt": null
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "content · live",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "final_payment"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": {
+    "move": "live",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "content · posted",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "confirm_live"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": {
+    "move": "confirm_live",
+    "yourMove": true,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": {
+    "stage": "complete",
+    "line": "x",
+    "yourMove": false,
+    "visitAt": null
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "content · posted",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "confirm_live"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": {
+    "move": "confirm_live",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "content · to send",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "her_content"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": {
+    "move": "send_content",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": {
+    "stage": "complete",
+    "line": "x",
+    "yourMove": false,
+    "visitAt": null
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "content · to send",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "send_content"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": {
+    "move": "send_content",
+    "yourMove": true,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "content · with the brand",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "review"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": {
+    "move": "review_content",
+    "yourMove": true,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": {
+    "stage": "complete",
+    "line": "x",
+    "yourMove": false,
+    "visitAt": null
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "content · with the brand",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "review_content"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": {
+    "move": "review_content",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "hybrid · posted",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "confirm_live"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": {
+    "move": "confirm_live",
+    "yourMove": true,
+    "line": "x",
+    "completed": false
+   },
+   "shoot": null,
+   "remote": {
+    "stage": "shot",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "hybrid · posted",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "confirm_live"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": {
+    "move": "confirm_live",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "shoot": null,
+   "remote": {
+    "stage": "shot",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "pre · accepted, agreement owed",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "send_agreement"
+  },
+  "addition": false,
+  "row": {
+   "group": "yourMove",
+   "status": "accepted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": true,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "draft"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · accepted, agreement owed",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "agreement_coming"
+  },
+  "addition": false,
+  "row": {
+   "group": "accepted",
+   "status": "accepted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · agreement out",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "to_sign"
+  },
+  "addition": false,
+  "row": {
+   "group": "waiting",
+   "status": "accepted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": true
+   },
+   "agreement": {
+    "status": "pending_influencer"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · agreement out",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "sign"
+  },
+  "addition": false,
+  "row": {
+   "group": "toSign",
+   "status": "accepted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · date asked",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "reply_move"
+  },
+  "addition": false,
+  "row": {
+   "group": "yourMove",
+   "status": "invited",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": null,
+   "negotiation": null,
+   "moveRequest": {
+    "answer": null
+   },
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · date asked",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "date_request"
+  },
+  "addition": false,
+  "row": {
+   "group": "invited",
+   "status": "invited",
+   "canAnswer": true,
+   "moveRequest": {
+    "answer": null
+   },
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · her counter",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "reply"
+  },
+  "addition": false,
+  "row": {
+   "group": "yourMove",
+   "status": "negotiating",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": null,
+   "negotiation": {
+    "open": true,
+    "whoseMove": "brand"
+   },
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · her counter",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "counter_with_brand"
+  },
+  "addition": false,
+  "row": {
+   "group": "negotiating",
+   "status": "negotiating",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · invited",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "not_answered"
+  },
+  "addition": false,
+  "row": {
+   "group": "waiting",
+   "status": "invited",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": null,
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · invited",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "answer"
+  },
+  "addition": false,
+  "row": {
+   "group": "invited",
+   "status": "invited",
+   "canAnswer": true,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · she signed",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "sign"
+  },
+  "addition": false,
+  "row": {
+   "group": "yourMove",
+   "status": "accepted",
+   "actions": {
+    "signAgreement": true,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "pending_brand"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "pre · she signed",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "brand_to_sign"
+  },
+  "addition": false,
+  "row": {
+   "group": "signedWaiting",
+   "status": "accepted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "remote · address not sent",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "her_address"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "not_sent",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · address not sent",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "send_address"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "not_sent",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · address sent",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "book_parcel"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "sent",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · address sent",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "brand_ship"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "sent",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · booked",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "in_transit"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "in_transit",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · booked",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "courier"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "in_transit",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · checked",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "her_shoot"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "checked",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · checked",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "mark_shoot"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "checked",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · delivered",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "her_check"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "delivered",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · delivered",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "check_parcel"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "delivered",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · parcel came back",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "rebook"
+  },
+  "addition": true,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "in_transit",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "remote · parcel came back",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "correct_address"
+  },
+  "addition": true,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": {
+    "stage": "in_transit",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "sale · no post yet",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "her_posts"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": {
+    "move": "make_posts",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "shoot": null,
+   "remote": {
+    "stage": "shot",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "sale · no post yet",
+  "side": "creator",
+  "verdict": null,
+  "addition": true,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": {
+    "move": "make_posts",
+    "yourMove": true,
+    "line": "x",
+    "completed": false
+   },
+   "shoot": null,
+   "remote": {
+    "stage": "shot",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "sale · post approved",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "her_social"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": {
+    "move": "send_social",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "shoot": null,
+   "remote": {
+    "stage": "shot",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "sale · post approved",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "send_social"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": {
+    "move": "send_social",
+    "yourMove": true,
+    "line": "x",
+    "completed": false
+   },
+   "shoot": null,
+   "remote": {
+    "stage": "shot",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "sale · posted",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "confirm_live"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": {
+    "move": "confirm_live",
+    "yourMove": true,
+    "line": "x",
+    "completed": false
+   },
+   "shoot": null,
+   "remote": {
+    "stage": "shot",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "sale · posted",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "confirm_live"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": {
+    "move": "confirm_live",
+    "yourMove": false,
+    "line": "x",
+    "completed": false
+   },
+   "shoot": null,
+   "remote": {
+    "stage": "shot",
+    "line": "x"
+   }
+  }
+ },
+ {
+  "label": "visit · agreed, still to come",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": null,
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "agreed",
+    "line": "x",
+    "yourMove": false,
+    "visitAt": "2026-10-11T06:00:00.000Z"
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · agreed, still to come",
+  "side": "creator",
+  "verdict": null,
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "agreed",
+    "line": "x",
+    "yourMove": false
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · attended",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "confirm_shoot"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "attended",
+    "line": "x",
+    "yourMove": true,
+    "visitAt": "2026-10-09T06:00:00.000Z"
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · attended",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "brand_confirm_visit"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "attended",
+    "line": "x",
+    "yourMove": false
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · plan not sent",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "plan_visit"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "not_sent",
+    "line": "x",
+    "yourMove": true,
+    "visitAt": null
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · plan not sent",
+  "side": "creator",
+  "verdict": {
+   "side": "waiting",
+   "kind": "brand_plan"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": null,
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · plan sent",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "waiting",
+   "kind": "her_time"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "sent",
+    "line": "x",
+    "yourMove": false,
+    "visitAt": "2026-10-11T06:00:00.000Z"
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · plan sent",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "answer_plan"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "sent",
+    "line": "x",
+    "yourMove": true
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · time passed",
+  "side": "brand",
+  "now": "2026-10-10T06:00:00.000Z",
+  "verdict": {
+   "side": "needs",
+   "kind": "plan_visit"
+  },
+  "addition": false,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "actions": {
+    "signAgreement": false,
+    "sendAgreement": false,
+    "withdrawAgreement": false
+   },
+   "agreement": {
+    "status": "active"
+   },
+   "negotiation": null,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "agreed",
+    "line": "x",
+    "yourMove": true,
+    "visitAt": "2026-10-09T06:00:00.000Z"
+   },
+   "remote": null
+  }
+ },
+ {
+  "label": "visit · time passed",
+  "side": "creator",
+  "verdict": {
+   "side": "needs",
+   "kind": "mark_visit"
+  },
+  "addition": true,
+  "row": {
+   "group": "signed",
+   "status": "contracted",
+   "canAnswer": false,
+   "moveRequest": null,
+   "content": null,
+   "goingLive": null,
+   "shoot": {
+    "stage": "agreed",
+    "line": "x",
+    "yourMove": false
+   },
+   "remote": null
+  }
+ }
+]

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, AppState } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
@@ -88,6 +88,10 @@ import BrandContentScreen from '../screens/brand/BrandContentScreen';
 import BrandSaleLiveScreen from '../screens/brand/BrandSaleLiveScreen';
 import ShootThreadScreen from '../screens/shared/ShootThreadScreen';
 import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
+// Item 19 — Home: its two full lists and the brand's notices. Contract: features/item19-home
+import HomeListScreen from '../screens/home/HomeListScreen';
+import BrandNotificationsScreen from '../screens/home/BrandNotificationsScreen';
+import { getHomeCount, subscribeHomeCount, refreshHomeCount } from '../services/homeCount';
 
 // The pitch thread and counter are one screen each, serving both sides. The
 // brand's side is the same component with `side` fixed — not a second copy.
@@ -103,7 +107,20 @@ const ProfileStack = createNativeStackNavigator();
 const CampaignsStack = createNativeStackNavigator();
 // features/brand-wallet-on-the-phone — the Wallet tab is a stack now, so Add money pushes over it.
 const WalletStack = createNativeStackNavigator();
+// Item 19 — the Home tab is a stack now: Home, "Needs you, all", "Waiting on others, all", notices.
+const HomeStack = createNativeStackNavigator();
 const noHeader = { headerShown: false };
+
+function HomeStackScreen() {
+  return (
+    <HomeStack.Navigator screenOptions={noHeader}>
+      <HomeStack.Screen name="BrandHome" component={PendingHomeScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} />
+      <HomeStack.Screen name="BrandNeedsYou" component={HomeListScreen} initialParams={{ side: 'brand', list: 'needs' }} />
+      <HomeStack.Screen name="BrandWaiting" component={HomeListScreen} initialParams={{ side: 'brand', list: 'waiting' }} />
+      <HomeStack.Screen name="BrandNotifications" component={BrandNotificationsScreen} />
+    </HomeStack.Navigator>
+  );
+}
 
 function WalletStackScreen() {
   return (
@@ -282,22 +299,44 @@ export const tabRootOptions = (title, rootName) => ({ route, navigation } = {}) 
   tabBarStyle: isTabRoot(route, rootName, navigation) ? TAB_BAR_STYLE : TAB_BAR_HIDDEN,
 });
 
-// Each tab's main page — the first screen of its stack; null where the tab is one plain screen.
+/**
+ * Item 19 (H6) — the number on the Home tab: how many things need you, from every tab.
+ * Shared by both apps. The store is fed by Home's own read and refreshed here: when the navigator
+ * mounts, when the app comes back to the front, and (throttled) when any tab is pressed.
+ */
+export const HOME_BADGE_STYLE = { backgroundColor: T.state.yourMove.fg, color: '#FFFFFF', fontFamily: fonts.sansBold, fontSize: 10 };
+export const homeBadge = (n) => (n > 0 ? (n > 99 ? '99+' : n) : undefined);
+export function useHomeTabCount(side) {
+  const [needs, setNeeds] = useState(getHomeCount().needs);
+  useEffect(() => {
+    const off = subscribeHomeCount((c) => setNeeds(c.needs));
+    refreshHomeCount(side, { force: true });
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') refreshHomeCount(side, { force: true }); });
+    return () => { off(); if (sub && typeof sub.remove === 'function') sub.remove(); };
+  }, [side]);
+  return needs;
+}
+/** The Home tab's options: the usual per-tab ones, plus the count. */
+export const homeTabOptions = (rootName, needs) => (p) => ({ ...tabRootOptions('Home', rootName)(p), tabBarBadge: homeBadge(needs), tabBarBadgeStyle: HOME_BADGE_STYLE });
+
+// Each tab's main page — the first screen of its stack.
 export const BRAND_TAB_ROOTS = {
-  HomeTab: null, CampaignsTab: 'BrandCampaigns', CreatorsTab: 'BrandCreators', WalletTab: 'BrandWallet', ProfileTab: 'BrandProfile',
+  HomeTab: 'BrandHome', CampaignsTab: 'BrandCampaigns', CreatorsTab: 'BrandCreators', WalletTab: 'BrandWallet', ProfileTab: 'BrandProfile',
 };
 
 export default function BrandNavigator() {
   // Read once, at mount: initialRouteName only matters the first time the navigator renders.
   // The lock itself reads the live status on every press (lockedTab.js).
-  const initialRouteName = initialTabFor(getAccountStatus(), 'CreatorsTab');
+  // Item 19 (H3): an approved brand opens on Home (it used to open on Creators).
+  const initialRouteName = initialTabFor(getAccountStatus(), 'HomeTab');
+  const needs = useHomeTabCount('brand');
   // ui-walk-fixes D4 — TopInsetProvider is the one safe-area provider above every title of this
   // app: titles start at the phone's real top inset (useTopInset), from the first frame.
   return (
     <TopInsetProvider>
       <View style={{ flex: 1 }}>
-        <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
-          <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} options={tabRootOptions('Home', BRAND_TAB_ROOTS.HomeTab)} />
+        <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions} screenListeners={{ tabPress: () => { refreshHomeCount('brand'); } }}>
+          <Tab.Screen name="HomeTab" component={HomeStackScreen} options={homeTabOptions(BRAND_TAB_ROOTS.HomeTab, needs)} />
           <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={tabRootOptions('Campaigns', BRAND_TAB_ROOTS.CampaignsTab)} listeners={lockedTabListeners()} />
           <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={tabRootOptions('Creators', BRAND_TAB_ROOTS.CreatorsTab)} listeners={lockedTabListeners()} />
           <Tab.Screen name="WalletTab" component={WalletStackScreen} options={tabRootOptions('Wallet', BRAND_TAB_ROOTS.WalletTab)} />

@@ -3,7 +3,7 @@
  * couldn't load). Replaces the item 3 "coming soon" placeholder on the Campaigns tab.
  * Contract: features/item4-campaigns-sets · prompt §6.1
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
@@ -28,6 +28,10 @@ export default function BrandCampaignsScreen({ navigation, route }) {
   const [poolCount, setPoolCount] = useState(0);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
+  // Item 19: Home's "Campaigns" opens this page on Live, whatever segment it was left on.
+  useEffect(() => {
+    if (route?.params?.segment) { setSegment(route.params.segment); navigation.setParams({ segment: undefined }); }
+  }, [route?.params?.segment]); // eslint-disable-line
   // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
   const top = useTopInset(TOP_GAP_TITLE);
 

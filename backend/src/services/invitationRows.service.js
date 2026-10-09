@@ -197,8 +197,12 @@ function shootYourMove(r, side) {
   return stage === 'not_sent' || stage === 'attended' || (stage === 'agreed' && shootPlan.passedOf(pe));
 }
 
-const ROW_SELECT = `
-  SELECT ci.id, ci.influencer_id, ci.status, ci.agreed_fee, ci.commission_pct,
+/**
+ * The brand's row query. `extra` is a list of further columns ending in a comma (item 19's Home
+ * asks for the set id and the Delayed stamp); with none the text is exactly what it always was.
+ */
+const rowSelect = (extra = '') => `
+  SELECT ${extra}ci.id, ci.influencer_id, ci.status, ci.agreed_fee, ci.commission_pct,
          ci.alloc_scope, ci.alloc_category, ci.alloc_category_node_id, ci.alloc_product_ids,
          ci.sell_v2, ci.sell_mode, ci.sell_product_ids, cardinality(ci.sell_product_ids) AS sell_product_count,
          (SELECT count(*)::int FROM collab_offers co WHERE co.campaign_influencer_id = ci.id AND co.dropped_at IS NULL) AS sell_offer_count,
@@ -262,6 +266,7 @@ const ROW_SELECT = `
         FROM production_events pe WHERE pe.contract_id = con.contract_id
     ) pe ON true
     ${NEG_JOIN}`;
+const ROW_SELECT = rowSelect();
 
 function negotiationOf(r, goal) {
   if (!r.neg_id) return null;
@@ -373,8 +378,9 @@ async function invitationForBrand(ciId, setId, goal) {
 
 /* ───────────────────────────────────────────────────── creator side */
 
-const CREATOR_SELECT = `
-  SELECT ci.id, ci.status, ci.agreed_fee, ci.commission_pct, ci.agreement_id, ci.min_shoppable_posts, ci.pool_entry_id,
+/** Her card query; `extra` as for rowSelect. */
+const creatorSelect = (extra = '') => `
+  SELECT ${extra}ci.id, ci.status, ci.agreed_fee, ci.commission_pct, ci.agreement_id, ci.min_shoppable_posts, ci.pool_entry_id,
          ci.alloc_scope, ci.alloc_category, ci.alloc_category_node_id, ci.alloc_product_ids,
          ci.sell_v2, ci.sell_mode, ci.sell_product_ids, cardinality(ci.sell_product_ids) AS sell_product_count,
          (SELECT count(*)::int FROM collab_offers co WHERE co.campaign_influencer_id = ci.id AND co.dropped_at IS NULL) AS sell_offer_count,
@@ -447,6 +453,7 @@ const CREATOR_SELECT = `
     ${NEG_JOIN}
     LEFT JOIN brand_creator_pool pf ON pf.from_ci_id = ci.id
     LEFT JOIN brand_creator_pool ps ON ps.id = ci.pool_entry_id`;
+const CREATOR_SELECT = creatorSelect();
 
 /** Ended, withdrawn and closed cards stay for seven days, then move to Done (APPROVAL.md §4.11). */
 const DONE_AFTER_DAYS = 7;
@@ -746,4 +753,6 @@ async function invitationForCreator(ciId, influencerId, today = null) {
 module.exports = {
   GROUP_ORDER, GROUP_TITLE, groupOf, termsLine, termsBlock, snapshotLine,
   creatorsForSet, invitationForBrand, invitationsForCreator, invitationForCreator, creatorState, DONE_AFTER_DAYS,
+  // Item 19 — Home reads the same rows the set screen and her Collabs cards read.
+  rowSelect, creatorSelect, brandRow, creatorCard,
 };

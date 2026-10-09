@@ -73,7 +73,10 @@ import ContentScreen from '../screens/influencer/ContentScreen';
 import CreatorSellScreen from '../screens/influencer/CreatorSellScreen';
 import CreatorOfferScreen from '../screens/influencer/CreatorOfferScreen';
 import CreatorNotificationsScreen from '../screens/influencer/CreatorNotificationsScreen';
-import { tabScreenOptions, tabRootOptions } from './BrandNavigator';
+import { tabScreenOptions, tabRootOptions, homeTabOptions, useHomeTabCount } from './BrandNavigator';
+// Item 19 — Home's two full lists, and the count on the Home tab. Contract: features/item19-home
+import HomeListScreen from '../screens/home/HomeListScreen';
+import { refreshHomeCount } from '../services/homeCount';
 import { TopInsetProvider } from '../hooks/useTopInset';
 // shoppable-posts-v2 — the Create tab. Contract: features/shoppable-posts-v2
 import CreateHomeScreen from '../screens/create/CreateHomeScreen';
@@ -104,7 +107,19 @@ const CollabsStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 const WalletStack = createNativeStackNavigator();
 const CreateStack = createNativeStackNavigator();
+// Item 19 — the Home tab is a stack now: Home and its two full lists. Contract: features/item19-home
+const HomeStack = createNativeStackNavigator();
 const noHeader = { headerShown: false };
+
+function HomeStackScreen() {
+  return (
+    <HomeStack.Navigator screenOptions={noHeader}>
+      <HomeStack.Screen name="CreatorHome" component={PendingHomeScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} />
+      <HomeStack.Screen name="CreatorNeedsYou" component={HomeListScreen} initialParams={{ side: 'creator', list: 'needs' }} />
+      <HomeStack.Screen name="CreatorWaiting" component={HomeListScreen} initialParams={{ side: 'creator', list: 'waiting' }} />
+    </HomeStack.Navigator>
+  );
+}
 
 // features/registration-and-profile C7 — the Wallet tab is a stack now, so a payout detail
 // (UPI, bank account, PAN) pushes over it.
@@ -217,20 +232,22 @@ function ProfileStackScreen() {
 // same rule as the brand app (tabRootOptions). Each tab's main page is the first screen of its
 // stack; null where the tab is one plain screen.
 export const CREATOR_TAB_ROOTS = {
-  HomeTab: null, CollabsTab: 'Collabs', CreateTab: 'CreateHome', WalletTab: 'CreatorWallet', ProfileTab: 'ProfileMain',
+  HomeTab: 'CreatorHome', CollabsTab: 'Collabs', CreateTab: 'CreateHome', WalletTab: 'CreatorWallet', ProfileTab: 'ProfileMain',
 };
 
 export default function InfluencerNavigator() {
   // Read once, at mount: initialRouteName only matters the first time the navigator renders.
   // The lock itself reads the live status on every press (lockedTab.js).
-  const initialRouteName = initialTabFor(getAccountStatus(), 'CollabsTab');
+  // Item 19 (H3): an approved creator opens on Home (it used to open on Collabs).
+  const initialRouteName = initialTabFor(getAccountStatus(), 'HomeTab');
+  const needs = useHomeTabCount('creator');
   // ui-walk-fixes D4 — TopInsetProvider is the one safe-area provider above every title of this
   // app: titles start at the phone's real top inset (useTopInset), from the first frame.
   return (
     <TopInsetProvider>
       <View style={{ flex: 1 }}>
-        <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
-          <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={tabRootOptions('Home', CREATOR_TAB_ROOTS.HomeTab)} />
+        <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions} screenListeners={{ tabPress: () => { refreshHomeCount('creator'); } }}>
+          <Tab.Screen name="HomeTab" component={HomeStackScreen} options={homeTabOptions(CREATOR_TAB_ROOTS.HomeTab, needs)} />
           <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={tabRootOptions('Collabs', CREATOR_TAB_ROOTS.CollabsTab)} listeners={lockedTabListeners()} />
           <Tab.Screen name="CreateTab" component={CreateStackScreen} options={tabRootOptions('Create', CREATOR_TAB_ROOTS.CreateTab)} listeners={lockedTabListeners()} />
           <Tab.Screen name="WalletTab" component={WalletStackScreen} options={tabRootOptions('Wallet', CREATOR_TAB_ROOTS.WalletTab)} />

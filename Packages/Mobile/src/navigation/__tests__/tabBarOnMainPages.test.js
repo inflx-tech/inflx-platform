@@ -92,13 +92,14 @@ const APPS = [
   {
     label: 'brand app', file: '../BrandNavigator', rootsExport: 'BRAND_TAB_ROOTS',
     titles: { HomeTab: 'Home', CampaignsTab: 'Campaigns', CreatorsTab: 'Creators', WalletTab: 'Wallet', ProfileTab: 'Profile' },
-    roots: { HomeTab: null, CampaignsTab: 'BrandCampaigns', CreatorsTab: 'BrandCreators', WalletTab: 'BrandWallet', ProfileTab: 'BrandProfile' },
+    // Item 19: Home is a stack too (Home, "Needs you, all", "Waiting on others, all", notices).
+    roots: { HomeTab: 'BrandHome', CampaignsTab: 'BrandCampaigns', CreatorsTab: 'BrandCreators', WalletTab: 'BrandWallet', ProfileTab: 'BrandProfile' },
     locked: ['CampaignsTab', 'CreatorsTab'],
   },
   {
     label: 'creator app', file: '../InfluencerNavigator', rootsExport: 'CREATOR_TAB_ROOTS',
     titles: { HomeTab: 'Home', CollabsTab: 'Collabs', CreateTab: 'Create', WalletTab: 'Wallet', ProfileTab: 'Profile' },
-    roots: { HomeTab: null, CollabsTab: 'Collabs', CreateTab: 'CreateHome', WalletTab: 'CreatorWallet', ProfileTab: 'ProfileMain' },
+    roots: { HomeTab: 'CreatorHome', CollabsTab: 'Collabs', CreateTab: 'CreateHome', WalletTab: 'CreatorWallet', ProfileTab: 'ProfileMain' },
     locked: ['CollabsTab', 'CreateTab'],
   },
 ];
@@ -112,7 +113,7 @@ describe.each(APPS)('$label — bottom tabs only on the five main pages', (cfg) 
     for (const t of app.tabs) expect([t.name, effective(app, t, routeOf(t)).title]).toEqual([t.name, cfg.titles[t.name]]);
   });
 
-  it('each tab\'s main page is the first screen of its stack; Home is one plain screen', () => {
+  it('each tab\'s main page is the first screen of its stack — Home included, since item 19', () => {
     expect(require(cfg.file)[cfg.rootsExport]).toEqual(cfg.roots);
     for (const [tab, root] of Object.entries(cfg.roots)) {
       if (root === null) { expect([tab, app.stacks[tab]]).toEqual([tab, undefined]); continue; }
@@ -220,10 +221,15 @@ describe('tabRootOptions / isTabRoot — the rule itself', () => {
 
   it('the creator app uses the brand app\'s rule, not a copy of it', () => {
     const src = require('fs').readFileSync(path.join(__dirname, '..', 'InfluencerNavigator.js'), 'utf8');
-    expect(src).toMatch(/import \{ tabScreenOptions, tabRootOptions \} from '\.\/BrandNavigator'/);
-    expect((src.match(/options=\{tabRootOptions\(/g) || []).length).toBe(5);
+    expect(src).toMatch(/import \{ tabScreenOptions, tabRootOptions, homeTabOptions, useHomeTabCount \} from '\.\/BrandNavigator'/);
+    // Item 19: the Home tab's options are the same rule with the count added (homeTabOptions
+    // spreads tabRootOptions), so four tabs name the rule directly and Home names its wrapper.
+    expect((src.match(/options=\{tabRootOptions\(/g) || []).length).toBe(4);
+    expect((src.match(/options=\{homeTabOptions\(/g) || []).length).toBe(1);
     const brand = require('fs').readFileSync(path.join(__dirname, '..', 'BrandNavigator.js'), 'utf8');
-    expect((brand.match(/options=\{tabRootOptions\(/g) || []).length).toBe(5);
+    expect((brand.match(/options=\{tabRootOptions\(/g) || []).length).toBe(4);
+    expect((brand.match(/options=\{homeTabOptions\(/g) || []).length).toBe(1);
+    expect(brand).toMatch(/homeTabOptions = \(rootName, needs\) => \(p\) => \(\{ \.\.\.tabRootOptions\('Home', rootName\)\(p\)/);
   });
 
   it('the base style is the 62-high bar and the hidden style is display none', () => {
@@ -235,6 +241,34 @@ describe('tabRootOptions / isTabRoot — the rule itself', () => {
   it('a tab that is one plain screen is always a main page, whatever its params say', () => {
     expect(isTabRoot({ key: 'h', name: 'HomeTab', params: { kind: 'brandHome', screen: 'Anything' } }, null)).toBe(true);
     expect(tabRootOptions('Home', null)({ route: { key: 'h', name: 'HomeTab' } })).toEqual({ title: 'Home', tabBarStyle: TAB_BAR_STYLE });
+  });
+
+  // Item 19 (H6): the count on the Home tab.
+  it('the Home tab carries the number of things that need you: shown from 1, capped at 99+, hidden at zero', () => {
+    const { homeBadge, homeTabOptions, HOME_BADGE_STYLE } = require('../BrandNavigator');
+    expect([homeBadge(0), homeBadge(3), homeBadge(99), homeBadge(120)]).toEqual([undefined, 3, 99, '99+']);
+    const p = { route: { key: 'k', name: 'HomeTab' }, navigation: { getState: () => ({ routes: [] }) } };
+    const o = homeTabOptions('BrandHome', 5)(p);
+    expect(o).toMatchObject({ title: 'Home', tabBarBadge: 5, tabBarBadgeStyle: HOME_BADGE_STYLE });
+    // …on top of the same bar rule as every other tab
+    expect(o.tabBarStyle).toBe(TAB_BAR_STYLE);
+    expect(homeTabOptions('BrandHome', 0)(p).tabBarBadge).toBeUndefined();
+    const pushed = { route: { key: 'k', name: 'HomeTab', state: { index: 1, routes: [{ name: 'BrandHome' }, { name: 'BrandNeedsYou' }] } }, navigation: p.navigation };
+    expect(homeTabOptions('BrandHome', 5)(pushed).tabBarStyle).toBe(TAB_BAR_HIDDEN);
+    // white on the amber: never the amber on itself
+    expect(HOME_BADGE_STYLE).toMatchObject({ backgroundColor: '#B04600', color: '#FFFFFF' });
+  });
+
+  it('the navigator feeds that number from the store, and asks for it when it mounts', () => {
+    const count = require('../../services/homeCount');
+    count._resetHomeCount();
+    count.setHomeCount({ needs: 4, unread: 0 });
+    const app = mount('../BrandNavigator');
+    const home = app.tabs.find((t) => t.name === 'HomeTab');
+    expect(effective(app, home, routeOf(home)).tabBarBadge).toBe(4);
+    const others = app.tabs.filter((t) => t.name !== 'HomeTab');
+    for (const t of others) expect([t.name, effective(app, t, routeOf(t)).tabBarBadge]).toEqual([t.name, undefined]);
+    count._resetHomeCount();
   });
 
   it('never throws on a missing route, a missing navigation or a stack state without an index', () => {

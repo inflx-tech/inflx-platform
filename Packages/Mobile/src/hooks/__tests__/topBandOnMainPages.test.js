@@ -26,10 +26,12 @@ jest.mock('../../services/api', () => ({
   brandApi: {
     campaignsSummary: jest.fn(), getPool: jest.fn(), discoverCreators: jest.fn(), listGroups: jest.fn(), workedWith: jest.fn(),
     getWallet: jest.fn(), getMe: jest.fn(), getPitchSettings: jest.fn(), submitForReview: jest.fn(), pitchInbox: jest.fn(),
+    getHome: jest.fn(), getHomeCount: jest.fn(),
   },
   influencerApi: {
     myInvitations: jest.fn(), getWallet: jest.fn(), getMe: jest.fn(), getInvitationSettings: jest.fn(), getMySocial: jest.fn(),
     uploadProbeStatus: jest.fn(), createHome: jest.fn(), createPost: jest.fn(), myPitches: jest.fn(), submitForReview: jest.fn(),
+    getHome: jest.fn(), getHomeCount: jest.fn(),
   },
   referenceApi: {
     creatorNiches: jest.fn(), languages: jest.fn(), states: jest.fn(), brandCategories: jest.fn(),
@@ -188,11 +190,15 @@ describe.each([[0, 8], [30, 38]])('top inset %i → %i points above every main p
     expect(spaceAbove(r.getByText('INFLX'))).toBe(want);
     r.unmount();
 
-    // approved → the Home placeholder, which asks the helper too
+    // approved → Home itself (item 19; it was a "coming soon" placeholder), which asks the helper too
     influencerApi.getMe.mockResolvedValue(ok({ user_status: 'approved', completeness: null }));
+    influencerApi.getHome.mockResolvedValue(ok({
+      me: { name: 'Ananya' }, unread: 0, firstDay: false, needs: { total: 0, rows: [] }, waiting: { total: 0, groups: [], rows: [] },
+      money: { lines: [{ key: 'available', amount: 0 }] }, running: { kind: 'collaborations', total: 0, rows: [] }, storeLink: null, setup: {},
+    }));
     r = render(<PendingHomeScreen navigation={nav()} route={route} />);
-    await waitFor(() => r.getByTestId('coming-soon-creatorHome'));
-    expect(spaceAbove(r.getByText('Home'))).toBe(want);
+    await waitFor(() => r.getByTestId('home-creator'));
+    expect(spaceAbove(r.getByText('Hi Ananya'))).toBe(want);
   });
 });
 

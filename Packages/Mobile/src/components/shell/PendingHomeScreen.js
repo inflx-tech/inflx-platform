@@ -5,8 +5,9 @@
  * profile is incomplete — carrying the reason, not just the ask.
  *
  * This screen decides for itself: it reads GET /…/me on mount, and when the account is
- * approved it renders the existing ComingSoonScreen with the same params (untouched).
- * Contract: features/registration-and-profile · spec §6.5
+ * approved it renders Home (item 19: screens/home/HomeScreen — the four sections). Everything
+ * for an account NOT yet approved is exactly as registration-and-profile built it.
+ * Contract: features/registration-and-profile · spec §6.5 · features/item19-home
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
@@ -18,7 +19,7 @@ import { gateEventFor } from '../../navigation/lockedTab';
 import { PrimaryButton, SecondaryButton } from '../settings/primitives';
 import { Sheet, sh } from '../settings/sheets';
 import { Skeleton } from '../settings/feedback';
-import ComingSoonScreen from './ComingSoonScreen';
+import HomeScreen from '../../screens/home/HomeScreen';
 import { joinLabels } from '../registration/completeness';
 import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 
@@ -97,8 +98,9 @@ export default function PendingHomeScreen(props) {
     if (Number(completeness.done) < Number(completeness.total)) { _sheetShownThisSession = true; setSheet(true); }
   }, [status, userStatus, completeness]));
 
-  // Unknown (the request failed) falls back to the tab's previous behaviour.
-  if (status === 'unknown' || (status === 'ready' && userStatus === 'approved')) return <ComingSoonScreen {...props} />;
+  // Approved → Home. Unknown (the /me read failed) → Home too: it has its own retry state, and an
+  // approved person whose connection dropped must not be shown "Under review".
+  if (status === 'unknown' || (status === 'ready' && userStatus === 'approved')) return <HomeScreen navigation={navigation} side={isBrand ? 'brand' : 'creator'} />;
   if (status === 'loading') return <View style={s.screen} testID="pending-home-loading"><Text style={[s.tabTitle, { paddingTop: top }]}>{route?.params?.tabTitle || 'Home'}</Text><Skeleton rows={3} /></View>;
 
   const copy = isBrand ? PENDING_COPY.brand : PENDING_COPY.creator;

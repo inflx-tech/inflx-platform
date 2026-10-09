@@ -4,7 +4,7 @@
  * item 8. The "Pitch a brand" card sits on the Pitches tab.
  * Contract: features/item3-discovery-profiles-groups (F1) · features/item5-invitations (I11, I15)
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
@@ -37,6 +37,12 @@ export default function CollabsScreen({ navigation, route }) {
   useRouteToast(navigation, route, show);
   // ui-walk-fixes D4 — no blank strip above the title: the phone's real top inset plus a small gap.
   const top = useTopInset(TOP_GAP_TITLE);
+
+  // Item 19: Home's "Running now" opens this page on Active. The segment is read at first mount
+  // only, so a later request for one is applied here and then cleared (as BrandCreatorsScreen does).
+  useEffect(() => {
+    if (route?.params?.segment) { setSegment(route.params.segment); navigation.setParams({ segment: undefined }); }
+  }, [route?.params?.segment]); // eslint-disable-line
 
   const load = useCallback(async () => {
     const tab = TAB_PARAM[segment];

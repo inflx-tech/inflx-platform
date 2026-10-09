@@ -1,0 +1,54 @@
+{
+  "feature": "item19-home",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 9 Oct 2026: \"ok pls lock it, and start implementation\")",
+  "approved_at": "2026-10-09T12:14:28.952Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 9 Oct 2026: \"ok pls lock it, and start implementation\")",
+  "mockup_locked_at": "2026-10-09T12:14:28.952Z",
+  "notes": "Item 19 of 21 — Home and Needs You. Designed from the code (founder, 9 Oct 2026: \"dont go by documents..review entire code and suggest and draw the screens\"). Survey in 00-survey/. Board v1 shown 9 Oct; v2 after his direction (\"home consist mainly three things what needs me, what i am waiting on, how is the money....also add campaign info like live now or running......for each one we keep two to three things then see all\"); v3 records his decisions (\"Yes to all\" on the six: opens on Home, brand bell, orders row to the website, tab count, setup items in the same list, order by urgency). LOCKED 9 Oct 2026 (\"ok pls lock it, and start implementation\") on board v3, the creator's store link line kept as drawn. Master rules section 24 rewritten as v1.32 on 9 Oct 2026 (Downloads/INFLX_Master_Business_Rules_Phase_1_v1.32.docx). BUILT 9 Oct 2026; not deployed — the deploy needs the founder's explicit go.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "walk_fixes": []
+  },
+  "boards": {
+    "apps": {
+      "file": "04-preview/mockups/item19-home-v3.html",
+      "screens": "BH1-BH6, CH1-CH5",
+      "superseded": [
+        "04-preview/mockups/item19-home-v1.html",
+        "04-preview/mockups/item19-home-v2.html"
+      ],
+      "locked_by": "founder (chat 9 Oct 2026: \"ok pls lock it, and start implementation\")",
+      "locked_at": "2026-10-09T12:14:28.952Z"
+    }
+  },
+  "decisions": {
+    "decided_by": "founder (chat 9 Oct 2026: \"Yes to all\")",
+    "H3_opens_on_home": true,
+    "H4_brand_bell_and_creator_dead_taps": true,
+    "H5_orders_row_opens_website": true,
+    "H6_count_on_home_tab": true,
+    "H7_setup_items_in_same_list": true,
+    "H8_order_by_urgency": true,
+    "H9_creator_store_link_on_home": "kept (locked as drawn; founder raised no objection)"
+  },
+  "build": {
+    "built_at": "2026-10-09",
+    "backend": "tests/item19-home.test.js 30/30; full run compared with scripts/compare-tests.js against backend/baseline_item19.json (HEAD 9fc5fad8, run on an untouched copy): before 149 suites / 2080 tests / 1874 passed / 178 failed; after 150 / 2110 / 1904 passed / 178 failed; 30 new (all passing), 0 gone, 0 newly failing, 0 newly passing",
+    "mobile": "120 suites / 2862 tests green (home19.test.js 75 new; navigation suites 113, with the Home jumps and \"Back returns to Home\" on the real navigators)",
+    "parity": "Packages/Mobile/src/screens/__tests__/fixtures/home19-rows.json — 52 records written by the backend test from really-seeded rows; every one put through setRowStep / cardStep on the phone",
+    "live_data_read_only": "9 Oct 2026: the Home read run for all 15 brands and 27 creators on production, every statement checked to be a SELECT (1,194 run): 0 errors; Home's count equalled the full list for every account",
+    "migration": "none",
+    "rules": "master v1.32 §24",
+    "decisions_in_build": "see 06-diff/notes.md — \"Add your bank account\" only for a brand with sales; Back from a row returns to Home; a collaboration may give two rows; an agreed visit still to come is in neither list; \"Mark the visit done\" from the day of the visit"
+  }
+}

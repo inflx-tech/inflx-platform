@@ -37,7 +37,9 @@ const NAV_DIR = path.resolve(__dirname, '..');
 function registered(file) {
   const src = fs.readFileSync(path.join(NAV_DIR, file), 'utf8');
   const fileOf = {};
-  for (const m of src.matchAll(/import\s+([A-Za-z0-9_]+)?\s*,?\s*(?:\{([^}]+)\})?\s+from\s+'(\.\.\/screens\/[^']+)'/g)) {
+  // Item 19: Home's main page is components/shell/PendingHomeScreen (it decides between "under
+  // review" and Home), so the shell folder is traced as well as screens/.
+  for (const m of src.matchAll(/import\s+([A-Za-z0-9_]+)?\s*,?\s*(?:\{([^}]+)\})?\s+from\s+'(\.\.\/(?:screens|components\/shell)\/[^']+)'/g)) {
     const abs = path.resolve(NAV_DIR, `${m[3]}.js`);
     if (m[1]) fileOf[m[1]] = abs;
     for (const name of (m[2] || '').split(',').map((x) => x.trim()).filter(Boolean)) fileOf[name] = abs;
@@ -62,7 +64,7 @@ describe.each(['BrandNavigator.js', 'InfluencerNavigator.js'])('%s — every pus
   const pushed = screens.filter((sc) => sc.name !== firstOf[sc.stack]);
 
   it('the scan found the stacks, the main pages and the pushed screens', () => {
-    expect(Object.keys(firstOf)).toHaveLength(4);
+    expect(Object.keys(firstOf)).toHaveLength(5);   // four, and Home's own stack since item 19
     expect(pushed.length).toBeGreaterThan(40);
     // every registered component was traced to its file
     expect(screens.filter((sc) => !sc.file || !fs.existsSync(sc.file)).map((sc) => sc.name)).toEqual([]);
