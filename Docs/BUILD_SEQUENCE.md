@@ -26,8 +26,8 @@ The 21 items (plus the 3b insert). Each runs: rules → mockups → lock → gap
 | 15 | Hybrid (§21, 23; rules v1.30) | Built | `features/item15-hybrid` (30e962f4, OTA influencer 226 / brand 236; no migration) | 30 Sep |
 | 16 | Shopper app (§14–16A) | Built as Levels 6–7 | `features/follower-app-v2` (197), `features/shopper-ordering` (198) | 29–30 Sep |
 | 17 | Wallet, complete (§17, 18, 21; rules v1.31 §17A) | Built | `features/item17-wallet` (mig 200, a5c77aab, OTA influencer 227 / brand 237) | 1 Oct |
-| 18 | Disputes (§22, 26) | Later | — | — |
-| 19 | Home and Needs You, finished (§24) | Later | — | — |
+| 18 | Disputes (§22, 26) | Parked by the founder at the discussion stage | `features/item18-disputes/00-discussion` (the map of what can go wrong, the survey, 13 open decisions) | 9 Oct |
+| 19 | Home and Needs You (§24; rules v1.32) | Built | `features/item19-home` (2d4c47e3, OTA influencer 233 / brand 244; no migration) | 9 Oct |
 | 20 | Creator who owns a brand (§2) | Later | — | — |
 | 21 | Launch clean-up | Later | — | — |
 

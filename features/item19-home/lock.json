@@ -50,5 +50,25 @@
     "migration": "none",
     "rules": "master v1.32 §24",
     "decisions_in_build": "see 06-diff/notes.md — \"Add your bank account\" only for a brand with sales; Back from a row returns to Home; a collaboration may give two rows; an agreed visit still to come is in neither list; \"Mark the visit done\" from the day of the visit"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-09",
+    "by": "founder go (chat: \"Yes pls deploy\")",
+    "migration": "none",
+    "commit": "2d4c47e3 (pushed 9fc5fad8..2d4c47e3); 40 files, staged by path",
+    "render": "proved by route existence 20:26 IST: GET /v1/influencers/me/home, /home/needs, /home/waiting and /home/count 404 → 401, with the fake siblings /influencers/me/home-not-a-route and /influencers/me/home/other still 404",
+    "ota": {
+      "influencer": 233,
+      "brand": 244,
+      "native_runtime": "3"
+    },
+    "money": "no money path touched; six read-only routes added",
+    "live_data_check": "before the push, the Home read was run read-only for all 15 brands and 27 creators: 0 errors",
+    "walk": "founder walk of the 25 checks on both phones",
+    "open_after_deploy": [
+      "opening a screen from a tapped push notification (app closed) is not in this item",
+      "orders on the brand phone: the Home row opens the website",
+      "components/shell/ComingSoonScreen.js is no longer shown anywhere — a clean-up, offered separately"
+    ]
   }
 }
