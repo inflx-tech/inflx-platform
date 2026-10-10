@@ -79,7 +79,7 @@ export function BrandWalletSaleScreen({ navigation, route }) {
         <Text style={b.crumbs}>{`Order · ${dayMon(x.soldAt)} · ${W17.whoseBrand(x)} post ${x.post.code || ''}`.trim()}</Text>
         <View style={b.card} testID="sale-shares">
           <TLine17 label={W17.shopperPaid} value={inr(x.paid)} />
-          <TLine17 label={W17.creatorShare(x.commissionPct)} value={inr(x.creatorShare)} />
+          {x.ownBrand ? null : <TLine17 label={W17.creatorShare(x.commissionPct)} value={inr(x.creatorShare)} />}
           <TLine17 label={W17.inflxShare(x.feePct)} value={inr(x.inflxShare)} />
           <View style={b.nextLine}><View style={{ flex: 1 }}><TLine17 strong label={W17.yourShare} value={inr(x.brandShare)} /></View></View>
         </View>

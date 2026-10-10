@@ -421,17 +421,20 @@ async function loadContexts(postIds, conn = db, today = todayInIndia()) {
   const live = new Set((await shopperPosts.livePool({ ids, limit: ids.length, today })).map((p) => p.id));
 
   const { rows: posts } = await conn.query(
-    `SELECT cp.id, cp.brand_id, cp.offer_id, cp.post_kind, cp.campaign_influencer_id, cp.influencer_id,
+    `SELECT cp.id, cp.brand_id, cp.offer_id, cp.post_kind, cp.campaign_influencer_id, cp.influencer_id, cp.own_brand,
             ci.commission_pct, cs.campaign_id, ci.set_id
-       FROM creator_posts cp JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
-       JOIN campaign_sets cs ON cs.id = ci.set_id
+       FROM creator_posts cp
+       -- item 20: a post for the creator's own brand has no collaboration (loose joins); it is
+       -- priced with no commission, and its offer is the brand's own.
+       LEFT JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
+       LEFT JOIN campaign_sets cs ON cs.id = ci.set_id
       WHERE cp.id = ANY($1::uuid[]) AND cp.v2`, [ids]);
   const offerIds = [...new Set(posts.map((p) => p.offer_id).filter(Boolean))];
   const { rows: offers } = offerIds.length ? await conn.query(`SELECT * FROM brand_offers WHERE id = ANY($1::uuid[])`, [offerIds]) : { rows: [] };
   const offerById = new Map(offers.map((o) => [o.id, o]));
   const { rows: links } = posts.length ? await conn.query(
     `SELECT campaign_influencer_id, offer_id FROM collab_offers
-      WHERE campaign_influencer_id = ANY($1::uuid[]) AND dropped_at IS NULL`, [posts.map((p) => p.campaign_influencer_id)]) : { rows: [] };
+      WHERE campaign_influencer_id = ANY($1::uuid[]) AND dropped_at IS NULL`, [posts.map((p) => p.campaign_influencer_id).filter(Boolean)]) : { rows: [] };
   const linked = new Set(links.map((l) => `${l.campaign_influencer_id}|${l.offer_id}`));
   const { rows: poolRows } = offerIds.length ? await conn.query(
     `SELECT i.id, i.offer_id, i.pool, i.product_id, i.gift_item_id, i.gift_limit, i.gifts_given,
@@ -455,7 +458,10 @@ async function loadContexts(postIds, conn = db, today = todayInIndia()) {
 
   for (const p of posts) {
     const o = p.offer_id ? offerById.get(p.offer_id) : null;
-    const offerLive = !!o && o.engine === 2 && offerLiveToday(o) && linked.has(`${p.campaign_influencer_id}|${o.id}`);
+    // The offer applies when it is one this post may promise: linked to its collaboration, or — for
+    // an own-brand post (item 20) — an offer of the very brand the post is for.
+    const mayUse = !!o && (p.own_brand ? o.brand_id === p.brand_id : linked.has(`${p.campaign_influencer_id}|${o.id}`));
+    const offerLive = !!o && o.engine === 2 && offerLiveToday(o) && mayUse;
     const products = new Map();
     for (const r of prodRows) if (r.post_id === p.id) products.set(r.id, { ...r, price: Number(r.price) || 0 });
     for (const r of giftProds) if (!products.has(r.id)) products.set(r.id, { ...r, price: Number(r.price) || 0, gift_only: true });
@@ -481,7 +487,9 @@ async function loadContexts(postIds, conn = db, today = todayInIndia()) {
       buyPool, gifts, products,
       campaign_influencer_id: p.campaign_influencer_id, influencer_id: p.influencer_id,
       campaign_id: p.campaign_id, set_id: p.set_id,
-      commission_pct: p.commission_pct == null ? 0 : Number(p.commission_pct),
+      // item 20 (O6): a sale through a post for the creator's own brand carries no commission.
+      commission_pct: p.own_brand || p.commission_pct == null ? 0 : Number(p.commission_pct),
+      own_brand: !!p.own_brand,
       fee_pct: fee.fee_pct, fee_source: fee.source,
     });
   }

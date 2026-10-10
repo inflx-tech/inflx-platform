@@ -541,7 +541,7 @@ async function brandParcels(brandId, { status = null, page = 1 } = {}) {
   const { rows: lines } = ids.length ? await db.query(
     `SELECT l.id, l.order_id, l.name, l.image_url, l.colour, l.size, l.qty, l.role, l.deal_key, l.status, l.cancel_reason, l.cancelled_by,
             l.paid_total, l.commission, l.commission_pct, l.platform_fee, l.fee_pct, l.brand_net, l.post_id,
-            cp.post_code, COALESCE(i.full_name, u.name) AS creator_name
+            cp.post_code, cp.own_brand, COALESCE(i.full_name, u.name) AS creator_name
        FROM order_lines l JOIN creator_posts cp ON cp.id = l.post_id
        JOIN influencers i ON i.id = l.influencer_id JOIN users u ON u.id = i.user_id
       WHERE l.order_id = ANY($1::uuid[]) ORDER BY l.created_at, l.id`, [ids]) : { rows: [] };
@@ -561,7 +561,8 @@ async function brandParcels(brandId, { status = null, page = 1 } = {}) {
           status: l.status, cancel_reason: l.cancel_reason, cancelled_by: l.cancelled_by,
           // W14: a return on this item — the brand sees it; INFLX decides it.
           return: back.get(l.id) || null,
-          post: { id: l.post_id, code: l.post_code }, creator: l.creator_name,
+          // item 20: `own_brand` — the brand's own post (a linked creator posting for it); no creator share
+          post: { id: l.post_id, code: l.post_code, own_brand: !!l.own_brand }, creator: l.creator_name,
           money: { paid: Number(l.paid_total), creator_share: Number(l.commission), creator_pct: Number(l.commission_pct),
             inflx_share: Number(l.platform_fee), inflx_pct: Number(l.fee_pct), brand_share: Number(l.brand_net) },
         })),

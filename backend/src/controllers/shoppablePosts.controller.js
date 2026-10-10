@@ -28,7 +28,8 @@ module.exports = {
   brands:         h(async (id) => ({ brands: await posts.brands(id) })),
   collaborations: h(async (id, req) => ({ collaborations: await posts.collaborations(id, req.query.brand_id) })),
   // drafts and steps
-  create:         h(async (id, req) => ({ post: await posts.createDraft(id, (req.body || {}).campaign_influencer_id) })),
+  // item 20: `own_brand_id` (and no collaboration) starts a post for the brand he is linked to
+  create:         h(async (id, req) => ({ post: await posts.createDraft(id, (req.body || {}).campaign_influencer_id, (req.body || {}).own_brand_id) })),
   list:           h((id, req) => posts.listMine(id, { state: req.query.state || null })),
   get:            h(async (id, req) => ({ post: await posts.getPost(id, req.params.postId) })),
   options:        h((id, req) => posts.options(id, req.params.postId)),

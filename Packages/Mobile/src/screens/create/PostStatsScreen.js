@@ -14,6 +14,8 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { CL } from '../../components/create/copyLinks';
 import { rupeesP } from '../../components/create/copyCreate';
 import { s as b } from '../../components/create/bitsCreate';
+// Item 20 — a post for the brand he runs shows what it sold, and where he shared it. Contract: features/item20-own-brand
+import { O20 } from '../../components/ownbrand/copy20';
 
 export default function PostStatsScreen({ navigation, route }) {
   const { postId, brand } = route.params || {};
@@ -37,14 +39,18 @@ export default function PostStatsScreen({ navigation, route }) {
           <View style={st.kpi}>
             <View style={st.k}><Text style={st.kv}>{d.totals.visits.toLocaleString('en-IN')}</Text><Text style={st.kl}>{CL.visits}</Text></View>
             <View style={st.k}><Text style={st.kv}>{d.totals.orders}</Text><Text style={st.kl}>{CL.orders}</Text></View>
-            <View style={st.k}><Text style={st.kv}>{rupeesP(d.totals.commission)}</Text><Text style={st.kl}>{brand ? CL.commissionWord : CL.toYou}</Text></View>
+            <View style={st.k} testID="stat-money"><Text style={st.kv}>{rupeesP(d.own_brand ? d.totals.sales : d.totals.commission)}</Text><Text style={st.kl}>{d.own_brand ? O20.salesWord : brand ? CL.commissionWord : CL.toYou}</Text></View>
           </View>
           <Text style={b.label}>{CL.visitsBy}</Text>
           {d.visits.length ? d.visits.map(v => (
-            <View key={v.channel} style={st.bar} testID={`visits-${v.channel}`}>
-              <Text style={st.bl}>{v.label}</Text>
-              <View style={st.track}><View style={[st.fill, { width: `${Math.round((v.visits / top) * 100)}%` }]} /></View>
-              <Text style={st.bv}>{v.visits.toLocaleString('en-IN')}</Text>
+            <View key={v.channel}>
+              <View style={st.bar} testID={`visits-${v.channel}`}>
+                <Text style={st.bl}>{v.label}</Text>
+                <View style={st.track}><View style={[st.fill, { width: `${Math.round((v.visits / top) * 100)}%` }]} /></View>
+                <Text style={st.bv}>{v.visits.toLocaleString('en-IN')}</Text>
+              </View>
+              {/* item 20: where he shared it on this channel — listed, never counted one by one */}
+              {(v.places || []).map(p => <Text key={p.id} style={st.place} testID={`place-line-${p.id}`}>{O20.placeLine(p)}</Text>)}
             </View>
           )) : <Text style={b.hint}>{CL.noVisits}</Text>}
           <Text style={b.label}>{CL.ordersBy}</Text>
@@ -54,7 +60,7 @@ export default function PostStatsScreen({ navigation, route }) {
               <Text style={st.lv}>{CL.orderLine(o, i === 0)}</Text>
             </View>
           )) : <Text style={b.hint}>{CL.noOrders}</Text>}
-          <Text style={[b.hint, { marginTop: 10 }]}>{CL.inflxHint}</Text>
+          <Text style={[b.hint, { marginTop: 10 }]}>{d.own_brand ? O20.inflxHint : CL.inflxHint}</Text>
         </ScrollView>
       )}
     </View>
@@ -72,5 +78,6 @@ const st = StyleSheet.create({
   fill: { height: '100%', backgroundColor: T.ink, borderRadius: 99 },
   bv: { width: 60, textAlign: 'right', fontFamily: fonts.sansBold, fontSize: 11.5, color: T.ink },
   line: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
+  place: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink2, marginLeft: 78, marginTop: -4, marginBottom: 6 },
   lv: { fontFamily: fonts.sansBold, fontSize: 12.5, color: T.ink },
 });

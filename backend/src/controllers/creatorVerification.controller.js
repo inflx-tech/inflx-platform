@@ -58,6 +58,10 @@ const listQueue = asyncHandler(async (req, res) => {
     [statuses]
   );
   await resolveAvatars(rows);
+  // Item 20: the brand this creator is linked to (he runs it and posts for it himself) — shown to
+  // the reviewer, never a gate.
+  const linkedBrands = await require('../services/ownBrand.service').linkedBrandNames(rows.map((r) => r.influencer_row_id).filter(Boolean));
+  for (const r of rows) r.linked_brand = (r.influencer_row_id && linkedBrands.get(r.influencer_row_id)) || null;
   // creator-handle-change-review: the row leads with what is to be verified NOW — the creator's
   // current accounts — and says plainly when they differ from the handles she claimed with.
   for (const r of rows) {

@@ -153,6 +153,9 @@ function ResendLine({ seconds, onResend, busy, testID }) {
   );
 }
 
+// Item 20 reuses the code entry for linking a brand (components/ownbrand/BrandLinkFlow).
+export { OtpBoxes, ResendLine, Note, RESEND_SECONDS };
+
 export default function ChangeNumberScreen({ navigation, route }) {
   const role = route?.params?.role === 'brand' ? 'brand' : 'influencer';
   const returnTo = route?.params?.returnTo || (role === 'brand' ? 'BrandBusinessDetails' : 'ProfileInfo');

@@ -282,8 +282,15 @@ async function statsOf(p) {
   const orders = o.map((r) => ({ channel: r.channel, label: CHANNEL_LABEL[r.channel], orders: r.orders, sales: Number(r.sales), commission: Number(r.commission) }))
     .sort((a, b) => b.orders - a.orders || ORDER.indexOf(a.channel) - ORDER.indexOf(b.channel));
   const sum = (xs, k) => xs.reduce((n, x) => n + x[k], 0);
+  // Item 20 (board S3): where he shared an own-brand post, listed under its channel. A channel he
+  // shared on with no visit yet still shows, at 0. Numbers stay per channel, never per place.
+  if (p.own_brand) {
+    const places = await require('./postPlaces.service').byChannel(p.id);
+    for (const ch of places.keys()) if (!visits.some((x) => x.channel === ch)) visits.push({ channel: ch, label: CHANNEL_LABEL[ch], visits: 0 });
+    for (const x of visits) x.places = places.get(x.channel) || [];
+  }
   return {
-    post_id: p.id, title: p.title, code: p.code, brand_name: p.collaboration.brand_name,
+    post_id: p.id, title: p.title, code: p.code, brand_name: p.collaboration.brand_name, own_brand: !!p.own_brand,
     live_since: p.state === 'live' ? p.live_since : null, state: p.state,
     totals: { visits: sum(visits, 'visits'), orders: sum(orders, 'orders'), sales: sum(orders, 'sales'), commission: Math.round(sum(orders, 'commission') * 100) / 100 },
     visits, orders,

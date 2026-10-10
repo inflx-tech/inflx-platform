@@ -18,6 +18,8 @@ import { Skeleton, LoadError } from '../../components/settings/feedback';
 import { PrimaryButton } from '../../components/settings/primitives';
 import { CL } from '../../components/create/copyLinks';
 import { CP } from '../../components/create/copyCreate';
+// Item 20 — the words for a creator whose brand opens Create on its own. Contract: features/item20-own-brand
+import { O20 } from '../../components/ownbrand/copy20';
 import { StateChip, ChoiceCard, initialsOf, routeFor, s as b } from '../../components/create/bitsCreate';
 import { VideoFace12 } from '../../components/content/bits12';
 import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
@@ -159,7 +161,7 @@ export default function CreateHomeScreen({ navigation }) {
 
         <Text style={[b.hint, { marginTop: 0 }]}>Shoppable posts and collections for your store</Text>
         <BigCard icon="+" title={CL.createPost} sub={CL.createPostSub} disabled={!d.can_post} onPress={() => navigation.navigate('PostBrand')} testID="new-post" />
-        {!d.can_post ? <Text style={b.hint}>{CP.cantPostYet}</Text> : null}
+        {!d.can_post ? <Text style={b.hint} testID="cant-post">{d.own_brand ? O20.cantPostYet : CP.cantPostYet}</Text> : null}
         <BigCard icon="≡" title={CL.createCollection} sub={CL.createCollectionSub} onPress={() => navigation.navigate('NewCollection')} testID="new-collection" />
         <BigCard icon="🔗" title={CL.myLinks} sub={d.store_link} mono onPress={() => navigation.navigate('StoreLinks')} testID="my-links" />
 
@@ -170,7 +172,7 @@ export default function CreateHomeScreen({ navigation }) {
         {d.recent.length ? d.recent.map(p => (
           <LinkPostRow key={p.id} post={p} onOpen={() => { const r = routeFor(p); navigation.navigate(r.name, r.params); }}
             onShare={() => navigation.navigate('PostShare', { postId: p.id })} onStats={() => navigation.navigate('PostStats', { postId: p.id })} />
-        )) : <Text style={b.hint}>{CP.nothingYet}</Text>}
+        )) : <Text style={b.hint} testID="no-posts">{d.own_brand && d.own_brand.open ? O20.nothingYet(d.own_brand.name) : CP.nothingYet}</Text>}
 
         <TouchableOpacity style={h.collections} onPress={() => navigation.navigate('Collections')} testID="collections">
           <View style={{ flex: 1 }}>

@@ -69,7 +69,7 @@ export default function PostPriceScreen({ navigation, route }) {
       {status === 'loading' ? <Skeleton /> : status === 'error' ? <LoadError onRetry={reload} /> : (
         <>
           <ScrollView contentContainerStyle={{ padding: 16 }}>
-            <StepTop step={fix ? null : 4} question={CP.band} />
+            <StepTop own={!!(post && post.own_brand)} step={fix ? null : 4} question={CP.band} />
             <View style={base.chips}>
               {options.price_bands.map(x => <Chip key={x.id} label={x.label} selected={bandId === x.id} onPress={() => setBandId(x.id)} testID={`band-${x.label}`} />)}
             </View>

@@ -169,6 +169,8 @@ export function noticeTarget(n) {
     case 'brand_pitch': return open.pitchId ? brandTarget({ ...open, screen: 'pitch' }) : null;
     case 'pool': return brandTarget({ screen: 'pool' });
     case 'campaign_detail': return open.campaignId ? brandTarget({ ...open, screen: 'campaign' }) : null;
+    // item 20 — who is linked to this brand
+    case 'linked_creators': return { tab: 'ProfileTab', screen: 'BrandLinkedCreators', params: {} };
     // ── the creator
     case 'post': return open.postId ? creatorTarget({ ...open, screen: 'postStatus' }) : null;
     case 'creator_offer': case 'creator_sell': return open.ciId ? creatorTarget({ ...open, screen: 'sell' }) : null;
@@ -180,6 +182,8 @@ export function noticeTarget(n) {
     case 'my_remote': return open.ciId ? creatorTarget({ ...open, screen: 'remote' }) : null;
     case 'my_pitch': return open.pitchId ? creatorTarget({ ...open, screen: 'pitch' }) : null;
     case 'collabs': return creatorTarget({ screen: 'collabs' });
+    // item 20 — the brand he runs
+    case 'my_brand': return { tab: 'ProfileTab', screen: 'MyBrand', params: {} };
     // ── either
     case 'wallet': case 'earnings': case 'withdrawals': return { tab: 'WalletTab' };
     default: return null;

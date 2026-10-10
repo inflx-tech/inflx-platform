@@ -183,6 +183,10 @@ router.use('/', item17Routes);
 // Item 19 — Home and Needs You: /brands/me/home*, /influencers/me/home* (rules v1.32 §24).
 // Mounted here, above the brand and influencer routers, for the same reason as item 17.
 router.use('/', require('./item19.routes'));
+// Item 20 — a creator who owns a brand: the link (both sides) and where he shared a post.
+// Before brand.routes / influencer.routes for the same reason as the two above.
+// Contract: features/item20-own-brand
+router.use('/', require('./item20.routes'));
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

@@ -786,7 +786,9 @@ describe('the source of the brand screens in this slice', () => {
     'BrandCreatorTermsScreen.js', 'BrandReviewSendScreen.js', 'BrandPoolScreen.js', 'BrandBranchesScreen.js'];
 
   it('covers every brand screen but the ten of the other slice', () => {
-    expect(files.length).toBe(30);
+    // ASSERTION DRIFT — item 20 (10 Oct 2026): 30 → 31. BrandLinkedCreatorsScreen is a new brand
+    // screen; it is scanned by the checks below like every other.
+    expect(files.length).toBe(31);
     for (const f of CONVERTED) expect(files).toContain(f);
   });
 

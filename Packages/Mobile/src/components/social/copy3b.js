@@ -52,7 +52,7 @@ export const C3B = {
     hint: 'Add at least one. Your account must be public. We measure your numbers after INFLX approves your profile.',
     continue: 'Continue',
     // features/registration-and-profile C1 — short, all mandatory; the rest lives on the profile.
-    step1Title: 'Tell us about you', step1Lede: 'Two quick steps. You can add the rest later.',
+    step1Title: 'Tell us about you', step1Lede: 'Three quick steps. You can add the rest later.',
   },
   r3: {
     row: 'Your numbers',

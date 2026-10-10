@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- preview-size: desktop -->
+<title>INFLX Own brand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:68ch}
+.prose{color:var(--ink2);max-width:70ch}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+header.top{padding-block:34px 14px;display:grid;gap:10px}
+section{padding-block:30px 6px;display:grid;gap:14px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+
+/* screens grid */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:2px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:600px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:8px}
+.lbl{font-weight:700;font-size:13px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:600}
+.divider{height:1px;background:var(--border)}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px}
+.card.tint{background:var(--surface);border-color:transparent}
+.card .row.between b{white-space:nowrap}
+.card .row.between .xs{text-align:right}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.listrow:last-child{border-bottom:0}
+.listrow .t{flex:1;display:grid;gap:1px}
+.listrow .t b{font-size:13.5px}
+.chev{color:var(--ink3)}
+/* controls */
+.sw{width:40px;height:24px;border-radius:999px;background:#D9D8D1;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--ink)}
+.sw.on::after{left:19px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.opt.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.opt.sel .ico{width:12px;height:12px}
+.opt.bad{border-color:var(--no-fg)}
+.field{height:42px;border-radius:12px;border:1.5px solid var(--border);padding-inline:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.field.ph{color:var(--ink3)}
+.field.focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.field.error{border-color:var(--no-fg)}
+.field .unit{margin-left:auto;color:var(--ink3);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.anyrow{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;font-size:13px}
+.anyrow b{font-weight:700}
+.btn{font:inherit;font-weight:700;font-size:13.5px;height:42px;padding-inline:14px;border-radius:12px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.block{width:100%}
+.btn.sm2{height:32px;font-size:12.5px;padding-inline:10px;border-radius:9px}
+.b-pri{background:var(--primary);color:var(--ink)}
+.b-sec{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.b-txt{background:transparent;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding-inline:2px}
+.b-dan{background:#fff;color:var(--no-fg);border:1.5px solid #F2B8B8}
+.b-dis{background:var(--ended-bg);color:#A3A29B}
+.savebar{border-top:1px solid var(--border);padding:10px 14px 14px;display:grid;gap:6px;background:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.s-active{color:var(--active-fg);background:var(--active-bg)}
+.s-ended{color:var(--ended-fg);background:var(--ended-bg)}
+.s-move{color:var(--move-fg);background:var(--move-bg)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.toast{border-radius:12px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600}
+.t-ok{background:var(--active-bg);color:var(--active-fg)}
+.t-err{background:var(--no-bg);color:var(--no-fg)}
+.t-warn{background:var(--move-bg);color:var(--move-fg)}
+.t-info{background:var(--wait-bg);color:var(--wait-fg)}
+.banner{border-radius:12px;padding:10px 11px;background:var(--ended-bg);color:var(--ended-fg);font-size:12.5px;display:grid;gap:2px}
+.banner b{color:var(--ink)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.av-s{width:34px;height:34px;font-size:12px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(26,26,23,.25);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:sh 1.4s ease-in-out infinite}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.spinner,.skel{animation:none}}
+/* bottom sheet */
+.dim{position:absolute;inset:0;background:rgba(26,26,23,.45);display:flex;align-items:flex-end}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;padding:10px 14px 16px;display:grid;gap:10px}
+.grab{width:36px;height:4px;border-radius:4px;background:#D9D8D1;justify-self:center}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:grid;place-items:center;flex:none}
+.check.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.check .ico{width:12px;height:12px}
+.tabbar{border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 10px;background:#fff}
+.tab{display:grid;justify-items:center;gap:2px;font-size:10px;color:var(--ink3);font-weight:600}
+.tab .p{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.tab.on{color:var(--ink)}
+.tab.on .p{background:var(--primary-soft)}
+.tab .plus{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-top:-4px}
+.empty{border:1.5px dashed var(--border);border-radius:14px;padding:18px 14px;display:grid;gap:8px;justify-items:center;text-align:center}
+.empty .c{width:44px;height:44px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+
+/* spec tables */
+.tscroll{overflow-x:auto;background:var(--bg);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2);min-width:120px}
+td:first-child{color:var(--ink);font-weight:700;min-width:150px}
+tr:last-child td{border-bottom:0}
+.checks{background:var(--bg);border-radius:16px;padding:8px 18px}
+.checks li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--ink2);list-style:none;display:grid;grid-template-columns:22px 1fr;gap:8px}
+.checks li:last-child{border-bottom:0}
+.checks ul{margin:0;padding:0}
+.box{width:15px;height:15px;border:1.5px solid var(--ink3);border-radius:4px;margin-top:3px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+footer{padding-block:32px 52px;font-size:13px;color:var(--ink2)}
+
+.s-no{color:var(--no-fg);background:var(--no-bg)}
+.s-done{color:var(--done-fg);background:var(--done-bg)}
+.segc{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-radius:12px;padding:3px;gap:2px}
+.segc span{font-size:12px;font-weight:700;text-align:center;padding:7px 4px;border-radius:9px;color:var(--ink2)}
+.segc span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(26,26,23,.12)}
+.search{height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:8px;padding-inline:11px;color:var(--ink3);font-size:13px}
+.frow2{display:flex;gap:6px;overflow:hidden;flex-wrap:nowrap}
+.fchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 9px;border-radius:999px;border:1.5px solid var(--border);white-space:nowrap;color:var(--ink2);background:#fff}
+.fchip .ico{width:12px;height:12px}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ccard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.ccard .top{display:flex;gap:10px;align-items:center}
+.ccard .nm{font-weight:800;font-size:14px;line-height:1.2}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid;gap:0}
+.stat b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;color:var(--ink2)}
+.statbig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.statbig .stat{padding:9px 10px}
+.statbig .stat b{font-size:16px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod{display:grid;gap:4px}
+.pimg{aspect-ratio:1/1.1;border-radius:12px;position:relative;overflow:hidden;max-width:100%}
+.pimg .oos{position:absolute;left:6px;top:6px}
+.prod b{font-size:12.5px;line-height:1.25}
+.prod span{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.bcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.logo.lg{width:60px;height:60px;border-radius:16px;font-size:18px}
+.upload{border:1.5px dashed var(--border);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center}
+.req{color:var(--no-fg)}
+.secth{font-weight:800;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.secth span{font-size:12px;color:var(--ink2);font-weight:600}
+.textarea{min-height:70px;border-radius:12px;border:1.5px solid var(--border);padding:10px 11px;font-size:13px;color:var(--ink)}
+.counter{font-size:11px;color:var(--ink3);text-align:right}
+.result{padding:9px 0;border-bottom:1px solid var(--border);display:grid;gap:1px}
+.result b{font-size:13px}
+.result span{font-size:11.5px;color:var(--ink2)}
+.radio{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center}
+.radio.on{border-color:var(--ink)}
+.radio.on::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.soon{flex:1;display:grid;place-items:center;text-align:center;align-content:center;gap:10px;padding:20px}
+.soon .c{width:56px;height:56px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+.carousel{aspect-ratio:1/1;border-radius:14px;position:relative;max-width:100%}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}
+.dots i.on{background:#fff}
+.size{min-width:38px;height:32px;border-radius:9px;border:1.5px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;padding-inline:8px}
+.size.na{color:#B9B8B1;text-decoration:line-through;background:var(--surface)}
+.postgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.postgrid div{aspect-ratio:4/5;border-radius:8px}
+.segc.four{grid-auto-columns:auto;gap:0}
+.segc.four span{font-size:11px;padding:7px 3px;white-space:nowrap;letter-spacing:-.01em}
+.ccard .ib{width:30px;height:30px}
+.ccard .ib .ico{width:16px;height:16px}
+.stack{display:flex;padding-left:8px}
+.stack .avatar{width:28px;height:28px;font-size:9px;border:2px solid #fff;margin-left:-6px}
+.stack .more{background:var(--surface);color:var(--ink2)}
+.gcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.gcard .nm{font-weight:800;font-size:14px}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:0}
+.mrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow .t b{font-size:13px}
+.mrow .t .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .ic2{color:var(--ink3);flex:none}
+.check.dis{background:var(--surface);border-color:var(--surface);color:var(--ink3)}
+.btnrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.btnrow .btn{padding-inline:6px}
+.sechd{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px}
+.sechd .n{font-weight:700;color:var(--ink2)}
+.preview{align-self:flex-start;display:inline-flex;font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:6px;background:var(--wait-bg);color:var(--wait-fg);justify-self:start}
+
+.cut{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;display:flex;gap:7px;align-items:center;background:var(--wait-bg);color:var(--wait-fg)}
+.bar2{height:6px;border-radius:99px;background:var(--surface);overflow:hidden;display:flex}
+.bar2 i{display:block;height:100%}
+.crumbs{font-size:11px;color:var(--ink3);font-family:var(--mono);letter-spacing:.05em}
+.steps{display:flex;gap:4px;align-items:center}
+.steps i{width:7px;height:7px;border-radius:50%;background:var(--border);display:block}
+.steps i.on{background:var(--ink)}
+.steps span{font-size:11px;color:var(--ink2);margin-left:4px}
+.mrow2{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow2:last-child{border-bottom:0}
+.mrow2 .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow2 .t b{font-size:13px}
+.money{display:flex;align-items:center;gap:8px}
+.money .field{flex:1}
+.pre{color:var(--ink3);font-weight:700}
+.delrow{display:flex;gap:6px;align-items:center}
+.delrow .field{flex:1}
+.delrow .qty{width:62px;justify-content:center}
+.optlist{display:grid;gap:8px}
+.optbox{border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;display:flex;gap:9px;align-items:flex-start}
+.optbox.sel{border-color:var(--ink);background:var(--surface)}
+.optbox .t{display:grid;gap:2px;flex:1}
+.optbox b{font-size:13px}
+.optbox span{font-size:11.5px;color:var(--ink2)}
+.tcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.tcard.locked{background:var(--surface);border-color:transparent}
+.tline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.tline span:first-child{color:var(--ink2)}
+.tline b{text-align:right}
+.sechd2{font-size:11px;font-family:var(--mono);letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.invcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.invcard .top{display:flex;gap:10px;align-items:center}
+.newdot{width:8px;height:8px;border-radius:50%;background:var(--move-fg);flex:none}
+.warn{border-radius:12px;padding:9px 11px;font-size:12.5px;display:flex;gap:8px;background:var(--move-bg);color:var(--move-fg);font-weight:600}
+.prev{border-radius:12px;padding:10px 11px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px;display:grid;gap:2px}
+.prev b{color:var(--active-fg);font-size:13.5px}
+
+.turn{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.turn.mine{background:var(--surface);border-color:transparent}
+.turn .hd{display:flex;gap:8px;align-items:center}
+.turn .hd b{font-size:12.5px}
+.turn .hd .when{font-size:11px;color:var(--ink3);margin-left:auto;white-space:nowrap}
+.chg{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
+.chg>span:first-child{color:var(--ink2);flex:none;white-space:nowrap}
+.chg .v{display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:flex-end;text-align:right;flex:1;min-width:0}
+.chg .old{color:var(--ink3);text-decoration:line-through;font-weight:600}
+.chg .ar{color:var(--ink3);font-weight:700}
+.chg .new{font-weight:800}
+.chg.same .new{font-weight:600;color:var(--ink2)}
+.qnote{font-size:12.5px;color:var(--ink2);font-style:italic;line-height:1.4}
+.rnd{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;font-family:var(--mono);letter-spacing:.05em;color:var(--ink2);background:var(--surface);padding:4px 9px;border-radius:999px;justify-self:start}
+.last{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--move-bg);color:var(--move-fg);display:flex;gap:8px;align-items:flex-start}
+.waitbox{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--wait-bg);color:var(--wait-fg);display:flex;gap:8px;align-items:flex-start}
+.okbox{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--active-bg);color:var(--active-fg);display:flex;gap:8px;align-items:flex-start}
+.greybox{border-radius:12px;padding:9px 11px;font-size:12.5px;background:var(--surface);color:var(--ink2)}
+.poolrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.poolrow:last-child{border-bottom:0}
+.poolrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.poolrow .t b{font-size:13px}
+.pgrp{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;padding-top:4px}
+.pgrp .n{font-weight:700;color:var(--ink2)}
+.entry{display:flex;gap:10px;align-items:center;border:1.5px solid var(--ink);border-radius:14px;padding:11px}
+.entry .t{flex:1;min-width:0;display:grid;gap:2px}
+.entry b{font-size:13.5px}
+.web{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;width:560px;max-width:100%;align-self:flex-start}
+.web .wtop{background:var(--ink);color:#fff;padding:9px 14px;font-size:12px;font-weight:700;display:flex;gap:10px;align-items:center}
+.web .wtop .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35)}
+.web .wbody{padding:4px 14px 14px}
+.setrow{padding:13px 0;border-bottom:1px solid var(--border);display:grid;gap:5px}
+.setrow:last-child{border-bottom:0}
+.setrow .sh{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.setrow b{font-size:13.5px}
+.setrow .d{font-size:12px;color:var(--ink2);line-height:1.45}
+.setrow .val{display:flex;gap:7px;align-items:center;flex:none}
+.setrow .val .field{width:72px;justify-content:center;height:34px}
+.setrow .unit2{font-size:12px;color:var(--ink2)}
+.audit{font-size:11.5px;color:var(--ink3);padding-top:10px}
+.shot.wide{width:600px;max-width:100%}
+
+.sig{border:1.5px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.sig.done{border-color:transparent;background:var(--active-bg)}
+.sig .who{font-size:11px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.sig .nm{font-size:15px;font-weight:800}
+.sig .mt{font-size:11.5px;color:var(--ink2)}
+.tick{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--ink2);line-height:1.45}
+.tick .bx{width:19px;height:19px;border-radius:6px;border:1.5px solid var(--border);flex:none;display:grid;place-items:center;margin-top:1px}
+.tick .bx.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tick .bx .ico{width:12px;height:12px}
+.mrows{display:grid;gap:0}
+.mline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--border)}
+.mline:last-child{border-bottom:0}
+.mline span{color:var(--ink2)}
+.mline b{font-variant-numeric:tabular-nums}
+.mline.tot{border-top:1.5px solid var(--ink);border-bottom:0;margin-top:2px;padding-top:8px;font-size:13.5px}
+.mline.tot span{color:var(--ink);font-weight:700}
+.mline.tot b{font-weight:800}
+.short{border-radius:12px;padding:10px 11px;background:var(--no-bg);color:var(--no-fg);font-size:12.5px;font-weight:600;display:grid;gap:2px}
+.short b{font-size:15px}
+.ref{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--ink3)}
+.numlist{display:grid;gap:7px;counter-reset:t}
+.numlist div{display:flex;gap:8px;font-size:12px;color:var(--ink2);line-height:1.45}
+.numlist div::before{counter-increment:t;content:counter(t);font-family:var(--mono);font-size:10px;color:var(--ink3);flex:none;width:14px;padding-top:2px}
+.dpage{border:1px solid var(--border);border-radius:14px;background:#fff;width:540px;max-width:100%;align-self:flex-start;padding:22px 24px;display:grid;gap:16px}
+.dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.dhead .ttl{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.dhead .sub{font-size:12px;color:var(--ink2)}
+.dsec{display:grid;gap:7px}
+.dsec h5{margin:0;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.dparties{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dparties div{display:grid;gap:2px;font-size:12.5px;color:var(--ink2)}
+.dparties b{font-size:13.5px;color:var(--ink)}
+.drow{display:flex;justify-content:space-between;gap:14px;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)}
+.drow:last-child{border-bottom:0}
+.drow span{color:var(--ink2)}
+.drow b{text-align:right}
+.dsigs{display:grid;grid-template-columns:1fr 1fr;gap:16px;border-top:1px solid var(--border);padding-top:14px}
+.dsig{display:grid;gap:2px}
+.dsig .n{font-size:15px;font-weight:800}
+.dsig .m{font-size:11px;color:var(--ink3)}
+.dsig .l{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.dfoot{font-size:11px;color:var(--ink3);border-top:1px solid var(--border);padding-top:10px;line-height:1.5}
+.shot.doc{width:560px;max-width:100%}
+
+.bcard2{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:9px}
+.bcard2 .top{display:flex;gap:10px;align-items:center}
+.bcard2 .nm{font-weight:800;font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bcard2 .top .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bcard2 .chips{flex-wrap:wrap;gap:5px}
+.bcard2 .chip{flex:none}
+.pcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.pcard .top{display:flex;gap:10px;align-items:center}
+.pcard .top b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.pcard .top .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cool{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--ended-bg);color:var(--ended-fg);display:flex;gap:8px;align-items:flex-start}
+.limit{font-size:11.5px;color:var(--ink3);text-align:right}
+.miniStat{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.miniStat div{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid}
+.miniStat b{font-size:13px;font-variant-numeric:tabular-nums}
+.miniStat span{font-size:10.5px;color:var(--ink2)}
+.fromtag{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex:none;font-size:10.5px;font-weight:700;font-family:var(--mono);letter-spacing:.04em;color:var(--done-fg);background:var(--done-bg);padding:3px 7px;border-radius:6px}
+
+.gate{border-radius:12px;padding:10px 11px;display:grid;gap:5px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px}
+.gate .g{display:flex;gap:8px;align-items:flex-start;font-weight:600}
+.gate .ico{flex:none;margin-top:1px}
+.gate.wait{background:var(--wait-bg);color:var(--wait-fg)}
+.addr{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.addr .street{font-size:13px;line-height:1.45}
+.addr .nm2{font-weight:800;font-size:14px}
+.addr .acts{display:flex;gap:7px;flex-wrap:wrap}
+.when{border-radius:14px;padding:12px;background:var(--ink);color:#fff;display:grid;gap:3px}
+.when .d{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.when .t2{font-size:13px;opacity:.75}
+.when.soft{background:var(--surface);color:var(--ink)}
+.when.soft .t2{color:var(--ink2);opacity:1}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stepline{display:grid;gap:0}
+.stepline .s{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:12.5px}
+.stepline .dot{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center;margin-top:1px}
+.stepline .dot.on{background:var(--active-fg);border-color:var(--active-fg);color:#fff}
+.stepline .dot.now{border-color:var(--move-fg);background:var(--move-bg)}
+.stepline .dot .ico{width:9px;height:9px}
+.stepline .s b{font-size:12.5px}
+.stepline .s .mut2{color:var(--ink3)}
+.delay{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--move-bg);color:var(--move-fg);display:flex;gap:8px;align-items:flex-start}
+
+/* item 12 additions */
+.item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:0}
+.item .t{flex:1;min-width:0;display:grid;gap:3px}
+.item .t b{font-size:13px;line-height:1.25}
+.lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.shot.wide{grid-column:1/-1;justify-items:start}
+.shot.wide .cap{max-width:560px}
+.dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.dgrid .f{aspect-ratio:3/4;border-radius:10px;position:relative;overflow:hidden;display:grid;place-items:center}
+.dgrid .f .pl{position:absolute;right:5px;bottom:5px;background:rgba(26,26,23,.72);color:#fff;border-radius:6px;padding:2px 5px;font-size:9.5px;font-weight:700}
+.dgrid .add{border:1.5px dashed var(--border);color:var(--ink3);background:#fff}
+.drow2{display:grid;gap:7px;padding:11px 0;border-bottom:1px solid var(--border)}
+.drow2:last-child{border-bottom:0}
+.drow2 .hd{display:flex;align-items:center;gap:8px}
+.drow2 .hd b{font-size:13.5px;flex:1}
+.count{font-family:var(--mono);font-size:11px;color:var(--ink2);background:var(--surface);padding:3px 7px;border-radius:6px;white-space:nowrap}
+.count.ok{background:var(--active-bg);color:var(--active-fg)}
+.count.no{background:var(--no-bg);color:var(--no-fg)}
+.rounds{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;font-family:var(--mono);letter-spacing:.05em;color:var(--ink2);background:var(--surface);padding:4px 9px;border-radius:999px;justify-self:start}
+.pay{display:grid;gap:0}
+.payrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.payrow:last-child{border-bottom:0}
+.payrow .t{flex:1;display:grid;gap:1px}
+.payrow b{font-variant-numeric:tabular-nums}
+.dot2{width:9px;height:9px;border-radius:50%;flex:none;background:var(--border)}
+.dot2.on{background:var(--active-fg)}
+.dot2.now{background:var(--move-fg)}
+.linkrow{display:flex;gap:7px;align-items:center}
+.linkrow .field{flex:1;font-family:var(--mono);font-size:11.5px}
+.note{border-left:3px solid var(--move-fg);padding:7px 10px;background:var(--move-bg);color:var(--move-fg);border-radius:0 10px 10px 0;font-size:12.5px}
+.filenote{font-size:11.5px;color:var(--move-fg);display:flex;gap:5px;align-items:flex-start}
+
+/* item 14 additions */
+.tagnew{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:5px;background:var(--move-bg);color:var(--move-fg)}
+.tagbuilt{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:5px;background:var(--done-bg);color:var(--done-fg)}
+.tagchg{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:5px;background:var(--wait-bg);color:var(--wait-fg)}
+.cap .tg{display:flex;gap:6px;align-items:center}
+.prog{display:grid;gap:6px}
+.prog .row b{font-size:14px}
+.pthumb{width:40px;height:48px;border-radius:9px;flex:none}
+.dest{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:var(--surface);color:var(--ink)}
+.dest .ico{width:12px;height:12px}
+.code{font-family:var(--mono);font-size:10.5px;color:var(--ink2);letter-spacing:.04em}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);align-items:center}
+.qa{background:var(--bg);border-radius:16px;padding:6px 18px}
+.qa > div{padding:12px 0;border-bottom:1px solid var(--border);display:grid;gap:4px}
+.qa > div:last-child{border-bottom:0}
+.qa b{font-size:14px}
+.qa p{font-size:13.5px;color:var(--ink2)}
+
+/* item 17 additions */
+.bal{border-radius:16px;background:var(--ink);color:#fff;padding:14px;display:grid;gap:2px}
+.bal span{font-size:12px;opacity:.75}
+.bal b{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.figs{display:grid;gap:0;border:1px solid var(--border);border-radius:14px;padding:2px 12px}
+.fig{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--border)}
+.fig:last-child{border-bottom:0}
+.fig .t{flex:1;display:grid;gap:1px}
+.fig .t b{font-size:13px}
+.fig .t span{font-size:11.5px;color:var(--ink2)}
+.fig .v{font-weight:800;font-size:13.5px;font-variant-numeric:tabular-nums}
+.sw3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sw3 div{background:var(--surface);border-radius:10px;padding:7px 8px;display:grid}
+.sw3 b{font-size:13px;font-variant-numeric:tabular-nums}
+.sw3 span{font-size:10.5px;color:var(--ink2)}
+.hrow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.hrow:last-child{border-bottom:0}
+.hrow .t{flex:1;display:grid;gap:1px}
+.hrow .t b{font-size:13px}
+.hrow .t span{font-size:11.5px;color:var(--ink2)}
+.amt{font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.amt.in{color:var(--active-fg)}
+.bigfield{height:56px;border-radius:14px;border:1.5px solid var(--ink);display:flex;align-items:center;padding-inline:14px;font-size:24px;font-weight:800;gap:6px}
+
+/* ── item 19 · Home ─────────────────────────────────────────── */
+.hhd{display:flex;align-items:center;gap:10px;min-height:40px}
+.hhd h3{font-size:20px;font-weight:800;flex:1;line-height:1.15}
+.hhd small{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);letter-spacing:0}
+.bell{position:relative;width:36px;height:36px;border-radius:12px;border:1px solid var(--border);display:grid;place-items:center;flex:none}
+.bell .n,.tab .n{position:absolute;min-width:16px;height:16px;border-radius:999px;background:var(--move-fg);color:#fff;font-size:9.5px;font-weight:800;display:grid;place-items:center;padding-inline:4px;line-height:1}
+.bell .n{top:-5px;right:-5px}
+.tab .p{position:relative}
+.tab .n{top:-4px;right:2px}
+.hsec{display:flex;justify-content:space-between;align-items:baseline;margin-top:2px}
+.hsec b{font-size:15px;font-weight:800}
+.hsec b i{font-style:normal;color:var(--move-fg)}
+.hsec span{font-size:12px;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.nlist{display:grid;gap:8px}
+.ncard{border:1px solid var(--border);border-radius:14px;padding:10px 11px;display:grid;gap:5px}
+.ncard .top{display:flex;align-items:center;gap:8px}
+.ncard .top b{font-size:13.5px;font-weight:800;flex:1;min-width:0;line-height:1.2}
+.ncard .why{font-size:11px;font-weight:700;color:var(--move-fg);white-space:nowrap}
+.ncard .line{font-size:12.5px;color:var(--ink);line-height:1.35}
+.ncard .foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ncard .ctx{font-size:11.5px;color:var(--ink2);min-width:0}
+.ncard .btn.sm2{height:30px;flex:none}
+.av2{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:800;flex:none}
+.lg2{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:10.5px;font-weight:800;flex:none}
+.ic2{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface);color:var(--ink)}
+.ic2 .ico{width:14px;height:14px}
+.t1{background:#FFE5D3;color:#8A3B00}.t2{background:#DDEBFF;color:#174A99}.t3{background:#DDF3E4;color:#14602F}
+.t4{background:#EBE2FB;color:#51309B}.t5{background:#FFF0B8;color:#6B5200}.t6{background:#FBDCDC;color:#9A2020}
+.wtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.wtile{background:var(--wait-bg);border-radius:12px;padding:9px 9px 8px;display:grid;gap:1px}
+.wtile b{font-size:18px;font-weight:800;color:var(--wait-fg);font-variant-numeric:tabular-nums;line-height:1.1}
+.wtile span{font-size:10.5px;font-weight:600;color:var(--wait-fg);line-height:1.25}
+.mon{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mcell{border:1px solid var(--border);border-radius:12px;padding:9px 10px;display:grid;gap:1px}
+.mcell span{font-size:11px;color:var(--ink2);min-height:30px;line-height:1.3}
+.mcell b{font-size:17px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.mcell i{font-style:normal;font-size:10.5px;color:var(--ink2)}
+.mline{font-size:12px;color:var(--ink2);display:flex;justify-content:space-between;gap:8px}
+.mline b{color:var(--ink)}
+.srow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.srow:last-child{border-bottom:0}
+.srow .t{flex:1;min-width:0;display:grid;gap:1px}
+.srow .t b{font-size:12.5px;line-height:1.25}
+.srow .t span{font-size:11px;color:var(--ink2)}
+.srow .r{display:grid;justify-items:end;gap:3px;flex:none}
+.srow .r b{font-size:13px;font-variant-numeric:tabular-nums}
+.sbox{border:1px solid var(--border);border-radius:14px;padding:2px 12px}
+.grow{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:14px;padding:10px 11px}
+.grow .t{flex:1;min-width:0;display:grid;gap:1px}
+.grow .t b{font-size:13px}
+.grow .t span{font-size:11.5px;color:var(--ink2)}
+.link{border-radius:14px;background:var(--surface);padding:10px 11px;display:grid;gap:6px}
+.link .u{display:flex;align-items:center;gap:8px}
+.link .u b{font-size:13px;flex:1;min-width:0;font-family:var(--mono);font-weight:500}
+.link span{font-size:11.5px;color:var(--ink2)}
+.calm{border-radius:14px;background:var(--active-bg);color:var(--active-fg);padding:14px 12px;display:grid;gap:3px;justify-items:center;text-align:center}
+.calm b{font-size:14px}
+.calm span{font-size:12px}
+.calm .c{width:34px;height:34px;border-radius:50%;background:#fff;display:grid;place-items:center;margin-bottom:3px}
+.start{display:grid;gap:8px}
+.stp{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:14px;padding:10px 11px}
+.stp .n{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;flex:none;margin-top:1px}
+.stp .t{display:grid;gap:1px;flex:1}
+.stp .t b{font-size:13px}
+.stp .t span{font-size:11.5px;color:var(--ink2);line-height:1.35}
+.nrow2{display:flex;gap:9px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.nrow2:last-child{border-bottom:0}
+.nrow2 .t{flex:1;min-width:0;display:grid;gap:1px}
+.nrow2 .t b{font-size:12.5px}
+.nrow2 .t span{font-size:11.5px;color:var(--ink2);line-height:1.35}
+.nrow2 .w{font-size:10.5px;color:var(--ink3);white-space:nowrap}
+.udot{width:7px;height:7px;border-radius:50%;background:var(--move-fg);flex:none;margin-top:6px}
+.udot.off{background:transparent}
+.scrollnote{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);text-align:center;padding-top:2px}
+
+/* v2 · compact rows inside a section */
+.hsec b u{text-decoration:none;color:var(--ink2);font-weight:700}
+.hsec span{display:inline-flex;align-items:center;gap:2px}
+.hsec span .ico{width:12px;height:12px}
+.wbox{border:1px solid var(--border);border-radius:14px;padding:2px 11px}
+.wrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.wrow:last-child{border-bottom:0}
+.wrow .t{flex:1;min-width:0;display:grid;gap:1px}
+.wrow .t b{font-size:13px;line-height:1.2}
+.wrow .t span{font-size:11.5px;color:var(--ink2);line-height:1.3}
+.crow{display:grid;gap:3px;padding:10px 0;border-bottom:1px solid var(--border)}
+.crow:last-child{border-bottom:0}
+.crow .h{display:flex;align-items:center;gap:8px}
+.crow .h b{font-size:13.5px;font-weight:800;flex:1;min-width:0}
+.crow .l{font-size:11.5px;color:var(--ink2)}
+.crow .l b{color:var(--ink);font-weight:700}
+.slim{display:flex;align-items:center;gap:8px;border-radius:12px;background:var(--surface);padding:8px 10px}
+.slim b{flex:1;min-width:0;font-family:var(--mono);font-weight:500;font-size:12.5px}
+.slim span{font-size:11px;color:var(--ink2)}
+.quiet{border-radius:12px;background:var(--active-bg);color:var(--active-fg);padding:10px 11px;font-size:12.5px;font-weight:600;display:flex;gap:8px;align-items:center}
+.goes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+
+/* board furniture */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.fcard{background:var(--bg);border-radius:16px;padding:16px;display:grid;gap:5px;align-content:start}
+.fcard b{font-size:14.5px}
+.fcard p{font-size:13.5px;color:var(--ink2)}
+.q3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;counter-reset:q}
+.q3 .fcard{counter-increment:q}
+.q3 .fcard::before{content:counter(q);width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--mono);font-size:12px;display:grid;place-items:center}
+.dlist{background:var(--bg);border-radius:16px;overflow:hidden}
+.drow{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.drow:last-child{border-bottom:0}
+.drow .num{font-family:var(--mono);font-size:12px;color:var(--ink3);padding-top:2px}
+.drow b{display:block;margin-bottom:2px}
+.drow p{font-size:13.5px;color:var(--ink2);max-width:92ch}
+.drow .rec{margin-top:6px;font-size:13.5px;color:var(--ink);background:var(--primary-soft);border-radius:10px;padding:8px 10px;max-width:92ch}
+.drow .rec i{font-style:normal;font-weight:800}
+.yes{color:var(--active-fg);font-weight:700}
+.newr{color:var(--move-fg);font-weight:700}
+
+/* ── item 20 · a creator who owns a brand ───────────────────── */
+.stepbar3{display:flex;gap:4px;margin-top:8px}
+.stepbar3 i{flex:1;height:4px;border-radius:9px;background:var(--border);display:block}
+.stepbar3 i.on{background:var(--ink)}
+.attl{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.alede{font-size:12.5px;color:var(--ink2);line-height:1.45}
+.aback{font-size:12.5px;color:var(--ink2);font-weight:600}
+.otp{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.otp div{height:46px;border:1.5px solid var(--border);border-radius:12px;display:grid;place-items:center;font-size:18px;font-weight:800}
+.otp div.on{border-color:var(--ink)}
+.grow1{flex:1;min-width:0}
+.grow1 b,.grow1 .xs{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero{display:flex;align-items:center;gap:12px}
+.hero .t{flex:1;min-width:0;display:grid;gap:1px}
+.hero .t b{font-size:15.5px;font-weight:800}
+.hero .t span{font-size:11.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptitle{font-size:20px;font-weight:800}
+.prow{display:flex;align-items:center;gap:8px;padding:11px 0;border-bottom:1px solid var(--border)}
+.prow .t{flex:1;min-width:0;display:grid;gap:1px}
+.prow .t b{font-size:13.5px}
+.prow .t span{font-size:11.5px;color:var(--ink2)}
+.prow.red b{color:var(--no-fg)}
+.hl{outline:2px dashed var(--move-fg);outline-offset:4px;border-radius:10px}
+.stepq{display:grid;gap:3px}
+.stepq i{font-style:normal;font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;color:var(--ink3)}
+.stepq b{font-size:17px;font-weight:800;line-height:1.25}
+.cc{border:1.5px solid var(--border);border-radius:14px;padding:11px;display:flex;gap:10px;align-items:center}
+.cc.sel{border-color:var(--ink);background:var(--surface)}
+.cc.dis{opacity:.5}
+.cc .t{flex:1;min-width:0;display:grid;gap:2px}
+.cc .t b{font-size:13.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.cc .t span{font-size:11.5px;color:var(--ink2);line-height:1.35}
+.cc .t em{font-style:normal;font-size:11.5px;color:var(--ink);font-weight:700}
+.cc .ck{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;flex:none}
+.cc .ck .ico{width:12px;height:12px}
+.blk{border:1px solid var(--border);border-radius:12px;padding:11px;display:grid;gap:2px}
+.blk b{font-size:13.5px}
+.blk span{font-size:12px;color:var(--ink2);line-height:1.4}
+.eyb{font-size:11px;font-weight:800;letter-spacing:.07em;color:var(--ink3)}
+.fact{display:flex;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.fact:last-child{border-bottom:0}
+.fact span{width:74px;flex:none;color:var(--ink3);font-weight:600}
+.fact b{flex:1;font-weight:600}
+.strip{display:flex;gap:7px}
+.strip div{width:74px;height:92px;border-radius:10px;flex:none}
+.vbar{display:grid;grid-template-columns:72px 1fr 40px;gap:8px;align-items:center;font-size:12px}
+.vbar span{color:var(--ink2)}
+.vbar .tr{height:8px;border-radius:99px;background:var(--surface);overflow:hidden}
+.vbar .tr i{display:block;height:100%;background:var(--ink);border-radius:99px}
+.vbar b{text-align:right;font-size:11.5px;font-variant-numeric:tabular-nums}
+.places{display:grid;gap:3px;padding:0 0 4px 80px;margin-top:-4px}
+.places div{font-size:11.5px;color:var(--ink2);display:flex;gap:5px;align-items:center}
+.places .ico{width:12px;height:12px}
+.oline{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0}
+.oline span{color:var(--ink2)}
+.oline b{font-variant-numeric:tabular-nums}
+.mini{display:flex;gap:6px}
+.prw{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.prw:last-child{border-bottom:0}
+.prw .t{flex:1;min-width:0;display:grid;gap:2px}
+.prw .t b{font-size:13px;line-height:1.25}
+.prw .t span{font-size:11.5px;color:var(--ink2);line-height:1.35}
+.plc{display:flex;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.plc:last-child{border-bottom:0}
+.plc .t{flex:1;min-width:0;display:grid;gap:1px}
+.plc .t b{font-size:12.5px}
+.plc .t span{font-size:11px;color:var(--ink2);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pillbtn{border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;flex:none}
+.sheet{grid-template-columns:minmax(0,1fr)}
+.sheet .field{min-width:0;overflow:hidden;white-space:nowrap}
+.dlist .drow b{text-align:left}
+.struck{text-decoration:line-through;color:var(--ink3)}
+.cmp td:nth-child(3){color:var(--ink)}
+.cmp .none{color:var(--ink3)}
+</style>
+</head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18 9 12l6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16m10 2-4.3-4.3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-6v-4m0-4h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M5 5l14 14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m12 2 10 5-10 5L2 7zm-10 10 10 5 10-5M2 17l10 5 10-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6m15 8h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12m0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9 5.5 4h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></symbol>
+  <symbol id="i-uadd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+
+  <symbol id="i-cal2" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 9h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-clock2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11V5a1 1 0 0 1 1-1h6l8 8-7 7z"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h10a5 5 0 0 1 0 10h-4M4 8l4-4M4 8l4 4"/></symbol>
+
+  <symbol id="i-doc" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 17l9.5-9.5a2.1 2.1 0 0 1 3 3L8 20H5z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0 4-4m-4 4-4-4M4 19h16"/></symbol>
+
+  <symbol id="i-nav" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3 20 20l-8-4-8 4z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h3l1.5 4-2 1.5a12 12 0 0 0 6 6L17 12.5 21 14v3a2 2 0 0 1-2.2 2A16 16 0 0 1 5 5.2 2 2 0 0 1 7 3"/></symbol>
+  <symbol id="i-hourglass" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/></symbol>
+
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="9" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></symbol>
+  <symbol id="i-rupee" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4h12M6 9h12M15 4c0 4-3 5-6 5h-1l8 10"/></symbol>
+</svg>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">INFLX rebuild · Item 20 of 21 · A creator who owns a brand · mockups v2 · 10 Oct 2026</div>
+  <h1>A creator who owns a brand</h1>
+  <p class="lede">A person who runs a store and also makes content for it links the two accounts once, then posts for his own store straight from the Create tab. No campaign, invitation, agreement, shoot plan or commission. INFLX still approves each post. Drawn from the screens the apps already have. Names, numbers and dates are example data.</p>
+  <div class="legend"><span><span class="tagnew">NEW</span> a screen that doesn't exist today</span><span><span class="tagchg">CHANGED</span> a screen that exists and changes</span><span class="pill">Locked 10 Oct 2026 · build to these screens</span></div>
+</header>
+
+<section><header><div class="eyebrow">Since v1</div><h2>What changed in v2</h2><p class="prose">Only the decisions at the bottom: all five are recorded as decided (“All five decisions are ok and Lock the screens”). The screens are the ones you saw in v1.</p></header></section>
+
+<section><header><div class="eyebrow">The whole item</div><h2>Four things</h2></header>
+<div class="fgrid">
+  <div class="fcard"><b>Link once</b><p>He says he runs a brand and proves it with that brand's own login code. If both accounts are on the same number, it is one tap.</p></div>
+  <div class="fcard"><b>Post straight away</b><p>Create, pick his brand, pick what to sell. No campaign, invitation, agreement, shoot plan, minimum or posting date.</p></div>
+  <div class="fcard"><b>INFLX still approves</b><p>Every post goes through the same INFLX check as any other. The brand approves nothing, because the brand is him.</p></div>
+  <div class="fcard"><b>A normal sale, without commission</b><p>INFLX takes its usual share. The rest goes to the brand's wallet after the return window. He records where he shared the post, to see which channel sells.</p></div>
+</div></section>
+
+<section><header><div class="eyebrow">Creator app · sign-up</div><h2>Linking when he registers as a creator</h2><p class="prose">Creator sign-up gets a third step. What it shows depends on whether the number he just signed in with also has a brand account.</p></header>
+<div class="flow" id="link"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="stepbar3"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="attl">Do you run a brand on INFLX?</div><div class="alede">This number also has a brand account.</div><div class="bcard"><div class="row"><span class="logo t5">KF</span><div class="grow1"><b style="font-size:14px">Kavya Fashions</b><div class="xs mut">Fashion · Hyderabad</div></div><span class="chip s-active">Approved</span></div></div><div class="greybox">Link it and you can post for your own store from this app. No campaign or agreement needed.</div></div><div class="savebar"><button class="btn b-pri block" type="button">Yes, link my brand</button><button class="btn b-txt block" type="button">Not now</button></div></div><div class="cap"><div class="tg"><i>L1</i><span class="tagnew">NEW</span></div><b>Sign-up · step 3, same number</b><span>Shown when the number he signed in with also has a brand account. One tap links it: the code he just entered is the proof. “Two quick steps” becomes three.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="stepbar3"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="attl">Do you run a brand on INFLX?</div><div class="alede">If you own a store that is on INFLX, link it and post for it yourself.</div><div class="cc"><div class="t"><b>No, I'm a creator only</b><span>You can link a brand later from Profile.</span></div></div><div class="cc sel"><div class="t"><b>Yes, I run a brand</b><span>You'll confirm with a code sent to the brand's number.</span></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span></div></div><div class="savebar"><button class="btn b-pri block" type="button">Continue</button></div></div><div class="cap"><div class="tg"><i>L2</i><span class="tagnew">NEW</span></div><b>Sign-up · step 3, no brand on this number</b><span>Every new creator sees this once. “No” goes straight into the app, as today.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><span class="aback">‹ Back</span><div class="attl">Your brand's number</div><div class="alede">The mobile number your brand signs in with on INFLX. We'll text it a code.</div><div class="grp"><span class="lbl">Brand's mobile number</span><div class="field focus"><span class="pre">+91</span> 98490 12345</div></div><div class="hint">No brand on INFLX yet? Register it in the INFLX Brand app first, then link it from Profile.</div></div><div class="savebar"><button class="btn b-pri block" type="button">Send code</button></div></div><div class="cap"><div class="tg"><i>L3</i><span class="tagnew">NEW</span></div><b>The brand's number</b><span>A brand is never picked from a list. A number with no brand account shows “No brand on INFLX uses this number.”</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><span class="aback">‹ Back</span><div class="attl">Enter the code</div><div class="alede">Sent to +91 98••• ••345</div><div class="otp"><div class="on">4</div><div class="on">7</div><div class="on">2</div><div class="on">9</div><div></div><div></div></div><div class="hint">Didn't get it? <b style="color:var(--ink)">Resend in 0:24</b></div><div class="waitbox"><svg class="ico"><use href="#i-info"/></svg><span>The code goes to the brand's phone. If someone else holds it, ask them for the code.</span></div></div><div class="savebar"><button class="btn b-pri block" type="button">Link my brand</button></div></div><div class="cap"><div class="tg"><i>L4</i><span class="tagnew">NEW</span></div><b>The code</b><span>The same code screen as Change number. Five wrong codes end the try. This code only links: it cannot sign anyone in to the brand account.</span></div></div></div>
+<div class="fgrid">
+  <div class="fcard"><b>Only the brand's own code links it</b><p>A brand is never picked from a list or found by name. Either he is signed in on the brand's number, or he types a code sent to it.</p></div>
+  <div class="fcard"><b>The brand always knows</b><p>The brand gets a notice the moment someone links, and can remove the link at any time.</p></div>
+  <div class="fcard"><b>The code can only link</b><p>It cannot sign anyone in to the brand account. Five wrong codes end the try, and a creator gets only a few tries a day.</p></div>
+</div></section>
+
+<section><header><div class="eyebrow">Creator app · Profile</div><h2>Linking later, and the link itself</h2><p class="prose">A creator already on INFLX gets the same steps from a new Profile row. Nobody is shown a pop-up.</p></header>
+<div class="flow" id="later"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="ptitle">Profile</div><div class="hero"><span class="avatar t2">RT</span><div class="t"><b>Ravi Teja</b><span>@ravi.kf · Hyderabad</span></div><span class="chip s-active">Approved</span></div><div><div class="prow"><div class="t"><b>Profile info</b><span>Photo, name, city, age, gender</span></div><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div><div class="prow"><div class="t"><b>Your numbers</b><span>Instagram 48.2K · YouTube 12.1K</span></div><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div><div class="prow"><div class="t"><b>Niche &amp; languages</b><span>Fashion · Telugu, English</span></div><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div><div class="prow"><div class="t"><b>Invitation settings</b><span>Open · all Aims · Store Visit and Remote</span></div><span class="chip s-active">On</span><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div><div class="prow hl"><div class="t"><b>My brand</b><span>Kavya Fashions</span></div><span class="chip s-done">Linked</span><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div><div class="prow"><div class="t"><b>Legal &amp; policies</b></div><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div><div class="prow red"><div class="t"><b>Log out</b></div></div></div></div><div class="tabbar"><div class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</div><div class="tab"><span class="p"><svg class="ico"><use href="#i-layers"/></svg></span>Collabs</div><div class="tab"><span class="plus"><svg class="ico"><use href="#i-plus"/></svg></span></div><div class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</div><div class="tab on"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</div></div></div><div class="cap"><div class="tg"><i>L5</i><span class="tagchg">CHANGED</span></div><b>Profile · the new row</b><span>Between Invitation settings and Legal. Before linking it reads “Do you run a brand on INFLX?” and opens the steps L1 to L4. It is not one of the “things left” and never holds up Submit for review.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>My brand</h3></div><div class="bcard"><div class="row"><span class="logo t5">KF</span><div class="grow1"><b style="font-size:14px">Kavya Fashions</b><div class="xs mut">Fashion · Hyderabad</div></div><span class="chip s-active">Approved</span></div></div><div class="tcard"><div class="mline"><span>Linked</span><b>10 Oct 2026</b></div><div class="mline"><span>Your posts for it</span><b>3 live · 1 with INFLX</b></div></div><div class="greybox">Post any running offer or listed product of this store from Create. INFLX checks each post. There is no commission on your own brand: the sale goes to the brand's wallet.</div><button class="btn b-sec block" type="button">Create a post</button><button class="btn b-dan block" type="button">Remove link</button><div class="hint">You can link one brand. You work with other brands as usual.</div></div></div><div class="cap"><div class="tg"><i>L6</i><span class="tagnew">NEW</span></div><b>My brand · linked</b><span>Remove link asks first: “Your live posts stay live. You can't make new ones until you link again.” The brand is told.</span></div></div></div>
+<div class="tscroll"><table>
+<tr><th>When</th><th>What My brand shows</th></tr>
+<tr><td>The brand is still under review</td><td>“Kavya Fashions is under review. You can post for it once INFLX approves it.” Linking itself works.</td></tr>
+<tr><td>The brand is suspended or was rejected</td><td>“You can't post for this brand right now.”</td></tr>
+<tr><td>His creator account is under review</td><td>Linking works. Create stays locked, as it is for every creator under review.</td></tr>
+<tr><td>The brand removed the link</td><td>The row goes back to the question. He gets a notice: “Kavya Fashions removed your link.” His live posts stay live.</td></tr>
+<tr><td>He already has a link</td><td>No second brand. He removes the link first.</td></tr>
+</table></div></section>
+
+<section><header><div class="eyebrow">Brand app</div><h2>The brand is told, and can remove the link</h2><p class="prose">More than one person can be linked to a brand, so in-house staff can each post from their own creator account.</p></header>
+<div class="flow" id="brandside"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Notifications</h3></div><div class="sbox"><div class="nrow2"><span class="udot"></span><div class="t"><b>Ravi Teja linked his creator account</b><span>He can now post for Kavya Fashions without a campaign. Not someone you know? Remove the link.</span></div><span class="w">Now</span></div><div class="nrow2"><span class="udot off"></span><div class="t"><b>Withdrawal processed</b><span>₹20,000 sent to HDFC ··4821.</span></div><span class="w">3 Oct</span></div></div></div></div><div class="cap"><div class="tg"><i>B1</i><span class="tagnew">NEW</span></div><b>Brand · the notice</b><span>Sent the moment someone links. A tap opens Linked creators. It also shows in the website's bell.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Linked creators</h3></div><div class="hint">People who post for your brand as its own team. They need no campaign, agreement or commission. Each one linked with a code sent to your number.</div><div><div class="plc"><span class="avatar av-s t2">RT</span><div class="t"><b style="font-size:13.5px">Ravi Teja</b><span style="font-family:var(--sans)">@ravi.kf · Linked 10 Oct</span></div><span class="pillbtn">Remove</span></div><div class="plc"><span class="avatar av-s t4">SN</span><div class="t"><b style="font-size:13.5px">Sneha N</b><span style="font-family:var(--sans)">@sneha.kf · Linked 2 Oct</span></div><span class="pillbtn">Remove</span></div></div><div class="hint">To add someone: in the INFLX Creator app they open Profile › My brand and enter the code sent to your number.</div></div></div><div class="cap"><div class="tg"><i>B2</i><span class="tagnew">NEW</span></div><b>Brand · Linked creators</b><span>A new row in the brand's Profile, after Pitch settings. More than one person can be linked. Built like Blocked creators.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Linked creators</h3></div><div class="hint">People who post for your brand as its own team. They need no campaign, agreement or commission. Each one linked with a code sent to your number.</div><div><div class="plc"><span class="avatar av-s t2">RT</span><div class="t"><b style="font-size:13.5px">Ravi Teja</b><span style="font-family:var(--sans)">@ravi.kf · Linked 10 Oct</span></div><span class="pillbtn">Remove</span></div><div class="plc"><span class="avatar av-s t4">SN</span><div class="t"><b style="font-size:13.5px">Sneha N</b><span style="font-family:var(--sans)">@sneha.kf · Linked 2 Oct</span></div><span class="pillbtn">Remove</span></div></div><div class="hint">To add someone: in the INFLX Creator app they open Profile › My brand and enter the code sent to your number.</div></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Remove Ravi Teja?</b><span class="sm mut">His live posts for your brand stay live. He can't make new ones. He is told.</span><button class="btn b-dan block" type="button">Remove link</button><button class="btn b-sec block" type="button">Keep</button></div></div></div><div class="cap"><div class="tg"><i>B3</i><span class="tagnew">NEW</span></div><b>Brand · remove a link</b><span>Takes effect at once. Posts already in the shop stay and keep selling.</span></div></div></div></section>
+
+<section><header><div class="eyebrow">Creator app · Create tab</div><h2>Posting for his own store</h2><p class="prose">The flow he already knows, without the collaboration step. The five steps not drawn (pick the offer, pick products, theme, media, tag products) are unchanged.</p></header>
+<div class="flow" id="post"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="row between"><div class="ptitle">Create</div><span class="ib"><svg class="ico"><use href="#i-plus"/></svg></span></div><div class="hint">Shoppable posts and collections for your store</div><div class="hl"><div class="grow"><span class="ic2"><svg class="ico"><use href="#i-camera"/></svg></span><div class="t"><b>Create shoppable post</b><span>Brand, offer or price, media</span></div><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div></div><div class="grow"><span class="ic2"><svg class="ico"><use href="#i-grid"/></svg></span><div class="t"><b>Create collection</b><span>Name it, add your posts or products</span></div><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div><div class="grow"><span class="ic2"><svg class="ico"><use href="#i-link"/></svg></span><div class="t"><b>My store and collection links</b><span>inflx.in/s/ravi.kf</span></div><span class="chev"><svg class="ico"><use href="#i-chev"/></svg></span></div><div class="secth">My posts<span>See all ›</span></div><div><div class="prw"><span class="pthumb" style="background:#F3D9B8"></span><div class="t"><b>Any 2 kurtas for ₹1,999</b><span>Kavya Fashions · Code KF7Q2 · live since 8 Oct</span><div class="mini"><span class="pillbtn">Share</span><span class="pillbtn">Stats</span></div></div></div><div class="prw"><span class="pthumb" style="background:#CFE0F5"></span><div class="t"><b>Under ₹999 · summer shirts</b><span>With INFLX · no code until approved</span></div></div><div class="prw"><span class="pthumb" style="background:#D9EBD3"></span><div class="t"><b>Flat 20% off totes</b><span>Nomad Bags · Code NB3X8 · live since 2 Oct</span><div class="mini"><span class="pillbtn">Share</span><span class="pillbtn">Stats</span></div></div></div></div></div><div class="tabbar"><div class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</div><div class="tab"><span class="p"><svg class="ico"><use href="#i-layers"/></svg></span>Collabs</div><div class="tab"><span class="plus"><svg class="ico"><use href="#i-plus"/></svg></span></div><div class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</div><div class="tab"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</div></div></div><div class="cap"><div class="tg"><i>C1</i><span class="tagchg">CHANGED</span></div><b>Create · open to him</b><span>Today this card is greyed until a collaboration is signed and shot. With a linked brand it is open from the first day. His own posts and his posts for other brands sit in one list.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>New shoppable post</h3></div><div class="stepq"><i>STEP 1 OF 7</i><b>Which brand is this post for?</b></div><div class="hl"><div class="cc sel"><span class="logo t5">KF</span><div class="t"><b>Kavya Fashions <span class="chip s-done">Your brand</span></b><span>Anything your store sells. No collaboration needed.</span></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span></div></div><div class="cc"><span class="logo t3">N</span><div class="t"><b>Nomad Bags</b><span>1 collaboration you can post for</span></div></div><div class="cc dis"><span class="logo t1">K</span><div class="t"><b>Kora</b><span>Opens after your shoot plan</span></div></div><div class="hint">One brand per post. To show several brands together, make a collection.</div></div><div class="savebar"><button class="btn b-pri block" type="button">Next</button></div></div><div class="cap"><div class="tg"><i>C2</i><span class="tagchg">CHANGED</span></div><b>Step 1 · his brand is in the list</b><span>His own brand comes first. Picking it skips “Which collaboration?”, so the flow is seven steps, not eight. Other brands work exactly as today.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>New shoppable post</h3></div><div class="stepq"><i>STEP 2 OF 7</i><b>What kind of post?</b></div><div class="cc sel"><div class="t"><b>Offer post</b><span>Show one of your offers, like "Any 2 jeans for ₹2,999". Your post appears in offer rails.</span><em>4 offers running in your store</em></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span></div><div class="cc"><div class="t"><b>Price post</b><span>Show products at their normal price, grouped by price, like "Under ₹999".</span><em>38 products without offers</em></div></div></div><div class="savebar"><button class="btn b-pri block" type="button">Next</button></div></div><div class="cap"><div class="tg"><i>C3</i><span class="tagchg">CHANGED</span></div><b>Step 2 · what he may sell</b><span>Today the counts come from one collaboration's terms. For his own brand they come from the whole store: every running offer, and every listed product that is not in an offer.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Review</h3></div><div class="strip"><div style="background:#F3D9B8"></div><div style="background:#E9C9A0"></div><div style="background:#F6E4CC"></div></div><div class="grp"><span class="lbl">Caption</span><div class="textarea">Festive cotton kurtas, any 2 for ₹1,999. Sizes S to XXL.</div></div><div class="grp"><span class="lbl">How shoppers will find it</span><div><div class="fact"><span>Category</span><b>Women › Kurtas</b></div><div class="fact"><span>Offer</span><b>Any 2 kurtas for ₹1,999</b></div><div class="fact"><span>Price</span><b>Under ₹1,499</b></div><div class="fact"><span>Theme</span><b>Festive · Cotton</b></div><div class="fact hl"><span>For</span><b>Kavya Fashions · your brand</b></div><div class="fact"><span>Products</span><b>6</b></div></div></div></div><div class="savebar"><button class="btn b-pri block" type="button">Send to INFLX for review</button></div></div><div class="cap"><div class="tg"><i>C4</i><span class="tagchg">CHANGED</span></div><b>Review · who it is for</b><span>“For” reads brand · campaign · set today. For his own brand it reads the brand and “your brand”. The rest is the Review screen as it is.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>With INFLX</h3><span class="chip s-wait">In review</span></div><div class="eyb">ANY 2 KURTAS FOR ₹1,999</div><div class="blk"><b>In review since 10 Oct</b><span>Usually within a day.</span></div><div class="blk"><b>Who checks it</b><span>INFLX. We check the products and offer are from your store, and that there's no copyrighted music.</span></div><div class="blk"><b>Goes live</b><span>As soon as INFLX approves it.</span></div><div class="hint">Kavya Fashions · your brand</div></div></div><div class="cap"><div class="tg"><i>C5</i><span class="tagchg">CHANGED</span></div><b>With INFLX · the same check</b><span>INFLX approves it like any post. The “last day to go live” line is gone, because there is no posting date. If INFLX sends it back, he fixes it and sends again, as today.</span></div></div></div></section>
+
+<section><header><div class="eyebrow">Creator app · the post</div><h2>Where he shared it, and what it brought</h2><p class="prose">Your change: he records where he shared the post, and nobody approves it. It sits beside the numbers so he can see which channel sells.</p></header>
+<div class="flow" id="share"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Any 2 kurtas for ₹1,999</h3><span class="chip s-active">Live</span></div><div class="eyb">ANY 2 KURTAS FOR ₹1,999</div><div class="blk"><b>In the shop now.</b><span>14 sales · ₹27,986</span></div><div class="btnrow"><button class="btn b-sec" type="button">Share · KF7Q2</button><button class="btn b-sec" type="button">Stats</button></div><div class="card hl"><div class="secth">Where did you share it?</div><div class="hint">Add your reel, post or video. Nobody approves this. It is for your own numbers.</div><div><div class="plc"><span class="ic2"><svg class="ico"><use href="#i-ig"/></svg></span><div class="t"><b>Instagram reel</b><span>instagram.com/reel/C9xK2…</span></div><span class="xs mut">8 Oct</span></div><div class="plc"><span class="ic2"><svg class="ico"><use href="#i-yt"/></svg></span><div class="t"><b>YouTube Short</b><span>youtube.com/shorts/aB3f…</span></div><span class="xs mut">8 Oct</span></div><div class="plc"><span class="ic2"><svg class="ico"><use href="#i-ig"/></svg></span><div class="t"><b>Instagram story</b><span>no link</span></div><span class="xs mut">9 Oct</span></div></div><button class="btn sm2 b-sec" type="button"><svg class="ico"><use href="#i-plus"/></svg> Add a place</button></div><div class="hint">An approved post can't be changed. You can take it down: it leaves the shop and keeps its sales history.</div><button class="btn b-dan block" type="button">Take it down</button></div></div><div class="cap"><div class="tg"><i>S1</i><span class="tagchg">CHANGED</span></div><b>The live post · where he shared it</b><span>A new card on the post's own page, shown once INFLX has approved it. He can add, change or remove a place at any time.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Any 2 kurtas for ₹1,999</h3><span class="chip s-active">Live</span></div><div class="eyb">ANY 2 KURTAS FOR ₹1,999</div><div class="blk"><b>In the shop now.</b><span>14 sales · ₹27,986</span></div><div class="btnrow"><button class="btn b-sec" type="button">Share · KF7Q2</button><button class="btn b-sec" type="button">Stats</button></div><div class="card hl"><div class="secth">Where did you share it?</div><div class="hint">Add your reel, post or video. Nobody approves this. It is for your own numbers.</div><div><div class="plc"><span class="ic2"><svg class="ico"><use href="#i-ig"/></svg></span><div class="t"><b>Instagram reel</b><span>instagram.com/reel/C9xK2…</span></div><span class="xs mut">8 Oct</span></div><div class="plc"><span class="ic2"><svg class="ico"><use href="#i-yt"/></svg></span><div class="t"><b>YouTube Short</b><span>youtube.com/shorts/aB3f…</span></div><span class="xs mut">8 Oct</span></div><div class="plc"><span class="ic2"><svg class="ico"><use href="#i-ig"/></svg></span><div class="t"><b>Instagram story</b><span>no link</span></div><span class="xs mut">9 Oct</span></div></div><button class="btn sm2 b-sec" type="button"><svg class="ico"><use href="#i-plus"/></svg> Add a place</button></div><div class="hint">An approved post can't be changed. You can take it down: it leaves the shop and keeps its sales history.</div><button class="btn b-dan block" type="button">Take it down</button></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Where did you share it?</b><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Instagram reel</span><span class="opt">Instagram post</span><span class="opt">Instagram story</span><span class="opt">YouTube video</span><span class="opt">YouTube Short</span><span class="opt">Facebook post</span></div><div class="grp"><span class="lbl">Link</span><div class="field focus" style="font-family:var(--mono);font-size:12px">instagram.com/reel/C9xK2…</div></div><div class="hint">Put your Instagram link from Share in the reel's caption or bio. Visits and orders are counted from that link.</div><button class="btn b-pri block" type="button">Save</button></div></div></div><div class="cap"><div class="tg"><i>S2</i><span class="tagnew">NEW</span></div><b>Add a place</b><span>The six places the collaboration social step uses. The link is checked only for being the right site. A story needs no link.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Stats · Any 2 kurtas</h3></div><div class="xs mut">Kavya Fashions · Code KF7Q2 · live since 8 Oct</div><div class="statbig"><div class="stat"><b>412</b><span>visits</span></div><div class="stat"><b>14</b><span>orders</span></div><div class="stat hl"><b>₹27,986</b><span>sales</span></div></div><span class="lbl">Visits by channel</span><div class="vbar"><span>Instagram</span><div class="tr"><i style="width:100%"></i></div><b>268</b></div><div class="places"><div><svg class="ico"><use href="#i-link"/></svg>Reel · 8 Oct</div><div><svg class="ico"><use href="#i-link"/></svg>Story · 9 Oct</div></div><div class="vbar"><span>WhatsApp</span><div class="tr"><i style="width:36%"></i></div><b>96</b></div><div class="vbar"><span>YouTube</span><div class="tr"><i style="width:12%"></i></div><b>31</b></div><div class="places"><div><svg class="ico"><use href="#i-link"/></svg>Short · 8 Oct</div></div><div class="vbar"><span>Post code</span><div class="tr"><i style="width:6%"></i></div><b>17</b></div><span class="lbl">Orders by channel</span><div><div class="oline"><span>Instagram</span><b>9 · ₹17,991 sales</b></div><div class="oline"><span>WhatsApp</span><b>3 · ₹5,997</b></div><div class="oline"><span>In INFLX</span><b>2 · ₹3,998</b></div></div><div class="hint">"In INFLX" = the shopper found your post inside INFLX, with no tap on your links in the 30 days before buying.</div></div></div><div class="cap"><div class="tg"><i>S3</i><span class="tagchg">CHANGED</span></div><b>Stats · sales, by channel</b><span>The third number is sales, not “to you”, because there is no commission. The places he recorded are listed under their channel.</span></div></div></div>
+<div class="fgrid">
+  <div class="fcard"><b>Counted per channel, not per reel</b><p>INFLX counts taps on his Instagram link, his WhatsApp link and his YouTube link. Two reels on Instagram share the one Instagram number.</p></div>
+  <div class="fcard"><b>Nothing is read from Instagram or YouTube</b><p>No views, likes or reach. The record is his own note of where the post went, shown beside the numbers INFLX does count.</p></div>
+  <div class="fcard"><b>It counts only if the link is used</b><p>A reel with no INFLX link in its caption or bio still sells, but those shoppers show as “In INFLX” or “Post code”.</p></div>
+</div></section>
+
+<section><header><div class="eyebrow">Brand app · Wallet</div><h2>The money</h2><p class="prose">The sale is the brand's. On the creator's side nothing is added: his own-brand sales do not appear under Commission and his wallet does not change. Sales he makes for other brands earn commission as before.</p></header>
+<div class="flow" id="money"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Sales money</h3></div><div class="sw3"><div><b>₹12,070</b><span>Coming</span></div><div><b>₹48,200</b><span>Added this month</span></div><div><b>23</b><span>Sales</span></div></div><div class="frow2"><span class="fchip on">All</span><span class="fchip">Coming</span><span class="fchip">Added</span><span class="fchip">Cancelled</span></div><div><div class="hrow hl"><div class="t"><b>Indigo block-print kurta · M</b><span>Your own post KF7Q2 · return window until 17 Oct</span></div><span class="amt">₹1,424.05</span></div><div class="hrow"><div class="t"><b>Cotton tote · Natural</b><span>Ananya's post KR4T9 · on its way · waiting for delivery</span></div><span class="amt">₹1,078.17</span></div><div class="hrow"><div class="t"><b>Linen shirt · L</b><span>Your own post KF2M5 · added 6 Oct</span></div><span class="amt in">₹1,709.05</span></div></div></div></div><div class="cap"><div class="tg"><i>M1</i><span class="tagchg">CHANGED</span></div><b>Brand Wallet · Sales money</b><span>Today every line names the creator: “Ananya's post”. A sale from a linked person's post for the brand reads “Your own post”.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Indigo block-print kurta · M</h3></div><div class="crumbs">ORDER · 10 OCT · YOUR OWN POST KF7Q2</div><div class="tcard"><div class="mline"><span>Shopper paid</span><b>₹1,499.00</b></div><div class="mline"><span>INFLX's share · 5%</span><b>₹74.95</b></div><div class="mline tot"><span>Your share</span><b>₹1,424.05</b></div></div><div class="waitbox"><svg class="ico"><use href="#i-clock2"/></svg><span>In its return window until 17 Oct. Your ₹1,424.05 is added to your wallet when it closes, if it isn't returned.</span></div><div class="tcard locked"><div class="mline"><span>Paid by</span><b>Online</b></div><div class="mline"><span>Status</span><b>Delivered</b></div></div></div></div><div class="cap"><div class="tg"><i>M2</i><span class="tagchg">CHANGED</span></div><b>A sale from his own post</b><span>Three lines, not four: there is no “Creator's share” line. INFLX's share is the brand's usual rate. The money is added after the return window, as for every sale.</span></div></div></div></section>
+
+<section><header><div class="eyebrow">Side by side</div><h2>A collaboration post and an own-brand post</h2></header>
+<div class="tscroll"><table class="cmp">
+<tr><th>Step</th><th>Post for another brand</th><th>Post for his own brand</th></tr>
+<tr><td>Campaign and set</td><td>Needed</td><td class="none">None</td></tr>
+<tr><td>Invitation and negotiation</td><td>Needed</td><td class="none">None</td></tr>
+<tr><td>Agreement and two signatures</td><td>Needed</td><td class="none">None</td></tr>
+<tr><td>Shoot plan</td><td>Needed</td><td class="none">None</td></tr>
+<tr><td>Minimum posts and posting date</td><td>From the agreed terms</td><td class="none">None</td></tr>
+<tr><td>What he may sell</td><td>What the terms list</td><td>Any running offer of his store; any listed product that is not in an offer</td></tr>
+<tr><td>INFLX approves the post</td><td>Yes</td><td>Yes, the same check</td></tr>
+<tr><td>Social media</td><td>Uploaded; the brand confirms</td><td>He records where he shared it; nobody approves</td></tr>
+<tr><td>Commission</td><td>The agreed percentage</td><td class="none">None</td></tr>
+<tr><td>INFLX's share</td><td>The brand's usual rate</td><td>The same</td></tr>
+<tr><td>The brand's money</td><td>After the return window</td><td>The same</td></tr>
+<tr><td>Code, links, the shop, stats</td><td>Yes</td><td>The same</td></tr>
+</table></div></section>
+
+<section><header><div class="eyebrow">Small changes, not drawn</div><h2>What else moves</h2></header>
+<div class="tscroll"><table>
+<tr><th>Where</th><th>What changes</th></tr>
+<tr><td>INFLX admin · post queue</td><td>The post reads “For Kavya Fashions · own brand”. The check: the creator is linked to that brand, and the offer and products are that brand's.</td></tr>
+<tr><td>INFLX admin · creator review</td><td>The creator's card shows the brand he is linked to.</td></tr>
+<tr><td>Creator's Home</td><td>An own-brand post sent back appears in Needs you; one in review appears in Waiting on others. The same rows as today.</td></tr>
+<tr><td>Brand website · Wallet and Orders</td><td>The sale shows “Own post” where the creator's name and share were.</td></tr>
+<tr><td>Brand's offer page</td><td>The count of live posts on an offer includes own posts.</td></tr>
+<tr><td>Shopper app</td><td>Nothing. The post, its code and its links look like any other.</td></tr>
+</table></div></section>
+
+<section><header><div class="eyebrow">Every element traced</div><h2>Where each element comes from</h2><p class="prose">“Exists” means the server returns it today. “New” means this item adds it.</p></header>
+<div class="tscroll"><table>
+<tr><th>Element</th><th>Today</th><th>Source</th></tr>
+<tr><td>A brand found on his number</td><td class="newr">New read</td><td>One number can already hold a brand account and a creator account. The server looks for a finished brand account on the number he signed in with.</td></tr>
+<tr><td>The code to the brand's number</td><td class="yes">Exists, reused</td><td>The code sender and checker that Change number uses.</td></tr>
+<tr><td>Brand card: logo, name, type, city, status</td><td class="yes">Exists</td><td>The brand's own profile.</td></tr>
+<tr><td>The link, and Linked creators</td><td class="newr">New</td><td>A new record: creator, brand, date linked.</td></tr>
+<tr><td>Offers running in his store · products without offers</td><td class="yes">Exists</td><td>The store's offer list and product list, which the offer builder already reads.</td></tr>
+<tr><td>Places he shared</td><td class="newr">New</td><td>A new record per post: place, link, date.</td></tr>
+<tr><td>Visits, orders and sales by channel</td><td class="yes">Exists</td><td>The Stats read as it is. Sales is already in it; the screen shows commission in its place today.</td></tr>
+<tr><td>Shopper paid · INFLX's share · Your share</td><td class="yes">Exists</td><td>The Wallet's sale record from item 17.</td></tr>
+</table></div></section>
+
+<section><header><div class="eyebrow">Decided</div><h2>Your decisions, 10 Oct 2026</h2><p class="prose">All five taken as drawn.</p></header>
+<div class="dlist" id="dlist"><div class="drow"><span class="num">D1</span><div><b>Price posts carry only products that are not in an offer <span class="chip s-active">Decided: yes</span></b><p>This is today's rule for collaborations. A price post always charges the normal price, so a product that is in a running offer would show at full price in his price post while the offer sells it cheaper.</p><div class="rec"><i>Decided:</i> Keep the rule. A product in an offer is sold through an offer post.</div></div></div><div class="drow"><span class="num">D2</span><div><b>A story needs no link and no screenshot <span class="chip s-active">Decided: yes</span></b><p>A story is gone in a day and has no lasting link. The collaboration step asks for a screenshot because the brand must confirm it; here nobody confirms.</p><div class="rec"><i>Decided:</i> Place and date only for a story. A link for the other five places.</div></div></div><div class="drow"><span class="num">D3</span><div><b>The record is for own-brand posts only <span class="chip s-active">Decided: yes</span></b><p>His posts for other brands already have a social step, where that brand confirms.</p><div class="rec"><i>Decided:</i> Own-brand posts only for now. Offering the same record on every post is a small later step.</div></div></div><div class="drow"><span class="num">D4</span><div><b>Creators already on INFLX are not asked <span class="chip s-active">Decided: yes</span></b><p>New creators get the question at sign-up.</p><div class="rec"><i>Decided:</i> No pop-up. Existing creators see the new Profile row and nothing else.</div></div></div><div class="drow"><span class="num">D5</span><div><b>Linked creators is on the brand phone only <span class="chip s-active">Decided: yes</span></b><p>The website shows the notice in its bell.</p><div class="rec"><i>Decided:</i> Phone only for now. The website's Profile says the list is managed in the app, as it already does for Branches.</div></div></div></div></section>
+
+<section><header><div class="eyebrow">Left for later</div><h2>Not in this item</h2></header>
+<div class="tscroll"><table>
+<tr><th>Left out</th><th>Why</th></tr>
+<tr><td>An “our own posts” list on the brand side</td><td>Agreed as later. Until then the brand sees these posts in the creator app and in Wallet › Sales money.</td></tr>
+<tr><td>More than one brand per creator</td><td>Agreed: one to start.</td></tr>
+<tr><td>His store's products straight into a product collection</td><td>His own posts can go in a collection. Loose products from his own store are a separate, smaller step.</td></tr>
+<tr><td>Views, likes or reach from Instagram and YouTube</td><td>INFLX does not read them for any post today.</td></tr>
+</table></div></section>
+
+<footer>Unchanged and not drawn: the five post-building steps between “What kind of post?” and Review; Share and its links; the shopper app; the creator's Wallet. Source: three read-only passes over the server, both phone apps and the website on 10 October 2026. Production data was not read.</footer>
+</div>
+
+
+</body></html>

@@ -116,8 +116,8 @@ async function livePool({ segments = [], videosOnly = false, influencerId = null
             cp.category_node_ids, cp.theme_tag_ids, cp.price_band_id, ${preferred} AS preferred,
             GREATEST(COALESCE(((${liveDay})::timestamp AT TIME ZONE 'Asia/Kolkata'), cp.approved_at), cp.approved_at) AS live_at
        FROM creator_posts cp
-       JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
-       JOIN campaign_sets cs ON cs.id = ci.set_id
+       -- item 20: the pool reads nothing from a post's collaboration, and a post for a creator's own
+       -- brand has none, so the collaboration is no longer joined here.
        LEFT JOIN brand_offers o ON o.id = cp.offer_id
       WHERE cp.v2 AND cp.status = 'approved' AND cp.approved_at IS NOT NULL AND cp.post_code IS NOT NULL
         AND ((${liveDay}) IS NULL OR (${liveDay}) <= $1::date)
@@ -377,7 +377,7 @@ async function byCode(raw, who, visitor = {}, channel = 'code') {
   if (!CODE_RE.test(code)) return { state: 'unknown', message: MSG.NO_CODE };
   const { rows } = await db.query(
     `SELECT cp.id, cp.influencer_id, cs.go_live_date FROM creator_posts cp
-       JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id JOIN campaign_sets cs ON cs.id = ci.set_id
+       LEFT JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id LEFT JOIN campaign_sets cs ON cs.id = ci.set_id
       WHERE cp.post_code = $1 AND cp.v2`, [code]);
   const hit = rows[0];
   if (!hit) return { state: 'unknown', message: MSG.NO_CODE };

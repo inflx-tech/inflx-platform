@@ -175,4 +175,22 @@ async function _sendViaMSG91(phone, code) {
   }
 }
 
-module.exports = { sendOtp, verifyOtp };
+/**
+ * Item 20 — a code for something OTHER than signing in (linking a brand to its owner's creator
+ * account). It is sent the same way and follows the same test-number rule, but it is NOT written to
+ * otp_codes: the caller keeps it in its own table. So it can never be used at /auth/verify-otp, and
+ * sending it never cancels a sign-in code the number's owner is waiting for.
+ * @returns {Promise<string>} the six-digit code that was sent
+ */
+async function sendCodeFor(phone) {
+  const isTestNumber = await _isAllowlistedTestNumber(phone);
+  const code = isTestNumber ? TEST_FIXED_CODE : _generateCode();
+  if (isTestNumber) {
+    console.log(`[OTP] ${_maskPhone(phone)} is an allow-listed test number — no SMS sent`);
+    return code;
+  }
+  await _sendViaMSG91(phone, code);
+  return code;
+}
+
+module.exports = { sendOtp, verifyOtp, sendCodeFor };

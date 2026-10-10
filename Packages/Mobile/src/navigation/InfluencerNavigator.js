@@ -8,6 +8,8 @@ import LegalListScreen from '../screens/legal/LegalListScreen';
 import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
 // Item 2 — invitation settings, blocked brands. Contract: features/item2-pitch-invitation-settings
 import InvitationSettingsScreen from '../screens/influencer/InvitationSettingsScreen';
+// Item 20 — the brand he runs and posts for himself. Contract: features/item20-own-brand
+import MyBrandScreen from '../screens/influencer/MyBrandScreen';
 import BlockedBrandsScreen from '../screens/influencer/BlockedBrandsScreen';
 import BrandOverviewScreen from '../screens/influencer/BrandOverviewScreen';
 // Item 3 — the five-tab shell, Collabs, Find brands and the profile screens.
@@ -219,6 +221,8 @@ function ProfileStackScreen() {
       {/* Item 2 */}
       <ProfileStack.Screen name="InvitationSettings" component={InvitationSettingsScreen} />
       <ProfileStack.Screen name="BlockedBrands" component={BlockedBrandsScreen} />
+      {/* Item 20 */}
+      <ProfileStack.Screen name="MyBrand" component={MyBrandScreen} />
       {/* Legal — creators get the creator document set. */}
       <ProfileStack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'creator' }} />
       <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />

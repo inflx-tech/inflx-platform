@@ -362,6 +362,9 @@ export const brandApi = {
   listBlockedCreators:  () => api.get('/brands/me/blocked-creators'),
   blockCreator:         (influencerId) => api.post('/brands/me/blocked-creators', { influencerId }),
   unblockCreator:       (influencerId) => api.delete(`/brands/me/blocked-creators/${influencerId}`),
+  // Item 20 — creators linked to this brand (they run it and post for it themselves). Contract: features/item20-own-brand
+  linkedCreators:       () => api.get('/brands/me/linked-creators'),
+  removeLinkedCreator:  (influencerId) => api.delete(`/brands/me/linked-creators/${influencerId}`),
   // X4 / P1–P4 — a creator's profile as a brand sees it (carries inviteSummary + item-3 extras).
   getCreatorProfile:    (influencerId) => api.get(`/influencers/${influencerId}`),
   // Item 3b — S2/S3: every number for one platform. Contract: features/item3b-social-numbers
@@ -726,6 +729,8 @@ export const influencerApi = {
   postCollaborations: (brandId) => api.get(`/influencers/me/shoppable-posts/collaborations?brand_id=${encodeURIComponent(brandId)}`),
   myShoppablePosts:  (state) => api.get(`/influencers/me/shoppable-posts${state ? `?state=${encodeURIComponent(state)}` : ''}`),
   createPost:        (ciId) => api.post('/influencers/me/shoppable-posts', { campaign_influencer_id: ciId }),
+  // item 20 — a post for the brand he is linked to (no collaboration). Contract: features/item20-own-brand
+  createOwnPost:     (brandId) => api.post('/influencers/me/shoppable-posts', { own_brand_id: brandId }),
   getPost:           (id) => api.get(`/influencers/me/shoppable-posts/${id}`),
   postOptions:       (id) => api.get(`/influencers/me/shoppable-posts/${id}/options`),
   updatePost:        (id, body) => api.patch(`/influencers/me/shoppable-posts/${id}`, body),
@@ -743,6 +748,16 @@ export const influencerApi = {
   postShare:         (id) => api.get(`/influencers/me/shoppable-posts/${id}/share`),
   postStats:         (id) => api.get(`/influencers/me/shoppable-posts/${id}/stats`),
   myLinks:           () => api.get('/influencers/me/links'),
+  // ── Item 20 · a creator who owns a brand: the link, and where he shared an own-brand post. Contract: features/item20-own-brand ──
+  brandLink:            () => api.get('/influencers/me/brand-link'),
+  linkSameNumberBrand:  () => api.post('/influencers/me/brand-link/same-number', {}),
+  sendBrandLinkCode:    (phone) => api.post('/influencers/me/brand-link/code', { phone }),
+  confirmBrandLinkCode: (otp) => api.post('/influencers/me/brand-link/code/confirm', { otp }),
+  removeBrandLink:      () => api.delete('/influencers/me/brand-link'),
+  postPlaces:           (postId) => api.get(`/influencers/me/shoppable-posts/${postId}/places`),
+  addPostPlace:         (postId, body) => api.post(`/influencers/me/shoppable-posts/${postId}/places`, body),
+  updatePostPlace:      (postId, placeId, body) => api.patch(`/influencers/me/shoppable-posts/${postId}/places/${placeId}`, body),
+  removePostPlace:      (postId, placeId) => api.delete(`/influencers/me/shoppable-posts/${postId}/places/${placeId}`),
   acceptInvitation:  (id) => api.post(`/influencers/me/invitations/${id}/accept`),
   declineInvitation: (id, body) => api.post(`/influencers/me/invitations/${id}/decline`, body),
   // ── Item 6 · countering, the move request and the pool. Contract: features/item6-negotiation ──

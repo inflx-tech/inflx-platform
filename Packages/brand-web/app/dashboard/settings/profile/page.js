@@ -595,6 +595,18 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Item 20 (D5): who is linked to this brand is seen and removed on the phone, like branches. */}
+        <div className="prf-card">
+          <div className="prf-card-h">
+            <div className="prf-card-t"><span className="em">🔗</span>Linked creators</div>
+          </div>
+          <div style={{ fontSize: 13.5, color: '#3F3F46', lineHeight: 1.55 }}>
+            <b>Linked creators are managed in the INFLX Brand app.</b> A person who runs this brand can link their creator
+            account with a code sent to your number, and then post for the brand with no campaign. Open Profile → Linked
+            creators on your phone to see who is linked or to remove someone.
+          </div>
+        </div>
+
       </form>
 
       {/* ACCOUNT DETAILS CARD */}

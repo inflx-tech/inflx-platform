@@ -515,15 +515,16 @@ async function creatorPostRows(influencerId, today) {
       line: C.postNeeded(ci.brand_name, ci.campaign_name, n, min), context: C.createCtx, why: posting ? C.before(posting) : null, date: posting, blocks: false, done: n, min }));
   }
   const { rows } = await db.query(
-    `SELECT cp.id, cp.status, cp.reject_reason, cp.updated_at, b.business_name AS brand_name, c.name AS campaign_name
+    `SELECT cp.id, cp.status, cp.reject_reason, cp.updated_at, cp.own_brand, b.business_name AS brand_name, c.name AS campaign_name
        FROM creator_posts cp
-       JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
-       JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id
+       -- item 20: a post for his own brand has no collaboration; it is listed all the same
+       LEFT JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
+       LEFT JOIN campaign_sets cs ON cs.id = ci.set_id LEFT JOIN campaigns c ON c.id = cs.campaign_id
        JOIN brands b ON b.id = cp.brand_id
       WHERE cp.influencer_id = $1 AND cp.v2 AND cp.status IN ('rejected', 'submitted')
       ORDER BY cp.updated_at`, [influencerId]);
   for (const p of rows) {
-    const context = `${p.brand_name} · ${p.campaign_name}`;
+    const context = p.own_brand ? `${p.brand_name} · your brand` : `${p.brand_name} · ${p.campaign_name}`;
     if (p.status === 'rejected') {
       needs.push(need('post_sent_back', 'postStatus', { id: `${p.id}:post_sent_back`, postId: p.id, who: { type: 'icon', name: C.postBackName, icon: 'sentBack' },
         line: C.postBack(p.reject_reason), context, since: p.updated_at, blocks: false }));

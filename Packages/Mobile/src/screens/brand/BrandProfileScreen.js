@@ -20,6 +20,8 @@ import { Avatar } from './BrandBlockedCreatorsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { C3, subCategoryLabel } from '../../components/discovery/copy3';
+// Item 20 — the "Linked creators" row. Contract: features/item20-own-brand
+import { O20 } from '../../components/ownbrand/copy20';
 import { CompletenessNote, SubmitForReviewBlock, Dot } from '../../components/registration/ReviewBlock';
 import { BRAND_ROW_KEYS, rowNeeds, REVIEW_COPY } from '../../components/registration/completeness';
 
@@ -47,6 +49,7 @@ export default function BrandProfileScreen({ navigation, route }) {
   const [loadError, setLoadError] = useState(null);
   const [me, setMe] = useState(null);
   const [pitch, setPitch] = useState(null);
+  const [linkedN, setLinkedN] = useState(0);
   const [cats, setCats] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const { toast, show } = useToast();
@@ -61,6 +64,9 @@ export default function BrandProfileScreen({ navigation, route }) {
     setMe(r.data);
     setPitch(p.success ? p.data.summary || null : null);
     setStatus('ready');
+    // Item 20 — how many creators are linked to this brand (the row's line; never blocks the screen).
+    const lc = brandApi.linkedCreators ? await brandApi.linkedCreators() : null;
+    setLinkedN(lc && lc.success ? (lc.data.linked || []).length : 0);
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -124,6 +130,7 @@ export default function BrandProfileScreen({ navigation, route }) {
           <ProfileRow label={R.rows.subs} value={subLabels} dot={pendingDots && rowNeeds(BRAND_ROW_KEYS.subs, missing)} onPress={() => navigation.navigate('BrandSubCategories')} testID="row-sub-categories" />
           <ProfileRow label={R.rows.branches} value={R.branches.locations((me.branches || []).length)} dot={pendingDots && rowNeeds(BRAND_ROW_KEYS.branches, missing)} onPress={() => navigation.navigate('BrandBranches')} testID="row-branches" />
           <ProfileRow label={R.rows.pitch} value={pitchValue} right={pitch ? <StatusChip on={pitch.labelState !== 'paused'} /> : null} onPress={() => navigation.navigate('BrandPitchSettings')} testID="row-pitch-settings" />
+          <ProfileRow label={O20.linkedRow} sub={O20.linkedRowSub(linkedN)} onPress={() => navigation.navigate('BrandLinkedCreators')} testID="row-linked-creators" />
           <ProfileRow label={R.rows.overview[0]} sub={R.rows.overview[1]} onPress={() => navigation.navigate('BrandOwnOverview', { brandId: b.id })} testID="row-brand-overview" />
           <ProfileRow label={R.rows.links[0]} sub={R.rows.links[1]} onPress={() => navigation.navigate('BrandLinks')} testID="row-links" />
           <ProfileRow label={R.rows.legal} onPress={() => navigation.navigate('LegalList')} testID="row-legal" />

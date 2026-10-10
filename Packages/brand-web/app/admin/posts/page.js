@@ -99,8 +99,11 @@ export default function PostQueuePage() {
                         {p.v2.kind === 'offer' && p.v2.offer ? `Offer post · ${p.v2.offer.type} · ${p.v2.offer.deal}` : 'Price post · normal price'}
                       </div>
                       <div className="text-[11px] text-t2 mt-0.5">
-                        For {p.v2.collaboration.brand_name} · {p.v2.collaboration.campaign_name} · {p.v2.collaboration.set_name}
-                        {p.v2.collaboration.posting_date ? ` · posts on ${p.v2.collaboration.posting_date}` : ''}
+                        {/* item 20: a post a creator makes for the brand he runs has no campaign or set */}
+                        {p.v2.own_brand
+                          ? `For ${p.v2.collaboration.brand_name} · own brand (the creator is linked to this brand)`
+                          : <>For {p.v2.collaboration.brand_name} · {p.v2.collaboration.campaign_name} · {p.v2.collaboration.set_name}
+                            {p.v2.collaboration.posting_date ? ` · posts on ${p.v2.collaboration.posting_date}` : ''}</>}
                       </div>
                       <div className="text-[10px] text-t3 mt-0.5">
                         {[p.v2.facets.category && p.v2.facets.category.join(', '), p.v2.facets.price_band, p.v2.facets.theme].filter(Boolean).join(' · ')}

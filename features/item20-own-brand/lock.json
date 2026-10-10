@@ -1,0 +1,61 @@
+{
+  "feature": "item20-own-brand",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 10 Oct 2026: \"All five decisions are ok and Lock the screens, start\")",
+  "approved_at": "2026-10-10T01:47:53.000Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 10 Oct 2026: \"All five decisions are ok and Lock the screens, start\")",
+  "mockup_locked_at": "2026-10-10T01:47:53.000Z",
+  "notes": "Item 20 of 21 — a creator who owns a brand. Discussed 10 Oct 2026: his brief (register as a brand first; the creator side asks and authenticates; for his own brand no campaign, negotiation, agreement, commission or shoot plan; INFLX approval as usual; money to the brand after the return window); my six recommendations taken (\"i agree all your recommendations, but one thing on social media...we keep this social media upload but no approval...this is for how social media drives sales to his post\"). Survey in 00-survey/. Board v1 shown 10 Oct with five decisions; LOCKED 10 Oct 2026 on those screens with all five taken; board v2 records them. Master rules section 2 written as v1.33. BUILT 10 Oct 2026; not deployed — the deploy needs the founder's explicit go.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "walk_fixes": []
+  },
+  "boards": {
+    "apps": {
+      "file": "04-preview/mockups/item20-own-brand-v2.html",
+      "screens": "L1-L6, B1-B3, C1-C5, S1-S3, M1-M2",
+      "superseded": [
+        "04-preview/mockups/item20-own-brand-v1.html"
+      ],
+      "locked_by": "founder (chat 10 Oct 2026: \"All five decisions are ok and Lock the screens, start\")",
+      "locked_at": "2026-10-10T01:47:53.000Z"
+    }
+  },
+  "decisions": {
+    "decided_by": "founder (chat 10 Oct 2026)",
+    "O1_link_in_creator_app_never_from_a_list": true,
+    "O2_same_number_one_tap_else_brands_code": true,
+    "O3_brand_told_and_can_remove": true,
+    "O4_post_straight_from_create_inflx_approves": true,
+    "O5_any_running_offer_price_posts_products_not_in_an_offer": true,
+    "O6_no_commission_inflx_share_rest_to_brand_after_return_window": true,
+    "O7_normal_creator_for_other_brands": true,
+    "O8_one_brand_per_creator": true,
+    "O9_many_creators_per_brand": true,
+    "O10_link_removed_live_posts_stay": true,
+    "O11_brand_sees_sales_in_wallet_own_posts_list_later": true,
+    "O12_where_he_shared_it_no_approval_story_needs_no_link_own_brand_only": true,
+    "O13_existing_creators_no_popup": true,
+    "O14_linked_creators_brand_phone_only": true
+  },
+  "build": {
+    "built_at": "2026-10-10",
+    "backend": "tests/item20-own-brand.test.js 30/30; full run compared with scripts/compare-tests.js against backend/baseline_item20.json (HEAD c21318f7, run on an untouched copy): before 150 suites / 2110 tests / 1905 passed / 177 failed; after 151 / 2140 / 1935 passed / 177 failed; 30 new (all passing), 0 gone, 0 newly failing, 0 newly passing",
+    "first_run_catch": "the first full run had 1 newly failing (offer-delete: only the brand's own lists may read an offer's deleted mark); the new store-offers read had used the mark; fixed in the code, test untouched; the run was repeated",
+    "mobile": "121 suites / 2897 tests green (ownBrand20.test.js 33 new)",
+    "website": "six pages changed; checked to parse; not opened in a browser",
+    "production_read_only": "10 Oct 2026: scripts/run-206.js --dry — 0 new posts without a collaboration, 0 order lines without one, 5 numbers holding both a brand and a creator account; nothing written",
+    "migration": "206_own_brand.sql (additive; runner scripts/run-206.js)",
+    "rules": "master v1.33 §2D",
+    "decisions_in_build": "see 06-diff/notes.md — a post tied to the brand (not a hidden collaboration); the link code kept apart from sign-in codes; his own number at L3 links at once; a linked brand shows once in the picker, as his own; \"Link a different brand\" in Profile; places added only after approval; the creator's wallet reads collaboration sales only"
+  }
+}

@@ -15,6 +15,9 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { CP, rupeesP, dayMonthP } from '../../components/create/copyCreate';
 import { CL } from '../../components/create/copyLinks';
 import { StateChip, useDraft, routeFor, s as b } from '../../components/create/bitsCreate';
+// Item 20 — a post for the brand he runs: its own words, and where he shared it. Contract: features/item20-own-brand
+import { O20 } from '../../components/ownbrand/copy20';
+import PlacesCard20 from '../../components/ownbrand/PlacesCard20';
 
 /** Whole days from today to 'YYYY-MM-DD' (phone's calendar). */
 export function daysUntil(day, now = new Date()) {
@@ -60,7 +63,7 @@ export default function PostStatusScreen({ navigation, route }) {
   }
   async function startOver() {
     setBusy(true);
-    const r = await influencerApi.createPost(post.collaboration.id);
+    const r = post.own_brand ? await influencerApi.createOwnPost(post.collaboration.brand_id) : await influencerApi.createPost(post.collaboration.id);
     setBusy(false);
     if (r.success) navigation.navigate('PostType', { postId: r.data.post.id });
     else show(r.error?.message || '');
@@ -72,6 +75,7 @@ export default function PostStatusScreen({ navigation, route }) {
   if (post.state === 'draft') return null;
 
   const posting = post.collaboration.posting_date;
+  const own = !!post.own_brand;
   const title = post.state === 'in_review' ? CP.withInflx : post.state === 'sent_back' ? CP.sentBackTitle : post.title;
   return (
     <View style={base.screen} testID={`post-status-${post.state}`}>
@@ -82,7 +86,7 @@ export default function PostStatusScreen({ navigation, route }) {
         {post.state === 'in_review' ? (
           <>
             <Block title={CP.inReviewSince(String(post.submitted_at || '').slice(0, 10))} testID="in-review"><Text style={b.hint}>{CP.usually}</Text></Block>
-            <Block title={CP.whoChecks}><Text style={b.hint}>{CP.whoChecksBody}</Text></Block>
+            <Block title={CP.whoChecks}><Text style={b.hint}>{own ? O20.whoChecksBody : CP.whoChecksBody}</Text></Block>
             <Block title={CP.goesLive}><Text style={b.hint}>{CP.goesLiveBody(posting)}</Text></Block>
           </>
         ) : null}
@@ -90,13 +94,13 @@ export default function PostStatusScreen({ navigation, route }) {
         {post.state === 'sent_back' ? (
           <>
             <Block title={CP.whatSaid} testID="what-said"><Text style={st.quote}>“{post.sent_back.reason}”</Text></Block>
-            <Block title={CP.canChange}><Text style={b.hint}>{CP.canChangeBody}</Text></Block>
+            <Block title={CP.canChange}><Text style={b.hint}>{own ? O20.canChangeBody : CP.canChangeBody}</Text></Block>
             <PrimaryButton label={CP.sendAgain} onPress={() => navigation.navigate('PostReview', { postId, fix: true })} testID="fix" />
             <View style={{ height: 8 }} />
             <SecondaryButton label={CP.startOver} onPress={startOver} testID="start-over" />
             {posting ? <Block title={CP.postingNotMoved}><Text style={b.hint}>{CP.stillOn(posting, daysUntil(posting))}</Text></Block> : null}
             <View style={{ height: 8 }} />
-            <DangerButton label={CP.deleteIt} busy={busy} onPress={() => confirm(CP.deleteQ, CP.deleteBody, CP.deleteIt, remove)} testID="delete" />
+            <DangerButton label={CP.deleteIt} busy={busy} onPress={() => confirm(CP.deleteQ, own ? O20.deleteBody : CP.deleteBody, CP.deleteIt, remove)} testID="delete" />
           </>
         ) : null}
 
@@ -110,8 +114,9 @@ export default function PostStatusScreen({ navigation, route }) {
               <View style={{ flex: 1, marginRight: post.state === 'live' ? 8 : 0 }}><SecondaryButton label={`${CL.share} · ${post.code}`} onPress={() => navigation.navigate('PostShare', { postId })} testID="share" /></View>
               {post.state === 'live' ? <View style={{ flex: 1 }}><SecondaryButton label={CL.stats} onPress={() => navigation.navigate('PostStats', { postId })} testID="stats" /></View> : null}
             </View> : null}
-            <Text style={b.hint}>{CP.noEdits}</Text>
-            <DangerButton label={CP.takeDown} busy={busy} onPress={() => confirm(CP.takeDownQ, CP.takeDownBody, CP.takeDown, takeDown)} testID="take-down" />
+            {own ? <PlacesCard20 postId={postId} /> : null}
+            <Text style={b.hint}>{own ? O20.noEdits : CP.noEdits}</Text>
+            <DangerButton label={CP.takeDown} busy={busy} onPress={() => confirm(CP.takeDownQ, own ? O20.takeDownBody : CP.takeDownBody, CP.takeDown, takeDown)} testID="take-down" />
           </>
         ) : null}
 
@@ -122,14 +127,15 @@ export default function PostStatusScreen({ navigation, route }) {
             </Block>
             <View style={st.numbers}>
               <View style={st.num}><Text style={st.numLabel}>{CP.salesWhileLive}</Text><Text style={st.numValue}>{post.sales.orders}</Text></View>
-              <View style={st.num}><Text style={st.numLabel}>{CP.youEarned}</Text><Text style={st.numValue}>{rupeesP(post.sales.commission)}</Text></View>
+              <View style={st.num}><Text style={st.numLabel}>{own ? O20.itSold : CP.youEarned}</Text><Text style={st.numValue} testID="removed-money">{rupeesP(own ? post.sales.sales : post.sales.commission)}</Text></View>
             </View>
+            {own ? <PlacesCard20 postId={postId} /> : null}
             <Text style={b.hint}>{CP.otherReasons}</Text>
-            <Text style={b.hint}>{CP.returnWindow}</Text>
+            {own ? null : <Text style={b.hint}>{CP.returnWindow}</Text>}
           </>
         ) : null}
 
-        <Text style={[b.hint, { marginTop: 14 }]}>{post.collaboration.brand_name} · {post.collaboration.campaign_name} · {post.collaboration.set_name}{posting ? ` · ${dayMonthP(posting)}` : ''}</Text>
+        <Text style={[b.hint, { marginTop: 14 }]} testID="post-for">{post.for_line || `${post.collaboration.brand_name} · ${post.collaboration.campaign_name} · ${post.collaboration.set_name}`}{posting ? ` · ${dayMonthP(posting)}` : ''}</Text>
       </ScrollView>
       {toast}
     </View>

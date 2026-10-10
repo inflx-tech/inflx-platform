@@ -888,6 +888,10 @@ function ProfileRow({ row, onChange, onNotice, readOnly }) {
             Not yet filled: {row.missing_fields.join(', ')} · she can add these after approval — not needed to verify her.
           </div>
         )}
+        {/* item 20: the brand this creator runs and posts for himself — information, never a gate */}
+        {row.linked_brand && (
+          <div className="mt-0.5 text-[11px] text-t3">Linked to the brand: <b>{row.linked_brand}</b> (posts for it with no campaign)</div>
+        )}
         {row.rejection_reason && (
           <div className="mt-1 text-[11px] text-red bg-red/5 border border-red/20 rounded px-2 py-1">Rejected: {row.rejection_reason}</div>
         )}

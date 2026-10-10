@@ -4,6 +4,11 @@
  * shoppablePosts.service.js — a creator makes a shoppable post for ONE collaboration (Level 3).
  * Contract: features/shoppable-posts-v2 · rules v1.4 §4 · boards P1–P15 · spec D1–D19
  *
+ * Item 20 (features/item20-own-brand, rules v1.33 §2D): a post is for a collaboration OR for the
+ * brand its creator is linked to (`own_brand`) — never both. An own-brand post has no campaign, set,
+ * agreement, shoot, minimum, posting date or commission; what it may sell is the brand's own running
+ * offers and its listed products that are in no offer. Everything else in this file is one path.
+ *
  * A post is a row of creator_posts with v2 = true. It belongs to one collaboration (so one brand,
  * one set, one commission) and is either an OFFER post (one of her offers, products from its pool)
  * or a PRICE post (her products without offers). Every step saves; the post is a draft until she
@@ -33,6 +38,8 @@ const notificationService = require('./notification.service');
 const events = require('./collabEvents.service');
 const { SIGNED_CONTRACT_SQL } = require('./collabState');
 const { MSG, REMOVED_WHY, NOTIFY } = require('./postsCopy');
+const ownBrand = require('./ownBrand.service');
+const OWN = require('./ownBrandCopy').MSG;
 
 const MAX_SLIDES = 10;
 const MAX_PRODUCTS = 30;
@@ -96,6 +103,34 @@ async function ownCollab(influencerId, ciId) {
   return rows[0];
 }
 
+/* ───────────────────────────────────────────── a post for his own brand (item 20) */
+
+/** The brand he is linked to, shaped like a collaboration row so every step reads one thing. */
+function ownCtx(influencerId, b) {
+  return { own: true, id: null, influencer_id: influencerId, linked: !!b.linked, brand_status: b.brand_status,
+    brand_id: b.brand_id, brand_name: b.brand_name, brand_logo: b.brand_logo,
+    set_id: null, set_name: null, campaign_id: null, campaign_name: null, go_live_date: null,
+    commission_pct: null, agreed_fee: null, min_shoppable_posts: null, sell_product_ids: [] };
+}
+
+/** Who this post is for: its collaboration, or the brand he is linked to. */
+async function postFor(influencerId, p) {
+  if (!p.own_brand) return ownCollab(influencerId, p.campaign_influencer_id);
+  const b = await ownBrand.postingBrand(influencerId, p.brand_id);
+  if (!b) throw notFound();
+  return ownCtx(influencerId, b);
+}
+
+/** May he post for it now? D2 for a collaboration; for his own brand: still linked, and the brand approved. */
+function canPost(ctx) {
+  return ctx && ctx.own ? !!(ctx.linked && ctx.brand_status === 'approved') : postable(ctx);
+}
+function cantPostWhy(ctx) {
+  if (!ctx || !ctx.own) return MSG.NOT_POSTABLE;
+  if (!ctx.linked) return OWN.OWN_NOT_LINKED;
+  return ctx.brand_status === 'pending' ? OWN.OWN_BRAND_NOT_APPROVED : OWN.OWN_BRAND_STOPPED;
+}
+
 /**
  * Approved posts counted against the minimum. Item 14 (rules v1.30 §12.1, board S7): a post INFLX
  * approves after the posting date STILL COUNTS — it is shown to the brand as late, never refused.
@@ -122,17 +157,24 @@ function earningWords(ci) {
 /** P2 — the brands she can post for. A brand with no postable collaboration yet shows locked. */
 async function brands(influencerId) {
   const collabs = await myCollabs(influencerId);
+  const mine = await ownBrand.linkedBrand(influencerId);
   const byBrand = new Map();
   for (const ci of collabs) {
+    if (mine && ci.brand_id === mine.brand_id) continue;   // item 20: his own brand shows once, as his own
     const b = byBrand.get(ci.brand_id) || { id: ci.brand_id, name: ci.brand_name, logo_url: ci.brand_logo, postable: 0, waiting: 0 };
     if (postable(ci)) b.postable += 1; else b.waiting += 1;
     byBrand.set(ci.brand_id, b);
   }
-  return [...byBrand.values()].map((b) => ({
-    id: b.id, name: b.name, logo_url: b.logo_url,
+  const list = [...byBrand.values()].map((b) => ({
+    id: b.id, name: b.name, logo_url: b.logo_url, own: false,
     open: b.postable > 0,
     line: b.postable > 0 ? `${b.postable} collaboration${b.postable > 1 ? 's' : ''}${b.postable > 1 ? ' you can post for' : ''}` : 'Opens after your shoot plan',
   })).sort((a, b) => Number(b.open) - Number(a.open) || a.name.localeCompare(b.name));
+  if (!mine) return list;
+  // Item 20 (board C2): the brand he runs comes first. It needs no collaboration, only INFLX's approval of the brand.
+  const open = mine.brand_status === 'approved';
+  return [{ id: mine.brand_id, name: mine.brand_name, logo_url: mine.brand_logo, own: true, open,
+    line: open ? OWN.OWN_LINE : mine.brand_status === 'pending' ? OWN.OWN_LINE_PENDING : OWN.OWN_LINE_STOPPED }, ...list];
 }
 
 /** P3 — her collaborations with this brand: what she can sell, posting date, posts done. */
@@ -167,6 +209,22 @@ async function runningOffers(ci, today = todayInIndia()) {
       ORDER BY o.offer_type, o.ends_on, o.name`, [ci.id, today]);
   return rows.map((o) => ({ ...o, starts_on: calendarDay(o.starts_on), ends_on: calendarDay(o.ends_on), offer_config_json: o.offer_config_json || {} }));
 }
+
+/**
+ * Item 20 (O5): every offer of his own store that is published and has not ended. (An offer the
+ * brand deleted is always an ended one — rule 1.9 — so it is already out; the deleted mark itself is
+ * read only by the brand's own lists, features/offer-delete.)
+ */
+async function storeOffers(brandId, today = todayInIndia()) {
+  const { rows } = await db.query(
+    `SELECT o.id, o.name, o.offer_type, o.sub_type, o.offer_config_json, o.status, o.starts_on, o.ends_on
+       FROM brand_offers o
+      WHERE o.brand_id = $1 AND o.engine = 2 AND o.status = 'published' AND o.ends_on >= $2::date
+      ORDER BY o.offer_type, o.ends_on, o.name`, [brandId, today]);
+  return rows.map((o) => ({ ...o, starts_on: calendarDay(o.starts_on), ends_on: calendarDay(o.ends_on), offer_config_json: o.offer_config_json || {} }));
+}
+/** The offers this post may use: the collaboration's, or his own store's. */
+const offersFor = (ctx, today = todayInIndia()) => (ctx.own ? storeOffers(ctx.brand_id, today) : runningOffers(ctx, today));
 
 async function offerRow(offerId) {
   const { rows } = await db.query(`SELECT * FROM brand_offers WHERE id = $1`, [offerId]);
@@ -229,6 +287,26 @@ async function priceProducts(ci) {
        FROM brand_products bp
       WHERE bp.id = ANY($1::uuid[]) AND bp.is_active AND bp.pushed_to_store
       ORDER BY bp.price, bp.name`, [ids]);
+  return priceRows(rows);
+}
+
+/**
+ * Item 20 (O5, D1): his own store's listed products that no offer holds today — the same reading as
+ * the offer builder's "products without offers". A product in an offer is sold through an offer post.
+ */
+async function storeProductsWithoutOffers(brandId, today = todayInIndia()) {
+  const { rows } = await db.query(
+    `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.stock, bp.category_node_id AS leaf_id
+       FROM brand_products bp
+      WHERE bp.brand_id = $1 AND bp.is_active AND bp.pushed_to_store
+        AND NOT EXISTS (SELECT 1 FROM offer_pool_items i WHERE i.product_id = bp.id AND i.removed_at IS NULL AND i.lock_days @> $2::date)
+      ORDER BY bp.price, bp.name`, [brandId, today]);
+  return priceRows(rows);
+}
+/** The products a price post may carry: the collaboration's, or his own store's. */
+const priceProductsFor = (ctx, today = todayInIndia()) => (ctx.own ? storeProductsWithoutOffers(ctx.brand_id, today) : priceProducts(ctx));
+
+async function priceRows(rows) {
   const paths = await categoryPaths(rows.map((r) => r.leaf_id).filter(Boolean));
   return rows.map((r) => ({
     id: r.id, name: r.name, price: Number(r.price), shopper_price: Number(r.price), image_url: r.image_url,
@@ -283,9 +361,11 @@ const POST_SQL = `
          o.starts_on AS offer_starts_on, o.ends_on AS offer_ends_on,
          pb.label AS band_label
     FROM creator_posts cp
-    JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
-    JOIN campaign_sets cs ON cs.id = ci.set_id
-    JOIN campaigns c ON c.id = cs.campaign_id
+    -- item 20: an own-brand post has no collaboration, so these three are loose. A collaboration
+    -- post always has all three (the post rule and its foreign keys), so it reads exactly as before.
+    LEFT JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
+    LEFT JOIN campaign_sets cs ON cs.id = ci.set_id
+    LEFT JOIN campaigns c ON c.id = cs.campaign_id
     JOIN brands b ON b.id = cp.brand_id
     LEFT JOIN brand_offers o ON o.id = cp.offer_id
     LEFT JOIN price_bands pb ON pb.id = cp.price_band_id`;
@@ -395,14 +475,16 @@ async function productsOf(postIds) {
 async function salesOf(postIds) {
   if (!postIds.length) return new Map();
   const { rows } = await db.query(
-    `SELECT via_post_id AS post_id, count(*)::int AS orders, COALESCE(SUM(influencer_commission), 0) AS commission
+    `SELECT via_post_id AS post_id, count(*)::int AS orders, COALESCE(SUM(influencer_commission), 0) AS commission,
+            COALESCE(SUM(net_amount), 0) AS sales
        FROM follower_transactions WHERE via_post_id = ANY($1::uuid[]) AND status = 'completed' GROUP BY 1`, [postIds]);
-  return new Map(rows.map((r) => [r.post_id, { orders: r.orders, commission: Number(r.commission) }]));
+  return new Map(rows.map((r) => [r.post_id, { orders: r.orders, commission: Number(r.commission), sales: Number(r.sales) }]));
 }
 
-function salesWords(s) {
+/** Item 20: a post for his own brand earns no commission, so it says what it sold. */
+function salesWords(s, own = false) {
   if (!s || !s.orders) return 'No sales yet';
-  return `${s.orders} sale${s.orders > 1 ? 's' : ''} · ${inr(s.commission)} to you`;
+  return `${s.orders} sale${s.orders > 1 ? 's' : ''} · ${own ? inr(s.sales) : `${inr(s.commission)} to you`}`;
 }
 
 async function tagsById() {
@@ -427,6 +509,9 @@ async function shape(p, { media, products, sales, tags, paths, today = todayInIn
       : [p.approved_at ? istDayOf(new Date(p.approved_at)) : null, liveDayOf(p)].filter(Boolean).sort().pop() || null,
     collaboration: { id: p.campaign_influencer_id, brand_id: p.brand_id, brand_name: p.brand_name, brand_logo: p.brand_logo,
       campaign_name: p.campaign_name, set_name: p.set_name, posting_date: calendarDay(p.go_live_date) },
+    // item 20: a post for the brand he runs. `collaboration` then carries the brand alone.
+    own_brand: !!p.own_brand,
+    for_line: p.own_brand ? `${p.brand_name} · ${OWN.YOUR_BRAND}` : [p.brand_name, p.campaign_name, p.set_name].filter(Boolean).join(' · '),
     kind: p.post_kind, offer_id: p.offer_id, offer,
     products: products.get(p.id) || [],
     theme_tags: (p.theme_tag_ids || []).map((id) => tags.get(id)).filter(Boolean).map((t) => ({ id: t.id, group: t.tag_group, name: t.name })),
@@ -447,8 +532,8 @@ async function shape(p, { media, products, sales, tags, paths, today = todayInIn
       why: (REMOVED_WHY[removedReason] || (() => MSG.REMOVED))(p.offer_name),
       offer_ended_on: removedReason === 'offer_ended' ? calendarDay(p.offer_ends_on) : null,
     } : null,
-    sales: sales.get(p.id) || { orders: 0, commission: 0 },
-    sales_words: salesWords(sales.get(p.id)),
+    sales: sales.get(p.id) || { orders: 0, commission: 0, sales: 0 },
+    sales_words: salesWords(sales.get(p.id), !!p.own_brand),
     can: {
       edit: p.status === 'draft',
       fix: p.status === 'rejected',
@@ -493,7 +578,8 @@ async function getPost(influencerId, postId) {
 
 /* ───────────────────────────────────────────── making a draft (P3 → P4) */
 
-async function createDraft(influencerId, ciId) {
+async function createDraft(influencerId, ciId, ownBrandId = null) {
+  if (!ciId && ownBrandId) return createOwnDraft(influencerId, ownBrandId);
   const ci = await ownCollab(influencerId, ciId);
   if (!postable(ci)) throw new AppError('NOT_POSTABLE', MSG.NOT_POSTABLE, 422);
   const { rows } = await db.query(
@@ -504,16 +590,29 @@ async function createDraft(influencerId, ciId) {
   return getPost(influencerId, rows[0].id);
 }
 
+/** Item 20 (board C2): a post for the brand he is linked to. No collaboration is asked or made. */
+async function createOwnDraft(influencerId, brandId) {
+  const b = await ownBrand.postingBrand(influencerId, brandId);
+  if (!b || !b.linked) throw notFound();                       // not his brand: nothing about it is said
+  const ctx = ownCtx(influencerId, b);
+  if (!canPost(ctx)) throw new AppError('NOT_POSTABLE', cantPostWhy(ctx), 422);
+  const { rows } = await db.query(
+    `INSERT INTO creator_posts (influencer_id, scope, scoped_brand_ids, v2, own_brand, brand_id, status, media_kind, draft_step)
+     VALUES ($1, 'single', ARRAY[$2::uuid], true, true, $2, 'draft', 'image', 3) RETURNING id`,
+    [influencerId, ctx.brand_id]);
+  return getPost(influencerId, rows[0].id);
+}
+
 /* ───────────────────────────────────────────── the choices for each step (P4–P9) */
 
 /** Everything the steps need for this post, worked out now. */
 async function options(influencerId, postId) {
   const p = await loadOwn(influencerId, postId);
-  const ci = await ownCollab(influencerId, p.campaign_influencer_id);
+  const ci = await postFor(influencerId, p);
   const today = todayInIndia();
   const posting = calendarDay(ci.go_live_date);
-  const offers = await runningOffers(ci, today);
-  const free = await priceProducts(ci);
+  const offers = await offersFor(ci, today);
+  const free = await priceProductsFor(ci, today);
 
   const byType = new Map();
   const offerList = [];
@@ -536,12 +635,15 @@ async function options(influencerId, postId) {
   const out = {
     post_id: p.id,
     collaboration: { id: ci.id, brand_name: ci.brand_name, campaign_name: ci.campaign_name, set_name: ci.set_name, posting_date: posting },
+    own_brand: !!ci.own,
     kinds: {
-      offer: { available: offers.length > 0, count: offers.length, why: offers.length ? null : MSG.NO_OFFERS },
-      price: { available: free.length > 0, count: free.length, why: free.length ? null : MSG.NO_FREE_PRODUCTS },
+      offer: { available: offers.length > 0, count: offers.length, why: offers.length ? null : (ci.own ? OWN.OWN_NO_OFFERS : MSG.NO_OFFERS) },
+      price: { available: free.length > 0, count: free.length, why: free.length ? null : (ci.own ? OWN.OWN_NO_FREE_PRODUCTS : MSG.NO_FREE_PRODUCTS) },
     },
     offer_types: types,
-    offer_types_hidden: hidden.length ? `${andList(hidden)} ${hidden.length > 1 ? "aren't" : "isn't"} shown because this collaboration has none.` : null,
+    offer_types_hidden: !hidden.length ? null
+      : ci.own ? OWN.OWN_TYPES_HIDDEN(andList(hidden), hidden.length > 1)
+        : `${andList(hidden)} ${hidden.length > 1 ? "aren't" : "isn't"} shown because this collaboration has none.`,
     offers: offerList,
     pool: null,
     price_products: free,
@@ -574,7 +676,7 @@ async function update(influencerId, postId, patch) {
   const refused = sent.filter((k) => !allowed.includes(k) && k !== 'draft_step');
   if (refused.length) throw new AppError('POST_LOCKED', MSG.SENT_BACK_ONLY, 409, refused[0]);
 
-  const ci = await ownCollab(influencerId, p.campaign_influencer_id);
+  const ci = await postFor(influencerId, p);
   const next = {
     post_kind: p.post_kind, offer_id: p.offer_id, theme_tag_ids: p.theme_tag_ids || [],
     media_kind: p.media_kind, media_layout: p.media_layout, tag_style: p.tag_style, caption: p.caption,
@@ -594,8 +696,13 @@ async function update(influencerId, postId, patch) {
     if (next.post_kind !== 'offer') throw bad(MSG.KIND_NEEDED, 'post_kind');
     if (body.offer_id === null) { next.offer_id = null; productIds = []; pins = []; productsChanged = true; }
     else {
-      const mine = await runningOffers(ci);
+      const mine = await offersFor(ci);
       const o = mine.find((x) => x.id === body.offer_id);
+      if (!o && ci.own) {
+        // item 20: an offer of his own store that has ended, or not his store's at all
+        const his = UUID.test(String(body.offer_id)) ? await db.query(`SELECT 1 FROM brand_offers WHERE id = $1 AND brand_id = $2`, [body.offer_id, ci.brand_id]) : { rows: [] };
+        throw bad(his.rows[0] ? MSG.OFFER_ENDED : OWN.OWN_OFFER_NOT_YOURS, 'offer_id');
+      }
       if (!o) {
         const linked = await db.query(`SELECT 1 FROM collab_offers WHERE campaign_influencer_id = $1 AND offer_id = $2 AND dropped_at IS NULL`, [ci.id, body.offer_id]);
         throw bad(linked.rows[0] ? MSG.OFFER_ENDED : MSG.OFFER_NOT_YOURS, 'offer_id');
@@ -696,7 +803,7 @@ async function checkProducts(ci, next, ids) {
     const inPool = new Set(products.map((x) => x.id));
     if (ids.some((id) => !inPool.has(id))) throw bad(MSG.PRODUCT_NOT_IN_OFFER, 'product_ids');
   } else if (next.post_kind === 'price') {
-    const free = new Set((await priceProducts(ci)).map((x) => x.id));
+    const free = new Set((await priceProductsFor(ci)).map((x) => x.id));
     if (ids.some((id) => !free.has(id))) throw bad(MSG.PRODUCT_NOT_YOURS, 'product_ids');
   } else {
     throw bad(MSG.KIND_NEEDED, 'post_kind');
@@ -814,13 +921,13 @@ async function uploadUrl(influencerId, postId, { content_type, size_bytes, filen
 
 /** Everything that must hold for the post to go to INFLX or be approved. Returns the first problem, or null. */
 async function problemOf(p, ci) {
-  if (!postable(ci)) return MSG.NOT_POSTABLE;
+  if (!canPost(ci)) return cantPostWhy(ci);
   if (!['offer', 'price'].includes(p.post_kind)) return MSG.KIND_NEEDED;
   const products = (await productsOf([p.id])).get(p.id) || [];
   const ids = products.map((x) => x.id);
   if (p.post_kind === 'offer') {
     if (!p.offer_id) return MSG.OFFER_NEEDED;
-    const running = await runningOffers(ci);
+    const running = await offersFor(ci);
     const o = running.find((x) => x.id === p.offer_id);
     if (!o) return MSG.OFFER_ENDED;
     const { products: poolProducts, rule } = await offerProducts(o);
@@ -829,7 +936,7 @@ async function problemOf(p, ci) {
     if (rule.auto && ids.length < poolProducts.length) return MSG.PRODUCT_NOT_IN_OFFER;
     if (ids.length < rule.min) return rule.min > 1 ? MSG.PICK_AT_LEAST(rule.min) : MSG.PICK_AT_LEAST_ONE;
   } else {
-    const free = new Set((await priceProducts(ci)).map((x) => x.id));
+    const free = new Set((await priceProductsFor(ci)).map((x) => x.id));
     if (!ids.length) return MSG.PICK_AT_LEAST_ONE;
     if (ids.some((id) => !free.has(id))) return MSG.PRODUCT_NOT_YOURS;
   }
@@ -852,7 +959,7 @@ async function problemOf(p, ci) {
 async function submit(influencerId, postId, actorUserId) {
   const p = await loadOwn(influencerId, postId);
   if (!['draft', 'rejected'].includes(p.status)) throw new AppError('POST_LOCKED', MSG.CANT_SEND, 409);
-  const ci = await ownCollab(influencerId, p.campaign_influencer_id);
+  const ci = await postFor(influencerId, p);
   const problem = await problemOf(p, ci);
   if (problem) throw bad(problem);
   await refreshFacets(p.id);
@@ -913,7 +1020,12 @@ async function createHome(influencerId) {
   // post-links-codes (L1): her store link on the Create tab.
   const { rows: [me] } = await db.query(`SELECT lower(regexp_replace(COALESCE(instagram_handle, ''), '^@', '')) AS h FROM influencers WHERE id = $1`, [influencerId]);
   const host = (process.env.PUBLIC_LINK_HOST || 'inflx.in').replace(/^https?:\/\//, '').replace(/\/+$/, '');
-  return { needs, counts: mine.counts, total: mine.posts.length, recent: mine.posts.slice(0, 3), collections: col.n, can_post: collabs.length > 0,
+  // Item 20 (board C1): a linked, approved brand opens Create on its own, with no collaboration.
+  const own = await ownBrand.linkedBrand(influencerId);
+  const ownOpen = !!(own && own.brand_status === 'approved');
+  return { needs, counts: mine.counts, total: mine.posts.length, recent: mine.posts.slice(0, 3), collections: col.n,
+    can_post: collabs.length > 0 || ownOpen,
+    own_brand: own ? { id: own.brand_id, name: own.brand_name, logo_url: own.brand_logo, open: ownOpen } : null,
     store_link: me && me.h ? `${host}/s/${me.h}` : null };
 }
 
@@ -923,6 +1035,12 @@ async function approveCheck(postId) {
   const { rows } = await db.query(`${POST_SQL} WHERE cp.id = $1 AND cp.v2`, [postId]);
   const p = rows[0];
   if (!p) return null;
+  // Item 20: an own-brand post is checked against the link and the brand, never waved through for
+  // want of a collaboration (a missing link reads as "cannot post", which refuses the approval).
+  if (p.own_brand) {
+    const b = await ownBrand.postingBrand(p.influencer_id, p.brand_id);
+    return problemOf(p, b ? ownCtx(p.influencer_id, b) : { own: true, linked: false });
+  }
   const { rows: [ci] } = await db.query(`${COLLAB_SQL} WHERE ci.id = $1`, [p.campaign_influencer_id]);
   return problemOf(p, ci);
 }
@@ -944,7 +1062,8 @@ async function afterDecision(postId, approve, reason) {
   await tellCreator(p.influencer_id, m, { screen: 'post', post_id: p.id });
   // Item 14 (rules v1.30 §19): an approval can be what reaches the minimum on a collaboration the
   // brand already confirmed live — then it completes now. Never throws into the approval.
-  if (approve) await require('./saleLive.service').afterPostApproved(p.id);
+  // (An own-brand post belongs to no collaboration, so there is nothing to complete.)
+  if (approve && !p.own_brand) await require('./saleLive.service').afterPostApproved(p.id);
 }
 
 async function tellCreator(influencerId, m, data) {
@@ -1064,7 +1183,8 @@ async function offerPostStats(offerId, { productIds = null, today = todayInIndia
   for (const p of rows) {
     const st = stateOf(p, today);
     if (st === 'live') live += 1;
-    if (st === 'live' || st === 'approved') byCi.set(p.campaign_influencer_id, (byCi.get(p.campaign_influencer_id) || 0) + 1);
+    // item 20: an own-brand post counts as live on the offer, and belongs to no creator's collaboration row
+    if ((st === 'live' || st === 'approved') && p.campaign_influencer_id) byCi.set(p.campaign_influencer_id, (byCi.get(p.campaign_influencer_id) || 0) + 1);
   }
   let touched = 0; let emptied = 0;
   if (productIds && productIds.length && rows.length) {
@@ -1119,5 +1239,5 @@ module.exports = {
   getPost, getMany, getAny, listMine, createHome, stateOf, liveDayOf, titleOf, bandFor, shopperPrice, priceBands, themeTags,
   approveCheck, afterDecision, adminShape,
   afterOfferEnded, afterProductsLeftOffer, afterProductChange, sweepEndedOffers, refreshFacets, offerPostStats,
-  doneCounts, myCollabs,
+  doneCounts, myCollabs, canPost,
 };

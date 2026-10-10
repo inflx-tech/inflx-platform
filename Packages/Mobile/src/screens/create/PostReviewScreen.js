@@ -92,7 +92,7 @@ export default function PostReviewScreen({ navigation, route }) {
             <Fact label={CP.fOffer} value={f.offer || CP.priceWord} note={f.offer ? CP.fromOffer : null} testID="fact-offer" />
             <Fact label={CP.fPrice} value={f.price_band || '—'} note={f.top_price != null ? CP.costliest(f.top_price) : null} testID="fact-price" />
             <Fact label={CP.fTheme} value={f.theme || '—'} onEdit={fix ? () => go('PostTheme') : null} testID="fact-theme" />
-            <Fact label={CP.fFor} value={`${post.collaboration.brand_name} · ${post.collaboration.campaign_name} · ${post.collaboration.set_name}`} testID="fact-for" />
+            <Fact label={CP.fFor} value={post.for_line || `${post.collaboration.brand_name} · ${post.collaboration.campaign_name} · ${post.collaboration.set_name}`} testID="fact-for" />
             <Fact label={CP.fProducts} value={String(post.products.length)} note={post.products.map(p => p.name).slice(0, 3).join(' · ')}
               onEdit={fix ? () => go(post.kind === 'price' ? 'PostPrice' : 'PostProducts') : null} testID="fact-products" />
             <ErrorLine text={err} />

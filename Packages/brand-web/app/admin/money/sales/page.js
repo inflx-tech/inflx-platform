@@ -32,7 +32,7 @@ export default function MoneySalesPage() {
     const gone = s.state === 'cancelled';
     return { key: s.id, cells: [
       <div key="i"><b>{s.item}</b><div className="text-[10.5px] text-t3">{dayMon(s.soldAt)} · {s.cashOnDelivery ? 'cash on delivery' : 'paid online'}</div></div>,
-      <div key="b">{s.brandName}<div className="text-[10.5px] text-t3">{first(s.creatorName)} · {s.post?.code}</div></div>,
+      <div key="b">{s.brandName}<div className="text-[10.5px] text-t3">{first(s.creatorName)} · {s.post?.code}{s.ownBrand ? ' · own post' : ''}</div></div>,
       inr(s.paid), gone ? '—' : inr(s.brandShare), gone ? '—' : inr(s.creatorShare), gone ? '—' : inr(s.inflxShare),
       <Chip key="c" tone={tone}>{word}</Chip>,
     ] };

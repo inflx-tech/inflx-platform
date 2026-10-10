@@ -10,6 +10,7 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { PrimaryButton } from '../settings/primitives';
 import { CP, STATE_LABEL } from './copyCreate';
+import { O20 } from '../ownbrand/copy20';
 
 /** Where a post opens: a draft carries on at its step (4.2); anything else opens its status screen. */
 export function routeFor(post) {
@@ -39,16 +40,20 @@ export function useDraft(postId, { withOptions = false } = {}) {
   return { post, setPost, options, status, reload: load };
 }
 
-export function StepTop({ step, question }) {
+/**
+ * `own` (item 20): a post for the brand he runs skips "Which collaboration?", so it has seven
+ * steps — step 1 stays 1, every later step is one earlier.
+ */
+export function StepTop({ step, question, own }) {
   return (
     <View style={s.top}>
-      {step ? <Text style={s.eyebrow}>{CP.step(step)}</Text> : null}
+      {step ? <Text style={s.eyebrow} testID="step-count">{own ? O20.step(Math.max(1, step - 1)) : CP.step(step)}</Text> : null}
       <Text style={s.q}>{question}</Text>
     </View>
   );
 }
 
-export function ChoiceCard({ title, sub, meta, selected, disabled, onPress, logo, initials, testID }) {
+export function ChoiceCard({ title, sub, meta, selected, disabled, onPress, logo, initials, testID, tag }) {
   return (
     <TouchableOpacity style={[s.card, selected && s.cardOn, disabled && s.cardOff]} onPress={onPress} disabled={disabled} testID={testID} accessibilityState={{ selected: !!selected, disabled: !!disabled }}>
       {logo || initials ? (
@@ -56,6 +61,7 @@ export function ChoiceCard({ title, sub, meta, selected, disabled, onPress, logo
       ) : null}
       <View style={{ flex: 1 }}>
         <Text style={[s.cardTitle, disabled && s.dim]}>{title}</Text>
+        {tag ? <Text style={s.cardTag} testID={testID ? `${testID}-tag` : undefined}>{tag}</Text> : null}
         {sub ? <Text style={[s.cardSub, disabled && s.dim]}>{sub}</Text> : null}
         {meta ? <Text style={[s.cardMeta, disabled && s.dim]}>{meta}</Text> : null}
       </View>
@@ -101,6 +107,7 @@ export const s = StyleSheet.create({
   cardSub: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, marginTop: 3, lineHeight: 17 },
   cardMeta: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.ink3, marginTop: 4 },
   dim: { color: T.disabledText },
+  cardTag: { alignSelf: 'flex-start', fontFamily: fonts.sansSemiBold, fontSize: 11, color: T.state.completed.fg, backgroundColor: T.state.completed.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, overflow: 'hidden', marginTop: 4 },
   logo: { width: 40, height: 40, borderRadius: 20, backgroundColor: T.surface, marginRight: 12, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   initials: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink2 },
   tick: { fontFamily: fonts.sansBold, fontSize: 16, color: T.ink, marginLeft: 8 },

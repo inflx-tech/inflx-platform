@@ -99,7 +99,8 @@ export const W17 = {
     const cod = s.cashOnDelivery ? ` · cash on delivery · delivered ${dayMon(s.deliveredAt)}` : '';
     return `${post}${cod} · ${s.cashOnDelivery ? 'until' : 'return window until'} ${dayMon(s.windowUntil)}`;
   },
-  whoseBrand: (s) => `${first(s.creatorName) || 'Creator'}'s`,
+  // item 20: a sale through a post a linked creator made for this brand itself
+  whoseBrand: (s) => (s.ownBrand ? 'Your own' : `${first(s.creatorName) || 'Creator'}'s`),
   shopperPaid: 'Shopper paid',
   creatorShare: (pct) => `Creator's share · ${pct}%`,
   inflxShare: (pct) => `INFLX's share · ${pct}%`,

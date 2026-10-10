@@ -306,7 +306,7 @@ export default function FulfillmentPage() {
                     <div key={it.id} className={`it${it.status === 'cancelled' ? ' x' : ''}`}>
                       <div>
                         <div className="it-n">{it.name}{it.role === 'gift' ? ' · free gift' : it.role === 'free' ? ' · free (BOGO)' : ''}</div>
-                        <div className="it-m">{[it.colour, it.size, `×${it.qty}`].filter(Boolean).join(' · ')} · from {it.creator}'s post {it.post?.code || ''}{it.status === 'cancelled' ? (it.cancelled_by === 'return' ? ` · returned by the shopper: ${it.cancel_reason}` : ` · cancelled by ${it.cancelled_by}: ${it.cancel_reason}`) : ''}</div>
+                        <div className="it-m">{[it.colour, it.size, `×${it.qty}`].filter(Boolean).join(' · ')} · from {it.post?.own_brand ? 'your own' : `${it.creator}'s`} post {it.post?.code || ''}{it.status === 'cancelled' ? (it.cancelled_by === 'return' ? ` · returned by the shopper: ${it.cancel_reason}` : ` · cancelled by ${it.cancelled_by}: ${it.cancel_reason}`) : ''}</div>
                         {/* shopper-walk-fixes (W14): a return on this item. The brand sees it; INFLX decides it. */}
                         {it.status === 'active' && it.return ? <div className="it-m" style={{ fontWeight: 700 }}>{it.return.word}{it.return.status === 'requested' ? ' · INFLX is deciding. Nothing is added to your wallet for it meanwhile.' : ''}</div> : null}
                         {it.status === 'active' && canCancel && <button className="xbtn" disabled={busy === o.id} onClick={() => cancelItem(o, it)}>Can&apos;t send this · cancel</button>}
@@ -315,7 +315,7 @@ export default function FulfillmentPage() {
                         <b>{fmtShare(it.money.paid)}</b>
                         {/* A cancelled or returned item pays nobody: its split is not shown as if it did. */}
                         {it.status !== 'active' && it.money.paid > 0 && <div>{it.cancelled_by === 'return' ? 'returned' : 'cancelled'} · nothing is paid for it</div>}
-                        {it.status === 'active' && it.money.paid > 0 && <div>creator {fmtShare(it.money.creator_share)} ({it.money.creator_pct}%) · INFLX {fmtShare(it.money.inflx_share)} ({it.money.inflx_pct}%) · you {fmtShare(it.money.brand_share)}</div>}
+                        {it.status === 'active' && it.money.paid > 0 && <div>{it.post?.own_brand ? '' : `creator ${fmtShare(it.money.creator_share)} (${it.money.creator_pct}%) · `}INFLX {fmtShare(it.money.inflx_share)} ({it.money.inflx_pct}%) · you {fmtShare(it.money.brand_share)}</div>}
                       </div>
                     </div>
                   ))}
@@ -324,7 +324,7 @@ export default function FulfillmentPage() {
                 {live.length > 0 && (
                   <div className="split">
                     <div><div className="kv-l">Shopper paid</div><div className="v">{fmtShare(o.money.paid)}</div></div>
-                    <div><div className="kv-l">Creator&apos;s share</div><div className="v">{fmtShare(o.money.creator_share)}</div></div>
+                    {live.every((it) => it.post?.own_brand) ? null : <div><div className="kv-l">Creator&apos;s share</div><div className="v">{fmtShare(o.money.creator_share)}</div></div>}
                     <div><div className="kv-l">INFLX&apos;s share</div><div className="v">{fmtShare(o.money.inflx_share)}</div></div>
                     <div className="you"><div className="kv-l">Your share</div><div className="v">{fmtShare(o.money.brand_share)}</div></div>
                   </div>

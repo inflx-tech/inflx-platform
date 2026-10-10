@@ -160,7 +160,7 @@ export default function PostMediaScreen({ navigation, route }) {
       {status === 'loading' ? <Skeleton /> : status === 'error' ? <LoadError onRetry={reload} /> : (
         <>
           <ScrollView contentContainerStyle={{ padding: 16 }}>
-            <StepTop step={fix ? null : 7} question={CP.mediaTitle} />
+            <StepTop own={!!(post && post.own_brand)} step={fix ? null : 7} question={CP.mediaTitle} />
             <Text style={b.label}>{CP.type}</Text>
             <View style={base.chips}>
               <Chip label={CP.photo} selected={kind === 'image'} onPress={() => switchKind('image')} testID="kind-photo" />

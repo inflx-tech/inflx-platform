@@ -24,6 +24,8 @@ import { C3, fmtCompact } from '../../components/discovery/copy3';
 import { C3B } from '../../components/social/copy3b';
 import { CompletenessNote, SubmitForReviewBlock } from '../../components/registration/ReviewBlock';
 import { CREATOR_ROW_KEYS, rowNeeds, REVIEW_COPY } from '../../components/registration/completeness';
+// Item 20 — the "My brand" row. Never one of the "things left". Contract: features/item20-own-brand
+import { O20 } from '../../components/ownbrand/copy20';
 
 const R = C3.creatorProfile;
 
@@ -53,6 +55,7 @@ export default function ProfileScreen({ navigation, route }) {
   const [meta, setMeta] = useState({});
   const [invite, setInvite] = useState(null);
   const [social, setSocial] = useState(null);
+  const [brandLink, setBrandLink] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   // Item 12 (Phase 2b): the upload test row appears only while the server switch is on.
   const [probe, setProbe] = useState(false);
@@ -69,6 +72,8 @@ export default function ProfileScreen({ navigation, route }) {
     setInvite(i.success ? i.data.summary || null : null);
     setSocial(so && so.success ? so.data : null);
     setStatus('ready');
+    const bl = influencerApi.brandLink ? await influencerApi.brandLink() : null;
+    setBrandLink(bl && bl.success ? bl.data.link || null : null);
     const pr = influencerApi.uploadProbeStatus ? await influencerApi.uploadProbeStatus() : null;
     setProbe(!!(pr && pr.success && pr.data && pr.data.enabled === true));
   }, []);
@@ -127,6 +132,8 @@ export default function ProfileScreen({ navigation, route }) {
           <ProfileRow label={C3B.r3.row} sub={socialSubtitle(social)} right={<SocialChip chip={social && social.chip} />} onPress={() => navigation.navigate('YourNumbers')} testID="row-your-numbers" />
           <ProfileRow label={R.rows.niche} warn={needsNiche ? R.niche.warning : ''} dot={st !== 'approved' && rowNeeds(CREATOR_ROW_KEYS.niche, missing)} onPress={() => navigation.navigate('NicheLanguages')} testID="row-niche" />
           <ProfileRow label={R.rows.invitation} value={inviteValue} right={invite ? <StatusChip on={invite.labelState !== 'paused'} /> : null} onPress={() => navigation.navigate('InvitationSettings')} testID="row-invitation-settings" />
+          <ProfileRow label={O20.row} value={brandLink ? brandLink.brand.name : ''} sub={brandLink ? '' : O20.rowAsk}
+            right={brandLink ? <StatusChip on label={O20.linked} /> : null} onPress={() => navigation.navigate('MyBrand')} testID="row-my-brand" />
           <ProfileRow label={R.rows.legal} onPress={() => navigation.navigate('LegalList')} testID="row-legal" />
           {probe ? <ProfileRow label="Upload test" sub="Checks a large video reaches INFLX from this phone" onPress={() => navigation.navigate('UploadProbe')} testID="row-upload-probe" /> : null}
           <TouchableOpacity style={s.logout} onPress={logout} testID="row-logout"><Text style={s.logoutText}>{R.logout}</Text></TouchableOpacity>

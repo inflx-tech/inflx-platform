@@ -89,7 +89,7 @@ async function collabMoneyFor(where, params, conn = db) {
 const SALE_SQL = `
   SELECT ol.id, ol.name, ol.image_url, ol.colour, ol.size, ol.qty, ol.role, ol.paid_total, ol.commission, ol.commission_pct,
          ol.platform_fee, ol.fee_pct, ol.brand_net, ol.status AS line_status, ol.created_at, ol.cancelled_at, ol.cancelled_by,
-         ol.brand_id, ol.influencer_id, ol.campaign_influencer_id, ol.post_id,
+         ol.brand_id, ol.influencer_id, ol.campaign_influencer_id, ol.post_id, cp.own_brand,
          b.business_name AS brand_name, COALESCE(i.full_name, u.name) AS creator_name,
          cp.post_code, cp.caption, bo.name AS offer_name,
          fo.payment_method, fo.order_status, fo.delivered_at,
@@ -102,9 +102,17 @@ const SALE_SQL = `
     JOIN brands b ON b.id = ol.brand_id
     JOIN influencers i ON i.id = ol.influencer_id JOIN users u ON u.id = i.user_id
     JOIN creator_posts cp ON cp.id = ol.post_id
-    JOIN campaign_influencers ci ON ci.id = ol.campaign_influencer_id
-    JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id
+    -- item 20: a sale through a post for the creator's own brand has no collaboration (loose joins)
+    LEFT JOIN campaign_influencers ci ON ci.id = ol.campaign_influencer_id
+    LEFT JOIN campaign_sets cs ON cs.id = ci.set_id LEFT JOIN campaigns c ON c.id = cs.campaign_id
     LEFT JOIN brand_offers bo ON bo.id = ol.offer_id`;
+
+/**
+ * Item 20 (O6): the creator's money is commission, and a post for his own brand earns none. His
+ * lists, totals and counts are therefore his COLLABORATION sales only — an own-brand sale belongs to
+ * the brand's wallet alone and must never sit in his "coming".
+ */
+const CREATOR_SALES = `ol.influencer_id = $1 AND ol.campaign_influencer_id IS NOT NULL`;
 
 /**
  * Where one sold item's money stands:
@@ -144,6 +152,7 @@ function saleOut(s, side) {
     id: s.id, item: s.name, qty: s.qty, colour: s.colour, size: s.size, gift: s.role !== 'buy' && r2(s.paid_total) === 0,
     soldAt: s.created_at, post: { id: s.post_id, code: s.post_code, title: title.length > 40 ? `${title.slice(0, 39)}…` : title },
     campaignName: s.campaign_name, setName: s.set_name, offerName: s.offer_name || null,
+    ownBrand: !!s.own_brand,      // item 20: the brand's own post — no creator share
     cashOnDelivery: s.payment_method === 'cod', orderStatus: s.order_status, deliveredAt: s.delivered_at,
     state: st.state, windowUntil: st.until ? istDayOf(st.until) : null, at: st.at,
   };
@@ -356,7 +365,7 @@ async function creatorOf(userId) {
 async function creatorSummary(influencerId) {
   const { rows: [i] } = await db.query(`SELECT wallet_balance, withdrawal_hold FROM influencers WHERE id = $1`, [influencerId]);
   const pays = await collabMoneyFor(`ci.influencer_id = $1`, [influencerId]);
-  const comm = await salesTotals('creator', `ol.influencer_id = $1`, [influencerId]);
+  const comm = await salesTotals('creator', CREATOR_SALES, [influencerId]);
   const open = pays.filter((x) => x.locked > 0);
   const payments = r2(open.reduce((s, x) => s + x.locked, 0));
   const dated = open.map((x) => x.next && x.next.dueAt).filter(Boolean).sort();
@@ -381,8 +390,8 @@ async function creatorPayments(influencerId) {
 
 /** CW4 — commission per collaboration and per sale. */
 async function creatorCommission(influencerId, opts = {}) {
-  const totals = await salesTotals('creator', `ol.influencer_id = $1`, [influencerId]);
-  return { totals: { inWindow: totals.coming, added: totals.added, sales: totals.sales }, sales: await salesList('creator', `ol.influencer_id = $1`, [influencerId], opts) };
+  const totals = await salesTotals('creator', CREATOR_SALES, [influencerId]);
+  return { totals: { inWindow: totals.coming, added: totals.added, sales: totals.sales }, sales: await salesList('creator', CREATOR_SALES, [influencerId], opts) };
 }
 
 const CREATOR_ROW = {

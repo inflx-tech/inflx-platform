@@ -9,6 +9,7 @@ import { influencerApi } from '../../services/api';
 import { Skeleton, LoadError } from '../../components/settings/feedback';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { CP } from '../../components/create/copyCreate';
+import { O20 } from '../../components/ownbrand/copy20';
 import { StepTop, ChoiceCard, Footer, ErrorLine, useDraft } from '../../components/create/bitsCreate';
 
 export default function PostTypeScreen({ navigation, route }) {
@@ -33,9 +34,9 @@ export default function PostTypeScreen({ navigation, route }) {
       {status === 'loading' ? <Skeleton /> : status === 'error' ? <LoadError onRetry={reload} /> : (
         <>
           <ScrollView contentContainerStyle={{ padding: 16 }}>
-            <StepTop step={3} question={CP.typeQ} />
+            <StepTop own={!!(post && post.own_brand)} step={3} question={CP.typeQ} />
             <ChoiceCard title={CP.offerPost} sub={options.kinds.offer.available ? CP.offerPostSub : options.kinds.offer.why}
-              meta={options.kinds.offer.available ? CP.offerPostCount(options.kinds.offer.count) : null}
+              meta={options.kinds.offer.available ? (post.own_brand ? O20.offerCount(options.kinds.offer.count) : CP.offerPostCount(options.kinds.offer.count)) : null}
               disabled={!options.kinds.offer.available} selected={kind === 'offer'} onPress={() => setKind('offer')} testID="kind-offer" />
             <ChoiceCard title={CP.pricePost} sub={options.kinds.price.available ? CP.pricePostSub : options.kinds.price.why}
               meta={options.kinds.price.available ? CP.pricePostCount(options.kinds.price.count) : null}

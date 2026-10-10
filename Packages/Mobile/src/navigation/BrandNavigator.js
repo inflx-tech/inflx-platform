@@ -13,6 +13,8 @@ import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
 // Item 2 — pitch settings, blocked creators. Contract: features/item2-pitch-invitation-settings
 import BrandPitchSettingsScreen from '../screens/brand/BrandPitchSettingsScreen';
 import BrandBlockedCreatorsScreen from '../screens/brand/BrandBlockedCreatorsScreen';
+// Item 20 — the creators linked to this brand. Contract: features/item20-own-brand
+import BrandLinkedCreatorsScreen from '../screens/brand/BrandLinkedCreatorsScreen';
 import BrandCreatorProfileScreen from '../screens/brand/BrandCreatorProfileScreen';
 // Item 3 — the five-tab shell, discovery, groups, profile screens and the brand overview.
 // Contract: features/item3-discovery-profiles-groups
@@ -212,6 +214,8 @@ function ProfileStackScreen() {
       {/* Item 2 */}
       <ProfileStack.Screen name="BrandPitchSettings" component={BrandPitchSettingsScreen} />
       <ProfileStack.Screen name="BrandBlockedCreators" component={BrandBlockedCreatorsScreen} />
+      {/* Item 20 */}
+      <ProfileStack.Screen name="BrandLinkedCreators" component={BrandLinkedCreatorsScreen} />
       {/* Legal — brands get the brand document set. */}
       <ProfileStack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'brand' }} />
       <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />

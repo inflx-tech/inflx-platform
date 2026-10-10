@@ -44,7 +44,7 @@ export default function PostOfferScreen({ navigation, route }) {
       {status === 'loading' ? <Skeleton /> : status === 'error' ? <LoadError onRetry={reload} /> : (
         <>
           <ScrollView contentContainerStyle={{ padding: 16 }}>
-            <StepTop step={4} question={CP.kindQ} />
+            <StepTop own={!!(post && post.own_brand)} step={4} question={CP.kindQ} />
             <View style={base.chips}>
               {options.offer_types.map(t => (
                 <Chip key={t.key} label={`${t.label} (${t.count})`} selected={type === t.key} onPress={() => { setType(t.key); setOfferId(null); }} testID={`type-${t.key}`} />

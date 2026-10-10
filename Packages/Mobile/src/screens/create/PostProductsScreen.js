@@ -52,7 +52,7 @@ export default function PostProductsScreen({ navigation, route }) {
       {status === 'loading' ? <Skeleton /> : status === 'error' || !pool ? <LoadError onRetry={reload} /> : (
         <>
           <ScrollView contentContainerStyle={{ padding: 16 }}>
-            <StepTop step={fix ? null : 5} question={`${pool.name} · ${CP.products(pool.count)}`} />
+            <StepTop own={!!(post && post.own_brand)} step={fix ? null : 5} question={`${pool.name} · ${CP.products(pool.count)}`} />
             {rule.auto ? (
               <View style={b.warn} testID="fixed-all">
                 <Text style={[b.rowName, { marginBottom: 4 }]}>{CP.fixedAll(pool.count)}</Text>

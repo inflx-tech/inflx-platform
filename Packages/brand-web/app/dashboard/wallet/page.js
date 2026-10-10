@@ -42,7 +42,8 @@ function nextLine(p) {
   return `Next: ${inr(p.amount)} after it's confirmed live`;
 }
 function saleLine(s) {
-  const post = `${firstName(s.creatorName)}'s post ${s.post?.code || ''}`.trim();
+  // item 20: a sale through a post a linked creator made for this brand itself
+  const post = `${s.ownBrand ? 'Your own' : `${firstName(s.creatorName)}'s`} post ${s.post?.code || ''}`.trim();
   if (s.state === 'cancelled') return `${post} · cancelled`;
   if (s.state === 'returned') return `${post} · returned`;
   if (s.state === 'added') return `${post} · added ${dayMon(s.at)}`;
@@ -642,7 +643,7 @@ export default function WalletPage() {
                   {openSale === s.id && (
                     <div className="shares">
                       <span>Shopper paid <b>{inr(s.paid)}</b></span>
-                      <span>Creator&apos;s share · {s.commissionPct}% <b>{inr(s.creatorShare)}</b></span>
+                      {s.ownBrand ? null : <span>Creator&apos;s share · {s.commissionPct}% <b>{inr(s.creatorShare)}</b></span>}
                       <span>INFLX&apos;s share · {s.feePct}% <b>{inr(s.inflxShare)}</b></span>
                       <span className="tot">Your share <b>{inr(s.brandShare)}</b></span>
                       <span>{s.cashOnDelivery ? 'Cash on delivery' : 'Paid online'}{s.offerName ? ` · ${s.offerName}` : ''}</span>

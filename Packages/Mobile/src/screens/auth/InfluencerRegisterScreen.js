@@ -4,6 +4,8 @@ import { influencerApi } from '../../services/api';
 import { AuthContext } from '../../../App';
 import { C3B, MSG3B, validInstagram, validYoutube } from '../../components/social/copy3b';
 import OfferedStateCityFields, { MSG_STATE, MSG_CITY } from '../../components/registration/OfferedStateCityFields';
+// Item 20 — step 3: "Do you run a brand on INFLX?". Contract: features/item20-own-brand
+import BrandLinkFlow from '../../components/ownbrand/BrandLinkFlow';
 
 const P = {
   bg:          '#FAFAFA',
@@ -28,10 +30,14 @@ const P = {
 const MONO = Platform.OS === 'android' ? 'monospace' : 'Menlo';
 
 /**
- * Influencer registration — two steps (C1, C2):
+ * Influencer registration — three steps (C1, C2, then item 20's L1–L4):
  *   1. full name, State, "Your nearest major city" (picked, filtered by state) — all required.
  *   2. "Your social accounts" (R1): Instagram username and/or YouTube handle or channel link,
  *      at least one, format checked on the device with the exact §6 messages.
+ *   3. "Do you run a brand on INFLX?" (item 20) — shown once the account exists. A brand on this
+ *      very number links in one tap; a brand on another number links with the code sent to it.
+ *      "No" / "Not now" goes straight in. Leaving the app here loses nothing: he is registered, and
+ *      the same steps are in Profile › My brand.
  * On success the creator lands IN the app as a pending account (the pending home says "under
  * review"); the Waiting screen is retired. City was optional free text before — it is now
  * required and resolved, which is the fix that closes the store-visit matching failure.
@@ -48,6 +54,7 @@ export default function InfluencerRegisterScreen({ navigation }) {
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState('');
   const [fieldErr,    setFieldErr]    = useState({});
+  const [linkStatus,  setLinkStatus]  = useState(null);
 
   function next() {
     setError('');
@@ -86,10 +93,18 @@ export default function InfluencerRegisterScreen({ navigation }) {
       return;
     }
 
-    // Pending accounts enter the app now (spec §6.5). Nothing is measured here: the first
-    // measurement runs when admin approves.
-    setAppRole('influencer');
+    // Item 20 — one question before he goes in. If it cannot be asked (no answer from the server),
+    // he goes straight in: the same steps are in Profile › My brand.
+    setLoading(true);
+    const st = influencerApi.brandLink ? await influencerApi.brandLink() : null;
+    setLoading(false);
+    if (st && st.success && !st.data.link) { setLinkStatus(st.data); setStep(3); return; }
+    enter();
   }
+
+  // Pending accounts enter the app now (spec §6.5). Nothing is measured here: the first
+  // measurement runs when admin approves.
+  function enter() { setAppRole('influencer'); }
 
   const canContinue1 = fullName.trim().length > 0;
   const canSubmit = (igHandle.trim().length > 0 || ytHandle.trim().length > 0) && !loading;
@@ -97,9 +112,11 @@ export default function InfluencerRegisterScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: P.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.stepper} testID="stepper"><View style={[styles.stepBar, styles.stepOn]} /><View style={[styles.stepBar, step === 2 && styles.stepOn]} /></View>
+        <View style={styles.stepper} testID="stepper"><View style={[styles.stepBar, styles.stepOn]} /><View style={[styles.stepBar, step >= 2 && styles.stepOn]} /><View style={[styles.stepBar, step === 3 && styles.stepOn]} testID={`step-3-${step === 3 ? 'on' : 'off'}`} /></View>
 
-        {step === 1 ? (
+        {step === 3 ? (
+          <BrandLinkFlow status={linkStatus} ask onLinked={enter} onSkip={enter} />
+        ) : step === 1 ? (
           <>
             <Text style={styles.title}>{C3B.r1.step1Title}</Text>
             <Text style={styles.lede}>{C3B.r1.step1Lede}</Text>
@@ -169,7 +186,7 @@ export default function InfluencerRegisterScreen({ navigation }) {
         ) : null}
       </ScrollView>
 
-      <View style={styles.ctaBar}>
+      {step === 3 ? null : <View style={styles.ctaBar}>
         {step === 1 ? (
           <TouchableOpacity style={[styles.btn, !canContinue1 && styles.btnDisabled]} onPress={next} disabled={!canContinue1} testID="reg-continue-1">
             <Text style={styles.btnText}>{C3B.r1.continue}</Text>
@@ -179,7 +196,7 @@ export default function InfluencerRegisterScreen({ navigation }) {
             <Text style={styles.btnText}>{loading ? 'Registering…' : 'Create my account'}</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </View>}
     </KeyboardAvoidingView>
   );
 }

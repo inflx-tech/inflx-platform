@@ -43,7 +43,7 @@ export default function PostThemeScreen({ navigation, route }) {
       {status === 'loading' ? <Skeleton /> : status === 'error' ? <LoadError onRetry={reload} /> : (
         <>
           <ScrollView contentContainerStyle={{ padding: 16 }}>
-            <StepTop step={fix ? null : 6} question={CP.themeTitle} />
+            <StepTop own={!!(post && post.own_brand)} step={fix ? null : 6} question={CP.themeTitle} />
             <Text style={b.hint}>{CP.themeHint}</Text>
             {options.theme_tags.map(g => (
               <View key={g.group} style={{ marginTop: 10 }} testID={`group-${g.group}`}>
