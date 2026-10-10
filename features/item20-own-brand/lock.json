@@ -75,6 +75,7 @@
       "an \"our own posts\" list on the brand side (agreed as later)",
       "more than one brand per creator (agreed: one to start)",
       "the replacement-parcel line on the website's Orders still names the creator for an own-brand sale"
-    ]
+    ],
+    "live_data_check": "after the deploy, the changed reads were run read-only on production for all 27 creators and 15 brands (every statement checked to be a SELECT; 1,021 run): 0 errors; 8 posts read with their \"for\" line and stats; 15 sales and 5 parcels listed; the shop pool holds all 7 approved posts; 5 creators are offered a one-tap link (their number also has an approved brand account); nobody is linked yet"
   }
 }
