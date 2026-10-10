@@ -57,5 +57,24 @@
     "migration": "206_own_brand.sql (additive; runner scripts/run-206.js)",
     "rules": "master v1.33 §2D",
     "decisions_in_build": "see 06-diff/notes.md — a post tied to the brand (not a hidden collaboration); the link code kept apart from sign-in codes; his own number at L3 links at once; a linked brand shows once in the picker, as his own; \"Link a different brand\" in Profile; places added only after approval; the creator's wallet reads collaboration sales only"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-10",
+    "by": "founder go (chat: \"pls deploy\")",
+    "migration": "206_own_brand.sql applied with scripts/run-206.js --apply before the push: three tables, creator_posts.own_brand, the post rule loosened, order_lines.campaign_influencer_id nullable; every post (11), order line (17), sale (22), wallet total and sign-in code read the same before and after",
+    "commit": "df21784c (pushed c21318f7..df21784c); 65 files, staged by path",
+    "render": "proved by route existence 08:55 IST, about three minutes after the push: GET /v1/influencers/me/brand-link 404 -> 401, POST /v1/influencers/me/brand-link/code -> 401, GET /v1/influencers/me/shoppable-posts/<uuid>/places -> 401, with the fake sibling /influencers/me/brand-link-not-a-route still 404. Website proved by content: the new sentences are in the served bundles of /dashboard/settings/profile, /dashboard/wallet, /dashboard/fulfillment and admin.inflx.in/admin/posts",
+    "ota": {
+      "influencer": 234,
+      "brand": 245,
+      "native_runtime": "3"
+    },
+    "money": "the money engine is not edited: an own-brand sale is an ordinary sale priced with commission 0; production payments are still in test mode",
+    "walk": "founder walk of the 26 checks on both phones",
+    "open_after_deploy": [
+      "an \"our own posts\" list on the brand side (agreed as later)",
+      "more than one brand per creator (agreed: one to start)",
+      "the replacement-parcel line on the website's Orders still names the creator for an own-brand sale"
+    ]
   }
 }
