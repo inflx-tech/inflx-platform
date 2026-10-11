@@ -27,6 +27,7 @@ const bulkActions = require('../services/listingBulkActions.service');
 const imageIngest = require('../services/imageIngest.service');
 const { resolveProductImage } = require('../utils/productImage');
 const offerLife = require('../services/offerLife.service');
+const stockService = require('../services/stock.service');
 
 const INGEST_ERR_MSG = {
   bad_scheme: 'Only http/https links are allowed', private_ip: 'That address is not allowed',
@@ -75,7 +76,7 @@ function buildVariants(it, productSku) {
     const ca = abbr(color, 3) || 'STD';
     const sizes = Array.isArray(cv.sizes) ? cv.sizes.map((s) => ({
       size: s.size,
-      stock: s.stock != null && s.stock !== '' ? parseInt(s.stock, 10) : null,
+      stock: stockService.cleanStock(s.stock),     // empty = not counted; a negative is 0
       price: s.price != null && s.price !== '' ? Number(s.price) : null,
       sku: `${productSku}-${ca}-${abbr(s.size, 6)}`,
     })) : [];
@@ -132,7 +133,9 @@ async function insertProducts(brand, node, items) {
          null,  // mrp retired (offer-mrp-retirement) — discounts come from the offer engine; column kept dormant
          sku, node.vertical, node.segment, node.category,
          coverImage(it), it.description || null,
-         it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
+         // stock-asked-once: a product with sizes has ONE stock, its sizes — the own number is their
+         // total, never what was sent for it.
+         stockService.ownStock(variantsJson, it.stock),
          JSON.stringify(variantsJson), node.id, JSON.stringify(facets), tags]
       );
       // Count photos this product already has (from URL-ingested cover + colour
@@ -777,7 +780,7 @@ const updateListingProduct = asyncHandler(async (req, res) => {
             image_url = $5, variants_json = $6::jsonb, facets = $7::jsonb, updated_at = now()
       WHERE id = $8 AND brand_id = $9`,
     [String(it.name).trim(), Number(it.price), it.description || null,
-     it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
+     stockService.ownStock(variantsJson, it.stock),     // stock-asked-once: the total of its sizes
      image, JSON.stringify(variantsJson), JSON.stringify(facets), existing.id, brand.id]);
 
   // tags: undefined = leave as-is; array = replace with curated-filtered slugs

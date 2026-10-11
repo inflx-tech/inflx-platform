@@ -69,7 +69,11 @@ async function dealPage(postId, who = {}) {
           left: s.stock != null && s.stock <= 3 ? Math.max(0, s.stock) : null, sold_out: s.stock != null && s.stock <= 0 };
       }),
     }));
-    const soldOut = colours.length ? colours.every((c) => c.sizes.length && c.sizes.every((s) => s.sold_out)) : (p.stock != null && Number(p.stock) <= 0);
+    // Its sizes decide; a product with none (colours only, or nothing to choose) answers from its
+    // own number — as the bag and the checkout do. (A product with colours and no sizes used to
+    // fall between the two and could never say sold out.)
+    const sized = colours.filter((c) => c.sizes.length);
+    const soldOut = sized.length ? sized.every((c) => c.sizes.every((s) => s.sold_out)) : (p.stock != null && Number(p.stock) <= 0);
     const discounted = offer && offer.offer_type === 'discount' ? rules.discountedPrice(offer, p.price) : null;
     return {
       id: p.id, name: p.name, price: Number(p.price), shopper_price: discounted ? discounted.pays : Number(p.price),
@@ -78,6 +82,9 @@ async function dealPage(postId, who = {}) {
       in_deal: !!offer && (!ctx.buyPool || ctx.buyPool.has(p.id)),
       category: p.category_node_id ? { id: p.category_node_id, name: leafName.get(p.category_node_id) || null } : null,
       colours, sold_out: soldOut,
+      // stock-asked-once (board S1): a product with no real size — each colour holds one stand-in
+      // size ("Free Size"). The phone then asks for a colour only and sends that size itself.
+      one_size: stock.oneSizeProduct(colours),
       details: p.description || null,
       // O3 (board S3, S4): the brand it is listed under, its category in words, and the listing's
       // details as rows. Empty ones are left out; nothing is invented (no rating, no tax line).
@@ -95,7 +102,8 @@ async function dealPage(postId, who = {}) {
     return {
       kind: g.kind, id: g.id, name: g.name, worth: g.value, image_url: g.image_url,
       left: g.left != null && g.left <= 3 ? g.left : null, all_given: g.left != null && g.left <= 0,
-      colours: prod ? productOut(prod).colours : [], images: prod ? brandProducts.allImages(prod) : (g.image_url ? [g.image_url] : []),
+      colours: prod ? productOut(prod).colours : [], one_size: prod ? productOut(prod).one_size : false,
+      images: prod ? brandProducts.allImages(prod) : (g.image_url ? [g.image_url] : []),
     };
   });
   return {

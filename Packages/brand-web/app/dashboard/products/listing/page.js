@@ -46,6 +46,15 @@ const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant"
   : f.facet_role === 'listing_attr' || f.facet_role === 'attr' ? <span className="tag attr">listing</span> : null;
 const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
 const blankDraft = () => ({ name: '', price: '', brand: '', sku: '', stock: '', description: '', images: [], facets: {}, variants: {}, tags: [] });
+// stock-asked-once: a staged item's stock as the server will keep it — the total of its colours'
+// and sizes' boxes when every one is counted, nothing when any is not. An item with no sizes
+// keeps its own number.
+const stagedStock = (it) => {
+  const sizes = arr(it.variants).flatMap(v => arr(v.sizes));
+  if (!sizes.length) return it.stock ?? null;
+  const has = (v) => v != null && v !== '' && Number.isFinite(parseInt(v, 10));
+  return sizes.every(s => has(s.stock)) ? sizes.reduce((t, s) => t + Math.max(0, parseInt(s.stock, 10)), 0) : null;
+};
 
 // Ancestor nodes from the root down to (but excluding) `id`; null when absent.
 // Lets any node be selected directly instead of drilled to one level at a time.
@@ -175,7 +184,21 @@ export default function DrilldownListingPage() {
       let vj = {};
       try { vj = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {}); } catch { vj = {}; }
       const variantsMap = {};
+      // stock-asked-once: on a one-size product type each colour has one stock box, kept under the
+      // type's one size. A colour saved before this with no size at all had only the product's own
+      // number: with one colour that number is its stock.
+      const one = FREE.has(node?.size_system) && (fdefs || []).some(f => f.facet_key === SIZE_KEY && f.facet_role === 'variant')
+        ? sizeValues(node.size_system)[0] : null;
+      const onlyColour = (vj.colors || []).length === 1;
       for (const cv of (vj.colors || [])) {
+        if (one) {
+          const sz = arr(cv.sizes);
+          const have = sz.filter(s => s && s.stock != null && s.stock !== '');
+          const val = sz.length === 0 ? (onlyColour ? (product.stock ?? '') : '')
+            : have.length === sz.length ? have.reduce((n, s) => n + Number(s.stock), 0) : '';
+          variantsMap[cv.color] = { images: arr(cv.images), stock: { [one]: val } };
+          continue;
+        }
         // `sizes` is this colour's OWN list — it may legitimately differ from
         // another colour's, so restore it rather than re-deriving from facets.
         variantsMap[cv.color] = {
@@ -319,18 +342,42 @@ export default function DrilldownListingPage() {
   // seats) is the per-unit STOCK axis.
   const stockFacet = facets.find(f => f.facet_role === 'variant' && f.facet_key !== COLOR_KEY) || null;
   const stockKey = stockFacet?.facet_key || null;
+  // stock-asked-once: a product type with no real size (sunglasses, a watch, a saree) files each
+  // colour's stock under ONE stand-in size ("Free Size"). The brand is never shown it: there is
+  // no Size row, and each colour has one stock box.
+  const oneSize = stockKey === SIZE_KEY && leaf && FREE.has(leaf.size_system) ? sizeValues(leaf.size_system)[0] : null;
   const selectedColors = arr(draft.facets[COLOR_KEY]);
   // The MASTER list — every size this product comes in, across all colours.
   // It is what feeds facets[stockKey] and, downstream, the follower size filter.
-  const selectedVariants = stockKey ? arr(draft.facets[stockKey]) : [];
+  const selectedVariants = oneSize ? [oneSize] : (stockKey ? arr(draft.facets[stockKey]) : []);
   // …and this colour's own subset of it (contract listing-per-colour-sizes).
   // Absent `sizes` = "all of them", so a brand whose colours share sizes does
   // nothing extra. Always filtered through the master, so shrinking the top row
   // can never leave an orphan chip behind in a colour card.
   const sizesFor = (color) => {
+    if (oneSize) return [oneSize];
     const cv = draft.variants[color];
     return Array.isArray(cv?.sizes) ? selectedVariants.filter(s => cv.sizes.includes(s)) : selectedVariants;
   };
+  // stock-asked-once: stock is typed in ONE place — these boxes. What they add up to is the
+  // product's stock (the server keeps that number itself; none is sent). A box left empty is not
+  // counted: that colour or size never shows as sold out.
+  const counted = (v) => v != null && v !== '' && Number.isFinite(parseInt(v, 10));
+  const colourTotal = (color) => {
+    const vals = sizesFor(color).map(s => draft.variants[color]?.stock?.[s]).filter(counted);
+    return vals.length ? vals.reduce((n, v) => n + Math.max(0, parseInt(v, 10)), 0) : null;
+  };
+  const stockSum = (() => {
+    let total = 0; let any = false; const open = [];
+    for (const c of selectedColors) for (const s of sizesFor(c)) {
+      const v = draft.variants[c]?.stock?.[s];
+      if (counted(v)) { total += Math.max(0, parseInt(v, 10)); any = true; } else open.push(oneSize ? c : `${c} ${s}`);
+    }
+    return { total, any, open };
+  })();
+  const stockTotalText = !stockSum.any ? 'Not counted'
+    : stockSum.open.length === 0 ? String(stockSum.total)
+      : `${stockSum.total}, and ${stockSum.open.length <= 2 ? stockSum.open.join(' and ') : `${stockSum.open.length} boxes`} not counted`;
   // Union of what the colours actually stock — narrower than the master whenever
   // a size was turned off everywhere. Saved to facets so the app never advertises
   // a size no colour carries.
@@ -480,7 +527,8 @@ export default function DrilldownListingPage() {
     setItems(list => [...list, {
       name: draft.name.trim(), price: Number(draft.price),
       brand: draft.brand.trim() || null, sku: draft.sku.trim() || null,
-      stock: draft.stock === '' ? null : Number(draft.stock),
+      // stock-asked-once: sent only for a product type with nothing to count per colour or size.
+      stock: !stockKey && draft.stock !== '' ? Number(draft.stock) : null,
       description: draft.description.trim() || null,
       images: draft.images, facets: outFacets,
       variants: variants.length ? variants : undefined,
@@ -535,7 +583,7 @@ export default function DrilldownListingPage() {
     const payload = {
       name: draft.name.trim(), price: Number(draft.price),
       brand: draft.brand.trim() || null,
-      stock: draft.stock === '' ? null : Number(draft.stock),
+      stock: !stockKey && draft.stock !== '' ? Number(draft.stock) : null,
       description: draft.description.trim() || null,
       images: draft.images, facets: outFacets,
       variants: variants.length ? variants : undefined,
@@ -760,10 +808,14 @@ export default function DrilldownListingPage() {
                   <label className="fl">Price ₹ <span className="req">*</span></label>
                   <input className="t" type="number" value={draft.price} onChange={e => setDraft(d => ({ ...d, price: e.target.value }))} placeholder="0" />
                 </div>
-                <div style={{ width: 100 }}>
-                  <label className="fl">Stock</label>
-                  <input className="t" type="number" value={draft.stock} onChange={e => setDraft(d => ({ ...d, stock: e.target.value }))} placeholder="—" />
-                </div>
+                {/* stock-asked-once: only a product type with nothing to count per colour or size
+                    is asked its stock here. Every other is asked once, in step ②. */}
+                {!stockKey && (
+                  <div style={{ width: 100 }}>
+                    <label className="fl">Stock</label>
+                    <input className="t" type="number" value={draft.stock} onChange={e => setDraft(d => ({ ...d, stock: e.target.value }))} placeholder="—" />
+                  </div>
+                )}
                 <div style={{ flex: 1, minWidth: 150 }}>
                   <label className="fl">SKU <span className="muted2">(auto — leave blank)</span></label>
                   <input className="t" value={draft.sku} onChange={e => setDraft(d => ({ ...d, sku: e.target.value }))} placeholder="auto-generated" />
@@ -808,13 +860,13 @@ export default function DrilldownListingPage() {
                 a single product-photo set when the item has no colour variant. */}
           {step === 2 && (
             <div className="stepbody">
-              {variantFacets.map(renderFacet)}
-              {selectedColors.length > 0 && selectedVariants.length > 0 && (
+              {variantFacets.filter(f => !(oneSize && f.facet_key === SIZE_KEY)).map(renderFacet)}
+              {selectedColors.length > 0 && selectedVariants.length > 0 && !oneSize && (
                 <div className="sub">Every {(stockFacet?.label || 'size').toLowerCase()} this product comes in. Turn one off inside a colour below if that colour doesn&rsquo;t stock it.</div>
               )}
               {selectedColors.length > 0 ? (
                 <>
-                  <div className="sec">Variant photos &amp; stock — per colour</div>
+                  <div className="sec">{oneSize ? 'Photos & stock — per colour' : 'Variant photos & stock — per colour'}</div>
                   {selectedColors.map(color => {
                     const cv = draft.variants[color] || { images: [], stock: {} };
                     return (
@@ -831,7 +883,15 @@ export default function DrilldownListingPage() {
                         </div>
                         {uploading === color && <div className="sub">Uploading…</div>}
                         {arr(cv.images).length > 0 && <div className="imgs">{cv.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
-                        {selectedVariants.length > 0 && (() => {
+                        {/* stock-asked-once (board W2): a one-size product has one stock box per colour. */}
+                        {oneSize && (
+                          <>
+                            <label className="fl">Stock for {color}</label>
+                            <input className="t stockone" type="number" min="0" placeholder="—" aria-label={`Stock for ${color}`}
+                              value={cv.stock?.[oneSize] ?? ''} onChange={e => setColorVariantStock(color, oneSize, e.target.value)} />
+                          </>
+                        )}
+                        {!oneSize && selectedVariants.length > 0 && (() => {
                           // Every master size is offered, ON by default; tapping one
                           // drops it FOR THIS COLOUR ONLY (listing-per-colour-sizes).
                           const on = sizesFor(color);
@@ -847,7 +907,7 @@ export default function DrilldownListingPage() {
                                       title={has ? `${color} does not come in ${val}? Tap to remove` : `Add ${val} to ${color}`}
                                       onClick={() => toggleColorSize(color, val)}>{val}</button>
                                     {has
-                                      ? <input type="number" placeholder="0" value={cv.stock?.[val] ?? ''} onChange={e => setColorVariantStock(color, val, e.target.value)} />
+                                      ? <input type="number" min="0" placeholder="—" value={cv.stock?.[val] ?? ''} onChange={e => setColorVariantStock(color, val, e.target.value)} />
                                       : <span className="na" aria-label={`${val} not available in ${color}`}>—</span>}
                                   </div>
                                 );
@@ -863,6 +923,13 @@ export default function DrilldownListingPage() {
                       </div>
                     );
                   })}
+                  {/* stock-asked-once (board W2, W3): what the boxes add up to, and what an empty one means. */}
+                  {selectedVariants.length > 0 && (
+                    <>
+                      <div className="stot"><span>Total stock</span><span>{stockTotalText}</span></div>
+                      <div className="sub">Leave a box empty if you do not count stock for that {oneSize ? 'colour' : (stockFacet?.label || 'size').toLowerCase()}: it then never shows as sold out. 0 means sold out.</div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -909,10 +976,11 @@ export default function DrilldownListingPage() {
               {draft.description && <div className="sub" style={{ marginTop: 6 }}>{draft.description}</div>}
               {selectedColors.length > 0 && (
                 <div className="revrow">{selectedColors.map(c => {
-                  const tot = stockKey && draft.variants[c]?.stock ? Object.values(draft.variants[c].stock).reduce((a, b) => a + (Number(b) || 0), 0) : null;
+                  const tot = stockKey ? colourTotal(c) : null;
                   return <span key={c} className="pill v">{c}{tot != null ? ` ·${tot}` : ''}</span>;
                 })}</div>
               )}
+              {selectedColors.length > 0 && selectedVariants.length > 0 && <div className="revtot">Total stock: {stockTotalText}</div>}
               <div className="revrow">{detailFacets.map(f => {
                 const v = draft.facets[f.facet_key]; const txt = Array.isArray(v) ? v.join(', ') : v;
                 return txt ? <span key={f.facet_key} className="pill">{txt}</span> : null;
@@ -946,7 +1014,7 @@ export default function DrilldownListingPage() {
                 </div>
                 <div className="bcard">
                   <div className="bcn">2 · Upload filled file</div>
-                  <div className="bcd">One row per colour+size. We check every row, then create them all — or show what to fix.</div>
+                  <div className="bcd">{oneSize ? 'One row per colour.' : 'One row per colour+size.'} We check every row, then create them all — or show what to fix.</div>
                   <label className={'btn ink' + (importing ? ' dis' : '')} style={{ display: 'inline-block', cursor: 'pointer' }}>
                     {importing ? 'Checking…' : '⬆ Choose .xlsx / .csv'}
                     <input type="file" accept=".xlsx,.csv" style={{ display: 'none' }} disabled={importing}
@@ -961,7 +1029,10 @@ export default function DrilldownListingPage() {
                 <div className="err">
                   <div style={{ fontWeight: 800, marginBottom: 4 }}>Couldn't read that file</div>
                   <div>{importFileErr}</div>
-                  <div style={{ marginTop: 6 }}>Download a fresh template above, paste your rows into it, and upload again.</div>
+                  {/* The old-template refusal (stock-asked-once) already says what to do. */}
+                  {!/Download the template again/.test(importFileErr) && (
+                    <div style={{ marginTop: 6 }}>Download a fresh template above, paste your rows into it, and upload again.</div>
+                  )}
                 </div>
               )}
 
@@ -1044,7 +1115,7 @@ export default function DrilldownListingPage() {
                   <div key={i} className="tcard">
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="nm">{it.name}{it.brand ? <span className="brandtag">{it.brand}</span> : null}</div>
-                      <div className="mt">{it.variants?.length ? `${it.variants.length} colour(s)` : ''}{it.stock != null ? `${it.variants?.length ? ' · ' : ''}stock ${it.stock}` : ''}</div>
+                      <div className="mt">{it.variants?.length ? `${it.variants.length} colour(s)` : ''}{stagedStock(it) != null ? `${it.variants?.length ? ' · ' : ''}stock ${stagedStock(it)}` : ''}</div>
                     </div>
                     <span className="pr">₹{Number(it.price).toLocaleString('en-IN')}</span>
                     <button className="x" aria-label={`Remove ${it.name}`}
@@ -1118,6 +1189,10 @@ const CSS = `
 .lst .vsize.off{background:var(--bg2);border-style:dashed;opacity:.72}
 .lst .vsize.off .vsz{background:transparent;color:var(--muted);text-decoration:line-through}
 .lst .vsize .na{width:60px;text-align:center;color:var(--muted);font-size:12px;min-width:0}
+.lst .stockone{max-width:120px;font-weight:700}
+.lst .stot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--white);font-size:12px;font-weight:800}
+.lst .stot + .sub{margin-top:6px}
+.lst .revtot{margin-top:6px;font-size:12px;font-weight:800}
 .lst .brandtag{font-size:10px;font-weight:700;background:var(--info-pale);color:var(--info);padding:1px 7px;border-radius:6px;margin-left:7px}
 .lst .err{background:var(--danger-pale);border:1px solid #f3c0b0;color:#9a2a12;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:10px 0}
 .lst .ok{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;margin:10px 0}

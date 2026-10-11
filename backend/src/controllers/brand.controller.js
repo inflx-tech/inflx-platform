@@ -27,6 +27,7 @@ const completeness = require('../services/profileCompleteness.service');
 const { encrypt } = require('../utils/encrypt');
 // offer-builder-v2 — auto-add on create, creator notices on a price change.
 const offerLife = require('../services/offerLife.service');
+const stockService = require('../services/stock.service');
 
 const LOGO_MSG = 'Upload a JPG or PNG under 5 MB.';
 const LOGO_MAX_BYTES = 5 * 1024 * 1024;
@@ -655,7 +656,9 @@ const createProduct = asyncHandler(async (req, res) => {
       image_url || resolveProductImage({ image_url, variants_json }) || null,
       sku || null,
       is_bookable === true || is_bookable === 'true',
-      stock != null ? parseInt(stock, 10) : null,
+      // stock-asked-once: a product saved with sizes takes its own number from them; any other
+      // product keeps the number sent.
+      stockService.ownStock(variants_json, stock),
       availability_json ? JSON.stringify(availability_json) : '{}',
       booking_config_json ? JSON.stringify(booking_config_json) : '{}',
       master_vehicle_id ? parseInt(master_vehicle_id, 10) : null,
@@ -738,7 +741,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows: existing } = await db.query(
-    `SELECT id, name, price, stock, is_active, pushed_to_store FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    `SELECT id, name, price, stock, is_active, pushed_to_store, variants_json FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.pid, brand.id]
   );
   if (!existing[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
@@ -765,6 +768,14 @@ const updateProduct = asyncHandler(async (req, res) => {
   }
 
   if (!Object.keys(updates).length) throw new AppError('VALIDATION_ERROR', 'No valid fields to update', 422);
+
+  // stock-asked-once: a product with sizes has ONE stock, its sizes. Whenever this save touches the
+  // stock or the sizes, the own number is their total — not what was sent, and not what was there.
+  if (req.body.stock !== undefined || req.body.variants_json !== undefined) {
+    const sizesAfter = req.body.variants_json !== undefined ? req.body.variants_json : existing[0].variants_json;
+    const sent = req.body.stock !== undefined ? req.body.stock : existing[0].stock;
+    updates.stock = stockService.ownStock(sizesAfter, sent);
+  }
 
   updates.updated_at = new Date();
   const setClauses = Object.keys(updates).map((k, i) => `${k} = $${i + 2}`);

@@ -68,6 +68,42 @@ function available(product) {
   return !product || product.stock == null || Number(product.stock) > 0;
 }
 
+/* ───────────────────────────────────────────── stock asked once (features/stock-asked-once) */
+
+/** A stock as it was typed: empty or not a number → null (not counted, never blocks); a negative → 0. */
+function cleanStock(v) {
+  if (v == null || v === '') return null;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? Math.max(0, n) : null;
+}
+
+/**
+ * The product's own number (`brand_products.stock`), as the server keeps it. A product with sizes
+ * has ONE stock — its sizes — so its own number is their total when every size is counted, and
+ * empty when any is not; whatever was sent for it is not asked. (It used to be saved as sent: a
+ * product could say 20 on the Listings page while its only size said 0 to every shopper.)
+ * A product with no sizes keeps the number sent.
+ */
+function ownStock(variantsJson, sent) {
+  let vj = variantsJson;
+  if (typeof vj === 'string') { try { vj = JSON.parse(vj); } catch { vj = null; } }
+  if (sizeEntries(vj).length) return sizesTotal(vj);
+  return cleanStock(sent);
+}
+
+// The stand-in size of a product that has no real size: its colour's stock is filed under it.
+const ONE_SIZE_NAMES = new Set(['free size', 'one size', 'unstitched']);
+
+/**
+ * Is this a one-size product — every colour that holds sizes holds exactly one, and it is a
+ * stand-in name? `choices` is orderPricing.choicesOf's list. A shirt listed in "M" only is not.
+ */
+function oneSizeProduct(choices) {
+  const withSizes = (choices || []).filter((c) => c && Array.isArray(c.sizes) && c.sizes.length);
+  return withSizes.length > 0
+    && withSizes.every((c) => c.sizes.length === 1 && ONE_SIZE_NAMES.has(String(c.sizes[0].size || '').trim().toLowerCase()));
+}
+
 /**
  * Moves stock for product items. `sign` −1 takes, +1 gives back.
  * items: [{ product_id, colour, size, qty, name }]
@@ -112,7 +148,9 @@ async function moveProducts(conn, items, sign) {
   for (const p of byId.values()) {
     if (!p.dirtyVj) continue;
     const total = sizesTotal(p.vj);
-    if (total != null && Number(p.stock) !== total) { p.stock = total; p.dirtyStock = true; }
+    // (An empty own number counts as different: Number(null) is 0, so a product whose last unit
+    // sold kept an empty number and every reader of it went on saying "in stock".)
+    if (total != null && (p.stock == null || Number(p.stock) !== total)) { p.stock = total; p.dirtyStock = true; }
   }
   for (const p of byId.values()) {
     if (p.dirtyVj) await conn.query(`UPDATE brand_products SET variants_json = $2::jsonb WHERE id = $1`, [p.id, JSON.stringify(p.vj)]);
@@ -179,4 +217,4 @@ async function giveBack(conn, { products = [], gifts = [] }) {
   await moveGifts(conn, gifts, +1);
 }
 
-module.exports = { take, giveBack, moveProducts, moveGifts, sizeEntry, sizeEntries, sizesTotal, available };
+module.exports = { take, giveBack, moveProducts, moveGifts, sizeEntry, sizeEntries, sizesTotal, available, cleanStock, ownStock, oneSizeProduct, ONE_SIZE_NAMES };

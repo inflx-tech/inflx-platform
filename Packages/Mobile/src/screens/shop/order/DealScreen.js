@@ -120,7 +120,7 @@ export default function DealScreen({ navigation, route }) {
   }
   function openGift(g) {
     if (g.all_given) return;
-    const product = { id: g.id, name: g.name, price: 0, shopper_price: 0, images: g.images, colours: g.colours, details: null };
+    const product = { id: g.id, name: g.name, price: 0, shopper_price: 0, images: g.images, colours: g.colours, one_size: g.one_size === true, details: null };
     const existing = picks.find((l) => l.role === 'gift' && (l.gift_item_id === g.id || l.product_id === g.id));
     setPopup({ product, gift: g, mode: 'gift', ref: existing ? existing.ref : null, initial: existing || null });
   }

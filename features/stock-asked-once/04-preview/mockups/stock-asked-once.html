@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock asked once — the screens that change</title>
+<style>
+  :root{--white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-text:#6B5A00;
+    --ink:#0A0A0A;--ink2:#1F1F22;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;--border:#E4E4E7;
+    --success:#10B981;--success-text:#047857;--danger:#E8401A;--variant:#7E22CE;--variant-pale:#F3E8FF;
+    --blue:#1D4ED8;--blue-pale:#DBEAFE}
+  *{box-sizing:border-box}
+  body{font-family:'Plus Jakarta Sans','Outfit',system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);font-size:13px;
+    background:var(--bg2);margin:0;padding:24px 16px 60px}
+  .wrap{max-width:980px;margin:0 auto}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.3px;margin:0 0 2px}
+  .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 8px}
+  .lead{font-size:13px;color:var(--muted);max-width:760px;line-height:1.6}
+  h2{font-size:16px;font-weight:800;margin:34px 0 2px}
+  .cap{font-size:12px;color:var(--muted2);max-width:760px;line-height:1.55;margin-bottom:12px}
+  .pair{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+  .col{flex:1 1 300px;min-width:280px;max-width:470px}
+  .tagline{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2)}
+  .badge{font-size:10px;font-weight:800;border-radius:5px;padding:2px 7px;letter-spacing:.4px}
+  .badge.today{background:#E4E4E7;color:var(--ink2)} .badge.after{background:var(--ink);color:var(--yellow)}
+  .badge.same{background:var(--blue-pale);color:var(--blue)}
+  .panel{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px}
+  .steps{display:flex;align-items:center;gap:4px;margin-bottom:14px}
+  .st{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--muted3)}
+  .st .n{width:20px;height:20px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted2);border:1px solid var(--border)}
+  .st.on{color:var(--ink)} .st.on .n{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
+  .st.done .n{background:var(--success);color:#fff;border-color:var(--success)}
+  .bar{flex:1;height:2px;background:var(--border);min-width:10px}
+  .fl{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin:11px 0 5px}
+  .req{color:var(--danger)}
+  .tag{font-size:9px;font-weight:800;padding:1px 6px;border-radius:5px;margin-left:5px;background:var(--variant-pale);color:var(--variant)}
+  .t{width:100%;background:var(--white);border:1px solid var(--border);border-radius:9px;padding:9px;font-size:13px;min-height:36px}
+  .t.ph{color:var(--muted3)}
+  .row{display:flex;gap:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{padding:6px 11px;border-radius:99px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600}
+  .chip.on{background:var(--variant);border-color:var(--variant);color:#fff}
+  .sec{font-size:11px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 4px}
+  .vcard{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:8px;background:var(--bg)}
+  .vhead{font-weight:800;font-size:12px;display:flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:50%;border:1px solid var(--border)}
+  .stub{border:1px dashed var(--border);border-radius:9px;padding:8px 10px;color:var(--muted2);font-size:11px;margin-top:6px;background:var(--white)}
+  .vstock{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .vsize{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 7px 4px 4px;font-size:11px;font-weight:700}
+  .vsz{background:var(--yellow-pale);color:var(--yellow-text);font-size:11px;font-weight:800;border-radius:6px;padding:5px 9px}
+  .num{display:inline-block;min-width:44px;border-bottom:1px solid var(--border);font-size:12px;padding:2px 2px;font-weight:700}
+  .num.ph{color:var(--muted3);font-weight:500}
+  .stockbox{display:inline-block;width:110px;border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:13px;font-weight:700;background:var(--white)}
+  .hint{font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.5}
+  .total{margin-top:12px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:10px;font-weight:800;font-size:12px}
+  .nav{display:flex;justify-content:space-between;margin-top:14px;gap:8px}
+  .btn{padding:9px 14px;border:0;border-radius:10px;font-size:12px;font-weight:800;display:inline-block}
+  .btn.ink{background:var(--ink);color:var(--yellow)} .btn.ghost{background:var(--white);border:1px solid var(--border);color:var(--ink2)}
+  .btn.yellow{background:var(--yellow);color:var(--ink)}
+  .gone{outline:2px dashed var(--danger);outline-offset:3px;border-radius:9px;position:relative}
+  .new{outline:2px solid var(--success);outline-offset:3px;border-radius:9px}
+  .mark{font-size:10px;font-weight:800;margin-top:6px}
+  .mark.r{color:var(--danger)} .mark.g{color:var(--success-text)}
+  .pill{display:inline-block;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700;margin:2px 3px 0 0}
+  .rev{font-size:12px;line-height:1.8}
+  table{border-collapse:collapse;width:100%;background:var(--white);font-size:11px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  th,td{border:1px solid var(--border);padding:6px 8px;text-align:left;white-space:nowrap}
+  th{background:var(--bg2);font-weight:800} th.rq{background:#FFE08A} th.x{background:#FDE2DB;color:var(--danger);text-decoration:line-through}
+  td.x{color:var(--danger);text-decoration:line-through;background:#FFF5F2} th.n,td.n{background:#E7F8F0}
+  .scrollx{overflow-x:auto}
+  .errbox{margin-top:10px;background:#FFF5F2;border:1px solid #F7C9BD;border-radius:10px;padding:10px 12px;font-size:12px;color:#8A2A12;font-weight:600;line-height:1.5}
+  /* phone */
+  .phone{width:270px;border:8px solid #18181B;border-radius:30px;background:#000;overflow:hidden;margin:0 auto}
+  .scr{background:#3F3F46;height:150px;position:relative}
+  .scr span{position:absolute;left:12px;bottom:10px;color:#fff;font-size:11px;font-weight:700;opacity:.8}
+  .sheet{background:#fff;border-radius:18px 18px 0 0;margin-top:-14px;position:relative;padding:10px 14px 16px}
+  .grab{width:38px;height:4px;border-radius:2px;background:#D4D4D8;margin:0 auto 10px}
+  .ph-row{display:flex;gap:10px;margin-bottom:10px}
+  .ph-thumb{width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,#BFE3F5,#7FB8DA);flex:none}
+  .pname{font-weight:800;font-size:13px} .price{font-weight:800;font-size:14px;margin-top:2px}
+  .lab{font-size:11px;font-weight:700;color:var(--muted);margin:10px 0 6px}
+  .pchips{display:flex;gap:6px;flex-wrap:wrap}
+  .pchip{border:1px solid var(--border);border-radius:99px;padding:6px 12px;font-size:12px;font-weight:700;background:#fff}
+  .pchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .pchip.out{color:var(--muted3);text-decoration:line-through;background:var(--bg2)}
+  .left{font-size:11px;font-weight:700;color:var(--blue);margin-top:8px}
+  .btnrow{display:flex;gap:8px;margin-top:14px}
+  .pb{flex:1;text-align:center;border-radius:12px;padding:11px 6px;font-size:12px;font-weight:800}
+  .pb.second{border:1px solid var(--ink);background:#fff} .pb.pri{background:var(--yellow)} .pb.dis{background:#E4E4E7;color:#A1A1AA;border-color:#E4E4E7}
+  .note{margin-top:14px;font-size:12px;color:var(--muted);background:var(--white);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:8px;padding:11px 13px;line-height:1.6}
+  .note b{color:var(--ink)}
+  ul{margin:6px 0 0;padding-left:18px} li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Stock asked once</h1>
+  <div class="rule"></div>
+  <div class="lead">Today a product can hold two stock numbers that disagree: the product's own "Stock" and the stock on its sizes.
+    The Listings page shows the first; the shopper app obeys the second. Ten sunglasses showed "20 in stock" to the brand and
+    "Out of stock" to shoppers. After this change stock is typed in <b>one place only</b>, and the total is added up for you.
+    These are the only screens that change. Dashed red = removed. Green = new.</div>
+
+  <!-- ───────────────────────── W1 -->
+  <h2>W1 · Website · Add a product · Step 1 "Basics"</h2>
+  <div class="cap">The "Stock" box leaves this step. Everything else on the step stays exactly as it is.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="panel">
+        <div class="steps"><div class="st on"><span class="n">1</span>Basics</div><div class="bar"></div><div class="st"><span class="n">2</span></div><div class="bar"></div><div class="st"><span class="n">3</span></div><div class="bar"></div><div class="st"><span class="n">4</span></div></div>
+        <label class="fl">Product name <span class="req">*</span></label><div class="t">Computer sunglasses</div>
+        <label class="fl">Brand</label><div class="t">Jhon Jcabos</div>
+        <div class="row">
+          <div style="width:110px"><label class="fl">Price ₹ <span class="req">*</span></label><div class="t">1499</div></div>
+          <div style="width:90px" class="gone"><label class="fl">Stock</label><div class="t">20</div></div>
+          <div style="flex:1"><label class="fl">SKU (auto)</label><div class="t ph">auto-generated</div></div>
+        </div>
+        <div class="mark r">✕ This box goes — it is the number the shopper app never reads.</div>
+        <div class="nav"><span class="btn ghost">‹ Pick another type</span><span class="btn ink">Next ›</span></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="panel">
+        <div class="steps"><div class="st on"><span class="n">1</span>Basics</div><div class="bar"></div><div class="st"><span class="n">2</span></div><div class="bar"></div><div class="st"><span class="n">3</span></div><div class="bar"></div><div class="st"><span class="n">4</span></div></div>
+        <label class="fl">Product name <span class="req">*</span></label><div class="t">Computer sunglasses</div>
+        <label class="fl">Brand</label><div class="t">Jhon Jcabos</div>
+        <div class="row">
+          <div style="width:110px"><label class="fl">Price ₹ <span class="req">*</span></label><div class="t">1499</div></div>
+          <div style="flex:1"><label class="fl">SKU (auto)</label><div class="t ph">auto-generated</div></div>
+        </div>
+        <div class="nav"><span class="btn ghost">‹ Pick another type</span><span class="btn ink">Next ›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────── W2 -->
+  <h2>W2 · Website · Step 2 "Variants" · a one-size product (sunglasses, watches, bags, sarees…)</h2>
+  <div class="cap">No "Size" row and no "Free Size" box. Each colour has one box: its stock. The total is shown underneath.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="panel">
+        <div class="steps"><div class="st done"><span class="n">✓</span>Basics</div><div class="bar"></div><div class="st on"><span class="n">2</span>Variants</div><div class="bar"></div><div class="st"><span class="n">3</span></div><div class="bar"></div><div class="st"><span class="n">4</span></div></div>
+        <label class="fl">Color / Tone <span class="req">*</span><span class="tag">variant</span></label>
+        <div class="chips"><span class="chip on">White</span><span class="chip on">Black</span><span class="chip">Blue</span><span class="chip">Red</span></div>
+        <div class="gone" style="margin-top:10px;padding:0 4px 6px">
+          <label class="fl">Size<span class="tag">variant</span></label>
+          <div class="chips"><span class="chip on">Free Size</span></div>
+        </div>
+        <div class="sec">Variant photos &amp; stock — per colour</div>
+        <div class="vcard">
+          <div class="vhead"><span class="dot" style="background:#fff"></span>White</div>
+          <label class="fl">Photos for White</label><div class="stub">Choose Files · or paste URL(s)</div>
+          <label class="fl">Size &amp; stock for White</label>
+          <div class="vstock"><span class="vsize gone"><span class="vsz">Free Size</span><span class="num ph">0</span></span></div>
+        </div>
+        <div class="vcard">
+          <div class="vhead"><span class="dot" style="background:#111"></span>Black</div>
+          <label class="fl">Photos for Black</label><div class="stub">Choose Files · or paste URL(s)</div>
+          <label class="fl">Size &amp; stock for Black</label>
+          <div class="vstock"><span class="vsize gone"><span class="vsz">Free Size</span><span class="num ph">0</span></span></div>
+        </div>
+        <div class="mark r">✕ "Free Size" is not a real size — it is only where the colour's stock was kept.</div>
+        <div class="nav"><span class="btn ghost">‹ Back</span><span class="btn ink">Next ›</span></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="panel">
+        <div class="steps"><div class="st done"><span class="n">✓</span>Basics</div><div class="bar"></div><div class="st on"><span class="n">2</span>Variants</div><div class="bar"></div><div class="st"><span class="n">3</span></div><div class="bar"></div><div class="st"><span class="n">4</span></div></div>
+        <label class="fl">Color / Tone <span class="req">*</span><span class="tag">variant</span></label>
+        <div class="chips"><span class="chip on">White</span><span class="chip on">Black</span><span class="chip">Blue</span><span class="chip">Red</span></div>
+        <div class="sec">Photos &amp; stock — per colour</div>
+        <div class="vcard">
+          <div class="vhead"><span class="dot" style="background:#fff"></span>White</div>
+          <label class="fl">Photos for White</label><div class="stub">Choose Files · or paste URL(s)</div>
+          <label class="fl">Stock for White</label>
+          <span class="stockbox new">20</span>
+        </div>
+        <div class="vcard">
+          <div class="vhead"><span class="dot" style="background:#111"></span>Black</div>
+          <label class="fl">Photos for Black</label><div class="stub">Choose Files · or paste URL(s)</div>
+          <label class="fl">Stock for Black</label>
+          <span class="stockbox new">5</span>
+        </div>
+        <div class="total new" style="padding:10px 8px"><span>Total stock</span><span>25</span></div>
+        <div class="hint">Leave a box empty if you do not count stock for that colour: it then never shows as sold out. 0 means sold out.</div>
+        <div class="nav"><span class="btn ghost">‹ Back</span><span class="btn ink">Next ›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────── W3 -->
+  <h2>W3 · Website · Step 2 "Variants" · a product with sizes (t-shirt, kurta, shoes…)</h2>
+  <div class="cap">The colour and size boxes stay exactly as they are. Two small things change: the total is shown, and an empty box no longer shows a grey "0".</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span> <span class="badge same">boxes unchanged</span></div>
+      <div class="panel">
+        <label class="fl">Color / Tone <span class="req">*</span><span class="tag">variant</span></label>
+        <div class="chips"><span class="chip on">Red</span><span class="chip on">Blue</span><span class="chip">Black</span></div>
+        <label class="fl">Size <span class="req">*</span><span class="tag">variant</span></label>
+        <div class="chips"><span class="chip">S</span><span class="chip on">M</span><span class="chip on">L</span><span class="chip on">XL</span></div>
+        <div class="sec">Variant photos &amp; stock — per colour</div>
+        <div class="vcard">
+          <div class="vhead"><span class="dot" style="background:#D64545"></span>Red</div>
+          <label class="fl">Size &amp; stock for Red</label>
+          <div class="vstock"><span class="vsize"><span class="vsz">M</span><span class="num">10</span></span><span class="vsize"><span class="vsz">L</span><span class="num">12</span></span><span class="vsize"><span class="vsz">XL</span><span class="num">0</span></span></div>
+        </div>
+        <div class="vcard">
+          <div class="vhead"><span class="dot" style="background:#3B6BD6"></span>Blue</div>
+          <label class="fl">Size &amp; stock for Blue</label>
+          <div class="vstock"><span class="vsize"><span class="vsz">M</span><span class="num">5</span></span><span class="vsize"><span class="vsz">L</span><span class="num">4</span></span><span class="vsize"><span class="vsz">XL</span><span class="num ph new">—</span></span></div>
+        </div>
+        <div class="total new" style="padding:10px 8px"><span>Total stock</span><span>31, and Blue XL not counted</span></div>
+        <div class="hint">Leave a box empty if you do not count stock for that size: it then never shows as sold out. 0 means sold out.</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="note" style="margin-top:22px"><b>What the shopper sees for this t-shirt (no change):</b>
+        <ul><li>Red XL is crossed out. Red M and L can be bought.</li>
+            <li>Blue XL can always be bought, because its stock is not counted.</li>
+            <li>The t-shirt says "Out of stock" only when every counted size of every colour is 0.</li></ul></div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────── W4 -->
+  <h2>W4 · Website · Step 4 "Review"</h2>
+  <div class="cap">One new line: the total stock, so you see what Listings will show before you save.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="panel">
+        <div class="rev"><b>Computer sunglasses</b><br>₹1,499 · Jhon Jcabos<br>
+          <span class="pill">White ·20</span><span class="pill">Black ·5</span><br>
+          <span class="new" style="display:inline-block;margin-top:6px;padding:2px 6px;font-weight:800">Total stock: 25</span></div>
+        <div class="nav"><span class="btn ghost">‹ Back</span><span class="btn yellow">+ Add this item</span></div>
+      </div>
+    </div>
+    <div class="col"></div>
+  </div>
+
+  <!-- ───────────────────────── W5 -->
+  <h2>W5 · Website · Bulk add · the Excel sheet</h2>
+  <div class="cap">The sheet had two stock columns too ("Stock" and "Variant stock"). After: one column, "Stock", for that row. A one-size product has no "Size" column.</div>
+  <div class="tagline"><span class="badge today">Today</span> sunglasses sheet</div>
+  <div class="scrollx"><table>
+    <tr><th class="rq">Name *</th><th class="rq">Price *</th><th>Brand</th><th class="x">Stock</th><th class="rq">Colour *</th><th class="x">Size</th><th class="x">Variant stock</th><th>Cover image URLs</th></tr>
+    <tr><td>Computer sunglasses</td><td>1499</td><td>Jhon Jcabos</td><td class="x">20</td><td>White</td><td class="x">Free Size</td><td class="x">0</td><td>https://…</td></tr>
+  </table></div>
+  <div class="tagline" style="margin-top:14px"><span class="badge after">After</span> sunglasses sheet (one row per colour)</div>
+  <div class="scrollx"><table>
+    <tr><th class="rq">Name *</th><th class="rq">Price *</th><th>Brand</th><th class="rq">Colour *</th><th class="n">Stock</th><th>Cover image URLs</th></tr>
+    <tr><td>Computer sunglasses</td><td>1499</td><td>Jhon Jcabos</td><td>White</td><td class="n">20</td><td>https://…</td></tr>
+    <tr><td>Computer sunglasses</td><td>1499</td><td>Jhon Jcabos</td><td>Black</td><td class="n">5</td><td></td></tr>
+  </table></div>
+  <div class="tagline" style="margin-top:14px"><span class="badge after">After</span> t-shirt sheet (one row per colour and size)</div>
+  <div class="scrollx"><table>
+    <tr><th class="rq">Name *</th><th class="rq">Price *</th><th>Brand</th><th class="rq">Colour *</th><th>Size</th><th class="n">Stock</th><th>Cover image URLs</th></tr>
+    <tr><td>Red t-shirt</td><td>799</td><td>Aurelia</td><td>Red</td><td>M</td><td class="n">10</td><td>https://…</td></tr>
+    <tr><td>Red t-shirt</td><td>799</td><td>Aurelia</td><td>Red</td><td>L</td><td class="n">12</td><td></td></tr>
+  </table></div>
+  <div class="errbox">If someone uploads a sheet made from the old template, nothing is saved and the page says:<br>
+    "This sheet is from the old template, which asked for stock twice. Download the template again, paste your rows into it, and upload."</div>
+
+  <!-- ───────────────────────── S1 -->
+  <h2>S1 · Shopper app · the sheet that opens from the bag icon · a one-size product</h2>
+  <div class="cap">She picks only a colour. There is no "Size" row and the button is ready at once. The same on the product page and inside a deal.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="phone"><div class="scr"><span>the post, dimmed</span></div><div class="sheet"><div class="grab"></div>
+        <div class="ph-row"><div class="ph-thumb"></div><div><div class="pname">Computer sunglasses</div><div class="price">₹1,499</div></div></div>
+        <div class="lab">Colour: White</div>
+        <div class="pchips"><span class="pchip on">White</span><span class="pchip">Black</span></div>
+        <div class="gone" style="padding:0 4px 6px;margin-top:6px"><div class="lab">Size</div>
+          <div class="pchips"><span class="pchip">Free Size</span></div></div>
+        <div class="btnrow"><span class="pb second dis">Buy now</span><span class="pb dis">Choose a size</span></div>
+      </div></div>
+      <div class="mark r" style="text-align:center">✕ She must tap "Free Size" before she can buy.</div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="phone"><div class="scr"><span>the post, dimmed</span></div><div class="sheet"><div class="grab"></div>
+        <div class="ph-row"><div class="ph-thumb"></div><div><div class="pname">Computer sunglasses</div><div class="price">₹1,499</div></div></div>
+        <div class="lab">Colour: White</div>
+        <div class="pchips"><span class="pchip on">White</span><span class="pchip">Black</span><span class="pchip out new">Blue</span></div>
+        <div class="btnrow"><span class="pb second">Buy now</span><span class="pb pri new">Add to bag</span></div>
+      </div></div>
+      <div class="mark g" style="text-align:center">✓ A colour that has sold out is crossed out. When the chosen colour has 3 or fewer, "Only 2 left" shows under the colours, as it does today under the sizes.</div>
+    </div>
+  </div>
+
+  <div class="note"><b>What does NOT change</b>
+    <ul>
+      <li>The Listings page keeps its layout. Its "Stock" column simply becomes the total of the colours and sizes, so it always matches what shoppers can buy.</li>
+      <li>A product with sizes looks and works the same in the shopper app.</li>
+      <li>Bag, checkout and order pages still write "White · Free Size" on the line, as they do today.</li>
+      <li>Prices, offers, orders, returns and money are not touched.</li>
+      <li>The brand phone app and the creator app are not touched.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

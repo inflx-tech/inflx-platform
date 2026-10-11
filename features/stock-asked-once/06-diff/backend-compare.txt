@@ -1,0 +1,21 @@
+stock-asked-once — the full backend suite, serial, 11 Oct 2026
+compared with backend/baseline_item20.json (the run stored at the item 20 release, 10 Oct 2026)
+
+baseline : 150 suites / 2110 tests / 1905 passed / 177 failed / 28 skipped
+now      : 152 suites / 2157 tests / 1952 passed / 177 failed / 28 skipped
+
+passed before, fail now : 0
+new tests               : 47 (47 passing)
+new tests that fail     : 0
+failed before, pass now : 0
+in the baseline, not run now : 0
+the same old failures   : 177
+suites that did not load: 1 — tests/collection-library.test.js (also before)
+
+"Connection terminated" in the output: 0 · connect timeouts: 0
+
+new suite: tests/stock-asked-once.test.js — 17 tests, 17 passing
+new suite: tests/item20-own-brand.test.js — 30 tests, 30 passing
+(the item 20 suite was added by that release after its baseline was stored)
+
+The backend code under test did not change after this run started; only the website page, the phone picker and the Excel round-trip script were edited afterwards.

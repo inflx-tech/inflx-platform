@@ -178,6 +178,29 @@ export function isSoldOut(product) {
   return withSizes.length > 0 && withSizes.every((c) => c.sizes.every((s) => !!s.sold_out));
 }
 
+/**
+ * stock-asked-once (board S1): a product with no real size — sunglasses, a watch, a saree. Each
+ * colour holds one stand-in size ("Free Size") and the server says so (`one_size`). She is asked
+ * for a colour only; the size is that colour's one size, filled in here. A server that does not
+ * say so is an older one: the size row shows, as it always did.
+ */
+export const isOneSize = (product) => !!(product && product.one_size) && hasChoices(product);
+const sizedColours = (product) => ((product && product.colours) || []).filter((c) => (c.sizes || []).length);
+const colourGone = (c) => (c.sizes || []).every((s) => !!s.sold_out);
+
+/**
+ * What is chosen, as the pickers hand it on: { colour, size }. Any product with real sizes:
+ * exactly what she tapped. A one-size product: the colour she tapped — before she taps, the first
+ * colour still in stock — with that colour's one size.
+ */
+export function chosen(product, sel) {
+  const s = sel || { colour: null, size: null };
+  if (!isOneSize(product)) return s;
+  const cols = sizedColours(product);
+  const row = (s.colour != null && cols.find((c) => (c.colour || null) === s.colour)) || cols.find((c) => !colourGone(c)) || cols[0];
+  return { ...s, colour: row.colour, size: row.sizes[0].size };
+}
+
 /** The size she has chosen, as the deal data sends it ({ size, price, shopper_price, left, sold_out }), or null. */
 export function chosenSize(product, sel) {
   if (!product || !sel || !sel.size) return null;
@@ -225,10 +248,40 @@ export function alonePriceFor(product, sel) {
 export function ChoicePicker({ product, value, onChange, testIDPrefix = 'pick' }) {
   const colours = (product && product.colours) || [];
   const withSizes = colours.filter((c) => (c.sizes || []).length);
-  const colour = value.colour != null ? value.colour : (withSizes[0] ? withSizes[0].colour : null);
+  const one = isOneSize(product);
+  const colour = one ? chosen(product, value).colour : (value.colour != null ? value.colour : (withSizes[0] ? withSizes[0].colour : null));
   const row = withSizes.find((c) => (c.colour || null) === (colour || null)) || withSizes[0];
   if (!withSizes.length) return null;
   const allGone = isSoldOut(product);
+  // stock-asked-once (board S1): no Size row. The colours are the choice; one with none left is
+  // crossed out, and "Only 2 left" is said of the colour she is on.
+  if (one) {
+    const its = row.sizes[0];
+    return (
+      <View>
+        {withSizes.some((c) => c.colour) ? (
+          <>
+            <Text style={b.lab}>{CO.colour(colour || '')}</Text>
+            <View style={b.wrap}>
+              {withSizes.map((c) => {
+                const on = (c.colour || null) === (colour || null);
+                const out = colourGone(c);
+                return (
+                  <TouchableOpacity key={c.colour || 'one'} disabled={out} onPress={() => onChange({ colour: c.colour, size: c.sizes[0].size })}
+                    style={[b.chip, on && !out && b.chipOn, out && b.sizeOut]} testID={`${testIDPrefix}-colour-${c.colour}`}
+                    accessibilityState={{ selected: !!(on && !out), disabled: !!out }}>
+                    <Text style={[b.chipText, on && !out && b.chipTextOn, out && b.outText]}>{c.colour}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+        {its.left && !allGone ? <Text style={b.left} testID={`${testIDPrefix}-left`}>{CO.onlyLeft(its.left)}</Text> : null}
+        {allGone ? <Text style={b.allGone} testID={`${testIDPrefix}-sold-out`}>{CO.soldOut}</Text> : null}
+      </View>
+    );
+  }
   return (
     <View>
       {withSizes.some((c) => c.colour) ? (
@@ -384,18 +437,21 @@ export function ProductPopup({ product, visible, onClose, effect, price, struck,
     setSel({ colour: initial ? initial.colour : null, size: initial ? initial.size : null });
     setQty(initial && initial.qty ? initial.qty : 1);
   }, [visible, product && product.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // stock-asked-once: a one-size product needs no size tap — `cur` is the colour she is on with
+  // its one size. For every other product it is `sel`, untouched.
+  const cur = chosen(product, sel);
   const images = useMemo(() => {
     if (!product) return [];
-    const c = (product.colours || []).find((x) => x.colour && x.colour === sel.colour);
+    const c = (product.colours || []).find((x) => x.colour && x.colour === cur.colour);
     return c && c.images && c.images.length ? c.images : product.images;
-  }, [product, sel.colour]);
+  }, [product, cur.colour]);
   if (!product) return null;
   const needs = hasChoices(product);
   const gone = isSoldOut(product);
-  const ready = (!needs || !!sel.size) && !gone;
+  const ready = (!needs || !!cur.size) && !gone;
   // F10: once a size is chosen the price is that size's. A price the caller fixes (a gift, the
   // free one of a pair: ₹0) stays as given.
-  const pf = priceFor(product, sel);
+  const pf = priceFor(product, cur);
   const shown = price != null ? price : pf.pays;
   const strike = price != null ? struck : (struck || (Number(pf.pays) < Number(pf.normal) ? pf.normal : null));
   return (
@@ -418,9 +474,9 @@ export function ProductPopup({ product, visible, onClose, effect, price, struck,
           </View>
         ) : null}
       </ScrollView>
-      <TouchableOpacity disabled={!ready} onPress={() => onPrimary({ colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size, qty })}
+      <TouchableOpacity disabled={!ready} onPress={() => onPrimary({ colour: needs ? (cur.colour || firstColour(product)) : null, size: cur.size, qty })}
         style={[b.primary, !ready && b.primaryDis]} testID={`${testID}-primary`} accessibilityState={{ disabled: !ready }}>
-        <Text style={[b.primaryText, !ready && { color: T.disabledText }]}>{ready ? primaryLabel(sel) : gone ? CO.soldOut : CO.chooseSize}</Text>
+        <Text style={[b.primaryText, !ready && { color: T.disabledText }]}>{ready ? primaryLabel(cur) : gone ? CO.soldOut : CO.chooseSize}</Text>
       </TouchableOpacity>
       {onRemove ? <Text style={b.remove} onPress={onRemove} testID={`${testID}-remove`}>{CO.remove}</Text> : null}
     </Sheet>
@@ -517,10 +573,11 @@ export function SizeSheet({ post, product, visible, onClose, onAdd, onBuyNow, bu
   const gone = isSoldOut(product);
   const busy = !!working || waiting || !!problem || gone;
   const needs = hasChoices(product);
-  const ready = !needs || !!sel.size;
+  const cur = chosen(product, sel);         // stock-asked-once: a one-size product is ready with no size tap
+  const ready = !needs || !!cur.size;
   // With `offerLink` the sheet sells this one product on its own from an offer post (B4).
-  const pf = offerLink ? alonePriceFor(product, sel) : priceFor(product, sel);
-  const pick = () => ({ colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size, price_seen: pf.seen });
+  const pf = offerLink ? alonePriceFor(product, cur) : priceFor(product, cur);
+  const pick = () => ({ colour: needs ? (cur.colour || firstColour(product)) : null, size: cur.size, price_seen: pf.seen });
   async function add() {
     setFailed(null);
     try { await onAdd(pick()); } catch (e) { setFailed((e && e.message) || CO.bagNotSaved); }

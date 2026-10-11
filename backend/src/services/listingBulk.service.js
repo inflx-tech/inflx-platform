@@ -33,6 +33,13 @@ const SIZE_SYSTEMS = {
 };
 const sizeValues = (sys) => SIZE_SYSTEMS[sys] || ['Free Size'];
 
+// stock-asked-once: a leaf whose products have no real size (sunglasses, a watch, a saree) files
+// each colour's stock under ONE stand-in size. Its sheet has no Size column: one row per colour,
+// and the importer fills the size in.
+const ONE_SIZE_SYSTEMS = new Set(['free_size', 'one_size', 'unstitched']);
+const oneSizeOf = (node) => (node && ONE_SIZE_SYSTEMS.has(node.size_system) ? sizeValues(node.size_system)[0] : null);
+const OLD_TEMPLATE = 'This sheet is from the old template, which asked for stock twice. Download the template again, paste your rows into it, and upload.';
+
 const norm = (s) => String(s == null ? '' : s).trim();
 const lc = (s) => norm(s).toLowerCase();
 // Match headers ignoring case AND the required-marker " *" the template adds to
@@ -47,6 +54,11 @@ function columnModel(node, facets) {
   const colorFacet = facets.find(f => f.facet_key === COLOR_KEY) || null;
   const sizeFacet = facets.find(f => f.facet_key === SIZE_KEY) || null;
   const hasVariants = !!colorFacet;
+  // stock-asked-once: where a leaf counts stock per colour (and size), the sheet asks it ONCE — on
+  // the row. Only a leaf with nothing to count per row keeps the product-level column. (The sheet
+  // used to ask both, "Stock" and "Variant stock", and nothing made the two agree.)
+  const perRow = hasVariants && !!sizeFacet;
+  const oneSize = perRow ? oneSizeOf(node) : null;
   // Detail columns = everything that isn't a fixed/handled field.
   const detail = facets.filter(f => !['images', 'price', COLOR_KEY, SIZE_KEY, 'brand'].includes(f.facet_key)
     && f.facet_role !== 'media' && f.facet_role !== 'price');
@@ -62,7 +74,7 @@ function columnModel(node, facets) {
     { header: 'Price', field: 'price', required: true },
     { header: 'Brand', field: 'brand' },
     { header: 'Description', field: 'description', note: 'optional shopper-facing description' },
-    { header: 'Stock', field: 'stock', note: 'base stock (optional)' },
+    ...(perRow ? [] : [{ header: 'Stock', field: 'stock', note: 'base stock (optional)' }]),
     ...detail.map(f => ({
       header: f.label, field: 'facet', facet: f, required: f.required === 'required',
       list: dropdown(f), multi: f.input_type === 'multi_select',
@@ -71,20 +83,22 @@ function columnModel(node, facets) {
   if (hasVariants) {
     cols.push({ header: 'Colour', field: 'color', required: true,
       list: (Array.isArray(colorFacet.allowed_values) && colorFacet.allowed_values.length > 1) ? colorFacet.allowed_values : null });
-    if (sizeFacet) cols.push({ header: 'Size', field: 'size', list: sizeValues(node.size_system) });
-    cols.push({ header: 'Variant stock', field: 'variant_stock', note: 'stock for this colour+size row' });
+    if (sizeFacet && !oneSize) cols.push({ header: 'Size', field: 'size', list: sizeValues(node.size_system) });
+    cols.push(perRow
+      ? { header: 'Stock', field: 'row_stock', note: oneSize ? 'stock for this colour' : 'stock for this colour+size row' }
+      : { header: 'Variant stock', field: 'variant_stock', note: 'stock for this colour+size row' });
   }
   // Image-URL columns (contract: listing-image-urls). Ingested server-side on
   // import; comma-separate multiple. Cover is product-level; Colour attaches to
   // that colour's row.
   cols.push({ header: 'Cover image URLs', field: 'cover_urls', note: 'image links, comma-separated; first = main' });
   if (hasVariants) cols.push({ header: 'Colour image URLs', field: 'colour_urls', note: 'image links for this colour, comma-separated' });
-  return { cols, hasVariants, colorFacet, sizeFacet, detail };
+  return { cols, hasVariants, colorFacet, sizeFacet, detail, perRow, oneSize };
 }
 
 /** Build the live .xlsx workbook for a leaf. */
 function buildTemplateWorkbook(node, facets, stampDate) {
-  const { cols } = columnModel(node, facets);
+  const { cols, oneSize } = columnModel(node, facets);
   const wb = new ExcelJS.Workbook();
   wb.creator = 'INFLX'; wb.created = stampDate;
   const ws = wb.addWorksheet('Products', { views: [{ state: 'frozen', ySplit: 1 }] });
@@ -118,6 +132,7 @@ function buildTemplateWorkbook(node, facets, stampDate) {
   cols.forEach(c => {
     let how = 'Free text.';
     if (c.field === 'price' || c.field === 'stock' || c.field === 'variant_stock') how = 'A number.';
+    else if (c.field === 'row_stock') how = `The stock of this row (${oneSize ? 'this colour' : 'this colour and size'}). A number. Leave empty if you do not count stock: it then never shows as sold out. 0 means sold out.`;
     else if (Array.isArray(c.list)) how = (c.multi ? 'Comma-separate one or more of: ' : 'Pick one of: ') + c.list.join(', ');
     else if (c.multi) how = 'Comma-separate multiple values.';
     else if (c.field === 'color') how = 'The colour name (one row per colour).';
@@ -139,7 +154,9 @@ async function parseRows(file) {
   const fname = lc(file.originalname);
   if (fname.endsWith('.csv')) {
     const { parse } = require('csv-parse/sync');
-    return parse(file.buffer, { columns: true, skip_empty_lines: true, trim: true, relax_column_count: true });
+    const out = parse(file.buffer, { columns: true, skip_empty_lines: true, trim: true, relax_column_count: true });
+    out.__headers = [...new Set(out.flatMap((r) => Object.keys(r)))];
+    return out;
   }
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(file.buffer);
@@ -158,6 +175,9 @@ async function parseRows(file) {
     });
     if (any) obj.__row = rn, rows.push(obj);
   });
+  // Every header of the sheet, filled or not: a row object only carries its non-empty cells, so an
+  // old template's empty "Variant stock" column would otherwise go unseen (stock-asked-once).
+  rows.__headers = headers.filter(Boolean);
   return rows;
 }
 
@@ -169,8 +189,13 @@ async function parseRows(file) {
  * mapping those errors back to spreadsheet rows.
  */
 function buildItems(rows, node, facets) {
-  const { cols, hasVariants, detail } = columnModel(node, facets);
+  const { cols, hasVariants, detail, perRow, oneSize } = columnModel(node, facets);
   const fileErrors = [];
+
+  // stock-asked-once: a sheet made from the old template asked for stock twice ("Stock" for the
+  // product, "Variant stock" for the row). Reading it under the new meaning would guess; refuse it.
+  const sheetHeaders = new Set([...(rows.__headers || []), ...rows.flatMap((r) => Object.keys(r))].map(headerKey));
+  if (perRow && sheetHeaders.has('variant stock')) return { items: [], fileErrors: [OLD_TEMPLATE] };
 
   // Present headers (case-insensitive, required-marker-insensitive). Built from
   // the UNION of all rows' keys — parseRows only emits keys for non-empty cells,
@@ -221,8 +246,13 @@ function buildItems(rows, node, facets) {
       grp.forEach(row => {
         const color = norm(get(row, 'Colour')); if (!color) return;
         if (!byColor.has(color)) byColor.set(color, []);
-        const size = norm(get(row, 'Size'));
-        const stock = norm(get(row, 'Variant stock'));
+        // A one-size leaf has no Size column: the row IS the colour, filed under the leaf's one size.
+        const size = oneSize || norm(get(row, 'Size'));
+        const stock = norm(get(row, perRow ? 'Stock' : 'Variant stock'));
+        if (oneSize && byColor.get(color).length) {
+          fileErrors.push(`"${norm(get(first, 'Name'))}": the colour ${color} is on more than one row (row ${row.__row || '?'}). This product has one row per colour.`);
+          return;
+        }
         if (size) { byColor.get(color).push({ size, stock: stock === '' ? null : stock }); sizes.add(size); }
         const us = splitUrls(get(row, 'Colour image URLs'));
         // Dedup across the colour's size rows — the same URLs repeated on every
@@ -240,13 +270,15 @@ function buildItems(rows, node, facets) {
       price: norm(get(first, 'Price')),
       brand: norm(get(first, 'Brand')) || null,
       description: norm(get(first, 'Description')) || null,
-      stock: norm(get(first, 'Stock')) || null,
+      // Per-row stock: the product has no number of its own to send (the server adds the rows up).
+      stock: perRow ? null : (norm(get(first, 'Stock')) || null),
       facets: facetVals,
       variants: variants && variants.length ? variants : undefined,
       __cover_urls: splitUrls(get(first, 'Cover image URLs')),   // raw → ingested by controller
       __rows: grp.map(r => r.__row).filter(Boolean),
     });
   }
+  if (fileErrors.length) return { items: [], fileErrors };
   return { items, fileErrors };
 }
 
@@ -297,4 +329,4 @@ function coerceItemFacets(items, facets) {
 // sizeValues is exported so the move-category rules (listingBulkActions.service)
 // can check a product's existing sizes against a TARGET leaf's size system from
 // the one definition of that vocabulary, rather than keeping a second copy.
-module.exports = { buildTemplateWorkbook, parseRows, buildItems, coerceItemFacets, columnModel, sizeValues, SIZE_SYSTEMS, COLOR_KEY, SIZE_KEY };
+module.exports = { buildTemplateWorkbook, parseRows, buildItems, coerceItemFacets, columnModel, sizeValues, oneSizeOf, OLD_TEMPLATE, SIZE_SYSTEMS, COLOR_KEY, SIZE_KEY };

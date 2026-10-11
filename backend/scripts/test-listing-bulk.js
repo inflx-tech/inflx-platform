@@ -32,8 +32,8 @@ async function filledBuffer(dropHeaders = []) {
   ws.addRow(headers);
   const set = (obj) => headers.map(h => obj[h.replace(/ \*$/, '')] ?? obj[h] ?? '');
   // One product, two colours (row-per-variant) + image-URL columns.
-  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Maroon', Size: 'Free', 'Variant stock': '12', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive', 'Cover image URLs': 'https://x.test/c1.jpg, https://x.test/c2.jpg', 'Colour image URLs': 'https://x.test/maroon.jpg' }));
-  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Teal', Size: 'Free', 'Variant stock': '8', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive', 'Colour image URLs': 'https://x.test/teal.jpg' }));
+  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Maroon', Stock: '12', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive', 'Cover image URLs': 'https://x.test/c1.jpg, https://x.test/c2.jpg', 'Colour image URLs': 'https://x.test/maroon.jpg' }));
+  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Teal', Stock: '8', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive', 'Colour image URLs': 'https://x.test/teal.jpg' }));
   return wb.xlsx.writeBuffer();
 }
 
@@ -45,7 +45,9 @@ async function filledBuffer(dropHeaders = []) {
   const ws = wb.getWorksheet('Products');
   const hdr = ws.getRow(1).values.filter(Boolean).map(s => String(s));
   ok(hdr.some(h => /Name \*/.test(h)) && hdr.some(h => /Price \*/.test(h)), 'template marks Name/Price required');
-  ok(hdr.some(h => /Colour \*/.test(h)) && hdr.includes('Size') && hdr.includes('Variant stock'), 'template has row-per-variant columns');
+  // stock-asked-once: a one-size leaf (Saree) has one row per colour — no Size column, and ONE Stock column.
+  ok(hdr.some(h => /Colour \*/.test(h)) && !hdr.includes('Size') && !hdr.includes('Variant stock') && hdr.filter(h => h === 'Stock').length === 1,
+    'one-size template: Colour and one Stock column, no Size, no Variant stock');
   ok(!!wb.getWorksheet('Instructions'), 'template has Instructions sheet');
 
   // 2) Parse + group a filled file
@@ -61,7 +63,9 @@ async function filledBuffer(dropHeaders = []) {
   ok(Array.isArray(it.facets.occasion) && it.facets.occasion.length === 2, 'multi_select Occasion split to array');
   ok(it.facets.fabric === 'Silk', 'single_select Fabric = Silk');
   const vMaroon = (it.variants || []).find(v => v.color === 'Maroon');
-  ok(vMaroon && vMaroon.sizes[0].stock === '12', 'per-variant stock carried (Maroon Free = 12)');
+  ok(vMaroon && vMaroon.sizes.length === 1 && vMaroon.sizes[0].size === 'Free Size' && vMaroon.sizes[0].stock === '12',
+    'the row stock is filed under the one size of the leaf (Maroon · Free Size = 12)');
+  ok(it.stock === null && JSON.stringify(it.facets.size) === JSON.stringify(['Free Size']), 'no product-level stock is sent; size facet = [Free Size]');
 
   // Image-URL columns (listing-image-urls): raw links collected for the controller to ingest.
   ok(hdr.includes('Cover image URLs') && hdr.includes('Colour image URLs'), 'template has image-URL columns');
@@ -78,12 +82,20 @@ async function filledBuffer(dropHeaders = []) {
   const r2 = bulk.buildItems(rows2, node, facets);
   ok(r2.fileErrors.length > 0 && /Fabric/.test(r2.fileErrors[0]), 'missing required column → re-download file error');
 
+  // 4b) A sheet from the OLD template (it has a "Variant stock" column, even an empty one) is refused whole
+  const wbOld = new ExcelJS.Workbook(); const wsO = wbOld.addWorksheet('Products');
+  wsO.addRow(['Name *', 'Price *', 'Stock', 'Colour *', 'Size', 'Variant stock', 'Fabric / Material *']);
+  wsO.addRow(['Old sheet saree', '900', '20', 'Maroon', 'Free Size', '', 'Silk']);
+  const rowsOld = await bulk.parseRows({ originalname: 'old.xlsx', buffer: await wbOld.xlsx.writeBuffer() });
+  const rOld = bulk.buildItems(rowsOld, node, facets);
+  ok(rOld.items.length === 0 && rOld.fileErrors.length === 1 && rOld.fileErrors[0] === bulk.OLD_TEMPLATE, 'old-template sheet → refused with the re-download sentence');
+
   // 5) Bad dropdown value → per-item validation catches it
   const { cols } = bulk.columnModel(node, facets);
   const headers = cols.map(c => c.header);
   const wbBad = new ExcelJS.Workbook(); const wsB = wbBad.addWorksheet('Products');
   wsB.addRow(headers);
-  wsB.addRow(headers.map(h => ({ Name: 'X', Price: '100', Colour: 'Maroon', Size: 'Free', 'Variant stock': '1', 'Fabric / Material': 'Silkk' }[h] ?? '')));
+  wsB.addRow(headers.map(h => ({ Name: 'X', Price: '100', Colour: 'Maroon', Stock: '1', 'Fabric / Material': 'Silkk' }[h] ?? '')));
   const rowsBad = await bulk.parseRows({ originalname: 'bad.xlsx', buffer: await wbBad.xlsx.writeBuffer() });
   const rb = bulk.buildItems(rowsBad, node, facets);
   const ebad = taxonomy.validateItem(node, facets, rb.items[0]);

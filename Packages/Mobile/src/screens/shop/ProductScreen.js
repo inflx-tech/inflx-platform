@@ -42,7 +42,7 @@ import { followerApi } from '../../services/api';
 import { track } from '../../services/events';
 import { TopBar, Loading, Empty, heartProduct, s as bs } from '../../components/shop/bitsShop';
 import {
-  BagButton, Photos, ChoicePicker, ProductDetails, AddedLine, AddToBagButton, useAdded, hasChoices, firstColour, inFront, priceFor, alonePriceFor, K, b,
+  BagButton, Photos, ChoicePicker, ProductDetails, AddedLine, AddToBagButton, useAdded, hasChoices, firstColour, chosen, inFront, priceFor, alonePriceFor, K, b,
 } from '../../components/shop/orderBits';
 import { CO } from '../../components/shop/copyOrder';
 import { CS, inr } from '../../components/shop/copyShop';
@@ -113,12 +113,15 @@ export default function ProductScreen({ navigation, route }) {
   }, [navigation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const product = useMemo(() => (data && Array.isArray(data.products) ? data.products.find((x) => x.id === productId) || null : null), [data, productId]);
+  // stock-asked-once: a one-size product (sunglasses, a watch) is bought by colour alone — `cur`
+  // is the colour she is on with its one size. For every other product it is `sel`, untouched.
+  const cur = chosen(product, sel);
   const images = useMemo(() => {
     if (!product) return [];
-    const c = (product.colours || []).find((x) => x.colour && x.colour === sel.colour);
+    const c = (product.colours || []).find((x) => x.colour && x.colour === cur.colour);
     if (c && c.images && c.images.length) return c.images;
     return product.images && product.images.filter(Boolean).length ? product.images : [product.image_url];
-  }, [product, sel.colour]);
+  }, [product, cur.colour]);
 
   /** Any way out that is not Back: the sheet must not come back. */
   function done() {
@@ -159,16 +162,16 @@ export default function ProductScreen({ navigation, route }) {
   // shopper-app-fixes (F10): a size that has its own price shows it once she chooses that size —
   // what she pays after the offer, as the server worked it out. Before a size is chosen: the product's own.
   // Bought alone from an offer post, the price is what ONE costs on its own — the server's answer.
-  const { pays, normal, seen } = alone ? alonePriceFor(product, sel) : priceFor(product, sel);
+  const { pays, normal, seen } = alone ? alonePriceFor(product, cur) : priceFor(product, cur);
   const lower = Number(pays) < Number(normal);
   const chip = !isDeal && lower ? ((post && post.offer && post.offer.line) || (data.offer && data.offer.line) || null) : null;
   const counts = isDeal && product.in_deal && data.offer && data.offer.line ? CO.countsToward(data.offer.line) : null;
   const needs = hasChoices(product);
-  const ready = !needs || !!sel.size;
+  const ready = !needs || !!cur.size;
   const canBuy = !product.sold_out && ready && !busy;
   const soldBy = CO.soldBy(brand && brand.name, first);
   const line = () => ({
-    post_id: postId, product_id: product.id, colour: needs ? (sel.colour || firstColour(product)) : null, size: sel.size, qty: 1, price_seen: seen,
+    post_id: postId, product_id: product.id, colour: needs ? (cur.colour || firstColour(product)) : null, size: cur.size, qty: 1, price_seen: seen,
   });
 
   async function heart() {

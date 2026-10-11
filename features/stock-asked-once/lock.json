@@ -1,0 +1,38 @@
+{
+  "feature": "stock-asked-once",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 11 Oct 2026: \"Yes now understood....fix these issues\" — in answer to the behaviour put to him: for a one-size product the listing form asks stock once per colour, with no \"Free Size\" box and no separate \"Stock\" box, and the shopper picks only a colour; clothing stays as it is except the product's total is added up from the sizes instead of typed)",
+  "approved_at": "2026-10-11T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat, 11 Oct 2026: \"yes pls lock it and start implementing same\" — the board 04-preview/mockups/stock-asked-once.html was open in the side panel and its six screens were listed to him: W1 Step 1 without the Stock box, W2 one stock box per colour for a one-size product, W3 clothing with the total and the dash, W4 Review total, W5 one Stock column and the old-template refusal, S1 the shopper picks only a colour; the two things new to him were named: the empty-box sentence and the refusal sentence)",
+  "mockup_locked_at": "2026-10-11T00:00:00+05:30",
+  "notes": "Raised by the founder on 11 Oct 2026 from two screenshots: the shopper app said \"Out of stock\" for two sunglasses whose Listings rows showed 20 and 8. Cause: a product holds its own stock number and a stock per size, nothing keeps them equal, and a one-size product files its stock under a stand-in size (\"Free Size\") — so the brand is asked twice and the shopper app listens to the second answer. DONE ON HIS GO THE SAME DAY (live data, not a deploy): the ten sunglasses listed 9 Oct were repaired by backend/scripts/repair-one-size-stock.js (each product's own number copied into its one size; 13 checks OK; read back from the live server as in stock). BUILT 11 Oct 2026 (see build): scope S1–S6 of 01-spec.md. S7 (the live data sync of 26 products) is written and dry-run, NOT applied — it is part of the release. The board is drawn from the agreed listing boards (listing-add-stepper, listing-per-colour-sizes, listing-excel-bulk) and the shopper size sheet (shopper-ordering O1); locked by the founder the same day. No migration. Production-impacting — explicit go required before the data sync, the push and the shopper OTA. RELEASE GO: founder (chat 11 Oct 2026: \"pls release\") — asked with what deploys (push: server + website; the 26-product number sync; the shopper OTA), the risks and the rollback stated. The deploy record follows in its own commit.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "mockup_final": "04-preview/mockups/stock-asked-once.html",
+  "build": {
+    "built_at": "2026-10-11T00:00:00+05:30",
+    "server": "stock.service (cleanStock, ownStock, oneSizeProduct; an empty own number is now reset when the sizes reach 0), listing.controller (create, edit, import take the own number from the sizes), brand.controller (the two older product endpoints hold the same rule), listingBulk.service (one Stock column; no Size on a one-size leaf; old-template refusal), shopperOrders.service (one_size; sold_out for a product with colours and no sizes)",
+    "website": "Packages/brand-web/app/dashboard/products/listing/page.js — Step 1 without the Stock box, one stock box per colour for a one-size product, Total stock, the empty-box sentence, Review total, the bulk tab's words",
+    "phone": "Packages/Mobile shop: orderBits.js (ChoicePicker, SizeSheet, ProductPopup, chosen, isOneSize), ProductScreen.js, DealScreen.js (a product given as a gift carries one_size)",
+    "backend_new_suite": "backend/tests/stock-asked-once.test.js 17/17 (real API, real database, a live post): the own number on create / edit / import / the older endpoints; the tile and the deal data agreeing with it; one_size; an order and its cancel; the Excel template, import and both refusals",
+    "backend_script_check": "backend/scripts/test-listing-bulk.js 23/23. Two of its assertions were pinned to what this contract changes (the template's \"Size\" + \"Variant stock\" columns; the stock read from \"Variant stock\") — ASSERTION DRIFT from an approved change, updated to the new sheet, none loosened; one case added (old-template refusal)",
+    "backend_full_run": "full suite, serial, vs backend/baseline_item20.json: 150 suites / 2110 tests / 1905 passed / 177 failed -> 152 / 2157 / 1952 / 177. 0 that passed before fail now; 47 new tests, all passing (17 of this contract, 30 of the item 20 suite added after that baseline was stored); the same 177 old failures by name; 1 suite that does not load, as before (collection-library). 0 dropped database connections in the output. Filed as 06-diff/backend-compare.txt; this run is stored as backend/baseline_stock_asked_once.json. qa_all_green stays false on the pre-existing failures: the certification is no-regression, never green.",
+    "mobile_tests": "122 suites / 2914 tests, all passing (was 121 / 2897 + the 17 new in stockAskedOnce.test.js). The first full run caught one house rule broken by the new code (accessibilityState values must be explicit booleans — src/__tests__/accessibilityStateBooleans.test.js); fixed in the code, re-run clean",
+    "website_looked_at": "in a local preview (a private copy of the website on 3012, a local backend on 3011, a private local database with the real fashion category tree): Add walked to the saved row; Edit of three products left the way older saves left them; Step 1, Step 2 (one-size and sized), Review, Listings; the real Sunglasses and T-Shirt templates downloaded and read. After-shots in 06-diff/after/",
+    "migration": "none",
+    "live_data": "sync-own-stock.js --dry on live, 11 Oct: 72 products, 49 with sizes, 26 whose own number is not the total of its sizes; 0 change what a shopper can buy, 0 change whether a post is in the shop. NOT applied.",
+    "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release",
+    "device": "NOT seen on a phone. Maestro not run. The shopper change (S1) waits on the founder's walk.",
+    "no_new_app_build": "no native change; the shopper app ships over the air; brand and creator apps are not touched"
+  }
+}
