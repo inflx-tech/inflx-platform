@@ -14,7 +14,7 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { CP, rupeesP, dayMonthP } from '../../components/create/copyCreate';
 import { CL } from '../../components/create/copyLinks';
-import { StateChip, useDraft, routeFor, s as b } from '../../components/create/bitsCreate';
+import { StateChip, Footer, useDraft, routeFor, s as b } from '../../components/create/bitsCreate';
 // Item 20 — a post for the brand he runs: its own words, and where he shared it. Contract: features/item20-own-brand
 import { O20 } from '../../components/ownbrand/copy20';
 import PlacesCard20 from '../../components/ownbrand/PlacesCard20';
@@ -67,6 +67,18 @@ export default function PostStatusScreen({ navigation, route }) {
     setBusy(false);
     if (r.success) navigation.navigate('PostType', { postId: r.data.post.id });
     else show(r.error?.message || '');
+  }
+  // post-sent-done-button: a post that is with INFLX has nothing left for her to do here. "Done"
+  // opens Home in one tap — the back arrow walked her through Review and every step she made the
+  // post with. The steps are cleared from behind this screen first, so the Create tab opens on
+  // its own main page the next time she taps it.
+  function done() {
+    const tabs = typeof navigation.getParent === 'function' ? navigation.getParent() : null;
+    const stack = typeof navigation.getState === 'function' ? navigation.getState() : null;
+    const under = stack && typeof stack.index === 'number' ? stack.index > 0 : true;      // something beneath this screen
+    if (under && typeof navigation.popToTop === 'function') navigation.popToTop();
+    if (tabs && typeof tabs.navigate === 'function') tabs.navigate('HomeTab');
+    else navigation.navigate('HomeTab');
   }
 
   if (status !== 'ready') {
@@ -137,6 +149,8 @@ export default function PostStatusScreen({ navigation, route }) {
 
         <Text style={[b.hint, { marginTop: 14 }]} testID="post-for">{post.for_line || `${post.collaboration.brand_name} · ${post.collaboration.campaign_name} · ${post.collaboration.set_name}`}{posting ? ` · ${dayMonthP(posting)}` : ''}</Text>
       </ScrollView>
+      {/* The one main button of a post in review, pinned where "Send to INFLX for review" was. */}
+      {post.state === 'in_review' ? <Footer label={CP.done} onPress={done} testID="done" /> : null}
       {toast}
     </View>
   );

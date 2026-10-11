@@ -1,0 +1,33 @@
+{
+  "feature": "post-sent-done-button",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 11 Oct 2026, with a screenshot of the creator app's \"With INFLX\" screen: \"a UI fix....where after this step we keep a button where if click on it, something like DONE....then it go to home...now we need to press back button on top till we reach home.....pls do this\")",
+  "approved_at": "2026-10-11T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "Claude, under the founder's standing delegation and his instruction of 11 Oct 2026 (\"pls do this\") — the board draws exactly what he asked for (a Done button on that screen that goes to Home), using the Create tab's own bottom button. He has NOT reviewed the board itself; it was shown to him with the release request.",
+  "mockup_locked_at": "2026-10-11T00:00:00+05:30",
+  "mockup_final": "04-preview/mockups/post-sent-done-button.html",
+  "notes": "One button on one screen of the creator app. Decisions taken for him, each reported back: (1) the button shows on every post that is with INFLX, not only straight after sending; (2) \"home\" is read as the Home tab (item 19), where the post is listed under Waiting; (3) the steps of the post are cleared from behind the screen. No server, no website, no migration. Production-impacting (creator app OTA) — explicit go required before the push and the OTA. RELEASE GO: founder (chat 11 Oct 2026: \"pls release it\") — asked with the board open in the side panel, the three choices made for him named (the button on every post that is with INFLX; Home = the Home tab; the back arrow unchanged) and what the release is (one creator-app update over the air). The deploy record follows in its own commit.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-10-11T00:00:00+05:30",
+    "phone": "Packages/Mobile/src/screens/create/PostStatusScreen.js — Footer \"Done\" on the in-review state; done() pops the Create stack to its main page and opens HomeTab",
+    "new_tests": "postSentDone.test.js 8/8, on the real navigators",
+    "mobile_tests": "123 suites / 2922 tests, all passing (was 122 / 2914)",
+    "backend": "not touched — nothing run",
+    "website": "not touched",
+    "migration": "none",
+    "device": "NOT seen on a phone. Maestro not run.",
+    "no_new_app_build": "no native change; the creator app ships over the air"
+  }
+}
