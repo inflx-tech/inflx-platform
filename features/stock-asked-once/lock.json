@@ -34,5 +34,27 @@
     "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release",
     "device": "NOT seen on a phone. Maestro not run. The shopper change (S1) waits on the founder's walk.",
     "no_new_app_build": "no native change; the shopper app ships over the air; brand and creator apps are not touched"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-11",
+    "by": "founder go (chat, 11 Oct 2026: \"pls release\")",
+    "migration": "none",
+    "commit": "0d09390d (pushed fc903e0d..0d09390d; gov-check OK: 10 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 28 files staged by path, nothing of another window)",
+    "render": "PROVED from outside by a field only the new server sends: GET /v1/follower/posts/d8e11a1e…/deal (the founder's own sunglasses post) had no one_size before the push and answered one_size: true for \"Computer sunglases\" and \"Cool glasses\" about 70 seconds after it. /health 200 throughout.",
+    "websites": "PROVED BY CONTENT: the Listings page's script files did not carry \"Leave a box empty if you do not count stock\" before the push and carried it about 40 seconds after.",
+    "live_data": "sync-own-stock.js --apply on live, after the server was proved: 72 products, 49 with sizes, 26 brought into line (23 to the total of their sizes, 3 to empty because a size is not counted). Four checks OK inside the transaction: every product with sizes agrees; whether a shopper can buy each product reads the same as before; no size's stock, name, price, state or order line changed; no other product was written. A second run found 0. PG 17.6.",
+    "live_read_after": "read-only, after everything: 72 products, 49 with sizes, own number = total of sizes for all 49; a shopper can buy 72, out of stock 0. Listings now shows red t shirt 32 (was 34), police watch 5 (7), Royal Embroidered Sherwani 4 (12), sleep suit \"—\" (12), Computer sunglases 20, Cool glasses 8. The live Excel templates: Unisex › Sunglasses ends \"Colour * | Stock | Cover image URLs | Colour image URLs\"; Men › T-Shirt \"Colour * | Size | Stock | …\"; no \"Variant stock\" in either.",
+    "ota": {
+      "follower": 239,
+      "brand": "245 — unchanged, not published",
+      "influencer": "234 — unchanged, not published",
+      "native_runtime": "3 — unchanged; no native code",
+      "note": "published after the server was proved live, from the committed tree (phone tree clean, otaUpdater untouched; the publish was gated on both). follower was 238. The manifest was read back and the bundle carries this release (one_size, the colour chips)."
+    },
+    "earlier_same_day": "repair-one-size-stock.js --apply on live, on the founder's first go (\"Yes now understood....fix these issues\"): the ten sunglasses listed 9 Oct (AVEE-0015 … AVEE-0024) had each product's own number copied into its one size; 13 checks OK; the live server then sent all ten as in stock on the four posts that carry them.",
+    "money": "NO MONEY MOVED — no order, wallet, commission or payout code is edited; no job run.",
+    "not_seen": "No screen has been looked at on a phone or on the live website. The website was looked at in a local preview only.",
+    "pending": "the founder's walk: (1) shopper app — a sunglasses post › bag icon (colours only, Add to bag ready) › the product page › a sunglasses product inside a deal; (2) website — Listings › Add products › Sunglasses, Steps 1 and 2. Maestro not run. release.released stays false until then (and on the standing backend debt).",
+    "open_for_the_founder": "(1) A product with one size left empty shows \"—\" on Listings. (2) The refusal for a colour listed on two rows of a one-size sheet was added without his having seen its words. (3) The older Excel upload on the flat product page still files per-size stock where nothing sells from — not part of the fashion listing; left."
   }
 }
