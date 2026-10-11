@@ -9,7 +9,7 @@
   "preview_reviewed": true,
   "impact_reviewed": true,
   "ui_governed": false,
-  "notes": "Carved backend defect found during features/stock-asked-once. No screen, no words, no mockup: nothing a person sees changes. BUILT 11 Oct 2026 (see build and 06-diff/notes.md). NOT RELEASED. PRODUCTION-IMPACTING (backend push) — explicit go required.",
+  "notes": "Carved backend defect found during features/stock-asked-once. No screen, no words, no mockup: nothing a person sees changes. BUILT 11 Oct 2026 (see build and 06-diff/notes.md). PUSHED 11 Oct 2026 on the founder's go (f616bad7; see deployed_to_production — the server deploy is not provable from outside).",
   "related": [
     "features/stock-asked-once",
     "features/listing-shop-safety"
@@ -28,6 +28,20 @@
     "phone": "none — no OTA",
     "live_data": "read only, 11 Oct (sync-own-stock.js --dry): 72 products, 49 with sizes, 0 whose own number is not the total of its sizes. Nothing to repair; nothing is rewritten at release.",
     "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-11",
+    "by": "founder go (chat, 11 Oct 2026: \"pls release it\")",
+    "migration": "none",
+    "commit": "f616bad7 (pushed 1ec5ec71..f616bad7; gov-check OK: 2 governed changes contract-backed; 11 files staged by path, nothing of another window)",
+    "render": "NOT PROVED FROM OUTSIDE. This release changes nothing a signed-out caller can see (both endpoints answer 401 without a session, before and after), and /health carries no build marker. What was seen after the push: /health 200, a live shop post and its deal page 200, POST /v1/listing/products/<id>/cover-photos 401 without a session. Render deploys automatically from the push. The reading used earlier the same day as a 'restart' proof (the sign-in limiter's count starting again) was checked here and is NOT a proof: requests from this one machine over IPv4 and over IPv6 landed in the SAME count, and fresh counts appear from one request to the next — the limiter is not counting by caller address, so a fresh count says nothing about a restart. The proving look is the founder's: Render dashboard, the backend service, Events — 'Deploy live' for f616bad7.",
+    "websites": "not touched by this release",
+    "ota": "none — no phone code",
+    "live_data": "nothing rewritten. Read only before the release: 72 products, 49 with sizes, 0 whose own number is not the total of its sizes.",
+    "money": "NO MONEY MOVED — no order, wallet, commission or payout code is edited.",
+    "not_seen": "The photo tray was not used on the live website. Nothing a person sees changes.",
+    "pending": "the founder's look at the Render dashboard (above). Optional: after the next Excel import, add a photo in the tray and see it on the product's row.",
+    "found_on_the_way": "(1) /health still has no build marker, so a server-only release cannot be proved from outside — third release this bites. (2) The sign-in limiter (20 requests per 15 minutes) appears to count by an in-between network address, not by the caller: at volume, unrelated people would share one allowance. Both raised with the founder as separate small tasks; neither is touched here."
   },
   "release": {
     "qa_all_green": false,
