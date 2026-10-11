@@ -297,9 +297,49 @@ function frozen(rv) {
  * Place order ₹X. The total she saw must still be the total (M8), else nothing is taken and the
  * new review comes back. Cash on delivery writes the order now; online holds the stock 15 minutes.
  */
+/**
+ * listing-shop-safety (C): Place order happens once. The app sends one key with an order attempt
+ * and the same key when it retries that attempt (a slow server, a lost answer). A key that already
+ * made a checkout is answered with THAT checkout — the same answer the first tap would have got —
+ * and nothing new is made. An attempt that is over (its hold ran out, or she closed the payment)
+ * gives its key back, so placing again starts afresh.
+ */
+const PLACE_KEY = /^[A-Za-z0-9_-]{8,64}$/;
+const placeKeyOf = (body) => (PLACE_KEY.test(String((body && body.place_key) || '')) ? String(body.place_key) : null);
+
+function answerOf(co) {
+  const pending = co.status === 'pending';
+  const left = pending && co.expires_at ? Math.max(0, Math.round((new Date(co.expires_at).getTime() - Date.now()) / 1000)) : 0;
+  return {
+    checkout_id: co.id, status: co.status === 'placed' ? 'placed' : 'pending', total: Number(co.total), payment_method: co.payment_method,
+    razorpay: pending && co.razorpay_order_id
+      ? { order_id: co.razorpay_order_id, key_id: txService.getRazorpayKeyId(), amount: Number(co.total), expires_in_s: left } : null,
+    repeated: true,
+  };
+}
+
+/** The checkout this key already made, if it is still an order or a payment in progress. */
+async function placedWith(followerId, key, method) {
+  if (!key) return null;
+  const { rows: [co] } = await db.query(`SELECT * FROM checkouts WHERE follower_id = $1 AND client_key = $2`, [followerId, key]);
+  if (!co) return null;
+  if (co.status === 'placed') return answerOf(co);
+  const holding = co.status === 'pending' && (!co.expires_at || new Date(co.expires_at).getTime() > Date.now());
+  if (holding && co.payment_method === method) return answerOf(co);
+  // Over: expired, failed, refunded, a hold past its time, or she now pays another way. What it
+  // still holds is released first (her own old hold must not tell her "Sold out"), and the key is
+  // free again.
+  if (co.status === 'pending') await abandon(followerId, co.id);
+  await db.query(`UPDATE checkouts SET client_key = NULL WHERE id = $1 AND client_key = $2`, [co.id, key]);
+  return null;
+}
+
 async function place(followerId, body, { deviceId = null } = {}) {
   const method = body.payment_method === 'cod' ? 'cod' : body.payment_method === 'online' ? 'online' : null;
   if (!method) throw new AppError('VALIDATION_ERROR', 'Choose how to pay', 400, 'payment_method');
+  const placeKey = placeKeyOf(body);
+  const already = await placedWith(followerId, placeKey, method);
+  if (already) return already;
   const rv = await review(followerId, { ...body, payment_method: method });
   if (!rv.buyable) throw Object.assign(new AppError('CONFLICT', 'Something in your order changed', 409), { details: publicReview(rv) });
   if (method === 'cod' && !rv.payment.cod.allowed) throw new AppError('VALIDATION_ERROR', rv.payment.cod.reason, 400, 'payment_method');
@@ -321,23 +361,34 @@ async function place(followerId, body, { deviceId = null } = {}) {
     ? await txService.createOrder(rv.total, { type: 'shopper_checkout', follower_id: followerId })
     : null;
 
-  const result = await db.withTransaction(async (conn) => {
-    const took = await stock.take(conn, needs);
-    if (!took.ok) {
-      const names = [...new Set(took.short.map((s) => s.name).filter(Boolean))];
-      throw Object.assign(new AppError('STOCK_UNAVAILABLE', names.length ? `Sold out: ${names.join(', ')}` : 'Something just sold out', 409), { details: { short: took.short } });
+  let result;
+  try {
+    result = await db.withTransaction(async (conn) => {
+      const took = await stock.take(conn, needs);
+      if (!took.ok) {
+        const names = [...new Set(took.short.map((s) => s.name).filter(Boolean))];
+        throw Object.assign(new AppError('STOCK_UNAVAILABLE', names.length ? `Sold out: ${names.join(', ')}` : 'Something just sold out', 409), { details: { short: took.short } });
+      }
+      const { rows: [co] } = await conn.query(
+        `INSERT INTO checkouts (follower_id, status, payment_method, address_id, address_snapshot, items_normal, savings,
+                                delivery_fee, cod_fee, total, priced, razorpay_order_id, device_id, expires_at, client_key)
+         VALUES ($1, 'pending', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+                 CASE WHEN $2 = 'online' THEN now() + make_interval(mins => $13) ELSE NULL END, $14)
+         RETURNING *`,
+        [followerId, method, a.id, JSON.stringify(addressSnapshot), rv.items_normal, rv.savings, rv.delivery_fee, rv.cod_fee,
+          rv.total, JSON.stringify(snapshot), razorpayOrderId, deviceId, HOLD_MINUTES, placeKey]);
+      if (method === 'cod') await writeOrders(conn, co, null);
+      return co;
+    });
+  } catch (e) {
+    // The same key, in the same instant: the database let one through and refused this one, whose
+    // stock was put back with it. Answer with the one that was made.
+    if (placeKey && e && e.code === '23505' && /uq_checkouts_follower_client_key/.test(String(e.constraint || e.message || ''))) {
+      const first = await placedWith(followerId, placeKey, method);
+      if (first) return first;
     }
-    const { rows: [co] } = await conn.query(
-      `INSERT INTO checkouts (follower_id, status, payment_method, address_id, address_snapshot, items_normal, savings,
-                              delivery_fee, cod_fee, total, priced, razorpay_order_id, device_id, expires_at)
-       VALUES ($1, 'pending', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-               CASE WHEN $2 = 'online' THEN now() + make_interval(mins => $13) ELSE NULL END)
-       RETURNING *`,
-      [followerId, method, a.id, JSON.stringify(addressSnapshot), rv.items_normal, rv.savings, rv.delivery_fee, rv.cod_fee,
-        rv.total, JSON.stringify(snapshot), razorpayOrderId, deviceId, HOLD_MINUTES]);
-    if (method === 'cod') await writeOrders(conn, co, null);
-    return co;
-  });
+    throw e;
+  }
 
   // Emptying the bag: what she ordered leaves it; unticked items stay (6.6). An online order is not
   // an order until its payment arrives (shopper-app-fixes F1): cancelling or failing the payment

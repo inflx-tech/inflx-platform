@@ -1,0 +1,40 @@
+{
+  "feature": "listing-shop-safety",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 11 Oct 2026: \"Ok pls first 1 to 4 now\" — the four top items of the audit of listing, offers and shopping reported to him that day; and his two answers the same day to the rule choices put to him: \"Pause, comes back (Recommended)\" for a hidden or zero-stock product, \"Hide until whole (Recommended)\" for a set with a piece missing)",
+  "approved_at": "2026-10-11T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat, 11 Oct 2026: \"ok pls lock it and start implementation\" — the board 04-preview/mockups/listing-shop-safety.html was open in the side panel; its six visible changes were tabled to him (Hide/Show a pause, Remove with the numbers and refused for a set piece, the panel count, the Edit save message, the creator post blue box, the x2 set piece), the three no-screen changes listed, and the three things added or left named: the two creator notices, both x2 pieces the same colour and size, posts removed earlier stay removed)",
+  "mockup_locked_at": "2026-10-11T00:00:00+05:30",
+  "notes": "Four fixes from the 11 Oct 2026 audit: A hide and zero stock are a pause (Remove stays permanent, asks with real numbers, refused for a set's piece); B saving Edit never restores sold stock; C Place order happens once (migration 207, additive); D a set is in the shop only while it can be bought, and a x2 piece can be picked. Rulebook 2.8 and 4.9 change on his decision (v1.22). BUILT 11 Oct 2026 against the locked board (see build and 06-diff/notes.md). NOT RELEASED. Production-impacting — explicit go required before the migration, the push and the two OTAs.",
+  "build": {
+    "built_at": "2026-10-11T00:00:00+05:30",
+    "server": "shoppablePosts.service (afterProductChange: only a permanent removal deletes from posts; refreshFacets reads products on sale; notInShopWhy / not_in_shop on the creator's post read), shopperPosts.service (livePool: a fixed set needs every buy piece on sale with stock for its quantity, unless pieces alone are allowed), creatorTerms.service (notices: paused, back on sale; unavailable kept for Remove), postsCopy (the three not-in-shop sentences), brand.controller deleteProduct (works on a hidden product; REMOVE_REFUSED 422 for a buy piece of a running or scheduled fixed set; permanent), offerPool.service postsCarrying + offersV2.controller productOfferPanel (posts, posts_live, posts_only_this), stock.service mergeStock + listing.controller updateListingProduct (row lock; stock_was per size; stock_notes in the answer), shopperCheckout.service (place_key: placedWith, answerOf; unique-index race answered with the first order)",
+    "migration": "backend/migrations/207_checkout_client_key.sql — ADDITIVE: checkouts.client_key (text, null), a length check 8–64, a unique index (follower_id, client_key) where the key is not null. Runner backend/scripts/run-207.js (--dry | --apply) reads checkouts, order lines, posts, post products and wallets before and after. Dry-run (read only) on the local preview database and on live, 11 Oct: on live the column, the check and the index are not there yet; 6 checkouts, 19 order lines, 15 posts, 26 post products read and fingerprinted. NOT applied to live.",
+    "website": "Packages/brand-web: products/components/InventoryBrowser.js (removeQuestion with the server's numbers, bulk Remove words; no number claimed when the count cannot be read), products/listing/page.js (Edit sends what each stock box showed when opened; the message after Save when stock moved meanwhile; the old-template error no longer followed by a second 'download' line)",
+    "phone": "Packages/Mobile: shop/order/CheckoutScreen.js (place_key per review, same key on a repeat tap, new key after an answer), shop/order/DealScreen.js (a set piece needed twice is one line of 2; the chosen row says ×2), create/PostStatusScreen.js + components/create/copyCreate.js (blue box 'Not in the shop right now' with the server's sentence on a live post)",
+    "rulebook": "Docs/OFFER_TERMS_POSTS_RULES.md v1.22 — 2.8, 4.9, the price-post row, change log",
+    "backend_new_suite": "backend/tests/listing-shop-safety.test.js 18/18 (real API, real database): A hide / show / zero stock / restock, the panel counts, Remove and its refusal; B the five stock-merge cases; C the same key twice for COD and online, a different key, a key after an abandoned attempt; D a set with a piece hidden, at 0, with pieces alone allowed, and a piece needed twice",
+    "backend_tests_updated": "ASSERTION DRIFT from the approved rule change, none loosened: shoppable-posts-v2.test.js (two tests re-pinned from 'leaves the post / removes the post' to the pause, and renamed), creator-terms-v2.test.js (paused, back on sale, and unavailable for Remove)",
+    "backend_full_run": "full suite, serial, vs backend/baseline_stock_asked_once.json: 152 suites / 2157 tests / 1952 passed / 177 failed -> 153 / 2175 / 1970 / 177. 0 that passed before fail now; 20 new tests, all passing (18 of this contract + the 2 renamed in shoppable-posts-v2, which are the 2 'in the baseline, not run now'); the same 177 old failures by name; 1 suite that does not load, as before (collection-library). 0 dropped database connections. Filed as 06-diff/backend-compare.txt; this run is stored as backend/baseline_listing_shop_safety.json. qa_all_green stays false on the pre-existing failures: the certification is no-regression, never green.",
+    "mobile_tests": "125 suites / 2930 tests, all passing (was 123 / 2922 + the 8 new: listingShopSafety.test.js 4, postNotInShop.test.js 4). order17.test.js updated: Place order's body now carries place_key (assertion drift, asserts more)",
+    "website_looked_at": "in a local preview (a private copy of the website on 3012, a local backend on 3011, a private local database seeded with two brands, each with one live post): the panel count; Remove's question with the numbers; Remove refused for a set's piece with the red line (06-diff/after/A2-remove-refused-for-a-set-piece.jpg); Hide then Show against the shop feed; Edit saved twice with stock moved meanwhile (a size not touched kept the live number; the message after Save read as drawn and the row held the live number)",
+    "diverged_from_board": "C1: while the blue box shows, the card under it is titled 'Sales while live' instead of 'Live in the shop', so the screen does not say both. A2: left as drawn — the question is asked before the refusal for a set's piece. See 06-diff/notes.md.",
+    "live_data": "nothing is rewritten at release. Posts removed before this change stay removed. Read on live, 11 Oct (read only): 1 fixed set (\"Bundle offer\", 3 pieces, all on sale and in stock, 1 approved post) — it stays in the shop; 0 products in approved posts are hidden or at 0. So no post enters or leaves the shop at the moment of release.",
+    "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release",
+    "device": "NOT seen on a phone. Maestro not run. The creator's blue box, the ×2 set piece and a second tap on Place order wait on the founder's walk.",
+    "no_new_app_build": "no native change; the shopper and creator apps ship over the air; the brand app is not touched"
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "mockup_final": "04-preview/mockups/listing-shop-safety.html"
+}

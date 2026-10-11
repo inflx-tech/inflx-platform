@@ -140,6 +140,8 @@ export const CP = {
   approvedTitle: 'Approved',
   approvedBody: (d) => `Approved by INFLX. It goes live on ${dayMonthP(d)}, when its offer starts.`,
   liveBody: 'In the shop now.',
+  // listing-shop-safety (board C1): her live post while shoppers cannot see it. The reason is the server's sentence.
+  notInShop: 'Not in the shop right now',
   noEdits: "An approved post can't be changed. You can take it down: it leaves the shop and keeps its earnings history.",
   takeDown: 'Take it down',
   takeDownQ: 'Take this post down?',

@@ -470,7 +470,9 @@ describe("a post's life after it is approved (4.9; checks 22–27)", () => {
     expect((await read(w, empty.id)).removed).toMatchObject({ reason: 'products_removed' });
   });
 
-  test('a product taken off sale leaves her price post; the empty post is removed as unavailable', async () => {
+  // listing-shop-safety (rules v1.22, founder 11 Oct 2026): hidden is a PAUSE. This test said "a product
+  // taken off sale leaves her price post; the empty post is removed as unavailable" — the rule it pinned.
+  test('a product the brand hides stays in her price post, which waits out of the shop and is not removed; shown again, it is back', async () => {
     const w = await world();
     const p = await draft(w);
     await patch(w, p.id, { post_kind: 'price' });
@@ -479,7 +481,16 @@ describe("a post's life after it is approved (4.9; checks 22–27)", () => {
     await send(w, p.id); await approve(p.id);
     const r = await api.patch(`/brands/me/products/${w.free[0]}`, w.b.token, { is_active: false });
     expect(r.status).toBeLessThan(300);
-    expect((await read(w, p.id)).removed).toMatchObject({ reason: 'unavailable' });
+    const paused = await read(w, p.id);
+    expect(paused.removed).toBeNull();
+    expect(paused.state).toBe('live');
+    expect(paused.products.map((x) => x.id)).toEqual([w.free[0]]);
+    expect(paused.not_in_shop).toBe('Every product in this post is hidden or out of stock. It is back by itself when the brand shows or restocks one.');
+    expect((await api.get(`/follower/posts/${p.id}`)).status).toBe(404);          // shoppers cannot see it meanwhile
+    expect((await H.notices(w.cr.userId, 'post.removed')).length).toBe(0);
+    await api.patch(`/brands/me/products/${w.free[0]}`, w.b.token, { is_active: true });
+    expect((await read(w, p.id)).not_in_shop).toBeNull();
+    expect((await api.get(`/follower/posts/${p.id}`)).status).toBe(200);
   });
 
   test('a deleted product leaves her posts too; the empty post is removed and she is told', async () => {
@@ -495,7 +506,9 @@ describe("a post's life after it is approved (4.9; checks 22–27)", () => {
     expect((await H.notices(w.cr.userId, 'post.removed')).length).toBe(1);
   });
 
-  test('every product sold out removes the post; a new price moves its band', async () => {
+  // listing-shop-safety (rules v1.22): out of stock is a pause too. This test said "every product sold out
+  // removes the post" — the rule it pinned; the band half is unchanged.
+  test('every product out of stock: the post waits and is not removed; a new price moves its band', async () => {
     const w = await world();
     const p = await approvedBundle(w, w.jeans.slice(0, 2));
     let r = await api.patch(`/brands/me/products/${w.jeans[0]}`, w.b.token, { price: 3100 });
@@ -504,7 +517,11 @@ describe("a post's life after it is approved (4.9; checks 22–27)", () => {
     await api.patch(`/brands/me/products/${w.jeans[0]}`, w.b.token, { stock: 0 });
     expect((await read(w, p.id)).state).toBe('approved');
     await api.patch(`/brands/me/products/${w.jeans[1]}`, w.b.token, { stock: 0 });
-    expect((await read(w, p.id)).removed).toMatchObject({ reason: 'sold_out' });
+    const out = await read(w, p.id);
+    expect(out.removed).toBeNull();
+    expect(out.state).toBe('approved');
+    expect(out.products).toHaveLength(2);
+    expect((await H.notices(w.cr.userId, 'post.removed')).length).toBe(0);
   });
 
   test('an offer past its end date: reads show the post removed at once, and the daily sweep makes it final and tells her', async () => {

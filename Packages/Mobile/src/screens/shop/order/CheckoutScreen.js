@@ -17,7 +17,7 @@
  *     "Order placed".
  * F9 — a bag that could not be read is said here with Try again; it is not ordered as an empty one.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../../services/api';
@@ -72,6 +72,9 @@ async function confirmPayment(result) {
   return null;
 }
 
+/** A key no other order attempt of hers will have (letters, digits and dashes; 8 to 64 long). */
+export const newPlaceKey = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}-${Math.random().toString(36).slice(2, 8)}`;
+
 export default function CheckoutScreen({ navigation, route }) {
   const { lines: given = null, buyNow = false } = route.params || {};
   const [lines, setLines] = useState(given ? plain(given) : null);
@@ -84,6 +87,11 @@ export default function CheckoutScreen({ navigation, route }) {
   // A payment she made that INFLX could not be told about yet: { result, checkoutId }. While it is
   // set there is no Place order — pressing it would have her pay twice.
   const [unconfirmed, setUnconfirmed] = useState(null);
+  // listing-shop-safety (C): one key for one order attempt. It goes with Place order and goes
+  // AGAIN, unchanged, when she taps a second time because the first answer never came (a slow
+  // server): the server then answers with the order it already made. A new review — another
+  // address, another way to pay, a changed basket — or an answer received, starts a new key.
+  const placeKey = useRef(null);
 
   // The lines and the default address. A bag that could not be read is an error with Try again
   // (F9) — it used to come back empty, and the review then said "Nothing to order".
@@ -110,6 +118,7 @@ export default function CheckoutScreen({ navigation, route }) {
     const r = await followerApi.checkoutReview({ address_id: address.id, lines, payment_method: method });
     if (!r || !r.success) { setState('error'); setMsg(r && r.error ? r.error.message : CS.loadError); return; }
     setRv(r.data); setState('ready');
+    placeKey.current = newPlaceKey();
     if (method === 'cod' && !r.data.payment.cod.allowed) setMethod('online');
   }, [address, lines, method]);
   useEffect(() => { review(); }, [review]);
@@ -129,7 +138,8 @@ export default function CheckoutScreen({ navigation, route }) {
     setBusy(true); setMsg(null);
     let held = null;        // the online checkout whose items are held while she pays
     try {
-      const r = await followerApi.placeOrder({ address_id: address.id, lines, payment_method: method, expected_total: rv.total });
+      if (!placeKey.current) placeKey.current = newPlaceKey();
+      const r = await followerApi.placeOrder({ address_id: address.id, lines, payment_method: method, expected_total: rv.total, place_key: placeKey.current });
       if (!r || !r.success) {
         const e = (r && r.error) || {};
         if (e.code === 'PRICE_CHANGED' || (e.code === 'CONFLICT' && e.details)) {
@@ -139,6 +149,7 @@ export default function CheckoutScreen({ navigation, route }) {
         return;
       }
       const out = r.data;
+      placeKey.current = newPlaceKey();        // answered: whatever she does next is a new attempt
       if (out.status === 'placed') { await loadBag().catch(() => {}); navigation.replace('OrderPlaced', { checkoutId: out.checkout_id }); return; }
       held = out.checkout_id;
       const result = await pay(out.razorpay, { phone: address.receiver_phone, name: address.receiver_name });

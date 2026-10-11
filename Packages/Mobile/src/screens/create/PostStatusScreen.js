@@ -118,7 +118,17 @@ export default function PostStatusScreen({ navigation, route }) {
 
         {post.state === 'approved' || post.state === 'live' ? (
           <>
-            <Block title={post.state === 'approved' ? CP.approvedTitle : CP.liveBody} testID="approved">
+            {/* listing-shop-safety (board C1): a live post whose products are all hidden or out of stock,
+                or whose set is not whole, is not in the shop until one is back. The post is still hers
+                and still approved; this says so, in the server's words, and that it returns by itself.
+                The card under it then speaks of its sales, not of being in the shop. */}
+            {post.state === 'live' && post.not_in_shop ? (
+              <View style={st.wait} testID="not-in-shop">
+                <Text style={st.waitTitle}>{CP.notInShop}</Text>
+                <Text style={st.waitBody}>{post.not_in_shop}</Text>
+              </View>
+            ) : null}
+            <Block title={post.state === 'approved' ? CP.approvedTitle : post.not_in_shop ? CP.salesWhileLive : CP.liveBody} testID="approved">
               {post.state === 'approved' ? <Text style={b.hint}>{CP.approvedBody(post.goes_live_on || posting)}</Text> : <Text style={b.hint}>{post.sales_words}</Text>}
             </Block>
             {/* post-links-codes (L1): the code and links from approval, the stats once live. */}
@@ -160,6 +170,9 @@ const st = StyleSheet.create({
   eyebrow: { fontFamily: fonts.sansBold, fontSize: 12, color: T.ink3, letterSpacing: 0.8, marginBottom: 8 },
   block: { borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 12, marginBottom: 10 },
   blockTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: T.ink, marginBottom: 2 },
+  wait: { backgroundColor: T.state.waiting.bg, borderRadius: 12, padding: 12, marginBottom: 10 },
+  waitTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: T.state.waiting.fg, marginBottom: 2 },
+  waitBody: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.state.waiting.fg, lineHeight: 18 },
   quote: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink, lineHeight: 18, marginTop: 4 },
   numbers: { flexDirection: 'row', marginBottom: 10 },
   num: { flex: 1, borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 12, marginRight: 8 },

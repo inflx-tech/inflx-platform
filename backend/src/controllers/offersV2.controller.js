@@ -148,7 +148,10 @@ const productOfferPanel = asyncHandler(async (req, res) => {
   const e = map[req.params.productId] || { now: null, next: null };
   let creators = 0;
   if (e.now) creators = (await life.creatorsOf(e.now.offer_id)).length;
-  return success(res, { now: e.now ? { ...e.now, creators, posts: 0 } : null, next: e.next });
+  // listing-shop-safety (A3): the real number of posts. `posts_live` and `posts_only_this` are
+  // what Remove's question states (A2): every live post carrying it, and those with nothing else.
+  const n = await pool.postsCarrying(brandId, req.params.productId, { offerId: e.now ? e.now.offer_id : null });
+  return success(res, { now: e.now ? { ...e.now, creators, posts: n.in_offer } : null, next: e.next, posts_live: n.posts, posts_only_this: n.only_this });
 });
 
 const priceImpact = asyncHandler(async (req, res) => {

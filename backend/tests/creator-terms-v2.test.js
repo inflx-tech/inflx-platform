@@ -292,10 +292,18 @@ describe('products changing (2.8, 2.11; checks 16–17)', () => {
     expect(types).toEqual(expect.arrayContaining([
       ['offer_price_changed', 'Price changed: Linen shirt'],
       ['product_out_of_stock', 'Linen shirt is out of stock'],
-      ['product_unavailable', 'Linen shirt is no longer available'],
+      // listing-shop-safety (rules v1.22, founder 11 Oct 2026): taken off sale is a pause — the notice
+      // was 'product_unavailable' / "is no longer available", which is now said only for a Remove.
+      ['product_paused', 'Linen shirt is not on sale right now'],
     ]));
     const ci = (await ciOf(w, cr)).id;
     expect(await terms.sellableProductIds(ci)).toEqual([]);   // off sale → out of what she can sell
+    // shown again she is told, and can sell it; removed for good she is told that instead
+    await api.patch(`/brands/me/products/${p}`, X.token, { pushed_to_store: true });
+    expect((await H.notices(cr.userId)).map((n) => [n.type, n.title])).toEqual(expect.arrayContaining([['product_back_on_sale', 'Linen shirt is back on sale']]));
+    expect(await terms.sellableProductIds(ci)).toEqual([p]);
+    expect((await api.del(`/brands/me/products/${p}`, X.token)).status).toBe(200);
+    expect((await H.notices(cr.userId)).map((n) => [n.type, n.title])).toEqual(expect.arrayContaining([['product_unavailable', 'Linen shirt is no longer available']]));
   });
 });
 

@@ -772,16 +772,49 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   const variantsJson = buildVariants(it, existing.sku);
   const image = coverImage(it);
 
-  // mrp retired (offer-mrp-retirement) — always cleared to NULL on edit;
-  // discounts come from the offer engine. Column kept dormant.
-  await db.query(
-    `UPDATE brand_products
-        SET name = $1, price = $2, mrp = NULL, description = $3, stock = $4,
-            image_url = $5, variants_json = $6::jsonb, facets = $7::jsonb, updated_at = now()
-      WHERE id = $8 AND brand_id = $9`,
-    [String(it.name).trim(), Number(it.price), it.description || null,
-     stockService.ownStock(variantsJson, it.stock),     // stock-asked-once: the total of its sizes
-     image, JSON.stringify(variantsJson), JSON.stringify(facets), existing.id, brand.id]);
+  // listing-shop-safety (B): the form was opened a while ago, and units may have sold since. The
+  // product's row is held while its stock is worked out, each box is merged with what the form
+  // SHOWED (`stock_was`) against what is live now (stock.mergeStock), and the brand is told of any
+  // number that moved meanwhile (`stock_notes`). A page that sends no `stock_was` is saved as sent.
+  const stockNotes = [];
+  await db.withTransaction(async (client) => {
+    const { rows: [live] } = await client.query(
+      `SELECT stock, variants_json FROM brand_products WHERE id = $1 AND brand_id = $2 FOR UPDATE`, [existing.id, brand.id]);
+    existing.stock = live.stock;                      // "before", for the out-of-stock notice below
+    const has = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
+    const sentColours = Array.isArray(it.variants) ? it.variants : [];
+    for (const c of variantsJson.colors || []) {
+      const sent = sentColours.find((x) => String((x && x.color) || '') === String(c.color || ''));
+      for (const s of c.sizes) {
+        const sentSize = sent && Array.isArray(sent.sizes) ? sent.sizes.find((x) => x && String(x.size) === String(s.size)) : null;
+        if (!has(sentSize, 'stock_was')) continue;
+        const found = stockService.sizeEntry(live.variants_json, c.color, s.size);
+        if (!found || found.missing || !found.entry) continue;            // a size the product did not have: as typed
+        const was = stockService.cleanStock(sentSize.stock_was);
+        const now = stockService.cleanStock(found.entry.stock);
+        s.stock = stockService.mergeStock(s.stock, was, now);
+        if (was !== now) stockNotes.push({ colour: c.color || null, size: s.size, shown: was, now, saved: s.stock });
+      }
+    }
+    // A product with no sizes: its own number is its one box.
+    let own = it.stock;
+    if (!stockService.sizeEntries(variantsJson).length && has(it, 'stock_was')) {
+      const was = stockService.cleanStock(it.stock_was);
+      const now = stockService.cleanStock(live.stock);
+      own = stockService.mergeStock(it.stock, was, now);
+      if (was !== now) stockNotes.push({ colour: null, size: null, shown: was, now, saved: own });
+    }
+    // mrp retired (offer-mrp-retirement) — always cleared to NULL on edit;
+    // discounts come from the offer engine. Column kept dormant.
+    await client.query(
+      `UPDATE brand_products
+          SET name = $1, price = $2, mrp = NULL, description = $3, stock = $4,
+              image_url = $5, variants_json = $6::jsonb, facets = $7::jsonb, updated_at = now()
+        WHERE id = $8 AND brand_id = $9`,
+      [String(it.name).trim(), Number(it.price), it.description || null,
+       stockService.ownStock(variantsJson, own),     // stock-asked-once: the total of its sizes
+       image, JSON.stringify(variantsJson), JSON.stringify(facets), existing.id, brand.id]);
+  });
 
   // tags: undefined = leave as-is; array = replace with curated-filtered slugs
   // (contract listing-tags-at-add — only admin vocabulary tags persist).
@@ -800,7 +833,7 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   await offerLife.afterPriceChange(brand.id, existing.id, existing.price, rows[0].price);
   // creator-terms-v2 (rules 2.8, 2.11): out of stock / a new normal price — her creators are told.
   await require('../services/creatorTerms.service').afterProductChange(existing.id, existing, { ...rows[0], is_active: existing.is_active, pushed_to_store: existing.pushed_to_store });
-  return success(res, { product: rows[0] });
+  return success(res, { product: rows[0], stock_notes: stockNotes });
 });
 
 // ── POST /brands/me/listing-products/move ─────────────────────────────────────

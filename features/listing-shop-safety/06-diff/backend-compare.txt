@@ -1,0 +1,14 @@
+baseline : 152 suites / 2157 tests / 1952 passed / 177 failed / 28 skipped
+now      : 153 suites / 2175 tests / 1970 passed / 177 failed / 28 skipped
+
+passed before, fail now : 0
+new tests               : 20 (20 passing)
+new tests that fail     : 0
+failed before, pass now : 0
+in the baseline, not run now : 2
+    tests/shoppable-posts-v2.test.js › a post's life after it is approved (4.9; checks 22–27) a product taken off sale leaves her price post; the empty post is removed as unavailable
+    tests/shoppable-posts-v2.test.js › a post's life after it is approved (4.9; checks 22–27) every product sold out removes the post; a new price moves its band
+the same old failures   : 177
+suites that did not load: 1 — tests/collection-library.test.js (also before)
+
+"Connection terminated" in the output: 0 · connect timeouts: 0

@@ -39,6 +39,10 @@ const MSG = {
   APPROVED_LOCKED: "An approved post can't be changed. You can take it down.",
   SENT_BACK_ONLY: 'When a post is sent back you can change photos and videos, caption, products and theme tags. For anything else, start a new post.',
   REMOVED: 'This post has left the shop.',
+  // listing-shop-safety (board C1): a live post shoppers cannot see right now, and that it returns.
+  NOT_IN_SHOP_PRODUCTS: 'Every product in this post is hidden or out of stock. It is back by itself when the brand shows or restocks one.',
+  NOT_IN_SHOP_SET: 'A piece of this set is hidden or out of stock. The post is back by itself when the set is whole.',
+  NOT_IN_SHOP: "Shoppers can't see this post right now. It is back by itself when it can be bought again.",
   CANT_DELETE: 'Only drafts and sent-back posts can be deleted.',
   CANT_TAKE_DOWN: 'Only an approved post can be taken down.',
   CANT_SEND: "This post can't be sent now.",

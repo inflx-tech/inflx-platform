@@ -148,7 +148,10 @@ export default function DealScreen({ navigation, route }) {
       });
       setPopup(null); return;
     }
-    const line = { ref: popup.ref || newRef(), post_id: postId, product_id: p.id, colour: sel.colour, size: sel.size, qty: sel.qty || 1, role: 'buy' };
+    // listing-shop-safety (D, board D1): a piece the set needs twice goes in twice. The pop-up of
+    // a set has no quantity, so this was always 1 and such a set could never be completed.
+    const qty = popup.mode === 'fixed' ? Math.max(1, Number(p.set_qty) || 1) : (sel.qty || 1);
+    const line = { ref: popup.ref || newRef(), post_id: postId, product_id: p.id, colour: sel.colour, size: sel.size, qty, role: 'buy' };
     setPicks((xs) => (popup.ref ? xs.map((l) => (l.ref === popup.ref ? line : l)) : [...xs, line]));
     setPopup(null);
   }
@@ -302,7 +305,7 @@ export default function DealScreen({ navigation, route }) {
                   {p.image_url ? <Image source={{ uri: p.image_url }} style={st.setImg} /> : <View style={st.setImg} />}
                   <View style={{ flex: 1 }}>
                     <Text style={st.name}>{p.name}{p.set_qty > 1 ? ` ×${p.set_qty}` : ''}</Text>
-                    <Text style={st.meta}>{inr(cs ? priceFor(p, cs.first).normal : p.price)}{cs ? ` · ${[cs.first.colour, cs.first.size].filter(Boolean).join(' · ')}` : ''}</Text>
+                    <Text style={st.meta}>{inr(cs ? priceFor(p, cs.first).normal : p.price)}{cs ? ` · ${[cs.first.colour, cs.first.size].filter(Boolean).join(' · ')}` : ''}{cs && p.set_qty > 1 ? ` · ×${p.set_qty}` : ''}</Text>
                     <Text style={[st.cta, cs && st.ctaOn, { alignSelf: 'flex-start' }]}>{cs ? CO.chosen : CO.tapToChooseColourSize}</Text>
                   </View>
                 </TouchableOpacity>

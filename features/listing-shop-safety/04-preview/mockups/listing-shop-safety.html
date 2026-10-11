@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listing and shop safety — the screens that change</title>
+<style>
+  :root{--white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--ink:#0A0A0A;--ink2:#1F1F22;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;--border:#E4E4E7;
+    --success:#10B981;--success-text:#047857;--danger:#E8401A;--blue:#1D4ED8;--blue-pale:#DBEAFE;--red-pale:#FFF5F2}
+  *{box-sizing:border-box}
+  body{font-family:'Plus Jakarta Sans',system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);font-size:13px;background:var(--bg2);margin:0;padding:24px 16px 60px}
+  .wrap{max-width:980px;margin:0 auto}
+  h1{font-size:22px;font-weight:800;margin:0 0 2px}
+  .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 8px}
+  .lead{color:var(--muted);max-width:780px;line-height:1.6}
+  h2{font-size:16px;font-weight:800;margin:34px 0 2px}
+  .cap{font-size:12px;color:var(--muted2);max-width:780px;line-height:1.55;margin-bottom:12px}
+  .pair{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .col{flex:1 1 300px;min-width:280px;max-width:470px}
+  .tagline{margin-bottom:6px}
+  .badge{font-size:10px;font-weight:800;border-radius:5px;padding:2px 7px;letter-spacing:.4px;text-transform:uppercase}
+  .badge.today{background:#E4E4E7;color:var(--ink2)} .badge.after{background:var(--ink);color:var(--yellow)}
+  .panel{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px}
+  .row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
+  .row:last-child{border-bottom:0}
+  .row b{flex:1}
+  .pill{font-size:10px;font-weight:800;border-radius:6px;padding:2px 8px}
+  .pill.live{background:#D1FAE5;color:var(--success-text)} .pill.hid{background:var(--bg2);color:var(--muted2)}
+  .lnk{font-weight:800;font-size:12px}
+  .lnk.red{color:var(--danger)}
+  .dlg{background:#fff;border:1px solid #CBD5E1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:14px 16px;font-size:13px;line-height:1.55;max-width:420px}
+  .dlg .site{font-size:11px;color:var(--muted2);margin-bottom:6px}
+  .dlg .btns{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+  .dlg .b{border-radius:16px;padding:6px 18px;font-weight:700;font-size:12px;border:1px solid #CBD5E1}
+  .dlg .b.ok{background:#1A73E8;color:#fff;border-color:#1A73E8}
+  .errbar{background:var(--red-pale);border:1px solid #F7C9BD;border-radius:10px;padding:10px 12px;color:#8A2A12;font-weight:600;font-size:12px;line-height:1.5}
+  .offbox{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg)}
+  .ft{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);margin-bottom:4px}
+  .pm{color:var(--muted);font-size:12px;margin-top:3px}
+  .new{outline:2px solid var(--success);outline-offset:3px;border-radius:6px}
+  .gone{outline:2px dashed var(--danger);outline-offset:3px;border-radius:6px}
+  .mark{font-size:11px;font-weight:800;margin-top:8px}
+  .mark.r{color:var(--danger)} .mark.g{color:var(--success-text)}
+  .phone{width:290px;border:7px solid #1A1A17;border-radius:30px;background:#fff;overflow:hidden;margin:0 auto}
+  .sb{display:flex;justify-content:space-between;padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--muted)}
+  .bar{display:flex;align-items:center;gap:10px;padding:8px 14px 12px;border-bottom:1px solid var(--border)}
+  .bar h3{margin:0;font-size:15px;font-weight:800;flex:1}
+  .chip{background:#D1FAE5;color:var(--success-text);font-size:11px;font-weight:700;border-radius:8px;padding:5px 9px}
+  .scr{padding:14px;display:flex;flex-direction:column;gap:10px;min-height:330px}
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--muted2)}
+  .card{border:1px solid var(--border);border-radius:12px;padding:12px}
+  .card b{display:block;font-size:13.5px;margin-bottom:3px}
+  .card span{color:var(--muted);font-size:12px;line-height:1.5}
+  .card.wait{background:var(--blue-pale);border-color:transparent}
+  .card.wait b,.card.wait span{color:var(--blue)}
+  .btn2{border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;font-weight:800;font-size:12px}
+  .notice{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fff}
+  .notice b{display:block;font-size:12.5px} .notice span{color:var(--muted);font-size:12px}
+  .setrow{display:flex;gap:10px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px}
+  .setrow.on{border-color:var(--ink)}
+  .im{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#E5E7EB,#CBD5E1);flex:none}
+  .ok{color:var(--success-text);font-weight:800;font-size:11px}
+  .note{margin-top:26px;background:#fff;border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:8px;padding:12px 14px;color:var(--muted);line-height:1.6;max-width:780px}
+  .note b{color:var(--ink)} ul{margin:6px 0 0;padding-left:18px} li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Listing and shop safety — four fixes</h1>
+  <div class="rule"></div>
+  <div class="lead">Most of this round changes what <b>happens</b>, not what a screen looks like. These are the only
+    places where someone sees something different. Dashed red = removed. Green = new.</div>
+
+  <!-- ───────────── A1 -->
+  <h2>A1 · Website · Listings · Hide and Show</h2>
+  <div class="cap">The buttons look the same. What they do changes: <b>Hide is now a pause.</b> Nothing is deleted from any creator's post, and Show brings everything back.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="panel">
+        <div class="row"><b>Spider man glasses</b><span class="pill hid">Hidden</span><span class="lnk">Show</span></div>
+        <div class="mark r">✕ One tap on Hide took it out of every post for good. A post with only this product was removed. Show restores nothing.</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="panel">
+        <div class="row"><b>Spider man glasses</b><span class="pill hid">Hidden</span><span class="lnk">Show</span></div>
+        <div class="mark g">✓ Hidden: not sold, not shown, and its posts wait. Show: back in every post, and a post that had only this product is back in the shop.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── A2 -->
+  <h2>A2 · Website · Listings · Remove (the permanent one)</h2>
+  <div class="cap">Remove still takes the product out of every post for good. It now says what that means before you agree, and it is refused for a piece of a running set.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="dlg"><div class="site">inflx.in says</div>
+        Remove "Cool glasses" from your listing?
+        <div class="btns"><span class="b">Cancel</span><span class="b ok">OK</span></div></div>
+      <div class="mark r">✕ Says nothing about the creators' posts it is about to change.</div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="dlg new"><div class="site">inflx.in says</div>
+        Remove "Cool glasses" from your listing?<br><br>
+        It is in 3 live posts. It will be taken out of them for good. 1 post has nothing else and will be removed. This can't be undone.<br><br>
+        To stop selling it for a while, use Hide: that can be undone.
+        <div class="btns"><span class="b">Cancel</span><span class="b ok">OK</span></div></div>
+      <div style="height:12px"></div>
+      <div class="errbar new">"Blue kurta" is part of the set "Bundle offer". Hide it to pause the set, or end the offer first.</div>
+      <div class="mark g">✓ The red line shows when the product is a piece of a set that is running or scheduled. Nothing is changed.</div>
+    </div>
+  </div>
+
+  <!-- ───────────── A3 -->
+  <h2>A3 · Website · Listings · the product's offer panel</h2>
+  <div class="cap">The number of posts is the real one. It always said 0.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="panel"><div class="offbox"><div class="ft">Offer now</div><div><b>20mperc 1</b> · 10 Oct – 20 Oct</div>
+        <div class="pm">Given to 2 creators · in <span class="gone">0</span> of their posts</div></div></div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="panel"><div class="offbox"><div class="ft">Offer now</div><div><b>20mperc 1</b> · 10 Oct – 20 Oct</div>
+        <div class="pm">Given to 2 creators · in <span class="new">3</span> of their posts</div></div></div>
+    </div>
+  </div>
+
+  <!-- ───────────── B1 -->
+  <h2>B1 · Website · Edit product · after Save, when stock moved while the page was open</h2>
+  <div class="cap">Saving no longer puts sold stock back. If something sold or came back while you were editing, you are told once, then returned to Listings. If nothing moved, nothing is shown.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="panel"><div class="pm">Opened with Blue · M = 3. Two were sold meanwhile. You fix the description and save.</div>
+        <div class="mark r">✕ Blue · M is saved as 3 again. Two pieces that do not exist are on sale. No message.</div></div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="dlg new"><div class="site">inflx.in says</div>
+        Saved.<br><br>While you were editing, 2 of Blue · M were sold. Its stock is now 1.
+        <div class="btns"><span class="b ok">OK</span></div></div>
+      <div class="mark g">✓ A box you did not touch keeps the live number. A box you changed moves by what you changed: 3 → 10 typed, 1 live, saved as 8, and the message says 8.</div>
+    </div>
+  </div>
+
+  <!-- ───────────── C1 -->
+  <h2>C1 · Creator app · her post, while it is not in the shop</h2>
+  <div class="cap">Her post stays hers and stays approved. This page tells her when shoppers cannot see it and that it returns by itself. She is also told when the product is paused and when it is back.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="phone"><div class="sb"><span>11:42</span><span>●●● 5G</span></div>
+        <div class="bar"><span style="font-size:20px;font-weight:700">‹</span><h3>Spider man x</h3><span class="chip">Live</span></div>
+        <div class="scr"><div class="eyebrow">SPIDER MAN X</div>
+          <div class="card"><b>Live in the shop</b><span>No sales yet</span></div>
+          <div class="btn2">Share · F53VBW</div>
+        </div></div>
+      <div class="mark r" style="text-align:center">✕ Says "Live" while no shopper can see it.</div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="phone"><div class="sb"><span>11:42</span><span>●●● 5G</span></div>
+        <div class="bar"><span style="font-size:20px;font-weight:700">‹</span><h3>Spider man x</h3><span class="chip">Live</span></div>
+        <div class="scr"><div class="eyebrow">SPIDER MAN X</div>
+          <div class="card wait new"><b>Not in the shop right now</b><span>Every product in this post is hidden or out of stock. It is back by itself when the brand shows or restocks one.</span></div>
+          <div class="card"><b>Live in the shop</b><span>No sales yet</span></div>
+          <div class="btn2">Share · F53VBW</div>
+        </div></div>
+      <div style="height:10px"></div>
+      <div class="notice new"><b>Spider man glasses is not on sale right now</b><span>The brand has paused it. It is back in your posts when the brand shows it again.</span></div>
+      <div style="height:6px"></div>
+      <div class="notice new"><b>Spider man glasses is back on sale</b><span>It is in your posts again.</span></div>
+      <div class="mark g" style="text-align:center">✓ For a set the blue box reads: "A piece of this set is hidden or out of stock. The post is back by itself when the set is whole."</div>
+    </div>
+  </div>
+
+  <!-- ───────────── D1 -->
+  <h2>D1 · Shopper app · a set that needs 2 of one piece</h2>
+  <div class="cap">The row already says "×2". Today choosing it puts in only one, so the set can never be finished. After: one choice of colour and size puts in both, and the chosen line says ×2.</div>
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="panel">
+        <div class="setrow on"><div class="im"></div><div><b>Cotton T-shirt ×2</b><div class="pm">₹799 · Blue · M</div><span class="ok">✓ Chosen</span></div></div>
+        <div style="height:8px"></div>
+        <div class="setrow on"><div class="im"></div><div><b>Slim jeans</b><div class="pm">₹1,499 · Black · 32</div><span class="ok">✓ Chosen</span></div></div>
+        <div class="mark r">✕ "Sold only as the whole set" — the page counted 1 T-shirt, the set needs 2.</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="panel">
+        <div class="setrow on"><div class="im"></div><div><b>Cotton T-shirt ×2</b><div class="pm">₹799 · Blue · M <span class="new">· ×2</span></div><span class="ok">✓ Chosen</span></div></div>
+        <div style="height:8px"></div>
+        <div class="setrow on"><div class="im"></div><div><b>Slim jeans</b><div class="pm">₹1,499 · Black · 32</div><span class="ok">✓ Chosen</span></div></div>
+        <div class="mark g">✓ Set complete at the set's price. Both T-shirts are the same colour and size.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note"><b>Fixed with nothing new on any screen</b>
+    <ul>
+      <li><b>Stock 0 saved by a brand</b> is a pause, like Hide: the post waits and returns when you restock.</li>
+      <li><b>A set with a piece hidden or sold out</b> is not in the shop until the set is whole again. If you allowed pieces to be bought alone, the post stays.</li>
+      <li><b>Place order</b> makes one order however many times it is tapped for the same attempt.</li>
+    </ul>
+    <b style="display:block;margin-top:10px">What does NOT change</b>
+    <ul>
+      <li>The Hide and Show buttons, the Edit form's boxes, the checkout, the deal page: the same look.</li>
+      <li>Posts that were removed before this change stay removed.</li>
+      <li>What the shopper reads on a paused post's link: "This post is no longer available", as today.</li>
+      <li>Prices, offers, commissions, wallets and refunds.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

@@ -573,7 +573,10 @@ async function getAny(id) { return (await getMany([id]))[0] || null; }
 
 async function getPost(influencerId, postId) {
   const p = await loadOwn(influencerId, postId);
-  return (await hydrate([p]))[0];
+  const out = (await hydrate([p]))[0];
+  // listing-shop-safety (C1): a live post whose products are all paused, or whose set is not whole.
+  out.not_in_shop = out.state === 'live' ? await notInShopWhy(p) : null;
+  return out;
 }
 
 /* ───────────────────────────────────────────── making a draft (P3 → P4) */
@@ -887,8 +890,14 @@ async function refreshFacets(postId, conn = db) {
     `SELECT cp.id, cp.post_kind, o.offer_type, o.sub_type, o.offer_config_json
        FROM creator_posts cp LEFT JOIN brand_offers o ON o.id = cp.offer_id WHERE cp.id = $1`, [postId]);
   if (!p) return;
-  const { rows: prods } = await conn.query(
-    `SELECT bp.price, bp.category_node_id FROM post_products pp JOIN brand_products bp ON bp.id = pp.product_id WHERE pp.post_id = $1`, [postId]);
+  // listing-shop-safety (A): a hidden product stays in the post, so the band and the categories are
+  // read from the products that are on sale. With none on sale the post is not in the shop at all:
+  // what it had is left as it was, for the day one is shown again.
+  const { rows: every } = await conn.query(
+    `SELECT bp.price, bp.category_node_id, (bp.is_active AND bp.pushed_to_store IS NOT FALSE) AS on_sale
+       FROM post_products pp JOIN brand_products bp ON bp.id = pp.product_id WHERE pp.post_id = $1`, [postId]);
+  const prods = every.filter((r) => r.on_sale);
+  if (every.length && !prods.length) return;
   const offer = p.post_kind === 'offer' && p.offer_type ? { offer_type: p.offer_type, sub_type: p.sub_type, offer_config_json: p.offer_config_json || {} } : null;
   const prices = prods.map((r) => shopperPrice(offer, r.price));
   const top = prices.length ? Math.max(...prices) : null;
@@ -1144,14 +1153,26 @@ async function afterProductsLeft(rows, emptyReason) {
 }
 
 /**
- * A product changed (brand edit): off sale → it leaves every new post, an empty post is removed;
- * every product of a post sold out → the post is removed; a new price → bands recalculate. Never throws.
+ * A product changed (brand edit). Never throws.
+ *
+ * listing-shop-safety (A; rules 2.8 and 4.9 as changed on 11 Oct 2026): a product that is hidden,
+ * or out of stock, is a PAUSE. It stays in every post that carries it — the shop simply does not
+ * show or sell it (the card and the pricing engine both ask "is it on sale"), and a post with
+ * nothing left to sell is not in the shop (`shopperPosts.livePool`) until the brand shows or
+ * restocks one. Nothing is deleted, so Show brings all of it back. (Hide used to delete the product
+ * from every post and remove a post left empty, for good; a zero-stock save removed the post too,
+ * while selling out through orders never did.)
+ *
+ * `permanent` is the brand's Remove: the product leaves every post for good and a post left with
+ * none is removed, as before.
+ *
+ * Either way the posts' price band and categories are worked out again from what is on sale.
  */
-async function afterProductChange(productId, before, after) {
+async function afterProductChange(productId, before, after, { permanent = false } = {}) {
   try {
     const wasOn = onSale(before);
     const isOn = onSale(after);
-    if (wasOn && !isOn) {
+    if (permanent && !isOn) {
       const { rows } = await db.query(
         `DELETE FROM post_products pp USING creator_posts cp
           WHERE pp.post_id = cp.id AND pp.product_id = $1 AND cp.v2 AND cp.status IN ('draft', 'submitted', 'approved', 'rejected')
@@ -1163,15 +1184,27 @@ async function afterProductChange(productId, before, after) {
       `SELECT DISTINCT cp.id FROM post_products pp JOIN creator_posts cp ON cp.id = pp.post_id
         WHERE pp.product_id = $1 AND cp.v2 AND cp.status IN ('draft', 'submitted', 'approved', 'rejected')`, [productId]);
     if (!posts.length) return;
-    if (Number(before.price) !== Number(after.price)) for (const r of posts) await refreshFacets(r.id);
-    if (after.stock != null && Number(after.stock) === 0) {
-      const { rows: soldOut } = await db.query(
-        `SELECT cp.id FROM creator_posts cp WHERE cp.id = ANY($1::uuid[]) AND ${OPEN}
-            AND NOT EXISTS (SELECT 1 FROM post_products pp JOIN brand_products bp ON bp.id = pp.product_id
-                             WHERE pp.post_id = cp.id AND (bp.stock IS NULL OR bp.stock > 0))`, [posts.map((r) => r.id)]);
-      await removePosts(soldOut.map((r) => r.id), 'sold_out');
-    }
+    if (wasOn !== isOn || Number(before.price) !== Number(after.price)) for (const r of posts) await refreshFacets(r.id);
   } catch (e) { console.error('[posts] product change:', e.message); }
+}
+
+/**
+ * listing-shop-safety (board C1): why a live post is not in the shop right now — said on the
+ * creator's own post page — or null when shoppers can see it. One query set per call: asked for a
+ * single post, never for a list.
+ */
+async function notInShopWhy(p) {
+  if (await require('./shopperPosts.service').isLive(p.id)) return null;
+  const { rows: prods } = await db.query(
+    `SELECT bp.is_active, bp.pushed_to_store, bp.stock, bp.variants_json
+       FROM post_products pp JOIN brand_products bp ON bp.id = pp.product_id WHERE pp.post_id = $1`, [p.id]);
+  const sells = prods.some((x) => onSale(x) && stockService.available(x));
+  if (!sells) return MSG.NOT_IN_SHOP_PRODUCTS;
+  if (p.post_kind === 'offer' && p.offer_id) {
+    const { rows: [o] } = await db.query(`SELECT sub_type FROM brand_offers WHERE id = $1`, [p.offer_id]);
+    if (o && o.sub_type === 'fixed') return MSG.NOT_IN_SHOP_SET;
+  }
+  return MSG.NOT_IN_SHOP;
 }
 
 /** The offer page (O10, O11): her posts using this offer, and what removing products would empty. */

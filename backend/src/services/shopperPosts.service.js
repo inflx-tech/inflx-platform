@@ -130,6 +130,18 @@ async function livePool({ segments = [], videosOnly = false, influencerId = null
                  AND (gp.gift_limit IS NULL OR gp.gifts_given < gp.gift_limit)))
         AND EXISTS (SELECT 1 FROM post_products pp JOIN brand_products bp ON bp.id = pp.product_id
                      WHERE pp.post_id = cp.id AND bp.is_active AND bp.pushed_to_store AND (bp.stock IS NULL OR bp.stock > 0))
+        -- listing-shop-safety (D): a set is sold only whole (6.4), so its post is in the shop only
+        -- while EVERY piece is on sale with stock for its quantity — it used to stay up, unbuyable,
+        -- on the strength of any one piece. A set whose pieces may be bought alone keeps its post
+        -- while any piece sells (the line above). It returns by itself when the set is whole.
+        AND (o.sub_type IS DISTINCT FROM 'fixed' OR COALESCE((o.offer_config_json->>'pieces_alone')::boolean, false)
+             OR NOT EXISTS (
+               SELECT 1 FROM offer_pool_items si JOIN brand_products sp ON sp.id = si.product_id
+                WHERE si.offer_id = o.id AND si.pool = 'buy' AND si.removed_at IS NULL
+                  AND NOT (sp.is_active AND sp.pushed_to_store
+                           AND (sp.stock IS NULL OR sp.stock >= GREATEST(1,
+                                CASE WHEN (o.offer_config_json->'quantities'->>(sp.id::text)) ~ '^[0-9]+$'
+                                     THEN (o.offer_config_json->'quantities'->>(sp.id::text))::int ELSE 1 END)))))
         ${where.length ? `AND ${where.join(' AND ')}` : ''}
       ORDER BY live_at DESC, cp.id
       LIMIT ${Math.min(5000, Math.max(1, Number(limit) || 1500))}`, params);

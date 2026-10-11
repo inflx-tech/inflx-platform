@@ -61,6 +61,17 @@ const NOTIFY = {
     title: `${productName} is no longer available`.slice(0, 100),
     body: 'The brand took it off sale, so it leaves what you can sell and your posts.',
   }),
+  // listing-shop-safety (board C1): hidden is a pause, and Show brings it back.
+  paused: (productName) => ({
+    type: 'product_paused',
+    title: `${productName} is not on sale right now`.slice(0, 100),
+    body: 'The brand has paused it. It is back in your posts when the brand shows it again.',
+  }),
+  backOnSale: (productName) => ({
+    type: 'product_back_on_sale',
+    title: `${productName} is back on sale`.slice(0, 100),
+    body: 'It is in your posts again.',
+  }),
   priceChanged: (productName, oldPrice, newPrice) => ({
     type: 'offer_price_changed',
     title: `Price changed: ${productName}`.slice(0, 100),
@@ -440,20 +451,26 @@ async function tell(people, message, data) {
  * After a product is saved: out of stock, taken off sale, or (for her normal-price list) a new
  * price. Offer-linked price notices are sent by offerLife.afterPriceChange. Never throws.
  */
-async function afterProductChange(productId, before, after) {
+async function afterProductChange(productId, before, after, { permanent = false } = {}) {
   try {
     if (!before || !after) return 0;
-    // shoppable-posts-v2 (rules 4.9): the posts it is in — off sale leaves them, sold out removes them,
-    // a new price recalculates their band. Never throws.
-    await require('./shoppablePosts.service').afterProductChange(productId, before, after);
+    // shoppable-posts-v2 (rules 4.9) as changed by listing-shop-safety (A): the posts it is in —
+    // hidden or sold out is a pause (nothing leaves them), the brand's Remove (`permanent`) takes it
+    // out for good, a new price recalculates their band. Never throws.
+    await require('./shoppablePosts.service').afterProductChange(productId, before, after, { permanent });
     const name = after.name || before.name || 'A product';
     let told = 0;
     const wasOn = before.is_active !== false && before.pushed_to_store !== false;
     const isOn = after.is_active !== false && after.pushed_to_store !== false;
-    if (wasOn && !isOn) {
+    if (permanent && !isOn) {
       told += await tell(await creatorsHoldingProduct(productId), NOTIFY.unavailable(name), { product_id: productId });
       return told;
     }
+    if (wasOn && !isOn) {
+      told += await tell(await creatorsHoldingProduct(productId), NOTIFY.paused(name), { product_id: productId });
+      return told;
+    }
+    if (!wasOn && isOn) told += await tell(await creatorsHoldingProduct(productId), NOTIFY.backOnSale(name), { product_id: productId });
     const had = before.stock == null || Number(before.stock) > 0;
     if (had && after.stock != null && Number(after.stock) === 0) {
       told += await tell(await creatorsHoldingProduct(productId), NOTIFY.outOfStock(name), { product_id: productId });

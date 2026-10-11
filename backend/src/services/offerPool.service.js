@@ -548,7 +548,26 @@ async function offersByProduct(brandId, { productIds = null, today = todayInIndi
   return out;
 }
 
+/**
+ * listing-shop-safety (boards A2, A3): the live posts that carry a product — every one of the
+ * brand's approved posts whose offer (if it has one) is still running — how many of them carry
+ * nothing else, and how many belong to one offer. It always said 0.
+ */
+async function postsCarrying(brandId, productId, { offerId = null, today = todayInIndia() } = {}, tx = db) {
+  const { rows: [n] } = await tx.query(
+    `SELECT count(*)::int AS posts,
+            count(*) FILTER (WHERE (SELECT count(*) FROM post_products x WHERE x.post_id = cp.id) = 1)::int AS only_this,
+            count(*) FILTER (WHERE cp.offer_id = $3::uuid)::int AS in_offer
+       FROM post_products pp JOIN creator_posts cp ON cp.id = pp.post_id
+       LEFT JOIN brand_offers o ON o.id = cp.offer_id
+      WHERE pp.product_id = $1 AND cp.brand_id = $2 AND cp.v2 AND cp.status = 'approved'
+        AND (cp.post_kind <> 'offer' OR (o.status = 'published' AND o.ends_on >= $4::date))`,
+    [productId, brandId, offerId, today]);
+  return { posts: n.posts, only_this: n.only_this, in_offer: n.in_offer };
+}
+
 module.exports = {
+  postsCarrying,
   LIVE, subtree, cleanFilters, productsUnder, productsByIds, searchProducts, giftItemsByIds,
   locksFor, listSources, resolveDraftPool, frozenPool, addSource, describeSource,
   candidates, giftItemCandidates, filterOptions, productsWithoutOffers, offersByProduct,

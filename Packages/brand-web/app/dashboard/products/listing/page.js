@@ -46,6 +46,21 @@ const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant"
   : f.facet_role === 'listing_attr' || f.facet_role === 'attr' ? <span className="tag attr">listing</span> : null;
 const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
 const blankDraft = () => ({ name: '', price: '', brand: '', sku: '', stock: '', description: '', images: [], facets: {}, variants: {}, tags: [] });
+// listing-shop-safety (B): the stock a box showed when the Edit page opened, sent back with the save
+// so the server can keep what sold in the meantime. Nothing for a box that was not on the product.
+const shownWhenOpened = (cv, size) => (cv?.was && Object.prototype.hasOwnProperty.call(cv.was, size)
+  ? { stock_was: cv.was[size] === '' ? null : cv.was[size] } : {});
+/** What the brand is told after a save, when a number moved while the page was open (board B1). */
+function stockNotesText(notes) {
+  const lines = arr(notes).map((n) => {
+    const what = [n.colour, n.size].filter(Boolean).filter(x => !['free size', 'one size', 'unstitched'].includes(String(x).toLowerCase())).join(' · ') || 'this product';
+    const moved = n.shown != null && n.now != null ? Number(n.shown) - Number(n.now) : null;
+    const how = moved == null || moved === 0 ? `the stock of ${what} changed`
+      : moved > 0 ? `${moved} of ${what} ${moved === 1 ? 'was' : 'were'} sold` : `${-moved} of ${what} came back`;
+    return `While you were editing, ${how}. ${n.saved == null ? 'It is not counted now.' : `Its stock is now ${n.saved}.`}`;
+  });
+  return lines.length ? ['Saved.', ...lines].join('\n\n') : '';
+}
 // stock-asked-once: a staged item's stock as the server will keep it — the total of its colours'
 // and sizes' boxes when every one is counted, nothing when any is not. An item with no sizes
 // keeps its own number.
@@ -196,7 +211,11 @@ export default function DrilldownListingPage() {
           const have = sz.filter(s => s && s.stock != null && s.stock !== '');
           const val = sz.length === 0 ? (onlyColour ? (product.stock ?? '') : '')
             : have.length === sz.length ? have.reduce((n, s) => n + Number(s.stock), 0) : '';
-          variantsMap[cv.color] = { images: arr(cv.images), stock: { [one]: val } };
+          // listing-shop-safety (B): `was` = what this box showed when the page opened. It goes back
+          // with the save, so the server keeps what sold meanwhile. Only for a box that IS one
+          // saved size (a colour with no size, or several, has no single live number to compare).
+          const wasOne = sz.length === 1 && String(sz[0].size) === String(one) ? { was: { [one]: val } } : {};
+          variantsMap[cv.color] = { images: arr(cv.images), stock: { [one]: val }, ...wasOne };
           continue;
         }
         // `sizes` is this colour's OWN list — it may legitimately differ from
@@ -205,6 +224,7 @@ export default function DrilldownListingPage() {
           images: arr(cv.images),
           sizes: arr(cv.sizes).map(s => s.size).filter(Boolean),
           stock: Object.fromEntries(arr(cv.sizes).map(s => [s.size, s.stock ?? ''])),
+          was: Object.fromEntries(arr(cv.sizes).map(s => [s.size, s.stock ?? ''])),
         };
       }
       const pf = (product.facets && typeof product.facets === 'object') ? { ...product.facets } : {};
@@ -217,7 +237,7 @@ export default function DrilldownListingPage() {
       setFacets(fdefs || []);
       setDraft({
         name: product.name || '', price: product.price ?? '',
-        brand: brandVal, sku: product.sku || '', stock: product.stock ?? '',
+        brand: brandVal, sku: product.sku || '', stock: product.stock ?? '', stock_was: product.stock ?? '',
         description: product.description || '',
         images: coverImgs, facets: pf, variants: variantsMap,
         tags: Array.isArray(product.tags) ? product.tags : [],
@@ -577,13 +597,15 @@ export default function DrilldownListingPage() {
       images: arr(draft.variants[color]?.images),
       // Per-colour sizes on edit too, else re-saving would flatten them back
       // to the master list (listing-per-colour-sizes).
-      sizes: sizesFor(color).map(val => ({ size: val, stock: draft.variants[color]?.stock?.[val] ?? null })),
+      // listing-shop-safety (B): each box goes with what it showed when the page opened.
+      sizes: sizesFor(color).map(val => ({ size: val, stock: draft.variants[color]?.stock?.[val] ?? null, ...shownWhenOpened(draft.variants[color], val) })),
     }));
     const outFacets = stockKey ? { ...draft.facets, [stockKey]: sizeUnion() } : draft.facets;
     const payload = {
       name: draft.name.trim(), price: Number(draft.price),
       brand: draft.brand.trim() || null,
       stock: !stockKey && draft.stock !== '' ? Number(draft.stock) : null,
+      ...(!stockKey && draft.stock_was !== undefined ? { stock_was: draft.stock_was === '' ? null : draft.stock_was } : {}),
       description: draft.description.trim() || null,
       images: draft.images, facets: outFacets,
       variants: variants.length ? variants : undefined,
@@ -591,8 +613,12 @@ export default function DrilldownListingPage() {
     };
     const r = await brandApi.patch(`/brands/me/listing-products/${editingId}`, payload);
     setSaving(false);
-    if (r.success) { window.location.href = '/dashboard/products/listing'; }
-    else setErr(r.error?.message || 'Save failed');
+    if (r.success) {
+      // Something sold, or came back, while this page was open: say so once, then leave.
+      const notes = stockNotesText(r.data?.stock_notes);
+      if (notes) window.alert(notes);
+      window.location.href = '/dashboard/products/listing';
+    } else setErr(r.error?.message || 'Save failed');
   };
 
   // ── Excel bulk add ──────────────────────────────────────────────────────

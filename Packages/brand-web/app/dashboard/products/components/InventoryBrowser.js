@@ -65,6 +65,22 @@ const SWATCH = {
 };
 const swatchFor = (name) => SWATCH[String(name || '').trim().toLowerCase()] || '#D4D4D8';
 
+/**
+ * listing-shop-safety (board A2): what Remove asks. `live` = the live posts carrying the product,
+ * `only` = those of them that carry nothing else (they are removed with it).
+ */
+export function removeQuestion(name, live, only) {
+  const head = `Remove "${name}" from your listing?`;
+  const hide = 'To stop selling it for a while, use Hide: that can be undone.';
+  // the count could not be read: say what Remove does, claim no number
+  if (live == null) return [head, "It will be taken out of creators' live posts for good, and a post left with nothing is removed. This can't be undone.", hide].join('\n\n');
+  if (!live) return [head, "It is not in any creator's live post.", hide].join('\n\n');
+  const posts = live === 1
+    ? `It is in 1 live post. It will be taken out of it for good.${only ? ' That post has nothing else and will be removed.' : ''}`
+    : `It is in ${live} live posts. It will be taken out of them for good.${only ? ` ${only} post${only === 1 ? ' has' : 's have'} nothing else and will be removed.` : ''}`;
+  return [head, `${posts} This can't be undone.`, hide].join('\n\n');
+}
+
 export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search }) {
   const [tree, setTree] = useState(null);
   const [treeLoading, setTreeLoading] = useState(true);
@@ -143,8 +159,13 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
     refresh();
   };
   const doRemove = async (p) => {
-    if (!window.confirm(`Remove "${p.name}" from your listing?`)) return;
-    setBusy(p.id);
+    // listing-shop-safety (A2): Remove is the permanent one (Hide is a pause), so its question
+    // says what it will do to creators' posts. The numbers are the server's.
+    const info = await brandApi.productOfferPanel(p.id);
+    const live = info.success ? Number(info.data.posts_live) || 0 : null;
+    const only = info.success ? Number(info.data.posts_only_this) || 0 : 0;
+    if (!window.confirm(removeQuestion(p.name, live, only))) return;
+    setBusy(p.id); setErr('');
     const r = await brandApi.deleteProduct(p.id);
     setBusy('');
     if (r.success) refresh(); else setErr(r.error?.message || 'Remove failed');
@@ -173,7 +194,12 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
     (p) => brandApi.updateProduct(p.id, { is_active }));
   const bulkRemove = () => {
     const n = picked.length;
-    if (!window.confirm(`Remove ${n} product${n === 1 ? '' : 's'} from your listing? This can't be undone.`)) return;
+    // listing-shop-safety (A2): the bulk Remove says the same thing, without the counts.
+    if (!window.confirm([
+      `Remove ${n} product${n === 1 ? '' : 's'} from your listing?`,
+      `${n === 1 ? 'It' : 'They'} will be taken out of creators' live posts for good, and a post left with nothing is removed. This can't be undone.`,
+      'To stop selling for a while, use Hide: that can be undone.',
+    ].join('\n\n'))) return;
     return runBulk('Removed', (p) => brandApi.deleteProduct(p.id));
   };
   // offer-builder-v2 (O12, rules 1.11): products in a live or scheduled offer are warned about

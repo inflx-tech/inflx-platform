@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.21 · 5 October 2026 · living document**
+**Version 1.22 · 11 October 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -292,8 +292,9 @@ can't be countered.**
 | An offer ends (end date, or brand ends it early) | Her posts using it are **removed from the shop**. She is notified. |
 | Brand wants to add or remove products in an offer she has | **Not allowed** (1.10, changed 1 Oct). The offer's products are frozen from the moment it is in her invitation. The brand can end the offer, or take a product off sale. |
 | A product without an offer she has is later put into an offer | It **stays sellable in her posts at normal price** (she wasn't given that offer). |
-| A product becomes unavailable (unpublished or deleted) | It's removed from her sellable list and her posts (existing rule). She is notified. |
-| A product runs out of stock | It can't be bought until restocked. A post whose products are **all** out of stock is removed from the shop. |
+| The brand **hides** a product (v1.22) | **A pause.** It can't be bought or seen while hidden. It stays in her posts and is simply not shown there; a post with nothing else to sell is not in the shop meanwhile. When the brand **shows** it again, everything is back. She is told both times. |
+| The brand **removes** a product (v1.22) | The permanent one: it leaves her sellable list and her posts for good; a post left with none is removed. The brand is asked first, with the number of live posts it is in. **Refused for a piece of a set that is running or scheduled** — hide it, or end the offer. She is notified. |
+| A product runs out of stock | It can't be bought until restocked. A post whose products are **all** out of stock is **not in the shop until one is restocked** (v1.22: it used to be removed for good when the brand saved the stock as 0, while selling out through orders only paused it). |
 | The brand ends an offer that is in invitations not yet signed | Before ending, the brand is warned ("in 3 unsigned invitations"). The offer drops out of those invitations and the creators are told. An invitation left with nothing to sell is **withdrawn automatically**. |
 
 ### 2.9 How long a collaboration lasts
@@ -458,11 +459,13 @@ sends it. Tapping a draft carries on where she stopped. A draft can be deleted. 
 |---|---|
 | The offer's end date passes, or the brand ends it early | **Removed from the shop.** Its media promises the offer, so it can't sell at full price. The creator is notified. |
 | Brand removes some of the post's products from the offer | Those products leave the post. If none are left, the post is removed. |
-| A product becomes unavailable | It leaves the post. If none are left, the post is removed. |
-| All the post's products are out of stock | Removed from the shop. |
+| A product is **hidden** by the brand (v1.22) | It stays in the post and is not shown or sold. If nothing else in the post can be sold, the post is **not in the shop until the brand shows it again**. Nothing is deleted. |
+| A product is **removed** by the brand (v1.22) | It leaves the post for good. If none are left, the post is removed. |
+| All the post's products are out of stock | **Not in the shop until one is restocked** (v1.22). The post stays approved and returns by itself. |
+| A **set** (fixed bundle) has a piece hidden or out of stock (v1.22) | The set is sold only whole, so the post is **not in the shop until the set is whole again**. If the brand allowed pieces to be bought alone, the post stays and the other pieces sell at their normal price. |
 | Every gift in its free-gift offer's pool is gone (6.4, v1.9) | Removed from the shop: it can no longer keep its promise. |
 | A product's price changes | The post's price band recalculates. The creator is told. |
-| A price post (no offer) | Ends only when all its products are out of stock or unavailable. |
+| A price post (no offer) | Never ends by itself. It is out of the shop while all its products are out of stock or hidden, and is removed only when the brand removes its last product. |
 
 ### 4.10 Minimum shoppable posts
 - Admin sets the minimum (currently 1). It's copied into her terms and locked.
@@ -1187,3 +1190,4 @@ Founder, 4 Oct 2026. Contract `features/shopper-walk-fixes` (W11, W13, W14).
 | 2026-10-05 | 1.19 | Founder, 5 Oct 2026 (contract `features/shopper-deal-orders`, part C; board locked 5 Oct): **one item of an offer can be bought alone, at its normal price; the offer's price applies only when the offer is completed.** This **reverses** 6.5's "a deal item is never added alone" for bundles (pick any, mix & match), buy more save more and gift offers. **Not for buy one get one. A set stays whole unless its brand switches on "Pieces can also be bought alone"** — a new number of a Bundle · Fixed offer, off by default, set in the draft and frozen at publish like the others. The product page of an offer post has two choices ("Buy this alone · ₹X" with Buy now and Add to bag, and "In an offer: … · See offer ›"); the bag icon in "Products in this post" adds the product alone; in the bag an item bought alone is an ordinary row with a nudge, and **when her items from one post complete the offer it applies by itself**. A saved product opens its product page. 6.2, 6.3, 6.4, 6.5, 6.6. No change to what any deal costs, to commission, or to INFLX's share. |
 | 2026-10-05 | 1.20 | Founder, 5 Oct 2026 (contract `features/shopper-deal-orders`, part A; board O1–O4): **My orders shows a deal as one.** A set, a bundle's set, a buy-one-get-one pair and the items a buy-more saving applied to are one card, one page, one **Cancel deal**, one **Return deal**; a plain-discount item, an item bought alone and a gift offer's items stay their own. 6.11, 6.12. Nothing about money, refunds or what cancels together changes — it is how the same orders are shown and named. ("Return or replace" comes with part B.) |
 | 2026-10-05 | 1.21 | Founder, 5 Oct 2026 (contract `features/shopper-deal-orders`, part B; board R1–R10; migration 204): **one item of a delivered deal can be replaced, or — when the store is at fault and has no more — have only its share refunded.** "Return or replace" asks first whether one item is not right or the whole deal goes back. A size → another size in stock; damaged / not as shown → the same item again, else that item's share (never for a buy-one-get-one pair). A replacement moves no money; **the brand pays to bring it and take the other item back**; INFLX decides; the brand marks it sent, then delivered; **the return window runs again from the replacement's delivery**, and the sale's shares wait until it closes. One replacement per item. 6.16. A return of a whole deal, and every order with no such request, are unchanged. |
+| 2026-10-11 | 1.22 | Founder, 11 Oct 2026 (contract `features/listing-shop-safety`, board locked 11 Oct), from the audit of listing, offers and shopping. **Hidden and out of stock are a pause, not an ending** (2.8, 4.9): a hidden product stays in creators' posts and is not shown; a post with nothing to sell is out of the shop until the brand shows or restocks one, and returns by itself. Before, Hide deleted the product from every post and removed a post left empty, for good, and a zero-stock save removed the post too — while selling out through orders only paused it. **Remove is the permanent one**: it asks first with the number of live posts, and is refused for a piece of a running or scheduled set. **A set's post is in the shop only while every piece can be bought** (4.9), unless pieces may be bought alone. Also in that contract, with no rule changed: saving the Edit product form keeps the stock sold while it was open; Place order makes one order per attempt (migration 207). |

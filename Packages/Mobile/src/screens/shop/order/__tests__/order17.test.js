@@ -272,7 +272,8 @@ describe('review and pay (O11, O12) and order placed (O13)', () => {
     fireEvent.press(getByTestId('pay-cod'));
     await waitFor(() => expect(followerApi.checkoutReview).toHaveBeenLastCalledWith(expect.objectContaining({ payment_method: 'cod' })));
     await act(async () => { fireEvent.press(getByTestId('place-order')); });
-    expect(followerApi.placeOrder).toHaveBeenCalledWith({ address_id: 'a1', lines: LINES, payment_method: 'cod', expected_total: 2999 });
+    // listing-shop-safety (C): the attempt's key goes with it now (a second tap sends the same one).
+    expect(followerApi.placeOrder).toHaveBeenCalledWith({ address_id: 'a1', lines: LINES, payment_method: 'cod', expected_total: 2999, place_key: expect.stringMatching(/^[A-Za-z0-9_-]{8,64}$/) });
     expect(n.replace).toHaveBeenCalledWith('OrderPlaced', { checkoutId: 'co1' });
   });
 

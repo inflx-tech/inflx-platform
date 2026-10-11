@@ -91,6 +91,24 @@ function ownStock(variantsJson, sent) {
   return cleanStock(sent);
 }
 
+/**
+ * listing-shop-safety (B): what to save for one stock box of the Edit product form.
+ *   typed   what the brand sent
+ *   was     what the form showed when it was opened
+ *   live    what the product holds at this moment (sales, cancels and returns since then included)
+ * The form used to be saved as typed, so a description fix saved ten minutes after opening put
+ * back every unit sold in between. Now: a box she did not touch keeps the live number; a box she
+ * changed moves the live number by the same amount (3 shown, 10 typed, 1 live → 8); a box she
+ * emptied is not counted; a box that was not counted, then or now, takes what she typed.
+ */
+function mergeStock(typed, was, live) {
+  const t = cleanStock(typed); const w = cleanStock(was); const l = cleanStock(live);
+  if (t === w) return l;
+  if (t == null) return null;
+  if (w == null || l == null) return t;
+  return Math.max(0, l + (t - w));
+}
+
 // The stand-in size of a product that has no real size: its colour's stock is filed under it.
 const ONE_SIZE_NAMES = new Set(['free size', 'one size', 'unstitched']);
 
@@ -217,4 +235,4 @@ async function giveBack(conn, { products = [], gifts = [] }) {
   await moveGifts(conn, gifts, +1);
 }
 
-module.exports = { take, giveBack, moveProducts, moveGifts, sizeEntry, sizeEntries, sizesTotal, available, cleanStock, ownStock, oneSizeProduct, ONE_SIZE_NAMES };
+module.exports = { take, giveBack, moveProducts, moveGifts, sizeEntry, sizeEntries, sizesTotal, available, cleanStock, ownStock, mergeStock, oneSizeProduct, ONE_SIZE_NAMES };

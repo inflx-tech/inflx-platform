@@ -846,13 +846,21 @@ const deleteProduct = asyncHandler(async (req, res) => {
   // hides the product from every active query (brand listing + follower
   // discovery + master_catalog joins all filter on is_active=true) while
   // keeping the row intact for the historical record.
-  const { rows } = await db.query(
-    `UPDATE brand_products SET is_active = false
-      WHERE id = $1 AND brand_id = $2 AND is_active = true
-      RETURNING id`,
-    [req.params.pid, brand.id]
-  );
-  if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found or already removed', 404);
+  //
+  // listing-shop-safety (A): Remove is the PERMANENT one — Hide is only a pause now — so it also
+  // works on a product that is already hidden (it used to answer "already removed"), and it is
+  // refused for a piece of a set that is running or scheduled, as the offer page refuses it (1.10):
+  // a set with a piece taken out of its posts for good could never be bought again.
+  const { rows: [target] } = await db.query(
+    `SELECT id, name, is_active FROM brand_products WHERE id = $1 AND brand_id = $2`, [req.params.pid, brand.id]);
+  if (!target) throw new AppError('NOT_FOUND', 'Product not found', 404);
+  const { rows: [set] } = await db.query(
+    `SELECT o.name FROM offer_pool_items i JOIN brand_offers o ON o.id = i.offer_id
+      WHERE i.product_id = $1 AND i.pool = 'buy' AND i.removed_at IS NULL AND o.sub_type = 'fixed'
+        AND o.status = 'published' AND o.ends_on >= (now() AT TIME ZONE 'Asia/Kolkata')::date
+      ORDER BY o.starts_on LIMIT 1`, [req.params.pid]);
+  if (set) throw new AppError('REMOVE_REFUSED', `"${target.name}" is part of the set "${set.name}". Hide it to pause the set, or end the offer first.`, 422);
+  await db.query(`UPDATE brand_products SET is_active = false WHERE id = $1 AND brand_id = $2`, [req.params.pid, brand.id]);
 
   // Cascade soft-delete to product_variants (fashion SKUs). Variants stay
   // inactive so any pending returns referencing them keep their FK valid.
@@ -867,7 +875,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
   const { rows: [gone] } = await db.query(`SELECT name, price, stock, pushed_to_store FROM brand_products WHERE id = $1`, [req.params.pid]);
   if (gone) {
     await require('../services/creatorTerms.service').afterProductChange(req.params.pid,
-      { ...gone, is_active: true }, { ...gone, is_active: false });
+      { ...gone, is_active: target.is_active }, { ...gone, is_active: false }, { permanent: true });
   }
 
   return success(res, { message: 'Product removed', soft_deleted: true });
