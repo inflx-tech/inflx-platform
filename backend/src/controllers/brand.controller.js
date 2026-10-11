@@ -769,20 +769,36 @@ const updateProduct = asyncHandler(async (req, res) => {
 
   if (!Object.keys(updates).length) throw new AppError('VALIDATION_ERROR', 'No valid fields to update', 422);
 
+  const write = async (q) => {
+    updates.updated_at = new Date();
+    const setClauses = Object.keys(updates).map((k, i) => `${k} = $${i + 2}`);
+    await q.query(
+      `UPDATE brand_products SET ${setClauses.join(', ')} WHERE id = $1`,
+      [req.params.pid, ...Object.values(updates)]
+    );
+  };
+
   // stock-asked-once: a product with sizes has ONE stock, its sizes. Whenever this save touches the
   // stock or the sizes, the own number is their total — not what was sent, and not what was there.
   if (req.body.stock !== undefined || req.body.variants_json !== undefined) {
-    const sizesAfter = req.body.variants_json !== undefined ? req.body.variants_json : existing[0].variants_json;
-    const sent = req.body.stock !== undefined ? req.body.stock : existing[0].stock;
-    updates.stock = stockService.ownStock(sizesAfter, sent);
+    // backend-defect-cover-photo-stock-overwrite: that total was worked out from sizes read above
+    // with no hold on the row, so an order landing before the write left the own number saying the
+    // old total. The row is now held from the read to the write. (A save that sends neither — Hide,
+    // Show, a new price — takes the other branch and is exactly as it was.)
+    await db.withTransaction(async (client) => {
+      const { rows: [live] } = await client.query(
+        `SELECT stock, variants_json FROM brand_products WHERE id = $1 AND brand_id = $2 FOR UPDATE`, [req.params.pid, brand.id]);
+      if (!live) throw new AppError('NOT_FOUND', 'Product not found', 404);
+      existing[0].stock = live.stock;                 // "before", for the notices below
+      existing[0].variants_json = live.variants_json;
+      const sizesAfter = req.body.variants_json !== undefined ? req.body.variants_json : live.variants_json;
+      const sent = req.body.stock !== undefined ? req.body.stock : live.stock;
+      updates.stock = stockService.ownStock(sizesAfter, sent);
+      await write(client);
+    });
+  } else {
+    await write(db);
   }
-
-  updates.updated_at = new Date();
-  const setClauses = Object.keys(updates).map((k, i) => `${k} = $${i + 2}`);
-  await db.query(
-    `UPDATE brand_products SET ${setClauses.join(', ')} WHERE id = $1`,
-    [req.params.pid, ...Object.values(updates)]
-  );
 
   const { rows } = await db.query(`SELECT * FROM brand_products WHERE id = $1`, [req.params.pid]);
 

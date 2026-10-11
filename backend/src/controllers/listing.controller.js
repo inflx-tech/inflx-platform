@@ -364,23 +364,47 @@ const setProductCoverPhotos = asyncHandler(async (req, res) => {
   const { urls } = req.body || {};
   if (!Array.isArray(urls) || !urls.length) throw new AppError('VALIDATION_ERROR', 'urls[] is required', 422, 'urls');
 
-  const { rows } = await db.query(
-    `SELECT id, variants_json, image_url FROM brand_products WHERE id = $1 AND brand_id = $2`,
-    [req.params.id, brand.id]
-  );
-  if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
+  // backend-defect-cover-photo-stock-overwrite: the sizes' stock lives in the same record as the
+  // photos (variants_json), and orders move it (stock.service.moveProducts, which holds the row).
+  // This save used to read the record with no hold and write the WHOLE of it back, so an order that
+  // landed in between had its size put back while the product's own number kept the sale. Now the
+  // row is held from the read to the write, and only the `cover_images` key is written.
+  const saved = await db.withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT id, variants_json, image_url FROM brand_products WHERE id = $1 AND brand_id = $2 FOR UPDATE`,
+      [req.params.id, brand.id]
+    );
+    if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
 
-  let vj = rows[0].variants_json || {};
-  if (typeof vj === 'string') { try { vj = JSON.parse(vj); } catch { vj = {}; } }
-  const existing = Array.isArray(vj.cover_images) ? vj.cover_images : [];
-  vj.cover_images = [...existing, ...urls.filter(Boolean)].slice(0, 6);
-  const cover = vj.cover_images[0] || rows[0].image_url || null;
+    const stored = rows[0].variants_json;
+    const isRecord = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+    let vj = stored;
+    if (typeof vj === 'string') { try { vj = JSON.parse(vj); } catch { vj = null; } }   // an older save's text
+    const existing = isRecord(vj) && Array.isArray(vj.cover_images) ? vj.cover_images : [];
+    const coverImages = [...existing, ...urls.filter(Boolean)].slice(0, 6);
+    const cover = coverImages[0] || rows[0].image_url || null;
 
-  await db.query(
-    `UPDATE brand_products SET variants_json = $1::jsonb, image_url = $2 WHERE id = $3 AND brand_id = $4`,
-    [JSON.stringify(vj), cover, req.params.id, brand.id]
-  );
-  return success(res, { id: req.params.id, image_url: cover, cover_images: vj.cover_images });
+    if (isRecord(stored)) {
+      await client.query(
+        `UPDATE brand_products
+            SET variants_json = jsonb_set(variants_json, '{cover_images}', $1::jsonb, true), image_url = $2
+          WHERE id = $3 AND brand_id = $4`,
+        [JSON.stringify(coverImages), cover, req.params.id, brand.id]
+      );
+    } else if (stored == null || typeof stored === 'string') {
+      // No record yet, or one stored as text: there is no key to set, so it is written whole —
+      // with the row held. (Orders do not move stock inside a record stored as text.)
+      await client.query(
+        `UPDATE brand_products SET variants_json = $1::jsonb, image_url = $2 WHERE id = $3 AND brand_id = $4`,
+        [JSON.stringify({ ...(isRecord(vj) ? vj : {}), cover_images: coverImages }), cover, req.params.id, brand.id]
+      );
+    } else {
+      // Not a record at all (a list, a number): nothing in it can hold photos. The cover picture only.
+      await client.query(`UPDATE brand_products SET image_url = $1 WHERE id = $2 AND brand_id = $3`, [cover, req.params.id, brand.id]);
+    }
+    return { cover, coverImages };
+  });
+  return success(res, { id: req.params.id, image_url: saved.cover, cover_images: saved.coverImages });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

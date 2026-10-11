@@ -1,0 +1,38 @@
+{
+  "feature": "backend-defect-cover-photo-stock-overwrite",
+  "area": "backend-controllers",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 11 Oct 2026: \"ok pls do it\" — after the fault was explained to him in plain language the same day: a photo added in the photo tray at the instant of a sale could put the sold piece back; the fix described as 'the photo save changes only the photos', server only, no screen, no database change, no app update)",
+  "approved_at": "2026-10-11T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": false,
+  "notes": "Carved backend defect found during features/stock-asked-once. No screen, no words, no mockup: nothing a person sees changes. BUILT 11 Oct 2026 (see build and 06-diff/notes.md). NOT RELEASED. PRODUCTION-IMPACTING (backend push) — explicit go required.",
+  "related": [
+    "features/stock-asked-once",
+    "features/listing-shop-safety"
+  ],
+  "build": {
+    "built_at": "2026-10-11T00:00:00+05:30",
+    "server": "listing.controller setProductCoverPhotos (the row is held from the read to the write; only the cover_images key and the cover picture are written — jsonb_set; a record stored as text or missing is written whole with the row held, as before), brand.controller updateProduct (when a stock or sizes are sent, the read of the sizes and the write of the own number are one held step; with neither sent — Hide, Show, a new price — the same statements as before, no hold)",
+    "survey": "every write of a product's colours-and-sizes record or its own number in backend/src was read (05-impact.md has the table). Two places wrote without holding the row: both fixed here. Left and named: the legacy flat product page sending its whole typed copy through the older save (fashion brands are redirected away from that page).",
+    "backend_new_suite": "backend/tests/cover-photo-keeps-stock.test.js 8/8 (real API, real database). The moment is made by running a real order's stock movement (stock.service.moveProducts) on its own connection, leaving it open, sending the save, seeing it wait for the row in pg_stat_activity, then committing. Checks: a sale during a photo save stays sold; a cancelled order's piece during a photo save stays back; behaviour kept (photos added after the ones there, 6 at most, the first is the cover, nothing else in the record moves); the two refusals; a record stored as text; a product with no record; a sale during the older save with a stock; the older save with no stock sent.",
+    "red_first": "run on the code as it was, three of those checks failed exactly as the fault describes: M back to 3 (expected 2); L back to 4 (expected 6); own number 7 with sizes adding to 6. (A fourth failure was the test's own wrong assumption that a new product has no photo list — corrected in the test, not in the code.)",
+    "backend_neighbours": "stock-asked-once, listing-shop-safety, shoppable-posts-v2, creator-terms-v2, offer-delete: 117/117",
+    "backend_full_run": "full suite, serial, vs backend/baseline_listing_shop_safety.json: 153 suites / 2175 tests / 1970 passed / 177 failed -> 154 / 2183 / 1978 / 177. 0 that passed before fail now; 8 new tests, all passing; the same 177 old failures by name; 1 suite that does not load, as before (collection-library). 0 dropped database connections. Filed as 06-diff/backend-compare.txt; this run is stored as backend/baseline_cover_photo_stock.json. qa_all_green stays false on the pre-existing failures: the certification is no-regression, never green.",
+    "looked_at": "local preview (private website copy on 3012, local backend on 3011, private local database): the photo tray's own request sent for a product, answered { id, image_url, cover_images } with the first photo as the cover, and the photo shows on that product's Listings row. The tray itself was not opened (its request and answer are unchanged).",
+    "migration": "none",
+    "website": "none",
+    "phone": "none — no OTA",
+    "live_data": "read only, 11 Oct (sync-own-stock.js --dry): 72 products, 49 with sizes, 0 whose own number is not the total of its sizes. Nothing to repair; nothing is rewritten at release.",
+    "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release"
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
