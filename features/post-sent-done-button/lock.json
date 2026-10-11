@@ -29,5 +29,23 @@
     "migration": "none",
     "device": "NOT seen on a phone. Maestro not run.",
     "no_new_app_build": "no native change; the creator app ships over the air"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-11",
+    "by": "founder go (chat, 11 Oct 2026: \"pls release it\")",
+    "migration": "none",
+    "commit": "f2386f77 (pushed 5436ab5f..f2386f77; gov-check OK: 2 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 10 files staged by path, nothing of another window)",
+    "render_and_websites": "no server or website code in this commit; the push restarted the server with the same code (health 200 and the manifest answering for 90 seconds before the publish).",
+    "ota": {
+      "influencer": 235,
+      "brand": "245 — unchanged, not published",
+      "follower": "239 — unchanged, not published",
+      "native_runtime": "3 — unchanged; no native code",
+      "note": "published after the server had been steady, from the committed tree (phone tree clean, otaUpdater untouched; the publish was gated on both). influencer was 234. The manifest was read back and the served bundle carries the button's own code (clear the stack, then open HomeTab)."
+    },
+    "money": "none — nothing is saved or sent by the button.",
+    "not_seen": "Not looked at on a phone.",
+    "pending": "the founder's walk: open a post that is with INFLX (or send one) › Done › Home; then tap Create and see his posts. Maestro not run. release.released stays false until then.",
+    "open_for_the_founder": "the back arrow after sending still goes back through Review and the steps — offered to him as an option, not changed."
   }
 }
