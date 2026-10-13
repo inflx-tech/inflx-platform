@@ -18,7 +18,7 @@ export default function OfferPostsScreen({ navigation, route }) {
   const { brandId, offerId, title } = route.params || {};
   const nav = useShopNav(navigation);
   const [posts, setPosts] = useState(null);
-  const { seenProps, playingId } = useAutoplay('offers', posts);
+  const { seenProps, playingId } = useAutoplay('offers', posts, nav.covered);   // nothing plays behind the products of a post
   const page = useRef({ more: false, next: 0, busy: false });
 
   useEffect(() => {

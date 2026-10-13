@@ -17,6 +17,11 @@
  *       for (`tapToPause`), and only Play asks.
  *   V3  The still that stands for a video is a picture taken from the video itself
  *       (`media[0].cover_url`); only when there is none, the first product's photo as before.
+ *
+ * shopper-video-pauses-for-popup — `held`: the products of this post (or the sign-in prompt) are
+ * open over the video. It stops, sound and picture, and carries on from the same place when they
+ * close. It is not `active = false`: that means "scrolled away" and forgets her own tap-pause, so a
+ * video she had paused herself would start playing when she closed the products.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
@@ -53,7 +58,7 @@ function Placeholder({ poster, height, compact }) {
   );
 }
 
-export default function ShopVideo({ post, height, active = false, muted: mutedIn = true, surface = 'home', compact, onSoundChange, soundToggle, tapToPause = false }) {
+export default function ShopVideo({ post, height, active = false, held = false, muted: mutedIn = true, surface = 'home', compact, onSoundChange, soundToggle, tapToPause = false }) {
   const poster = videoStill(post);
   const media = (post.media || [])[0];
   const [paused, setPaused] = useState(false);          // her own tap-to-pause
@@ -62,8 +67,8 @@ export default function ShopVideo({ post, height, active = false, muted: mutedIn
 
   useEffect(() => { setMuted(mutedIn); }, [mutedIn]);
 
-  const playing = active && !paused;
-  // When it stops playing (scrolled away, paused, screen left), say how long she watched.
+  const playing = active && !paused && !held;
+  // When it stops playing (scrolled away, paused, covered, screen left), say how long she watched.
   useEffect(() => {
     const w = watched.current;
     if (playing) { w.from = Date.now(); return undefined; }

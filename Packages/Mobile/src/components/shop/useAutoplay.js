@@ -10,6 +10,14 @@
  *   play   half on screen, at once       → which video plays (here)
  *
  * FlatList refuses a new list of rules after it is drawn, so the pair is made once per screen.
+ *
+ * shopper-video-pauses-for-popup — `held`: something is open over the video on this same screen
+ * (the products of a post, the sign-in prompt). Nothing plays while it is; the moment it closes the
+ * same video carries on from where it stopped.
+ *
+ *   shownId    the video that is on screen and would play
+ *   playingId  that video, or nothing while held — what a feed card needs
+ *   held       for Play, which keeps the video "on" and holds it, so her own tap-pause is remembered
  */
 import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,7 +28,7 @@ export const PLAY_CONFIG = { itemVisiblePercentThreshold: 50 };
 
 const sameIds = (a, b) => a.size === b.size && [...a].every((id) => b.has(id));
 
-export function useAutoplay(surface, posts) {
+export function useAutoplay(surface, posts, held = false) {
   const [visible, setVisible] = useState(() => new Set());
   const [focused, setFocused] = useState(true);
   const seen = useSeen(surface);
@@ -41,5 +49,6 @@ export function useAutoplay(surface, posts) {
   }
   useFocusEffect(useCallback(() => { setFocused(true); return () => setFocused(false); }, []));
   const first = focused ? (posts || []).find((p) => p.media_kind === 'video' && visible.has(p.id)) : null;
-  return { seenProps: seenProps.current, playingId: first ? first.id : null, focused };
+  const shownId = first ? first.id : null;
+  return { seenProps: seenProps.current, shownId, held: !!held, playingId: held ? null : shownId, focused };
 }

@@ -18,6 +18,11 @@
  *   F8  This screen is registered twice: `PlayTab` (the ▶ tab) and `PlayOver`, which is pushed on
  *       top of a store, search, a post's page… and has a Back arrow, top-left. Nothing else differs.
  *   F11 Her Welcome choices changed since this list was asked for: it is asked for again.
+ *
+ * shopper-video-pauses-for-popup: "Shop this video" opens the products ON this screen, so the
+ * video played on, with its sound, behind them. While the products (or the sign-in prompt) are
+ * open the video is held; closing them carries it on from the same place. A video she had paused
+ * herself stays paused.
  */
 import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
@@ -37,12 +42,12 @@ import { track } from '../../services/events';
 import useTopInset from '../../hooks/useTopInset';
 import { fonts } from '../../theme/tokens';
 
-function Reel({ post, height, nav, index, active, sound, onSound }) {
+function Reel({ post, height, nav, index, active, held, sound, onSound }) {
   const a = usePostActions(post, { surface: 'play', onNeedSignIn: nav.needSignIn });
   const n = post.products ? post.products.length : 0;
   return (
     <View style={{ height, backgroundColor: C.dark }} testID={`reel-${post.id}`}>
-      <VideoView post={post} height={height} active={active} muted={!sound} surface="play" soundToggle tapToPause onSoundChange={onSound} />
+      <VideoView post={post} height={height} active={active} held={held} muted={!sound} surface="play" soundToggle tapToPause onSoundChange={onSound} />
       {/* The bag beside the sound button (which only a phone with the player draws). */}
       <View style={[st.bag, { right: hasPlayer() ? 56 : 12 }]} testID={`reel-bag-${post.id}`}><BagButton overlay="dark" /></View>
       <View style={st.rail}>
@@ -74,7 +79,7 @@ export default function PlayScreen({ navigation, route }) {
   const nav = useShopNav(navigation, { tab: !over });
   const [height, setHeight] = useState(Dimensions.get('window').height - 120);
   const [posts, setPosts] = useState([]);
-  const { seenProps, playingId } = useAutoplay('play', posts);
+  const { seenProps, shownId, held } = useAutoplay('play', posts, nav.covered);
   const [sound, setSound] = useState(false);
   useFocusEffect(useCallback(() => {
     AsyncStorage.getItem('inflx_video_sound').then((v) => setSound(v === '1')).catch(() => {});
@@ -141,7 +146,7 @@ export default function PlayScreen({ navigation, route }) {
           ref={listRef}
           data={posts}
           keyExtractor={(p) => p.id}
-          renderItem={({ item, index }) => <Reel post={item} height={height} nav={nav} index={index} active={playingId === item.id} sound={sound} onSound={onSound} />}
+          renderItem={({ item, index }) => <Reel post={item} height={height} nav={nav} index={index} active={shownId === item.id} held={held} sound={sound} onSound={onSound} />}
           windowSize={3}
           initialNumToRender={2}
           pagingEnabled

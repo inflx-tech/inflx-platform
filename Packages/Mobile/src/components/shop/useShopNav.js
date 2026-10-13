@@ -13,6 +13,10 @@
  *                                             to the Play tab, which threw the pushed screens away:
  *                                             Back went to Home.
  * A bottom-tab screen says so with `{ tab: true }`; every other screen is a pushed one.
+ *
+ * shopper-video-pauses-for-popup — `covered`: one of the two sheets is open over this screen. The
+ * sheets are drawn ON the screen, so the screen is still "in front" and its video played on, with
+ * its sound, behind the products. A screen hands `covered` to useAutoplay and the video waits.
  */
 import { useCallback, useState } from 'react';
 
@@ -41,5 +45,6 @@ export function useShopNav(navigation, { tab = false } = {}) {
     openPost, openCreator, openBrand, openComments,
     shopPost, openShop: setShopPost, closeShop: () => setShopPost(null),
     signIn, needSignIn: () => setSignIn(true), closeSignIn: () => setSignIn(false), goSignIn,
+    covered: !!shopPost || signIn,
   };
 }

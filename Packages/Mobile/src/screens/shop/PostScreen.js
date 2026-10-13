@@ -24,7 +24,7 @@ export default function PostScreen({ navigation, route }) {
   const [gone, setGone] = useState(null);
   const [more, setMore] = useState(false);
   const served = useRef([]);
-  const { seenProps, playingId } = useAutoplay('post', rest);
+  const { seenProps, playingId } = useAutoplay('post', rest, nav.covered);   // nothing plays behind the products of a post
 
   const loadMore = useCallback(async (id) => {
     const res = await followerApi.more(id, served.current);

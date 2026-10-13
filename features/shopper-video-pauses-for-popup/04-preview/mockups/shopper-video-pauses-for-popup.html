@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A video stops while its products are open — the one moment that changes</title>
+<style>
+  :root{--bg:#fff;--page:#F4F4F5;--ink:#0A0A0A;--ink2:#52525B;--ink3:#71717A;--border:#E4E4E7;--primary:#FFC107;--ok:#047857;--danger:#E8401A}
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 16px 48px;background:var(--page);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:21px;font-weight:800;margin:0 0 4px}
+  .rule{width:42px;height:3px;background:var(--primary);border-radius:2px;margin:6px 0 10px}
+  .lead{color:var(--ink2);line-height:1.6;max-width:700px}
+  .pair{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px;align-items:flex-start}
+  .col{flex:0 1 300px}
+  .tagline{margin-bottom:8px}
+  .badge{font-size:10px;font-weight:800;border-radius:5px;padding:2px 7px;letter-spacing:.4px;text-transform:uppercase}
+  .badge.today{background:#E4E4E7;color:#1F1F22} .badge.after{background:var(--ink);color:var(--primary)}
+  .phone{width:300px;max-width:100%;background:#151513;border:7px solid #1A1A17;border-radius:30px;overflow:hidden;height:580px;position:relative;color:#fff}
+  .vid{position:absolute;inset:0;background:linear-gradient(160deg,#5b4636,#2b2a26 55%,#151513)}
+  .sb{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:8px 16px;font-size:11px;font-weight:700;opacity:.9}
+  .round{position:absolute;top:34px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .state{position:absolute;top:150px;left:0;right:0;text-align:center}
+  .state .mark{display:inline-flex;width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.5);align-items:center;justify-content:center;font-size:22px}
+  .state p{margin:8px 0 0;font-weight:800;font-size:12px}
+  .waves{position:absolute;top:78px;right:14px;font-size:11px;font-weight:800;background:rgba(0,0,0,.5);border-radius:8px;padding:4px 8px}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;color:var(--ink);border-radius:18px 18px 0 0;padding:14px 14px 18px;height:300px}
+  .sheet h4{margin:0 0 2px;font-size:15px;font-weight:800;display:flex;justify-content:space-between}
+  .sheet .sub{font-size:11.5px;color:var(--ink2);margin-bottom:10px}
+  .tiles{display:flex;gap:8px}
+  .tile{flex:1;border:1px solid var(--border);border-radius:10px;padding:6px}
+  .tile .img{height:86px;border-radius:7px;background:#E7E5DF}
+  .tile b{display:block;font-size:11.5px;margin-top:5px}.tile span{font-size:11px;color:var(--ink2)}
+  .btn{margin-top:12px;background:var(--primary);border-radius:12px;padding:11px;text-align:center;font-weight:800;font-size:13px}
+  .mark2{font-size:11px;font-weight:800;margin-top:10px;max-width:300px;line-height:1.5}
+  .mark2.r{color:var(--danger)} .mark2.g{color:var(--ok)}
+  .new{outline:2px solid #10B981;outline-offset:3px;border-radius:10px}
+  .note{margin-top:26px;background:#fff;border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:8px;padding:12px 14px;color:var(--ink2);line-height:1.6;max-width:700px}
+  .note b{color:var(--ink)} ul{margin:6px 0 0;padding-left:18px} li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>A video stops while its products are open</h1>
+  <div class="rule"></div>
+  <div class="lead">Shopper app, the video feed. She taps the button under a video — <b>Build your deal</b>, a discount, or a
+    post with no offer — and the products come up over the video. Today the video goes on playing, with its sound, behind
+    them. After: it stops; when she closes the products it carries on from the same place. Nothing on any screen looks
+    different — only what the video does. Green = new.</div>
+
+  <div class="pair">
+    <div class="col">
+      <div class="tagline"><span class="badge today">Today</span></div>
+      <div class="phone">
+        <div class="vid"></div>
+        <div class="sb"><span>11:42</span><span>●●● 5G</span></div>
+        <div class="round" style="right:12px">🔊</div><div class="round" style="right:56px">👜</div>
+        <div class="waves">♪ sound playing</div>
+        <div class="state"><p style="opacity:.85">video still playing</p></div>
+        <div class="sheet">
+          <h4><span>Shop this video</span><span>✕</span></h4>
+          <div class="sub">BUY 1 GET 1 · Buy one, get the same product free</div>
+          <div class="tiles">
+            <div class="tile"><div class="img"></div><b>heels</b><span>₹4,599</span></div>
+            <div class="tile"><div class="img"></div><b>block sandals</b><span>₹2,299</span></div>
+          </div>
+          <div class="btn">Build your deal</div>
+        </div>
+      </div>
+      <div class="mark2 r">The products are up, and the video and its sound carry on behind them.</div>
+    </div>
+
+    <div class="col">
+      <div class="tagline"><span class="badge after">After</span></div>
+      <div class="phone">
+        <div class="vid"></div>
+        <div class="sb"><span>11:42</span><span>●●● 5G</span></div>
+        <div class="round" style="right:12px">🔊</div><div class="round" style="right:56px">👜</div>
+        <div class="state new" style="margin:0 60px;padding:8px 0"><span class="mark">❚❚</span><p>stopped — no sound</p></div>
+        <div class="sheet">
+          <h4><span>Shop this video</span><span>✕</span></h4>
+          <div class="sub">BUY 1 GET 1 · Buy one, get the same product free</div>
+          <div class="tiles">
+            <div class="tile"><div class="img"></div><b>heels</b><span>₹4,599</span></div>
+            <div class="tile"><div class="img"></div><b>block sandals</b><span>₹2,299</span></div>
+          </div>
+          <div class="btn">Build your deal</div>
+        </div>
+      </div>
+      <div class="mark2 g">The video waits. Close the products (✕, or a tap above them) and it carries on from where it stopped, with the sound as she had it.</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>The same rule everywhere a video plays in the shopper app</b>
+    <ul>
+      <li><b>The video feed (▶)</b> — the case you reported.</li>
+      <li><b>Home, an opened post, an offer's posts</b> — a video playing silently in a card also waits while that post's products are open.</li>
+      <li><b>The "Sign in to continue" prompt</b> is over the video in the same way, so the video waits for it too.</li>
+      <li><b>A video she paused herself stays paused</b> when the products close — it never starts behind her back.</li>
+      <li>Her sound on/off choice is not touched. The seconds she watched are counted up to the moment it stops; time among the products is not counted as watching.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

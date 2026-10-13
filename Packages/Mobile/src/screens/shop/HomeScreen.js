@@ -25,7 +25,7 @@ import { fonts } from '../../theme/tokens';
 export default function HomeScreen({ navigation }) {
   const nav = useShopNav(navigation, { tab: true });      // a bottom tab: a video opens in the Play tab (F8)
   const [posts, setPosts] = useState([]);
-  const { seenProps, playingId } = useAutoplay('home', posts);
+  const { seenProps, playingId } = useAutoplay('home', posts, nav.covered);   // nothing plays behind the products of a post
   const [circles, setCircles] = useState(null);
   const [status, setStatus] = useState('loading');
   const [more, setMore] = useState(true);

@@ -1,0 +1,33 @@
+{
+  "feature": "shopper-video-pauses-for-popup",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 13 Oct 2026: \"in followers app, while video feed is happening if some one clicks on build your deal or if it is normal discount product or any non discount product then sound and play of the video needs to stop when product popup is comes … now when i click button product popup is coming with video and sound playing. so pls fix this … also when i close that product popup then video should be resume\")",
+  "approved_at": "2026-10-13T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "Claude, under the founder's standing delegation and his instruction of 13 Oct 2026 (\"pls fix this\") — the board draws exactly the moment he described (the products over a playing video), today and after. He has NOT reviewed the board itself; it is shown to him with the release request.",
+  "mockup_locked_at": "2026-10-13T00:00:00+05:30",
+  "mockup_final": "04-preview/mockups/shopper-video-pauses-for-popup.html",
+  "notes": "Shopper app only. A video waits while its post's products (or the sign-in prompt) are open over it and carries on from the same place when they close — in the video feed, on Home, on an opened post and on an offer's posts. Decisions taken for him, each reported back: every screen that plays a video, not only the video feed; the sign-in prompt too; a video she paused herself stays paused. No server, no website, no migration. Production-impacting (shopper app OTA) — explicit go required before the push and the OTA. RELEASE GO: founder (chat 13 Oct 2026: \"pls release it\") — asked with the board open, the three decisions taken for him named (every screen that plays a video; the sign-in prompt too; a video she paused herself stays paused) and what the release is (one shopper-app update over the air). The deploy record follows in its own commit.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-10-13T00:00:00+05:30",
+    "phone": "components/shop/useShopNav.js (covered), useAutoplay.js (held, shownId), ShopVideo.js (held); screens/shop/PlayScreen.js, HomeScreen.js, PostScreen.js, OfferPostsScreen.js",
+    "new_tests": "videoHeldForPopup.test.js 15/15; against the code that was live, 13 of the 15 fail",
+    "mobile_tests": "128 suites / 3004 tests, all passing (was 127 / 2989)",
+    "backend": "not touched — nothing run",
+    "website": "not touched",
+    "migration": "none",
+    "device": "NOT seen on a phone — the native player and real sound exist only there. Maestro not run.",
+    "no_new_app_build": "no native change; the shopper app ships over the air"
+  }
+}
