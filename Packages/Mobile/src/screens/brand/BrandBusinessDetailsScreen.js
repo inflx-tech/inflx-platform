@@ -65,7 +65,6 @@ export default function BrandBusinessDetailsScreen({ navigation, route }) {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [logoBusy, setLogoBusy] = useState(false);
-  const [done, setDone] = useState(false);
   const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
@@ -87,7 +86,7 @@ export default function BrandBusinessDetailsScreen({ navigation, route }) {
 
   const initial = brand ? formOf(brand) : f;
   const dirty = Object.keys(f).some(k => f[k] !== initial[k]);
-  useUnsavedGuard(navigation, dirty && !done);
+  const saved = useUnsavedGuard(navigation, dirty);
   const clientErrors = {
     business_name: f.business_name.trim() ? '' : MSG3.BRAND_NAME,
     contact_person: f.contact_person.trim() ? '' : MSG3.CONTACT,
@@ -107,7 +106,7 @@ export default function BrandBusinessDetailsScreen({ navigation, route }) {
       applyServerError(r.error, { fields: ['business_name', 'about', 'contact_person', 'email'], setErrors, show, fallback: COPY.saveFailed });
       return;
     }
-    setDone(true);
+    saved();
     navigation.navigate('BrandProfile', { toast: 'Saved.' });
   }
 

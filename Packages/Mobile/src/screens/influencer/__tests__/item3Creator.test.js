@@ -131,28 +131,38 @@ describe('O1 · O2 — brand overview', () => {
 });
 
 describe('Payout details — the ported rule (now on the Wallet tab, C7)', () => {
-  it('a bank account is ONE entry: the account number and the IFSC are saved together, never one without the other', async () => {
+  // creator-address-bank-save: the entry is now five parts — holder's name, number (typed twice),
+  // IFSC, bank, branch — and still saved whole or not at all. Its own suite: addressBank.test.js.
+  it('a bank account is ONE entry: every part is saved together, never some without the rest', async () => {
     influencerApi.updateMe.mockResolvedValue(ok({ influencer: { ...ME, has_bank_account: true } }));
     const n = nav();
     const { getByTestId, getByText } = render(<PayoutDetailScreen navigation={n} route={{ params: { kind: 'bank' } }} />);
     getByText('Bank account');
     fireEvent.changeText(getByTestId('payout-bank_account_no'), '123456');
     fireEvent.press(getByTestId('payout-save'));
-    getByText('Enter both the account number and the IFSC.');
+    getByText('Enter the IFSC.');
     expect(influencerApi.updateMe).not.toHaveBeenCalled();
+    fireEvent.changeText(getByTestId('payout-bank_holder_name'), 'Priya Sharma');
+    fireEvent.changeText(getByTestId('payout-bank_account_no_confirm'), '123456');
     fireEvent.changeText(getByTestId('payout-bank_ifsc'), 'SBIN0001234');
+    fireEvent.changeText(getByTestId('payout-bank_name'), 'State Bank of India');
+    fireEvent.changeText(getByTestId('payout-bank_branch'), 'Kukatpally');
     fireEvent.press(getByTestId('payout-save'));
-    await waitFor(() => expect(influencerApi.updateMe).toHaveBeenCalledWith({ bank_account_no: '123456', bank_ifsc: 'SBIN0001234' }));
+    await waitFor(() => expect(influencerApi.updateMe).toHaveBeenCalledWith({
+      bank_holder_name: 'Priya Sharma', bank_account_no: '123456', bank_account_no_confirm: '123456',
+      bank_ifsc: 'SBIN0001234', bank_name: 'State Bank of India', bank_branch: 'Kukatpally',
+    }));
     await waitFor(() => expect(n.navigate).toHaveBeenCalledWith('CreatorWallet', { toast: 'Saved.' }));
     getByText('Our team checks these by hand, usually the same day.');
   });
 
-  it('the server\'s BANK_PAIR refusal lands under the form, in its words', async () => {
-    influencerApi.updateMe.mockResolvedValue({ success: false, error: { code: 'BANK_PAIR', message: 'Send both or neither.' } });
+  it('the server\'s refusal lands under the box it is about, in its words', async () => {
+    influencerApi.updateMe.mockResolvedValue({ success: false, error: { code: 'VALIDATION_ERROR', field: 'bank_ifsc', message: 'Check the IFSC — it is 11 characters.' } });
     const { getByTestId, getByText } = render(<PayoutDetailScreen navigation={nav()} route={{ params: { kind: 'bank' } }} />);
-    fireEvent.changeText(getByTestId('payout-bank_account_no'), '1');
-    fireEvent.changeText(getByTestId('payout-bank_ifsc'), 'X');
+    for (const [k, v] of [['bank_holder_name', 'P'], ['bank_account_no', '1'], ['bank_account_no_confirm', '1'], ['bank_ifsc', 'X'], ['bank_name', 'B'], ['bank_branch', 'K']]) {
+      fireEvent.changeText(getByTestId(`payout-${k}`), v);
+    }
     fireEvent.press(getByTestId('payout-save'));
-    await waitFor(() => getByText('Send both or neither.'));
+    await waitFor(() => getByText('Check the IFSC — it is 11 characters.'));
   });
 });

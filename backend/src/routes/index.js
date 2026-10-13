@@ -187,6 +187,9 @@ router.use('/', require('./item19.routes'));
 // Before brand.routes / influencer.routes for the same reason as the two above.
 // Contract: features/item20-own-brand
 router.use('/', require('./item20.routes'));
+// A creator's own delivery address (/influencers/me/delivery-address). Fixed path first.
+// Contract: features/creator-address-bank-save
+router.use('/', require('./creatorAddress.routes'));
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

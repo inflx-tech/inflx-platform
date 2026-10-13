@@ -107,6 +107,10 @@ function sanitiseInfluencer(row) {
     bank_account_no,
     upi_id,
     pan_number,
+    // creator-address-bank-save: the rest of her bank entry is as private as the number.
+    bank_holder_name: _bankHolder,
+    bank_name: _bankName,
+    bank_branch: _bankBranch,
     fcm_token,
     phone: _phone,
     ...safe
@@ -481,6 +485,11 @@ const updateMe = asyncHandler(async (req, res) => {
     upi_id,
     bank_account_no,
     bank_ifsc,
+    // creator-address-bank-save: the account number typed a second time, and the rest of the entry.
+    bank_account_no_confirm,
+    bank_holder_name,
+    bank_name,
+    bank_branch,
     pan_number,
     bio,
     city,
@@ -571,7 +580,38 @@ const updateMe = asyncHandler(async (req, res) => {
       throw e;
     }
   }
-  if (bank_ifsc !== undefined) updates.bank_ifsc = bank_ifsc;
+  // creator-address-bank-save: her bank account is ONE entry of five parts, saved whole — the
+  // holder's name, the number (typed twice, and the two must agree), the IFSC, the bank and the
+  // branch. INFLX pays withdrawals by hand, and a wrong digit or a name that is not the account's
+  // is money sent to the wrong place or sent back. All of it empty clears the entry. The format
+  // of the number and the IFSC is still not judged here: the team checks those by hand (spec §5).
+  const bankSent = [bank_account_no, bank_ifsc, bank_account_no_confirm, bank_holder_name, bank_name, bank_branch].some(v => v !== undefined);
+  let bankEntry = null;
+  if (bankSent) {
+    const text = (v) => (v == null ? '' : String(v).replace(/\s+/g, ' ').trim());
+    const acct = text(bank_account_no).replace(/\s+/g, '');
+    const again = text(bank_account_no_confirm).replace(/\s+/g, '');
+    const ifsc = text(bank_ifsc).toUpperCase();
+    const holder = text(bank_holder_name);
+    const bank = text(bank_name);
+    const branch = text(bank_branch);
+    if (!acct && !again && !ifsc && !holder && !bank && !branch) {
+      bankEntry = { bank_account_no: null, bank_ifsc: null, bank_holder_name: null, bank_name: null, bank_branch: null };
+    } else {
+      if (!holder) throw fieldError('bank_holder_name', 'BANK_HOLDER_REQUIRED', "Enter the account holder's name.");
+      if (holder.length > 80) throw fieldError('bank_holder_name', 'BANK_TEXT_LONG', 'Keep it under 80 characters.');
+      if (!acct) throw fieldError('bank_account_no', 'BANK_PAIR', 'Enter the account number.');
+      if (!again) throw fieldError('bank_account_no_confirm', 'BANK_CONFIRM', 'Enter the account number again.');
+      if (acct !== again) throw fieldError('bank_account_no_confirm', 'BANK_CONFIRM', "The two account numbers don't match.");
+      if (!ifsc) throw fieldError('bank_ifsc', 'BANK_PAIR', 'Enter the IFSC.');
+      if (ifsc.length > 12) throw fieldError('bank_ifsc', 'BANK_TEXT_LONG', 'Check the IFSC — it is 11 characters.');
+      if (!bank) throw fieldError('bank_name', 'BANK_NAME_REQUIRED', 'Enter the bank name.');
+      if (bank.length > 80) throw fieldError('bank_name', 'BANK_TEXT_LONG', 'Keep it under 80 characters.');
+      if (!branch) throw fieldError('bank_branch', 'BANK_BRANCH_REQUIRED', 'Enter the branch.');
+      if (branch.length > 80) throw fieldError('bank_branch', 'BANK_TEXT_LONG', 'Keep it under 80 characters.');
+      bankEntry = { bank_account_no: encrypt(acct), bank_ifsc: ifsc, bank_holder_name: holder, bank_name: bank, bank_branch: branch };
+    }
+  }
   if (bio !== undefined) {
     const v = bio == null ? null : String(bio).trim();
     if (v && v.length > 150) throw fieldError('bio', 'BIO_TOO_LONG', 'Keep it under 150 characters.');
@@ -613,7 +653,7 @@ const updateMe = asyncHandler(async (req, res) => {
 
   // Encrypt sensitive fields before storing
   if (upi_id !== undefined) updates.upi_id = encrypt(upi_id);
-  if (bank_account_no !== undefined) updates.bank_account_no = encrypt(bank_account_no);
+  if (bankEntry) Object.assign(updates, bankEntry);
   if (pan_number !== undefined) updates.pan_number = encrypt(pan_number);
 
   // Update name on users table if provided

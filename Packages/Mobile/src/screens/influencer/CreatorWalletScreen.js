@@ -20,6 +20,7 @@ import { Skeleton, LoadError, useToast } from '../../components/settings/feedbac
 import useRouteToast from '../../hooks/useRouteToast';
 import useTopInset, { TOP_GAP_TITLE } from '../../hooks/useTopInset';
 import { W17, inr, dayMon } from '../../components/wallet/copy17';
+import { BANK } from '../../components/profile/addressBankCopy';
 import { Balance17, Figs17, Fig17, HoldBox17, s as b } from '../../components/wallet/bits17';
 
 // features/registration-and-profile C7 — UPI, bank account (number + IFSC, one entry) and PAN
@@ -29,7 +30,7 @@ export const PAYMENT_DETAILS = {
   title: 'Payment details',
   noteTitle: 'Add these to get paid',
   noteBody: 'Not needed for approval — only before your first withdrawal.',
-  upi: 'UPI', bank: 'Bank account', bankSub: 'Account number + IFSC', pan: 'PAN',
+  upi: 'UPI', bank: 'Bank account', bankSub: BANK.rowSub, pan: 'PAN',
 };
 
 export default function CreatorWalletScreen({ navigation, route }) {

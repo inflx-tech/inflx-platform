@@ -32,6 +32,7 @@ const notificationService = require('./notification.service');
 const shipping = require('./shipping');
 const shippingWebhook = require('./shipping/webhook');
 const money = require('./remoteMoney.service');
+const creatorAddress = require('./creatorAddress.service');
 const { MSG, NOTIFY11, REMOTE_STAGE_LABEL, RETURN_STAGE_LABEL, shortDay } = require('./productionCopy');
 const { longDate } = require('./campaignCopy');
 const { calendarDay, todayInIndia, istDayOf, addDays, daysBetween } = require('../utils/indiaDay');
@@ -384,13 +385,22 @@ async function read(ciId, scope, conn = db) {
     // §11.2: "The ₹{fee} locked for {name}'s fee is never used for shipping." Said on R6.
     out.lockedFee = Number(r.locked_amount || 0);
   } else {
-    // Her prefill for R3 — name, her login number, and her profile's state and city.
+    // Her prefill for R3. creator-address-bank-save: the delivery address she keeps in her
+    // profile, whole, when she keeps one — she may change any of it for this parcel and her
+    // profile stays as it is. Otherwise, as before: her name, her login number, and her
+    // profile's state and city.
     if (!sent) {
-      out.prefill = {
+      const kept = await creatorAddress.forInfluencer(r.influencer_id, conn);
+      out.prefill = kept ? {
+        name: kept.name, phone: kept.phone, street: kept.street, pincode: kept.pincode,
+        stateId: kept.stateId, cityId: kept.cityId, stateName: kept.stateName, cityName: kept.cityName,
+        note: kept.note || null, fromProfile: true,
+      } : {
         name: r.creator_name || null,
         phone: r.creator_phone ? String(r.creator_phone).replace(/^\+91/, '') : null,
         stateId: r.creator_state_id || null,
         cityId: r.creator_city_id || null,
+        fromProfile: false,
       };
     }
   }

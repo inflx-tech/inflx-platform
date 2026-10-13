@@ -54,13 +54,15 @@ const KIND = {
   brand: {
     table: 'brands', idCol: 'brand_id',
     load: (conn, userId, lock) => conn.query(
-      `SELECT b.id, b.user_id, b.business_name AS name, b.wallet_balance, b.withdrawal_hold, b.bank_account_no, b.bank_ifsc, NULL::text AS upi_id
+      `SELECT b.id, b.user_id, b.business_name AS name, b.wallet_balance, b.withdrawal_hold, b.bank_account_no, b.bank_ifsc, NULL::text AS upi_id,
+              NULL::text AS bank_holder_name, NULL::text AS bank_name, NULL::text AS bank_branch
          FROM brands b WHERE b.user_id = $1${lock ? ' FOR UPDATE' : ''}`, [userId]),
   },
   creator: {
     table: 'influencers', idCol: 'influencer_id',
     load: (conn, userId, lock) => conn.query(
-      `SELECT i.id, i.user_id, COALESCE(i.full_name, u.name) AS name, i.wallet_balance, i.withdrawal_hold, i.bank_account_no, i.bank_ifsc, i.upi_id
+      `SELECT i.id, i.user_id, COALESCE(i.full_name, u.name) AS name, i.wallet_balance, i.withdrawal_hold, i.bank_account_no, i.bank_ifsc, i.upi_id,
+              i.bank_holder_name, i.bank_name, i.bank_branch
          FROM influencers i JOIN users u ON u.id = i.user_id WHERE i.user_id = $1${lock ? ' FOR UPDATE OF i' : ''}`, [userId]),
   },
 };
@@ -143,14 +145,20 @@ async function request(kind, userId, { amount, method } = {}) {
     if (rowCount !== 1) refuse('INSUFFICIENT_BALANCE', MSG.TOO_MUCH(available), 422, 'amount');
 
     let w;
+    const bank = pick.method === 'bank';
     try {
       ({ rows: [w] } = await client.query(
+        // creator-address-bank-save: a bank request is paid to the name ON THE ACCOUNT, and keeps
+        // the bank and branch she gave beside the number and IFSC. An account saved before those
+        // were asked for has none of the three: the name falls back to her profile name, as before.
         `INSERT INTO withdrawal_requests
-           (owner_kind, ${K.idCol}, amount, method, payee_name, account_enc, ifsc, upi_enc, payee_masked, requested_by, process_hours)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-        [kind, o.id, amt, pick.method, o.name || 'Account holder',
-          pick.method === 'bank' ? o.bank_account_no : null, pick.method === 'bank' ? o.bank_ifsc : null,
-          pick.method === 'upi' ? o.upi_id : null, pick.masked, userId, hours]));
+           (owner_kind, ${K.idCol}, amount, method, payee_name, account_enc, ifsc, upi_enc, payee_masked, requested_by, process_hours,
+            bank_name, bank_branch)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+        [kind, o.id, amt, pick.method, (bank && o.bank_holder_name) || o.name || 'Account holder',
+          bank ? o.bank_account_no : null, bank ? o.bank_ifsc : null,
+          pick.method === 'upi' ? o.upi_id : null, pick.masked, userId, hours,
+          bank ? o.bank_name || null : null, bank ? o.bank_branch || null : null]));
     } catch (e) {
       if (e.code === '23505') refuse('ONE_AT_A_TIME', MSG.ONE_AT_A_TIME(amt), 422, 'status');
       throw e;
@@ -274,7 +282,7 @@ function adminShape(w, { full = false } = {}) {
   const base = {
     ...shape(w), reference: w.bank_reference, reason: w.reason, reasonKind: w.reason_kind,
     ownerKind: w.owner_kind, ownerId: w.brand_id || w.influencer_id, ownerName: w.owner_name,
-    payeeName: w.payee_name, ifsc: w.ifsc,
+    payeeName: w.payee_name, ifsc: w.ifsc, bankName: w.bank_name || null, bankBranch: w.bank_branch || null,
     onHold: r2(w.owner_hold), holdCovers: r2(w.owner_hold) >= r2(w.amount),
     waitingMinutes: w.status === 'requested' ? Math.max(0, Math.round((Date.now() - new Date(w.requested_at).getTime()) / 60000)) : null,
     late: w.status === 'requested' && (Date.now() - new Date(w.requested_at).getTime()) > Number(w.process_hours) * 3600000,

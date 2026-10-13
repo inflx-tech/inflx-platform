@@ -77,7 +77,6 @@ export default function BrandBranchEditScreen({ navigation, route }) {
   const [cityName, setCityName] = useState(branch?.cityName || '');
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
   // How many branches exist and which is main — from the list screen, or fetched when arriving cold.
   const [branchCount, setBranchCount] = useState(route?.params?.branchCount != null ? route.params.branchCount : null);
   const [mainBranch, setMainBranch] = useState(route?.params?.mainBranch || null);
@@ -114,7 +113,7 @@ export default function BrandBranchEditScreen({ navigation, route }) {
   const dirty = name !== (branch?.name || '') || street !== (branch?.formattedAddress || '') || (pin || '') !== (branch?.pincode || '')
     || landmark !== (branch?.landmark || '') || phone !== phoneBase
     || stateId !== (branch?.stateId != null ? branch.stateId : null) || cityId !== (branch?.cityId != null ? branch.cityId : null);
-  useUnsavedGuard(navigation, dirty && !done);
+  const saved = useUnsavedGuard(navigation, dirty);
 
   const clientErrors = {
     name: name.trim() ? '' : MSG3.BRANCH_NAME,
@@ -145,7 +144,7 @@ export default function BrandBranchEditScreen({ navigation, route }) {
       return;
     }
     setSheet(false);
-    setDone(true);
+    saved();
     navigation.navigate('BrandBranches', { toast: 'Saved.' });
   }
 

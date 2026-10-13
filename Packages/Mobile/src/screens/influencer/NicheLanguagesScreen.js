@@ -40,7 +40,6 @@ export default function NicheLanguagesScreen({ navigation }) {
   const [language, setLanguage] = useState([]);
   const [serverErr, setServerErr] = useState('');
   const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
   const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
@@ -62,7 +61,7 @@ export default function NicheLanguagesScreen({ navigation }) {
 
   const dirty = niche !== initial.niche || (niche === OTHER && nicheOther.trim() !== initial.nicheOther.trim())
     || JSON.stringify([...language].sort()) !== JSON.stringify([...initial.language].sort());
-  useUnsavedGuard(navigation, dirty && !done);
+  const saved = useUnsavedGuard(navigation, dirty);
   const nicheError = niche ? '' : MSG3.NICHE;
   const otherError = niche === OTHER ? (!nicheOther.trim() ? N.otherRequired : (nicheOther.trim().length > OTHER_MAX ? N.otherLong : '')) : '';
   const errorCount = (nicheError ? 1 : 0) + (otherError ? 1 : 0);
@@ -79,7 +78,7 @@ export default function NicheLanguagesScreen({ navigation }) {
       else show(r.error?.message || COPY.saveFailed);
       return;
     }
-    setDone(true);
+    saved();
     navigation.navigate('ProfileMain', { toast: 'Saved.' });
   }
 

@@ -23,7 +23,6 @@ export default function BrandSubCategoriesScreen({ navigation }) {
   const [initial, setInitial] = useState([]);
   const [sel, setSel] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
   const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
@@ -38,7 +37,7 @@ export default function BrandSubCategoriesScreen({ navigation }) {
   useEffect(() => { load(); }, [load]);
 
   const dirty = JSON.stringify([...sel].sort()) !== JSON.stringify([...initial].sort());
-  useUnsavedGuard(navigation, dirty && !done);
+  const saved = useUnsavedGuard(navigation, dirty);
   const error = sel.length ? '' : MSG3.SUB_CATEGORIES;
 
   async function save() {
@@ -46,7 +45,7 @@ export default function BrandSubCategoriesScreen({ navigation }) {
     const r = await brandApi.updateMe({ sub_categories: sel });
     setSaving(false);
     if (!r.success) { show(r.error?.message || COPY.saveFailed); return; }
-    setDone(true);
+    saved();
     navigation.navigate('BrandProfile', { toast: 'Saved.' });
   }
 

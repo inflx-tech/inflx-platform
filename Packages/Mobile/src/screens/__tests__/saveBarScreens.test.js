@@ -56,6 +56,8 @@ jest.mock('../../services/api', () => {
       } })),
       updateMe: jest.fn(),
       getProfileImageUploadUrl: jest.fn(),
+      getDeliveryAddress: jest.fn().mockResolvedValue(ok({ address: null, prefill: { name: 'Tanvi Suresh', phone: '9876543210', stateId: 1, cityId: 10, stateName: 'Telangana', cityName: 'Hyderabad' } })),
+      saveDeliveryAddress: jest.fn(), removeDeliveryAddress: jest.fn(),
     },
     referenceApi: {
       creatorNiches: jest.fn().mockResolvedValue(ok({ items: [{ code: 'fashion', label: 'Fashion' }, { code: 'other', label: 'Other' }] })),
@@ -80,6 +82,7 @@ const BrandSubCategoriesScreen = require('../brand/BrandSubCategoriesScreen').de
 const InvitationSettingsScreen = require('../influencer/InvitationSettingsScreen').default;
 const NicheLanguagesScreen = require('../influencer/NicheLanguagesScreen').default;
 const ProfileInfoScreen = require('../influencer/ProfileInfoScreen').default;
+const DeliveryAddressScreen = require('../influencer/DeliveryAddressScreen').default;
 
 const { revealTarget } = require('../../components/shell/FormScroll');
 
@@ -96,6 +99,7 @@ const SCREENS = [
   ['creator · Invitation settings', () => <InvitationSettingsScreen navigation={nav()} />, 'open-switch', 'fee-engagement'],
   ['creator · Niche and languages', () => <NicheLanguagesScreen navigation={nav()} />, 'niche-other', null],
   ['creator · Profile info', () => <ProfileInfoScreen navigation={nav()} route={{ params: {} }} />, 'field-name', 'field-youtube'],
+  ['creator · Delivery address', () => <DeliveryAddressScreen navigation={nav()} />, 'addr-street', 'addr-note'],
 ];
 
 /** [root, …, node] for the first node (document order) that matches. */
@@ -272,13 +276,15 @@ describe('the source of every screen that draws <SaveBar', () => {
   }(SRC));
   const rel = (f) => path.relative(SRC, f).split(path.sep).join('/');
 
-  it('is exactly these eight — a ninth must be built the same way and added here', () => {
+  // creator-address-bank-save added the ninth: the creator's Delivery address.
+  it('is exactly these nine — a tenth must be built the same way and added here', () => {
     expect(files.map(rel).sort()).toEqual([
       'screens/brand/BrandBranchEditScreen.js',
       'screens/brand/BrandBusinessDetailsScreen.js',
       'screens/brand/BrandLinksScreen.js',
       'screens/brand/BrandPitchSettingsScreen.js',
       'screens/brand/BrandSubCategoriesScreen.js',
+      'screens/influencer/DeliveryAddressScreen.js',
       'screens/influencer/InvitationSettingsScreen.js',
       'screens/influencer/NicheLanguagesScreen.js',
       'screens/influencer/ProfileInfoScreen.js',

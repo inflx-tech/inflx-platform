@@ -1199,7 +1199,7 @@ describe('the source of the creator, shared, create and wallet screens', () => {
   it('the screens someone types on are the ones this file knows about', () => {
     expect(typing.sort()).toEqual([
       'create/CollectionScreen.js', 'create/NewCollectionScreen.js', 'create/PostReviewScreen.js',
-      'influencer/ContentScreen.js', 'influencer/CounterScreen.js', 'influencer/InvitationSettingsScreen.js',
+      'influencer/ContentScreen.js', 'influencer/CounterScreen.js', 'influencer/DeliveryAddressScreen.js', 'influencer/InvitationSettingsScreen.js',
       'influencer/MoveRequestScreen.js', 'influencer/NicheLanguagesScreen.js', 'influencer/PayoutDetailScreen.js',
       'influencer/PitchFormScreen.js', 'influencer/ProfileInfoScreen.js', 'influencer/RemoteAddressScreen.js',
       'influencer/RemoteShootScreen.js', 'influencer/SaleLiveScreen.js', 'shared/ChangeNumberScreen.js', 'shared/PitchCounterScreen.js',

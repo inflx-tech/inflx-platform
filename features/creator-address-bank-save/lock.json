@@ -1,0 +1,35 @@
+{
+  "feature": "creator-address-bank-save",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 13 Oct 2026, with a screenshot of the creator app's Profile info screen showing \"Discard changes?\": \"detailed address for creator for receiving parcels from brand while doing remote type collabration … first we ask a fixed one and this will populate there … if she wants she change that … pls add separate one like contact details in profile … bank details in wallet is only two things one is acct number and IFSC code … pls make that re enter of account number, branch and bank details as well … if i click on save button a popup with dicard and keep editing … pls remove this popup and make it save directly. resolve these three issues.\")",
+  "approved_at": "2026-10-13T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "Claude, under the founder's standing delegation and his instruction of 13 Oct 2026 (\"resolve these three issues\") — the board draws the three things he asked for on the screens they live on. He has NOT reviewed the board itself; it is shown to him with the release request, with the ten decisions taken for him listed on it and in 06-diff/notes.md.",
+  "mockup_locked_at": "2026-10-13T00:00:00+05:30",
+  "mockup_final": "04-preview/mockups/creator-address-bank-save.html",
+  "notes": "Three things in the creator app. (1) A delivery address kept in her profile — private to her, its own table — that fills the Remote collab's address form; she can change it there for one parcel. (2) Her bank account in full: account holder name, account number typed twice, IFSC, bank, branch; INFLX's Money › Withdrawals shows them. (3) Save closes the screen first time — the \"Discard changes?\" box was being asked of a screen that had just saved, on six screens (two creator, four brand). Migration 208, additive. No money moves. Production-impacting (server, admin website, creator and brand app OTA) — explicit go required before the migration, the push and the OTAs. RELEASE GO: founder (chat 13 Oct 2026: \"pls release it\") — asked with the board open, the decisions taken for him listed (address optional; account holder name added; the tick on by default; old bank accounts keep working; brand bank form unchanged; the reason line under an unreachable pincode), what the release is (one database addition, server and admin website, creator and brand app over the air) and the gap for an old creator app saving a bank account. The deploy record follows in its own commit.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-10-13T00:00:00+05:30",
+    "database": "backend/migrations/208_creator_delivery_address_bank_details.sql + scripts/run-208.js — one new table, five new columns, nothing written into an existing row. Runner proved on a scratch database built from 001–207: dry, apply (12/12), apply again (12/12, nothing moved). NOT applied to live.",
+    "server": "services/creatorAddress.service.js + routes/creatorAddress.routes.js (new); controllers/influencer.controller.js; services/remoteShoot.service.js, remoteAddress.service.js, withdrawalRequest.service.js; routes/index.js",
+    "phone": "screens/influencer/DeliveryAddressScreen.js + components/profile/addressBankCopy.js (new); ProfileScreen, RemoteAddressScreen, PayoutDetailScreen, CreatorWalletScreen, InfluencerNavigator, services/api.js; hooks/useUnsavedGuard.js and its six callers (ProfileInfo, NicheLanguages, BrandBusinessDetails, BrandLinks, BrandSubCategories, BrandBranchEdit)",
+    "website": "brand-web/app/admin/money/withdrawals/page.js — Bank and Branch in \"Mark processed\", the bank beside the name in the list. Seen in a browser on a local copy with two seeded requests (one made with the full entry, one with an account saved before this).",
+    "new_tests": "backend creator-address-bank.test.js 17/17 (real API); mobile saveLeavesWithoutAsking.test.js 28/28 (real native stack; S1 red on all six live screens before the fix) and addressBank.test.js 24/24",
+    "changed_tests": "item3Creator.test.js — two bank tests rewritten to the five-part rule (business-rule drift); registrationProfile.test.js — the bank row's subtitle; saveBarScreens.test.js and creatorStrips.test.js — the new screen added to their two inventories, as those tests are built to demand",
+    "mobile_tests": "127 suites / 2989 tests, all passing",
+    "backend_tests": "whole suite, serial: 155 suites / 2200 tests; 38 suites / 177 tests failing — the same 177 as the last recorded run (baseline_cover_photo_stock.json: 154 / 2183 / 177). Test by test: 0 newly failing, 17 new tests all passing. Recorded as backend/baseline_creator_address_bank.json. (A first run was started without --runInBand by mistake, deadlocked on the shared test database, and was discarded.)",
+    "device": "NOT seen on a phone. Maestro not run.",
+    "no_new_app_build": "no native change; both apps ship over the air"
+  }
+}

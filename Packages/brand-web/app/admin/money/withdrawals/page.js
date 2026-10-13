@@ -70,7 +70,7 @@ export default function MoneyWithdrawalsPage() {
       <Who key="w" name={w.ownerName} kind={w.ownerKind === 'brand' ? 'Brand' : 'Creator'} />,
       <b key="a">{inr(w.amount)}</b>,
       <div key="r">{dayTime(w.requestedAt)}{w.status === 'requested' ? <div className={`text-[10.5px] ${w.late ? 'text-orange-deep font-bold' : 'text-t3'}`}>{waited(w.waitingMinutes)}</div> : null}</div>,
-      <div key="s">{w.method === 'upi' ? `UPI · ${w.sendTo}` : w.sendTo}<div className="text-[10.5px] text-t3">{w.payeeName}</div></div>,
+      <div key="s">{w.method === 'upi' ? `UPI · ${w.sendTo}` : w.sendTo}<div className="text-[10.5px] text-t3">{w.payeeName}{w.bankName ? ` · ${w.bankName}` : ''}</div></div>,
       ...(tab === 'requested' ? [
         <Chip key="h" tone={w.holdCovers ? 'ok' : 'no'}>{w.holdCovers ? `Yes · ${inr(w.amount)}` : `No · ${inr(w.onHold)} on hold`}</Chip>,
         <div key="x" className="flex gap-1.5 justify-end"><Btn onClick={() => openPay(w)} disabled={!w.holdCovers}>Mark processed</Btn><Btn kind="sec" onClick={() => openStop(w)}>Could not process</Btn></div>,
@@ -102,6 +102,9 @@ export default function MoneyWithdrawalsPage() {
               <>
                 <span className="text-t3">Account</span><b className="text-right">{pay.account}<Copy value={pay.account} /></b>
                 <span className="text-t3">IFSC</span><b className="text-right">{pay.ifsc}<Copy value={pay.ifsc} /></b>
+                {/* creator-address-bank-save: the bank and branch she gave. Absent on a request made before they were asked for. */}
+                {pay.bankName ? <><span className="text-t3">Bank</span><b className="text-right">{pay.bankName}</b></> : null}
+                {pay.bankBranch ? <><span className="text-t3">Branch</span><b className="text-right">{pay.bankBranch}</b></> : null}
               </>
             ) : (
               <><span className="text-t3">UPI ID</span><b className="text-right">{pay.upi}<Copy value={pay.upi} /></b></>

@@ -337,7 +337,7 @@ describe('C7 · B8 — payout and business details on the wallets', () => {
     const r = render(<WalletDetailsScreen navigation={n} route={{ params: { side: 'creator' } }} />);
     await waitFor(() => r.getByTestId('payment-details'));
     r.getAllByText('Payment details'); r.getByText('Add these to get paid'); r.getByText('Not needed for approval — only before your first withdrawal.');
-    r.getByText('UPI'); r.getByText('Bank account'); r.getByText('Account number + IFSC'); r.getByText('PAN');
+    r.getByText('UPI'); r.getByText('Bank account'); r.getByText('Name, account number, IFSC, bank and branch'); r.getByText('PAN');
     expect(r.queryByText('For your TDS certificate')).toBeNull();
     expect(r.getByTestId('row-upi-value').props.children).toBe('Added');
     expect(r.getByTestId('row-bank-value').props.children).toBe('Not added');

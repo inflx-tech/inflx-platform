@@ -35,6 +35,7 @@ import WalletDetailsScreen from '../screens/wallet/WalletDetailsScreen';
 import CollabsScreen from '../screens/influencer/CollabsScreen';
 import FindBrandsScreen from '../screens/influencer/FindBrandsScreen';
 import ProfileInfoScreen from '../screens/influencer/ProfileInfoScreen';
+import DeliveryAddressScreen from '../screens/influencer/DeliveryAddressScreen';
 import ChangeNumberScreen from '../screens/shared/ChangeNumberScreen';
 import NicheLanguagesScreen from '../screens/influencer/NicheLanguagesScreen';
 import BrandProductsScreen from '../screens/shared/BrandProductsScreen';
@@ -214,6 +215,8 @@ function ProfileStackScreen() {
     <ProfileStack.Navigator screenOptions={noHeader}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="ProfileInfo" component={ProfileInfoScreen} />
+      {/* creator-address-bank-save — the delivery address she keeps (P2). */}
+      <ProfileStack.Screen name="DeliveryAddress" component={DeliveryAddressScreen} />
       <ProfileStack.Screen name="ChangeNumber" component={ChangeNumberScreen} initialParams={{ role: 'influencer', returnTo: 'ProfileInfo' }} />
       <ProfileStack.Screen name="NicheLanguages" component={NicheLanguagesScreen} />
       <ProfileStack.Screen name="YourNumbers" component={YourNumbersScreen} />

@@ -23,7 +23,6 @@ export default function BrandLinksScreen({ navigation }) {
   const [f, setF] = useState(initial);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
   const { toast, show } = useToast({ inFlow: true });
 
   const load = useCallback(async () => {
@@ -37,7 +36,7 @@ export default function BrandLinksScreen({ navigation }) {
   useEffect(() => { load(); }, [load]);
 
   const dirty = f.website_url !== initial.website_url || f.instagram_handle !== initial.instagram_handle;
-  useUnsavedGuard(navigation, dirty && !done);
+  const saved = useUnsavedGuard(navigation, dirty);
 
   async function save() {
     const payload = {};
@@ -50,7 +49,7 @@ export default function BrandLinksScreen({ navigation }) {
       applyServerError(r.error, { fields: ['website_url', 'instagram_handle'], setErrors, show, fallback: COPY.saveFailed });
       return;
     }
-    setDone(true);
+    saved();
     navigation.navigate('BrandProfile', { toast: 'Saved.' });
   }
 

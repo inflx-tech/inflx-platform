@@ -26,6 +26,8 @@ import { CompletenessNote, SubmitForReviewBlock } from '../../components/registr
 import { CREATOR_ROW_KEYS, rowNeeds, REVIEW_COPY } from '../../components/registration/completeness';
 // Item 20 — the "My brand" row. Never one of the "things left". Contract: features/item20-own-brand
 import { O20 } from '../../components/ownbrand/copy20';
+// creator-address-bank-save — the "Delivery address" row. Never one of the "things left".
+import { ADDR } from '../../components/profile/addressBankCopy';
 
 const R = C3.creatorProfile;
 
@@ -56,6 +58,7 @@ export default function ProfileScreen({ navigation, route }) {
   const [invite, setInvite] = useState(null);
   const [social, setSocial] = useState(null);
   const [brandLink, setBrandLink] = useState(null);
+  const [address, setAddress] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   // Item 12 (Phase 2b): the upload test row appears only while the server switch is on.
   const [probe, setProbe] = useState(false);
@@ -72,6 +75,8 @@ export default function ProfileScreen({ navigation, route }) {
     setInvite(i.success ? i.data.summary || null : null);
     setSocial(so && so.success ? so.data : null);
     setStatus('ready');
+    const ad = influencerApi.getDeliveryAddress ? await influencerApi.getDeliveryAddress() : null;
+    setAddress(ad && ad.success ? ad.data.address || null : null);
     const bl = influencerApi.brandLink ? await influencerApi.brandLink() : null;
     setBrandLink(bl && bl.success ? bl.data.link || null : null);
     const pr = influencerApi.uploadProbeStatus ? await influencerApi.uploadProbeStatus() : null;
@@ -129,6 +134,7 @@ export default function ProfileScreen({ navigation, route }) {
         <CompletenessNote completeness={completeness} userStatus={st} />
         <View style={{ paddingHorizontal: 18 }}>
           <ProfileRow label={R.rows.info[0]} sub={R.rows.info[1]} dot={st !== 'approved' && rowNeeds(CREATOR_ROW_KEYS.info, missing)} onPress={() => navigation.navigate('ProfileInfo')} testID="row-profile-info" />
+          <ProfileRow label={ADDR.row} sub={address ? ADDR.rowSaved(address) : ADDR.rowAsk} onPress={() => navigation.navigate('DeliveryAddress')} testID="row-delivery-address" />
           <ProfileRow label={C3B.r3.row} sub={socialSubtitle(social)} right={<SocialChip chip={social && social.chip} />} onPress={() => navigation.navigate('YourNumbers')} testID="row-your-numbers" />
           <ProfileRow label={R.rows.niche} warn={needsNiche ? R.niche.warning : ''} dot={st !== 'approved' && rowNeeds(CREATOR_ROW_KEYS.niche, missing)} onPress={() => navigation.navigate('NicheLanguages')} testID="row-niche" />
           <ProfileRow label={R.rows.invitation} value={inviteValue} right={invite ? <StatusChip on={invite.labelState !== 'paused'} /> : null} onPress={() => navigation.navigate('InvitationSettings')} testID="row-invitation-settings" />

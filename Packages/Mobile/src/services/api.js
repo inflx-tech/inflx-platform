@@ -703,6 +703,10 @@ export const influencerApi = {
   getDiscoverOptions: () => api.get('/influencers/me/discover-options'),
   getMe: () => api.get('/influencers/me'),
   updateMe: (data) => api.patch('/influencers/me', data),
+  // The delivery address she keeps in her profile. Contract: features/creator-address-bank-save
+  getDeliveryAddress:    () => api.get('/influencers/me/delivery-address'),
+  saveDeliveryAddress:   (body) => api.put('/influencers/me/delivery-address', body),
+  removeDeliveryAddress: () => api.delete('/influencers/me/delivery-address'),
   // features/registration-and-profile — see brandApi.submitForReview.
   submitForReview: () => api.post('/influencers/me/submit-for-review'),
   // Her own photo — ask for a short-lived link, PUT the file, then save the key.

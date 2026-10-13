@@ -25,6 +25,7 @@ const refs = require('./referenceLists.service');
 const shipping = require('./shipping');
 const shoot = require('./remoteShoot.service');
 const { MSG, NOTIFY11 } = require('./productionCopy');
+const creatorAddress = require('./creatorAddress.service');
 const { logAction } = require('./production.service');
 
 const trim = (v) => String(v == null ? '' : v).trim();
@@ -121,6 +122,15 @@ async function send(ciId, scope, body = {}, conn = db) {
   await logAction(conn, r.id, scope.userId, 'influencer', 'address_sent',
     `She sent her delivery address (${fields.cityName}, ${fields.pincode})`,
     { returnPickup: cov.returnPickup });
+
+  // creator-address-bank-save: "Keep this address in my profile", ticked on a form that opened
+  // with no profile address. It only fills an empty profile — never overwrites one she keeps.
+  // The address is already sent by this line: a failure to keep a copy must never turn a sent
+  // address into an error, or leave the brand untold.
+  if (body.keepInProfile === true) {
+    try { await creatorAddress.keepIfNone(r.influencer_id, fields, conn); }
+    catch (e) { console.error('[remote-address] could not keep the address in her profile:', e.message); }
+  }
 
   await shoot.notifyBrand(r, NOTIFY11.ADDRESS_SENT,
     `${shoot.first(r.creator_name)} sent her delivery address. Pick the products and book the parcel.`

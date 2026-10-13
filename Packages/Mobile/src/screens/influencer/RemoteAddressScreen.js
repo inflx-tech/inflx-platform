@@ -31,6 +31,9 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { DELIVERY_STREET_MAX } from '../../utils/storeAddress';
 import { StateBox7 } from '../../components/agreement/bits7';
 import { C11, MSG11 } from '../../components/remote/copy11';
+// creator-address-bank-save — the form starts from the delivery address she keeps in her profile.
+import { CheckboxRow } from '../../components/discovery/bits';
+import { ADDR } from '../../components/profile/addressBankCopy';
 
 export default function RemoteAddressScreen({ navigation, route }) {
   const { ciId, correcting } = route.params || {};
@@ -41,6 +44,8 @@ export default function RemoteAddressScreen({ navigation, route }) {
   const [errors, setErrors] = useState({});
   const [coverage, setCoverage] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', street: '', pincode: '', stateId: null, cityId: null, stateName: '', cityName: '', note: '', sizes: '' });
+  // "Keep this address in my profile" — offered only when she keeps none; ticked to begin with.
+  const [keep, setKeep] = useState(true);
   const { toast, show } = useToast();
 
   const load = useCallback(async () => {
@@ -49,17 +54,22 @@ export default function RemoteAddressScreen({ navigation, route }) {
     if (!r || !r.success) { setStatus('error'); return; }
     setSh(r.data.shoot);
     // R3: name and number arrive filled in; state and city come from her profile.
+    // creator-address-bank-save: when she keeps a delivery address in her profile the WHOLE of
+    // it arrives (`prefill.fromProfile`) — street, pincode and note too. What she changes here
+    // is for this parcel only. A correction still starts with an empty street and pincode.
     const p = r.data.shoot.prefill || {};
     const a = r.data.shoot.address || {};
     setForm((f) => ({
       ...f,
       name: f.name || a.name || p.name || '',
       phone: f.phone || a.phone || p.phone || '',
-      street: f.street || (correcting ? '' : a.street || ''),
-      pincode: f.pincode || (correcting ? '' : a.pincode || ''),
+      street: f.street || (correcting ? '' : a.street || p.street || ''),
+      pincode: f.pincode || (correcting ? '' : a.pincode || p.pincode || ''),
       stateId: f.stateId || p.stateId || null,
       cityId: f.cityId || p.cityId || null,
-      note: f.note || a.note || '',
+      stateName: f.stateName || p.stateName || '',
+      cityName: f.cityName || p.cityName || '',
+      note: f.note || a.note || p.note || '',
       sizes: f.sizes || a.sizes || '',
     }));
     setStatus('ready');
@@ -67,6 +77,18 @@ export default function RemoteAddressScreen({ navigation, route }) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setErrors((e) => { const n = { ...e }; delete n[k]; return n; }); };
+  const prefill = (sh && sh.prefill) || null;
+  const fromProfile = !correcting && !!(prefill && prefill.fromProfile);
+  const canKeep = !correcting && !!prefill && prefill.fromProfile === false;
+  // A pincode that arrived from her profile has not been through the courier check she would
+  // have triggered by typing it — ask once, so the answer is on the screen before she sends.
+  const arrivedPincode = fromProfile ? prefill.pincode : null;
+  useEffect(() => {
+    if (status !== 'ready' || !arrivedPincode || !/^\d{6}$/.test(arrivedPincode)) return;
+    Promise.resolve(influencerApi.myRemoteCoverage(ciId, arrivedPincode))
+      .then((r) => { if (r && r.success) setCoverage((c) => c || r.data); })
+      .catch(() => {});
+  }, [status, arrivedPincode, ciId]);
 
   /** The coverage check as she leaves the pincode field (R3 → R4b). */
   async function checkPincode() {
@@ -100,6 +122,7 @@ export default function RemoteAddressScreen({ navigation, route }) {
       stateId: form.stateId, cityId: form.cityId,
       note: form.note.trim() || null, sizes: form.sizes.trim() || null,
     };
+    if (canKeep && keep) body.keepInProfile = true;
     const r = correcting ? await influencerApi.myRemoteCorrect(ciId, body) : await influencerApi.myRemoteAddress(ciId, body);
     setBusy(false);
     if (!r || !r.success) {
@@ -124,6 +147,7 @@ export default function RemoteAddressScreen({ navigation, route }) {
       <View style={base.screen} testID="remote-address">
         <Header title={C11.creator.formTitle} onBack={() => navigation.goBack()} />
         <FormScroll contentContainerStyle={{ padding: 18, paddingBottom: 40 }} testID="remote-address-scroll">
+          {fromProfile ? <View style={{ marginBottom: 14 }}><StateBox7 tone="wait" text={ADDR.fromProfile} testID="from-profile" /></View> : null}
 
           <Field label={C11.creator.nameLabel} value={form.name} onChange={(v) => set('name', v)} error={errors.name} testID="f-name" />
 
@@ -137,7 +161,12 @@ export default function RemoteAddressScreen({ navigation, route }) {
             multiline error={errors.street} testID="f-street" />
 
           <Field label={C11.creator.pincodeLabel} value={form.pincode} onChange={(v) => set('pincode', v.replace(/\D/g, '').slice(0, 6))}
-            onBlur={checkPincode} keyboardType="number-pad" maxLength={6} error={errors.pincode} testID="f-pincode" />
+            onBlur={checkPincode} keyboardType="number-pad" maxLength={6}
+            // creator-address-bank-save: a pincode couriers cannot reach greys out "Review and
+            // send" — and said nothing, because the reason was only written when that button was
+            // pressed. With a pincode that now arrives from her profile she would meet a grey
+            // button she had done nothing to cause. The server's reason shows under the box.
+            error={errors.pincode || (blocked ? coverage.message : undefined)} testID="f-pincode" />
 
           {/* R4b · the two coverage answers, in the server's words. */}
           {coverage && coverage.delivers && !coverage.returnPickup
@@ -170,6 +199,12 @@ export default function RemoteAddressScreen({ navigation, route }) {
           <Field label={C11.creator.sizesLabel} value={form.sizes} onChange={(v) => set('sizes', v)}
             placeholder={C11.creator.sizesPlaceholder} hint={C11.creator.sizesHint(brandName)} maxLength={100}
             counter={`${form.sizes.length}/100`} error={errors.sizes} testID="f-sizes" />
+
+          {canKeep ? (
+            <CheckboxRow checked={keep} onPress={() => setKeep((v) => !v)} testID="keep-in-profile">
+              <Text style={s.keep}>{ADDR.keep}</Text>
+            </CheckboxRow>
+          ) : null}
 
           <View style={{ marginTop: 18 }}>
             <PrimaryButton label={C11.creator.reviewAndSend} disabled={blocked}
@@ -258,6 +293,7 @@ const s = StyleSheet.create({
     fontFamily: fonts.sansRegular, fontSize: 14, color: T.ink },
   hint: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink3, marginTop: 5, lineHeight: 16 },
   error: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.state.declined.fg, marginTop: 5, lineHeight: 16 },
+  keep: { fontFamily: fonts.sansMedium, fontSize: 13.5, color: T.ink, lineHeight: 19 },
 
   backdrop: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.42)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 20, paddingBottom: 30 },

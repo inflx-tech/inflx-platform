@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delivery address, bank details, Save — the screens that change</title>
+<style>
+  :root{--bg:#fff;--page:#F4F4F5;--ink:#0A0A0A;--ink2:#52525B;--ink3:#71717A;--border:#E4E4E7;--surface:#F6F6F3;--primary:#FFC107;--wait-bg:#DBEAFE;--wait-fg:#1D4ED8;--ok:#047857;--ok-bg:#D1FAE5;--danger:#E8401A}
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 16px 56px;background:var(--page);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px}
+  .wrap{max-width:1040px;margin:0 auto}
+  h1{font-size:21px;font-weight:800;margin:0 0 4px}
+  h2{font-size:16px;font-weight:800;margin:44px 0 2px}
+  .rule{width:42px;height:3px;background:var(--primary);border-radius:2px;margin:6px 0 10px}
+  .lead{color:var(--ink2);line-height:1.6;max-width:760px}
+  .row{display:flex;gap:26px;flex-wrap:wrap;margin-top:18px;align-items:flex-start}
+  .col{flex:0 1 300px}
+  .tagline{margin-bottom:8px;display:flex;gap:8px;align-items:center}
+  .id{font-size:11px;font-weight:800;color:var(--ink3)}
+  .badge{font-size:10px;font-weight:800;border-radius:5px;padding:2px 7px;letter-spacing:.4px;text-transform:uppercase}
+  .badge.today{background:#E4E4E7;color:#1F1F22} .badge.after{background:var(--ink);color:var(--primary)}
+  .phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:560px;position:relative}
+  .sb{display:flex;justify-content:space-between;padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--ink2)}
+  .bar{display:flex;align-items:center;gap:10px;padding:8px 14px 12px;border-bottom:1px solid var(--border)}
+  .bar .back{font-size:20px;font-weight:700;line-height:1}
+  .bar h3{margin:0;font-size:16px;font-weight:800;flex:1}
+  .scr{flex:1;padding:14px;display:flex;flex-direction:column}
+  .title{font-size:19px;font-weight:800;padding:10px 14px 0}
+  label{display:block;font-size:12.5px;font-weight:700;margin:11px 0 5px}
+  label:first-child{margin-top:0}
+  .in{border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:13px;font-weight:500;min-height:37px}
+  .in.ph{color:var(--ink3);font-weight:400}
+  .in.tall{min-height:54px}
+  .in.err{border-color:var(--danger)}
+  .hint{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.45}
+  .red{font-size:11px;color:var(--danger);margin-top:4px}
+  .two{display:flex;gap:8px}.two>div{flex:1}
+  .pick{display:flex;justify-content:space-between}
+  .lead2{font-size:12.5px;color:var(--ink2);line-height:1.5}
+  .grey{background:var(--surface);border-radius:10px;padding:9px 11px;font-size:11.5px;color:var(--ink2);line-height:1.45;margin:8px 0 12px;font-weight:500}
+  .blue{background:var(--wait-bg);color:var(--wait-fg);border-radius:10px;padding:9px 11px;font-size:11.5px;line-height:1.45;margin-bottom:12px;font-weight:600}
+  .green{background:var(--ok-bg);color:var(--ok);border-radius:10px;padding:8px 11px;font-size:11.5px;line-height:1.45;margin-top:6px;font-weight:600}
+  .foot{padding:10px 14px 16px;border-top:1px solid var(--border);background:#fff}
+  .btn{display:block;text-align:center;background:var(--primary);border-radius:12px;padding:13px;font-weight:800;font-size:14px}
+  .btn.off{opacity:.45}
+  .prow{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+  .prow b{display:block;font-size:14px}.prow span{font-size:12px;color:var(--ink3)}
+  .prow .chev{margin-left:auto;font-size:18px;color:var(--ink3);font-weight:700}
+  .hero{display:flex;align-items:center;gap:12px;padding:14px}
+  .av{width:50px;height:50px;border-radius:50%;background:#E4E4E7;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .okchip{margin-left:auto;background:var(--ok-bg);color:var(--ok);font-size:11px;font-weight:700;border-radius:999px;padding:4px 9px}
+  .rm{color:var(--danger);font-weight:700;font-size:13.5px;padding:16px 0 4px}
+  .tick{display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:12.5px;font-weight:600;line-height:1.4}
+  .box{width:18px;height:18px;border-radius:5px;background:var(--ink);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none}
+  .new{outline:2px solid #10B981;outline-offset:3px;border-radius:10px}
+  .gone{outline:2px dashed var(--danger);outline-offset:3px}
+  .mark{font-size:11px;font-weight:800;margin-top:10px;max-width:300px;line-height:1.5}
+  .mark.r{color:var(--danger)} .mark.g{color:var(--ok)}
+  .dim{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+  .dlg{background:#fff;width:84%;border-radius:4px;padding:20px 20px 12px}
+  .dlg h4{margin:0 0 46px;font-size:17px;font-weight:600}
+  .dlg .acts{display:flex;justify-content:flex-end;gap:22px;color:#00897B;font-weight:700;font-size:12.5px;letter-spacing:.3px;padding:8px 0}
+  .toast{position:absolute;left:14px;right:14px;bottom:18px;background:var(--ink);color:#fff;border-radius:10px;padding:11px 14px;font-weight:700;font-size:13px}
+  .note{margin-top:22px;background:#fff;border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:8px;padding:12px 14px;color:var(--ink2);line-height:1.6;max-width:760px}
+  .note b{color:var(--ink)} ul{margin:6px 0 0;padding-left:18px} li{margin:3px 0}
+  .desk{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;width:360px;max-width:100%}
+  .desk h4{margin:0 0 2px;font-size:15px;font-weight:800}.desk p{margin:0 0 12px;color:var(--ink3);font-size:12px}
+  .kv{background:#F4F4F5;border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:6px;font-size:12px}
+  .kv span{color:var(--ink3)}.kv b{text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Delivery address · bank details · Save</h1>
+  <div class="rule"></div>
+  <div class="lead">Creator app, three things from your message of 13 Oct. <b>1.</b> She keeps a delivery address in her profile and
+    the Remote collab form starts from it. <b>2.</b> Her bank account asks for everything INFLX needs to pay her.
+    <b>3.</b> Save saves — the "Discard changes?" box no longer appears on Save. Green outline = new. Only the screens that change are drawn.</div>
+
+  <!-- ─────────────────────────────── 3 · SAVE ─────────────────────────────── -->
+  <h2>3 · Save, without "Discard changes?"</h2>
+  <div class="lead">The box is meant for one moment only: leaving a screen with changes you have <b>not</b> saved. It was also
+    appearing when you tapped Save — the first tap did save, then the box blocked the screen from closing. Same fault on six
+    screens: Profile info and Niche &amp; languages (creator app); Business details, Links, What you sell and Edit branch (brand app).</div>
+  <div class="row">
+    <div class="col">
+      <div class="tagline"><span class="id">S1</span><span class="badge today">Today</span></div>
+      <div class="phone">
+        <div class="sb"><span>12:19</span><span>●●● 5G</span></div>
+        <div class="bar"><span class="back">‹</span><h3>Profile info</h3></div>
+        <div class="scr">
+          <label>Email</label><div class="in ph">you@email.com</div><div class="hint">We won't show this to brands.</div>
+          <label>Phone</label><div class="in">🔒 +91 75••• ••284</div>
+          <label>Instagram</label><div class="in">@tanvi</div>
+        </div>
+        <div class="foot"><span class="btn">Save</span></div>
+        <div class="dim"><div class="dlg gone"><h4>Discard changes?</h4><div class="acts"><span>KEEP EDITING</span><span>DISCARD</span></div></div></div>
+      </div>
+      <div class="mark r">Tap Save → this box. Keep editing → Save again → only then it closes.</div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="id">S2</span><span class="badge after">After</span></div>
+      <div class="phone">
+        <div class="sb"><span>12:19</span><span>●●● 5G</span></div>
+        <div class="title">Profile</div>
+        <div class="hero"><div class="av">TS</div><div><b style="font-size:16px">Tanvi Suresh</b><div class="hint" style="margin:0">@tanvi · Guntur</div></div><span class="okchip">Approved</span></div>
+        <div class="scr" style="padding-top:0">
+          <div class="prow"><div><b>Profile info</b><span>Photo, name, city, age, gender</span></div><span class="chev">›</span></div>
+          <div class="prow"><div><b>Delivery address</b><span>Guntur · 522002</span></div><span class="chev">›</span></div>
+          <div class="prow"><div><b>Your numbers</b><span>Instagram 6.3K</span></div><span class="chev">›</span></div>
+        </div>
+        <div class="toast new">Saved.</div>
+      </div>
+      <div class="mark g">Tap Save once → saved, back on Profile, "Saved." The box still appears if you press Back with changes you have not saved.</div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────── 1 · ADDRESS ─────────────────────────────── -->
+  <h2>1 · Her delivery address</h2>
+  <div class="lead">Today the only place a creator types her street address is inside a Remote collab, from nothing, every time.
+    After: one address kept in her profile. The Remote form arrives filled in; she can change it for that one parcel and her
+    profile keeps its own.</div>
+  <div class="row">
+    <div class="col">
+      <div class="tagline"><span class="id">P1</span><span class="badge after">Profile · new row</span></div>
+      <div class="phone">
+        <div class="sb"><span>12:20</span><span>●●● 5G</span></div>
+        <div class="title">Profile</div>
+        <div class="hero"><div class="av">TS</div><div><b style="font-size:16px">Tanvi Suresh</b><div class="hint" style="margin:0">@tanvi · Guntur</div></div><span class="okchip">Approved</span></div>
+        <div class="scr" style="padding-top:0">
+          <div class="prow"><div><b>Profile info</b><span>Photo, name, city, age, gender</span></div><span class="chev">›</span></div>
+          <div class="prow new"><div><b>Delivery address</b><span>Where brands send products for a Remote collab</span></div><span class="chev">›</span></div>
+          <div class="prow"><div><b>Your numbers</b><span>Instagram 6.3K</span></div><span class="chev">›</span></div>
+          <div class="prow"><div><b>Niche &amp; languages</b></div><span class="chev">›</span></div>
+          <div class="prow"><div><b>Invitation settings</b><span>Open · Sale, Content · Visit, Remote</span></div><span class="chev">›</span></div>
+          <div class="prow"><div><b>My brand</b><span>Do you own a brand?</span></div><span class="chev">›</span></div>
+          <div class="prow"><div><b>Legal &amp; policies</b></div><span class="chev">›</span></div>
+        </div>
+      </div>
+      <div class="mark g">Second row, after Profile info. Once saved it shows the city and pincode. Not one of the "things left" — her account is approved without it.</div>
+    </div>
+
+    <div class="col">
+      <div class="tagline"><span class="id">P2</span><span class="badge after">New screen</span></div>
+      <div class="phone new">
+        <div class="sb"><span>12:20</span><span>●●● 5G</span></div>
+        <div class="bar"><span class="back">‹</span><h3>Delivery address</h3></div>
+        <div class="scr">
+          <div class="lead2">Brands send products here when you do a Remote collab. We fill it in for you each time — you can still change it for one parcel.</div>
+          <div class="grey">Only you see this. A brand gets an address only when you send it for a collab.</div>
+          <label>Your name</label><div class="in">Tanvi Suresh</div>
+          <label>Contact number</label><div class="in">9876511111</div><div class="hint">The courier calls this number. It starts as your login number.</div>
+          <label>House and street</label><div class="in tall">Flat 302, Sai Residency, Road No 3, Brodipet</div><div class="hint">House or flat number, building, street and area.</div>
+          <label>Pincode</label><div class="in">522002</div>
+          <label>State *</label><div class="in pick"><span>Andhra Pradesh</span><span>›</span></div>
+          <label>Your nearest major city *</label><div class="in pick"><span>Guntur</span><span>›</span></div>
+          <label>Delivery note</label><div class="in tall ph">A landmark, or a good time to deliver</div>
+        </div>
+        <div class="foot"><span class="btn">Save</span></div>
+      </div>
+      <div class="mark g">Name, number, state and city start filled in from her profile. The same boxes and the same red lines as the Remote form.</div>
+    </div>
+
+    <div class="col">
+      <div class="tagline"><span class="id">P3</span><span class="badge after">Opened again</span></div>
+      <div class="phone">
+        <div class="sb"><span>12:24</span><span>●●● 5G</span></div>
+        <div class="bar"><span class="back">‹</span><h3>Delivery address</h3></div>
+        <div class="scr">
+          <label>House and street</label><div class="in tall">Flat 302, Sai Residency, Road No 3, Brodipet</div>
+          <label>Pincode</label><div class="in">522002</div>
+          <label>State *</label><div class="in pick"><span>Andhra Pradesh</span><span>›</span></div>
+          <label>Your nearest major city *</label><div class="in pick"><span>Guntur</span><span>›</span></div>
+          <label>Delivery note</label><div class="in tall">Opposite the park gate</div>
+          <div class="rm new">Remove this address</div>
+          <div class="hint">Asks first: "Remove your delivery address? You'll type it again the next time a brand sends you products. Addresses you have already sent stay as they are."</div>
+        </div>
+        <div class="foot"><span class="btn off">Save</span></div>
+      </div>
+      <div class="mark g">She can change it or remove it. Changing it never changes an address already sent to a brand.</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="tagline"><span class="id">R3</span><span class="badge today">Today · Remote collab</span></div>
+      <div class="phone">
+        <div class="sb"><span>12:30</span><span>●●● 5G</span></div>
+        <div class="bar"><span class="back">‹</span><h3>Where should they send it?</h3></div>
+        <div class="scr">
+          <label>Your name</label><div class="in">Tanvi Suresh</div>
+          <label>Contact number</label><div class="in">9876511111</div>
+          <label>House and street</label><div class="in tall ph gone">&nbsp;</div>
+          <label>Pincode</label><div class="in ph gone">&nbsp;</div>
+          <label>State *</label><div class="in pick"><span>Andhra Pradesh</span><span>›</span></div>
+          <label>Your nearest major city *</label><div class="in pick"><span>Guntur</span><span>›</span></div>
+          <label>Your sizes</label><div class="in ph">Top M, bottom 28, shoe 6</div>
+        </div>
+        <div class="foot"><span class="btn">Review and send</span></div>
+      </div>
+      <div class="mark r">Street and pincode typed from nothing on every Remote collab.</div>
+    </div>
+
+    <div class="col">
+      <div class="tagline"><span class="id">R3a</span><span class="badge after">After · she keeps an address</span></div>
+      <div class="phone">
+        <div class="sb"><span>12:30</span><span>●●● 5G</span></div>
+        <div class="bar"><span class="back">‹</span><h3>Where should they send it?</h3></div>
+        <div class="scr">
+          <div class="blue new">Filled in from your profile. Change anything for this parcel — your profile stays as it is.</div>
+          <label>Your name</label><div class="in">Tanvi Suresh</div>
+          <label>Contact number</label><div class="in">9876511111</div>
+          <label>House and street</label><div class="in tall new">Flat 302, Sai Residency, Road No 3, Brodipet</div>
+          <label>Pincode</label><div class="in new">522002</div>
+          <div class="green">Couriers deliver and collect returns at 522002.</div>
+          <label>State *</label><div class="in pick"><span>Andhra Pradesh</span><span>›</span></div>
+          <label>Your nearest major city *</label><div class="in pick"><span>Guntur</span><span>›</span></div>
+          <label>Your sizes</label><div class="in ph">Top M, bottom 28, shoe 6</div>
+        </div>
+        <div class="foot"><span class="btn">Review and send</span></div>
+      </div>
+      <div class="mark g">Arrives filled in, courier check already answered. "Review and send" and the "can't change it after sending" warning are unchanged. Sizes are still asked each time.</div>
+    </div>
+
+    <div class="col">
+      <div class="tagline"><span class="id">R3b</span><span class="badge after">After · she keeps none</span></div>
+      <div class="phone">
+        <div class="sb"><span>12:30</span><span>●●● 5G</span></div>
+        <div class="bar"><span class="back">‹</span><h3>Where should they send it?</h3></div>
+        <div class="scr">
+          <label>House and street</label><div class="in tall">11 Gandhi Road, Brodipet</div>
+          <label>Pincode</label><div class="in">522002</div>
+          <label>State *</label><div class="in pick"><span>Andhra Pradesh</span><span>›</span></div>
+          <label>Your nearest major city *</label><div class="in pick"><span>Guntur</span><span>›</span></div>
+          <label>Delivery note</label><div class="in ph">A landmark, or a good time to deliver</div>
+          <label>Your sizes</label><div class="in">Top M, bottom 28, shoe 6</div>
+          <div class="tick new"><span class="box">✓</span><span>Keep this address in my profile for next time</span></div>
+        </div>
+        <div class="foot"><span class="btn">Review and send</span></div>
+      </div>
+      <div class="mark g">She has never opened the profile screen: one tick (on to begin with) keeps what she types here. She can untick it. Never shown to a creator who already keeps an address.</div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────── 2 · BANK ─────────────────────────────── -->
+  <h2>2 · Her bank account</h2>
+  <div class="lead">Wallet › Payment details › Bank account. Today it asks two things. INFLX pays withdrawals by hand from its bank,
+    so it needs the name on the account, and a second typing of the number to catch a wrong digit before money goes to a stranger.</div>
+  <div class="row">
+    <div class="col">
+      <div class="tagline"><span class="id">W1</span><span class="badge today">Today</span></div>
+      <div class="phone" style="min-height:420px">
+        <div class="sb"><span>12:40</span><span>●●● 5G</span></div>
+        <div class="bar"><span class="back">‹</span><h3>Bank account</h3></div>
+        <div class="scr">
+          <label>Account number</label><div class="in ph">Account number</div>
+          <label>IFSC</label><div class="in ph">e.g. SBIN0001234</div>
+          <div style="height:18px"></div>
+          <span class="btn">Save</span>
+          <div class="hint" style="text-align:center;margin-top:12px">Our team checks these by hand, usually the same day.</div>
+        </div>
+      </div>
+      <div class="mark r">No name, no bank, no branch, and the number is typed once.</div>
+    </div>
+
+    <div class="col">
+      <div class="tagline"><span class="id">W1</span><span class="badge after">After</span></div>
+      <div class="phone">
+        <div class="sb"><span>12:40</span><span>●●● 5G</span></div>
+        <div class="bar"><span class="back">‹</span><h3>Bank account</h3></div>
+        <div class="scr">
+          <div class="lead2 new" style="margin-bottom:14px">INFLX pays your withdrawals into this account. The name must be exactly as it is on the account.</div>
+          <label class="new">Account holder name</label><div class="in">Tanvi Suresh K</div>
+          <label>Account number</label><div class="in">••••••••••••••</div>
+          <label class="new">Re-enter account number</label><div class="in err">50100234567819</div><div class="red">The two account numbers don't match.</div>
+          <label>IFSC</label><div class="in">HDFC0001234</div>
+          <label class="new">Bank name</label><div class="in">HDFC Bank</div>
+          <label class="new">Branch</label><div class="in">Brodipet, Guntur</div>
+          <div style="height:16px"></div>
+          <span class="btn">Save</span>
+          <div class="hint" style="text-align:center;margin-top:12px">Our team checks these by hand, usually the same day.</div>
+        </div>
+      </div>
+      <div class="mark g">Six boxes, all needed, each with its own red line when empty. The first number box hides what she types, so the second is really typed again (it cannot be pasted into).</div>
+    </div>
+
+    <div class="col" style="flex-basis:360px">
+      <div class="tagline"><span class="id">AM3</span><span class="badge after">INFLX admin · Money · Withdrawals</span></div>
+      <div class="desk">
+        <h4>Mark processed</h4><p>Pay it from INFLX's bank first. Then record it here.</p>
+        <div class="kv">
+          <span>Pay</span><b>₹2,500</b>
+          <span>To</span><b class="new">Tanvi Suresh K</b>
+          <span>Account</span><b>50100234567891 ⧉</b>
+          <span>IFSC</span><b>HDFC0001234 ⧉</b>
+          <span class="new">Bank</span><b>HDFC Bank</b>
+          <span class="new">Branch</span><b>Brodipet, Guntur</b>
+        </div>
+      </div>
+      <div class="mark g" style="max-width:360px">"To" is now the name on the account (it was her profile name). Bank and branch are two new lines. A request made before this shows what it always did.</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Decisions taken for you — say if any should change.</b>
+    <ul>
+      <li><b>The address is optional.</b> It is not one of the "things left" before review, because many creators never do a Remote collab.</li>
+      <li><b>It is private.</b> No brand and no INFLX screen shows the profile address. A brand sees an address only when she sends it for a collab — as today.</li>
+      <li><b>The courier check stays on the collab,</b> not on the profile: whether a courier reaches her depends on which store is sending.</li>
+      <li><b>"Account holder name" is added</b> beside the three you asked for (re-enter number, bank, branch) — a name that does not match is the commonest reason a bank refuses a transfer.</li>
+      <li><b>Creators who already saved a bank account keep it</b> and can still withdraw; the new boxes are asked the next time they save bank details.</li>
+      <li><b>Creator app only.</b> The brand app's bank form still asks two things — the same change there is a separate, small piece if you want it.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

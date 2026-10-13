@@ -62,7 +62,6 @@ export default function ProfileInfoScreen({ navigation, route }) {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
-  const [done, setDone] = useState(false);
   const [confirmQueue, setConfirmQueue] = useState([]);
   const { toast, show } = useToast({ inFlow: true });
   const igRef = useRef(null), ytRef = useRef(null);
@@ -96,7 +95,7 @@ export default function ProfileInfoScreen({ navigation, route }) {
   const initialCityId = inf && inf.city_id != null ? inf.city_id : null;
   const placeChanged = stateId !== initialStateId || cityId !== initialCityId;
   const dirty = placeChanged || Object.keys(f).some(k => f[k] !== initial[k]);
-  useUnsavedGuard(navigation, dirty && !done);
+  const saved = useUnsavedGuard(navigation, dirty);
   const igAction = handleAction('instagram', initial.instagram_handle, f.instagram_handle);
   const ytAction = handleAction('youtube', initial.youtube_handle, f.youtube_handle);
   const noneLeft = !f.instagram_handle.trim() && !f.youtube_handle.trim();
@@ -140,7 +139,7 @@ export default function ProfileInfoScreen({ navigation, route }) {
     if (f.gender !== initial.gender) payload.gender = f.gender || null;
     if (f.email !== initial.email) payload.email = f.email.trim() || null;
     if (placeChanged) { payload.state_id = stateId; payload.city_id = cityId; }
-    if (!Object.keys(payload).length) { setDone(true); navigation.navigate('ProfileMain', {}); return; }
+    if (!Object.keys(payload).length) { saved(); navigation.navigate('ProfileMain', {}); return; }
     setSaving(true);
     const r = await influencerApi.updateMe(payload);
     setSaving(false);
@@ -151,7 +150,7 @@ export default function ProfileInfoScreen({ navigation, route }) {
       else show(r.error?.message || COPY.saveFailed);
       return;
     }
-    setDone(true);
+    saved();
     navigation.navigate('ProfileMain', { toast: 'Saved.' });
   }
 
