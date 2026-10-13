@@ -31,5 +31,25 @@
     "backend_tests": "whole suite, serial: 155 suites / 2200 tests; 38 suites / 177 tests failing — the same 177 as the last recorded run (baseline_cover_photo_stock.json: 154 / 2183 / 177). Test by test: 0 newly failing, 17 new tests all passing. Recorded as backend/baseline_creator_address_bank.json. (A first run was started without --runInBand by mistake, deadlocked on the shared test database, and was discarded.)",
     "device": "NOT seen on a phone. Maestro not run.",
     "no_new_app_build": "no native change; both apps ship over the air"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-13",
+    "by": "founder go (chat, 13 Oct 2026: \"pls release it\")",
+    "migration": "208 applied to live BEFORE the commit (run-208.js --apply): 12 of 12 checks; nothing moved — 27 creators, their saved bank entries, 0 withdrawal requests, 1 sent Remote address, and every wallet total read identical before and after. The new table is empty and the five new columns are empty.",
+    "commit": "94dcc52e (pushed 4c42360c..94dcc52e; gov-check OK: 30 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 41 files staged by path, nothing of another window)",
+    "render": "PROVED by route existence: GET /v1/influencers/me/delivery-address answered 404 before the push and 401 after it (a made-up sibling path stayed 404). Health and the manifest answered 200 three times running before the publish.",
+    "website": "PROVED by content: the live admin Withdrawals page (admin.inflx.in/admin/money/withdrawals) did not carry the new build just after the push and did about a minute later (the page's own script now reads the bank and branch).",
+    "ota": {
+      "influencer": 237,
+      "brand": 246,
+      "follower": "240 — unchanged, not published",
+      "native_runtime": "3 — unchanged; no native code",
+      "note": "published one at a time, after the server was up, from the committed tree (the publish was gated on the app code on disk being exactly the commit, and on otaUpdater being untouched). influencer was 236, brand was 245. Both manifests read back; both served bundles downloaded and found to carry the new screens' own words."
+    },
+    "money": "none moved. No withdrawal request existed on live at release, so no request is mid-way between the old and new shape.",
+    "not_run": "pnpm qa was not run for this release (release.qa_all_green stays false). The server and app jest suites are the evidence: see build.",
+    "not_seen": "Not looked at on a phone. Maestro not run.",
+    "pending": "the founder's walk: Profile › Delivery address › save; a Remote collab's address form arriving filled; Wallet › Payment details › Bank account (six boxes, mismatch line); Save on Profile info closing first time; brand app › Business details › Save. release.released stays false until then.",
+    "open_for_the_founder": "the brand app's (and website's) bank form still asks two things — the same change there is a separate piece if he wants it. The refund-policy sentence reminder was raised at this release go (sixth time); he released without taking it up."
   }
 }
