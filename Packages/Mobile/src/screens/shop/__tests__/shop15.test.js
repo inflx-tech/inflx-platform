@@ -28,7 +28,10 @@ const Home = require('../HomeScreen').default;
 const Welcome = require('../WelcomeScreen').default;
 const Post = require('../PostScreen').default;
 const Play = require('../PlayScreen').default;
-const Comments = require('../CommentsScreen').default;
+// shopper-feed-sound-comments-sheet: comments are a sheet over the post now, not a page of their
+// own. The checks written for the page run unchanged on the sheet, mounted open for that post.
+const CommentsSheet = require('../../../components/shop/CommentsSheet').default;
+const Comments = ({ navigation, route }) => <CommentsSheet post={{ id: route.params.postId }} visible onClose={navigation.goBack} navigation={navigation} />;
 const CreatorStore = require('../CreatorStoreScreen').default;
 const Collection = require('../CollectionScreen').default;
 const BrandStore = require('../BrandStoreScreen').default;

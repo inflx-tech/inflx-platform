@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
 import { CS } from '../../components/shop/copyShop';
 import { TopBar, PostCard, ShopSheet, SignInSheet, Loading, Empty } from '../../components/shop/bitsShop';
+import CommentsSheet from '../../components/shop/CommentsSheet';
 import { useShopNav } from '../../components/shop/useShopNav';
 import { useAutoplay } from '../../components/shop/useAutoplay';
 
@@ -69,6 +70,7 @@ export default function OfferPostsScreen({ navigation, route }) {
       )}
       <ShopSheet post={nav.shopPost} visible={!!nav.shopPost} onClose={nav.closeShop} surface="offers" />
       <SignInSheet visible={nav.signIn} onClose={nav.closeSignIn} onSignIn={nav.goSignIn} />
+      <CommentsSheet post={nav.commentsPost} visible={!!nav.commentsPost} onClose={nav.closeComments} navigation={navigation} surface="offers" />
     </SafeAreaView>
   );
 }

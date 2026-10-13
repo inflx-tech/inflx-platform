@@ -63,7 +63,10 @@ const Home = require('../HomeScreen').default;
 const Welcome = require('../WelcomeScreen').default;
 const Post = require('../PostScreen').default;
 const Play = require('../PlayScreen').default;
-const Comments = require('../CommentsScreen').default;
+// shopper-feed-sound-comments-sheet: comments are a sheet over the post now, not a page of their
+// own. The checks written for the page run unchanged on the sheet, mounted open for that post.
+const CommentsSheet = require('../../../components/shop/CommentsSheet').default;
+const Comments = ({ navigation, route }) => <CommentsSheet post={{ id: route.params.postId }} visible onClose={navigation.goBack} navigation={navigation} />;
 const CreatorStore = require('../CreatorStoreScreen').default;
 const Collection = require('../CollectionScreen').default;
 const BrandStore = require('../BrandStoreScreen').default;
@@ -277,13 +280,17 @@ describe('F7 · back from signing in, Comments shows her as signed in', () => {
     r.getByTestId('report-k1');                                      // and she can report, as a signed-in shopper can
   });
 
+  // shopper-feed-sound-comments-sheet: the only way off the sheet is to sign in, so that is the
+  // return on which it reads again (the page re-read on every return to it).
   it('a re-read that fails leaves what she was reading on the screen', async () => {
-    followerApi.comments.mockResolvedValue(ok(asHer));
+    followerApi.comments.mockResolvedValue(ok(asGuest));
     const r = render(<Comments navigation={nav()} route={{ params: { postId: 'p1' } }} />);
     await waitFor(() => r.getByTestId('comment-k1'));
+    fireEvent.press(r.getByTestId('comments-sign-in-cta'));          // off to sign in…
     followerApi.comments.mockResolvedValue(DOWN);
-    await comeBack();
-    r.getByTestId('comment-k1'); r.getByTestId('comment-input');
+    await comeBack();                                                // …and back, with no connection
+    expect(followerApi.comments).toHaveBeenCalledTimes(2);
+    r.getByTestId('comment-k1'); r.getByTestId('comments-sign-in');
     expect(r.queryByText("Couldn't load. Check your connection.")).toBeNull();
   });
 
@@ -301,13 +308,22 @@ describe('F7 · back from signing in, Comments shows her as signed in', () => {
     r2.getByText('Try again');
   });
 
+  // shopper-feed-sound-comments-sheet: the comments are read again each time the sheet is opened.
+  // For the same post, what she was writing is still in the box; for another post the box is empty.
   it('what she was writing is not lost when the comments are read again', async () => {
     followerApi.comments.mockResolvedValue(ok(asHer));
-    const r = render(<Comments navigation={nav()} route={{ params: { postId: 'p1' } }} />);
+    const n = nav();
+    const sheet = (post, visible) => <CommentsSheet post={post} visible={visible} onClose={n.goBack} navigation={n} />;
+    const r = render(sheet({ id: 'p1' }, true));
     await waitFor(() => r.getByTestId('comment-input'));
     fireEvent.changeText(r.getByTestId('comment-input'), 'Is this cotton?');
-    await comeBack();
+    r.rerender(sheet({ id: 'p1' }, false));                          // she closes the comments…
+    r.rerender(sheet({ id: 'p1' }, true));                           // …and opens them again
+    await waitFor(() => expect(followerApi.comments).toHaveBeenCalledTimes(2));
     expect(r.getByTestId('comment-input').props.value).toBe('Is this cotton?');
+    r.rerender(sheet({ id: 'p2' }, true));                           // another post's comments
+    await waitFor(() => expect(followerApi.comments).toHaveBeenLastCalledWith('p2'));
+    await waitFor(() => expect(r.getByTestId('comment-input').props.value).toBe(''));
   });
 
   it('a comment by someone who has given no name reads "INFLX shopper" (as the server sends it)', async () => {

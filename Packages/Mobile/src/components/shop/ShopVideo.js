@@ -22,6 +22,12 @@
  * open over the video. It stops, sound and picture, and carries on from the same place when they
  * close. It is not `active = false`: that means "scrolled away" and forgets her own tap-pause, so a
  * video she had paused herself would start playing when she closed the products.
+ *
+ * shopper-feed-sound-comments-sheet (board S1) — a video in a feed card has a sound button too,
+ * bottom-left (`soundAt="bottom-left"`), shown while it plays. V1 still holds: the video itself
+ * never takes the tap. The block lets touches through to its children only (`box-none`), and the
+ * player sits in a layer that takes none — so the one thing a finger can land on is the button,
+ * and a tap anywhere else on the video reaches the card and opens it full screen, as before.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
@@ -58,7 +64,7 @@ function Placeholder({ poster, height, compact }) {
   );
 }
 
-export default function ShopVideo({ post, height, active = false, held = false, muted: mutedIn = true, surface = 'home', compact, onSoundChange, soundToggle, tapToPause = false }) {
+export default function ShopVideo({ post, height, active = false, held = false, muted: mutedIn = true, surface = 'home', compact, onSoundChange, soundToggle, soundAt = 'top-right', tapToPause = false }) {
   const poster = videoStill(post);
   const media = (post.media || [])[0];
   const [paused, setPaused] = useState(false);          // her own tap-to-pause
@@ -100,12 +106,17 @@ export default function ShopVideo({ post, height, active = false, held = false, 
     if (onSoundChange) onSoundChange(!next);
   }
 
-  // In a feed nothing here may take a touch (V1): the whole block is transparent to touches, so
-  // the tap lands on the card and the card opens Play. Play asks for the pause layer and the
-  // sound button, and there the block takes touches as before.
-  const takesTouches = tapToPause || !!soundToggle;
+  // In a feed the video may not take a touch (V1): the tap lands on the card and the card opens
+  // Play. With nothing to press the whole block is transparent to touches. With only the sound
+  // button (a feed card) the block passes touches to its children and the player's own layer
+  // takes none — the button is the only thing a finger can land on. Play asks for the pause
+  // layer, and there the block takes touches as before.
+  const feedButton = !!soundToggle && !tapToPause;
+  const showSound = !!soundToggle && (tapToPause || active);       // in a feed, only on the video that is playing
+  const touches = tapToPause ? 'auto' : (showSound ? 'box-none' : 'none');
   return (
-    <View style={{ height, backgroundColor: '#111' }} testID={`video-${post.id}`} pointerEvents={takesTouches ? 'auto' : 'none'}>
+    <View style={{ height, backgroundColor: '#111' }} testID={`video-${post.id}`} pointerEvents={touches}>
+      <View style={StyleSheet.absoluteFill} pointerEvents={feedButton ? 'none' : 'auto'}>
       <Video
         source={{ uri: media.url }}
         style={StyleSheet.absoluteFill}
@@ -134,13 +145,15 @@ export default function ShopVideo({ post, height, active = false, held = false, 
         }}
         testID={`player-${post.id}`}
       />
+      </View>
       {tapToPause ? (
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={tapPause} testID={`video-tap-${post.id}`}>
           {paused ? <View style={[st.center, { flex: 1 }]}><View style={st.playMark}><Icon name="play" size={24} color="#fff" /></View></View> : null}
         </TouchableOpacity>
       ) : null}
-      {soundToggle ? (
-        <TouchableOpacity style={st.sound} onPress={tapSound} testID={`video-sound-${post.id}`} accessibilityLabel={muted ? 'Sound off' : 'Sound on'}>
+      {showSound ? (
+        <TouchableOpacity style={soundAt === 'bottom-left' ? st.soundLow : st.sound} onPress={tapSound} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          testID={`video-sound-${post.id}`} accessibilityRole="button" accessibilityLabel={muted ? 'Sound off' : 'Sound on'}>
           <Icon name={muted ? 'volume-off' : 'volume-high'} size={18} color="#fff" />
         </TouchableOpacity>
       ) : null}
@@ -154,4 +167,6 @@ const st = StyleSheet.create({
   vidTitle: { color: '#fff', fontFamily: fonts.sansBold, fontSize: 13, textAlign: 'center' },
   vidSub: { color: 'rgba(255,255,255,0.8)', fontFamily: fonts.sansRegular, fontSize: 11.5, textAlign: 'center', marginTop: 2 },
   sound: { position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
+  // A feed card: bottom-left, clear of the "Shop this video" bar that lies along the bottom edge.
+  soundLow: { position: 'absolute', left: 10, bottom: 54, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
 });

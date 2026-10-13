@@ -24,6 +24,7 @@ import { CS, inr, initialsOf, fmtCount } from './copyShop';
 import { shopStore, isSignedIn, toggleSavePostLocal, toggleSaveProductLocal } from './shopStore';
 import { engaged } from './engaged';
 import ShopVideo, { videoStill } from './ShopVideo';
+import { useFeedSound } from './feedSound';
 import { BagButton, SizeSheet, useAdded, useNavSafe } from './orderBits';
 import { CO, dayLabel } from './copyOrder';
 import { addToBag, peekBag, subscribeBagCount, noteAddedAlone } from './bag';
@@ -103,12 +104,21 @@ export function VideoView(props) {
   return <ShopVideo {...props} />;
 }
 
+/**
+ * A video in a feed card (shopper-feed-sound-comments-sheet · board S1): silent until she turns
+ * the sound on with the button at its bottom-left. One choice for every feed video (feedSound).
+ * V1 still holds — no pause layer, and the video itself takes no tap, so a tap anywhere but the
+ * button reaches the card and the card opens it full screen in Play.
+ */
+function FeedVideo({ post, height, active, surface }) {
+  const [sound, setSound] = useFeedSound();
+  return <VideoView post={post} height={height} active={active} surface={surface} muted={!sound} soundToggle soundAt="bottom-left" onSoundChange={setSound} />;
+}
+
 function Slides({ post, width, height, active, surface }) {
   const [i, setI] = useState(0);
   const media = post.media || [];
-  // V1: in a feed the video is only shown — no pause layer, no sound button — so a tap anywhere on
-  // it reaches the card, and the card opens it full screen in Play.
-  if (post.media_kind === 'video') return <VideoView post={post} height={height} active={active} surface={surface} muted />;
+  if (post.media_kind === 'video') return <FeedVideo post={post} height={height} active={active} surface={surface} />;
   if (media.length <= 1) {
     return media[0] ? <Image source={{ uri: media[0].url }} style={{ width, height, backgroundColor: '#E9E8E2' }} resizeMode="cover" />
       : <View style={{ width, height, backgroundColor: '#E9E8E2' }} />;
@@ -142,12 +152,16 @@ export function usePostActions(post, { surface, onNeedSignIn }) {
   const [liked, setLiked] = useState(done.liked !== undefined ? !!done.liked : !!(post.mine && post.mine.liked));
   const [likes, setLikes] = useState(done.likes !== undefined ? done.likes : (post.counts && post.counts.likes) || 0);
   const [saved, setSaved] = useState(done.saved !== undefined ? !!done.saved : !!(post.mine && post.mine.saved));
+  // shopper-feed-sound-comments-sheet: the comments now open over this card, so the number on it
+  // follows what the sheet last read (and what she has just written) instead of the feed's copy.
+  const [comments, setComments] = useState(done.comments !== undefined ? done.comments : (post.counts && post.counts.comments) || 0);
 
   useEffect(() => engaged.subscribe((id, now) => {
     if (id !== post.id) return;
     if (now.liked !== undefined) setLiked(!!now.liked);
     if (now.likes !== undefined) setLikes(now.likes);
     if (now.saved !== undefined) setSaved(!!now.saved);
+    if (now.comments !== undefined) setComments(now.comments);
   }), [post.id]);
 
   useEffect(() => {
@@ -190,7 +204,7 @@ export function usePostActions(post, { surface, onNeedSignIn }) {
     try { await Share.share({ message: `${post.title || CS.shopThisPost} · ${post.creator ? post.creator.name : ''}\n${post.share_url}` }); } catch { /* dismissed */ }
   }, [post, surface]);
 
-  return { liked, likes, saved, like, save, share };
+  return { liked, likes, saved, comments, like, save, share };
 }
 
 /* ───────────────────────────────────────────── the post card (F2, F4) */
@@ -224,7 +238,7 @@ export function PostCard({ post, surface, position, onOpen, onShop, onComments, 
           <View style={s.actRow}><Icon name={a.liked ? 'heart' : 'heart-outline'} size={19} color={a.liked ? '#C42B2B' : C.ink} /><Text style={s.act}>{fmtCount(a.likes)}</Text></View>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => onComments(post)} testID={`post-comments-${post.id}`}>
-          <View style={s.actRow}><Icon name="comment-outline" size={18} color={C.ink} /><Text style={s.act}>{fmtCount(post.counts ? post.counts.comments : 0)}</Text></View>
+          <View style={s.actRow}><Icon name="comment-outline" size={18} color={C.ink} /><Text style={s.act} testID={`post-comments-n-${post.id}`}>{fmtCount(a.comments)}</Text></View>
         </TouchableOpacity>
         <TouchableOpacity onPress={a.share} testID={`post-share-${post.id}`}>
           <View style={s.actRow}><Icon name="share-outline" size={20} color={C.ink} /><Text style={s.act}>{fmtCount(post.counts ? post.counts.shares : 0)}</Text></View>

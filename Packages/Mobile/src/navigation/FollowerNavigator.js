@@ -14,7 +14,6 @@ import SavedScreen from '../screens/shop/SavedScreen';
 import ProfileScreen from '../screens/shop/ProfileScreen';
 import WelcomeScreen from '../screens/shop/WelcomeScreen';
 import PostScreen from '../screens/shop/PostScreen';
-import CommentsScreen from '../screens/shop/CommentsScreen';
 import CreatorStoreScreen from '../screens/shop/CreatorStoreScreen';
 import CollectionScreen from '../screens/shop/CollectionScreen';
 import BrandStoreScreen from '../screens/shop/BrandStoreScreen';
@@ -95,7 +94,6 @@ export default function FollowerNavigator() {
       <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Post" component={PostScreen} />
-      <Stack.Screen name="Comments" component={CommentsScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="CreatorStore" component={CreatorStoreScreen} />
       <Stack.Screen name="Collection" component={CollectionScreen} />
       <Stack.Screen name="BrandStore" component={BrandStoreScreen} />

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound on feed videos · comments from the bottom — the screens that change</title>
+<style>
+  :root{--bg:#fff;--page:#F4F4F5;--ink:#0A0A0A;--ink2:#52525B;--ink3:#71717A;--border:#E4E4E7;--surface:#F6F6F3;--primary:#FFC107;--ok:#047857;--danger:#E8401A}
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 16px 56px;background:var(--page);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px}
+  .wrap{max-width:1040px;margin:0 auto}
+  h1{font-size:21px;font-weight:800;margin:0 0 4px}
+  h2{font-size:16px;font-weight:800;margin:44px 0 2px}
+  .rule{width:42px;height:3px;background:var(--primary);border-radius:2px;margin:6px 0 10px}
+  .lead{color:var(--ink2);line-height:1.6;max-width:760px}
+  .row{display:flex;gap:26px;flex-wrap:wrap;margin-top:18px;align-items:flex-start}
+  .col{flex:0 1 300px}
+  .tagline{margin-bottom:8px;display:flex;gap:8px;align-items:center}
+  .id{font-size:11px;font-weight:800;color:var(--ink3)}
+  .badge{font-size:10px;font-weight:800;border-radius:5px;padding:2px 7px;letter-spacing:.4px;text-transform:uppercase}
+  .badge.today{background:#E4E4E7;color:#1F1F22} .badge.after{background:var(--ink);color:var(--primary)}
+  .phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;height:590px;position:relative;display:flex;flex-direction:column}
+  .sb{display:flex;justify-content:space-between;padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--ink2)}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:4px 14px 8px;font-weight:800;font-size:17px}
+  .card{margin:0 12px;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .who{display:flex;gap:8px;align-items:center;padding:9px 10px}
+  .av{width:28px;height:28px;border-radius:50%;background:#E4E4E7}
+  .who b{display:block;font-size:12.5px}.who span{font-size:11px;color:var(--ink3)}
+  .media{height:290px;background:linear-gradient(160deg,#6b523f,#2b2a26 60%,#171614);position:relative}
+  .bar{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(255,255,255,.96);border-radius:12px;padding:8px 10px;display:flex;justify-content:space-between;font-weight:800;font-size:12px}
+  .snd{position:absolute;left:10px;bottom:54px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+  .acts{display:flex;gap:16px;padding:9px 12px;font-size:12px;font-weight:700;align-items:center}
+  .tabs{margin-top:auto;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:9px 0 12px;font-size:15px}
+  .new{outline:2px solid #10B981;outline-offset:3px}
+  .gone{outline:2px dashed var(--danger);outline-offset:3px}
+  .mark{font-size:11px;font-weight:800;margin-top:10px;max-width:300px;line-height:1.5}
+  .mark.r{color:var(--danger)} .mark.g{color:var(--ok)}
+  .dim{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;height:72%;background:#fff;border-radius:18px 18px 0 0;display:flex;flex-direction:column}
+  .grip{width:38px;height:4px;border-radius:2px;background:var(--border);margin:8px auto 0}
+  .sh{display:flex;align-items:center;padding:8px 14px 10px;border-bottom:1px solid var(--border);font-weight:800;font-size:15px}
+  .sh .x{margin-left:auto;width:28px;height:28px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:13px}
+  .cm{display:flex;gap:8px;padding:8px 14px;font-size:12.5px;line-height:1.4}
+  .cm .av{flex:none}.cm small{display:block;color:var(--ink3);font-size:11px}
+  .compose{margin-top:auto;border-top:1px solid var(--border);padding:10px 12px}
+  .cin{display:flex;gap:8px}
+  .box{flex:1;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;color:var(--ink3);font-size:13px}
+  .send{background:var(--primary);border-radius:12px;padding:10px 14px;font-weight:800}
+  .cnt{text-align:right;font-size:11px;color:var(--ink3);margin-top:3px}
+  .pg{display:flex;align-items:center;gap:10px;padding:8px 14px 12px;border-bottom:1px solid var(--border);font-weight:800;font-size:16px}
+  .guest{margin-top:auto;border-top:1px solid var(--border);padding:12px 14px;background:var(--surface)}
+  .guest b{display:block;font-size:14px}.guest span{font-size:11px;color:var(--ink3);display:block;margin:3px 0 8px}
+  .cta{background:var(--primary);border-radius:12px;padding:11px;text-align:center;font-weight:800}
+  .note{margin-top:22px;background:#fff;border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:8px;padding:12px 14px;color:var(--ink2);line-height:1.6;max-width:760px}
+  .note b{color:var(--ink)} ul{margin:6px 0 0;padding-left:18px} li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sound on feed videos · comments from the bottom</h1>
+  <div class="rule"></div>
+  <div class="lead">Shopper app, two things from your message of 13 Oct. <b>1.</b> A video playing in the Home feed is silent
+    with no way to hear it — it stays silent to begin with, and gets a sound button at its bottom-left. <b>2.</b> Tapping the
+    comment mark opens a page of its own — the comments now come up from the bottom of the screen you are on. Green = new.</div>
+
+  <h2>1 · Sound on a video in the feed</h2>
+  <div class="row">
+    <div class="col">
+      <div class="tagline"><span class="id">S1</span><span class="badge today">Today</span></div>
+      <div class="phone">
+        <div class="sb"><span>11:42</span><span>●●● 5G</span></div>
+        <div class="top"><span>INFLX</span><span>🔍 👜</span></div>
+        <div class="card">
+          <div class="who"><div class="av"></div><div><b>Akshaya Reddy</b><span>Aveen fashion boutique · Hyderabad</span></div></div>
+          <div class="media"><div class="bar"><span>Shop this video · 2 items</span><span>›</span></div></div>
+          <div class="acts"><span>♡ 12</span><span>💬 3</span><span>↗ 1</span><span style="margin-left:auto">🔖</span></div>
+        </div>
+        <div class="tabs"><span>⌂</span><span>◎</span><span>▶</span><span>🔖</span><span>☺</span></div>
+      </div>
+      <div class="mark r">The video plays with no sound, and there is nothing to turn it on. The only way to hear it is to open it full screen.</div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="id">S1</span><span class="badge after">After · as it opens</span></div>
+      <div class="phone">
+        <div class="sb"><span>11:42</span><span>●●● 5G</span></div>
+        <div class="top"><span>INFLX</span><span>🔍 👜</span></div>
+        <div class="card">
+          <div class="who"><div class="av"></div><div><b>Akshaya Reddy</b><span>Aveen fashion boutique · Hyderabad</span></div></div>
+          <div class="media"><div class="snd new">🔇</div><div class="bar"><span>Shop this video · 2 items</span><span>›</span></div></div>
+          <div class="acts"><span>♡ 12</span><span>💬 3</span><span>↗ 1</span><span style="margin-left:auto">🔖</span></div>
+        </div>
+        <div class="tabs"><span>⌂</span><span>◎</span><span>▶</span><span>🔖</span><span>☺</span></div>
+      </div>
+      <div class="mark g">Still silent to begin with. A sound button at the bottom-left of the video, just above the "Shop this video" bar.</div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="id">S2</span><span class="badge after">After · one tap</span></div>
+      <div class="phone">
+        <div class="sb"><span>11:42</span><span>●●● 5G</span></div>
+        <div class="top"><span>INFLX</span><span>🔍 👜</span></div>
+        <div class="card">
+          <div class="who"><div class="av"></div><div><b>Akshaya Reddy</b><span>Aveen fashion boutique · Hyderabad</span></div></div>
+          <div class="media"><div class="snd new">🔊</div><div class="bar"><span>Shop this video · 2 items</span><span>›</span></div></div>
+          <div class="acts"><span>♡ 12</span><span>💬 3</span><span>↗ 1</span><span style="margin-left:auto">🔖</span></div>
+        </div>
+        <div class="tabs"><span>⌂</span><span>◎</span><span>▶</span><span>🔖</span><span>☺</span></div>
+      </div>
+      <div class="mark g">Tap it: sound on. Tap again: off. A tap anywhere else on the video still opens it full screen, as today.</div>
+    </div>
+  </div>
+
+  <h2>2 · Comments come up from the bottom</h2>
+  <div class="row">
+    <div class="col">
+      <div class="tagline"><span class="id">C1</span><span class="badge today">Today</span></div>
+      <div class="phone gone">
+        <div class="sb"><span>11:43</span><span>●●● 5G</span></div>
+        <div class="pg"><span>‹</span><span>Comments · 3</span></div>
+        <div class="cm"><div class="av"></div><div><b>Anusha</b> Is the maroon one available in cotton?<small>2h · Report</small></div></div>
+        <div class="cm"><div class="av"></div><div><b>Akshaya Reddy · creator</b> Yes! The Mangalagiri one is cotton<small>1h · Report</small></div></div>
+        <div class="cm"><div class="av"></div><div><b>Divya</b> Price for the heels?<small>20m · Report</small></div></div>
+        <div class="compose"><div class="cin"><div class="box">Add a comment</div><div class="send">Send</div></div><div class="cnt">0/300</div></div>
+      </div>
+      <div class="mark r">A whole new page. The post is gone from sight; Back returns to it.</div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="id">C1</span><span class="badge after">After</span></div>
+      <div class="phone">
+        <div class="sb"><span>11:43</span><span>●●● 5G</span></div>
+        <div class="top"><span>INFLX</span><span>🔍 👜</span></div>
+        <div class="card">
+          <div class="who"><div class="av"></div><div><b>Akshaya Reddy</b><span>Aveen fashion boutique · Hyderabad</span></div></div>
+          <div class="media"></div>
+        </div>
+        <div class="dim"></div>
+        <div class="sheet new">
+          <div class="grip"></div>
+          <div class="sh"><span>Comments · 3</span><span class="x">✕</span></div>
+          <div class="cm"><div class="av"></div><div><b>Anusha</b> Is the maroon one available in cotton?<small>2h · Report</small></div></div>
+          <div class="cm"><div class="av"></div><div><b>Akshaya Reddy · creator</b> Yes! The Mangalagiri one is cotton<small>1h · Report</small></div></div>
+          <div class="cm"><div class="av"></div><div><b>Divya</b> Price for the heels?<small>20m · Report</small></div></div>
+          <div class="compose"><div class="cin"><div class="box">Add a comment</div><div class="send">Send</div></div><div class="cnt">0/300</div></div>
+        </div>
+      </div>
+      <div class="mark g">The same comments and the same box, as a sheet over the post. Close with ✕, a tap above it, or Back — you are exactly where you were.</div>
+    </div>
+    <div class="col">
+      <div class="tagline"><span class="id">C2</span><span class="badge after">After · not signed in</span></div>
+      <div class="phone">
+        <div class="sb"><span>11:43</span><span>●●● 5G</span></div>
+        <div class="top"><span>INFLX</span><span>🔍 👜</span></div>
+        <div class="card">
+          <div class="who"><div class="av"></div><div><b>Akshaya Reddy</b><span>Aveen fashion boutique · Hyderabad</span></div></div>
+          <div class="media"></div>
+        </div>
+        <div class="dim"></div>
+        <div class="sheet">
+          <div class="grip"></div>
+          <div class="sh"><span>Comments · 3</span><span class="x">✕</span></div>
+          <div class="cm"><div class="av"></div><div><b>Anusha</b> Is the maroon one available in cotton?<small>2h</small></div></div>
+          <div class="cm"><div class="av"></div><div><b>Akshaya Reddy · creator</b> Yes! The Mangalagiri one is cotton<small>1h</small></div></div>
+          <div class="guest"><b>Sign in to like and comment</b><span>Your likes and comments are public. Saving and following work without signing in.</span><div class="cta">Sign in with your number</div></div>
+        </div>
+      </div>
+      <div class="mark g">A guest reads as before. After signing in she is back on the same post with the comments open and the box ready.</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Decisions taken for you — say if any should change.</b>
+    <ul>
+      <li><b>Sound, once on, stays on for the next feed videos</b> until she turns it off or closes the app — she does not turn each one on. Every time the app opens the feed is silent again.</li>
+      <li><b>The feed's sound button is separate from the full-screen video feed's</b> (▶), which keeps its own remembered setting and its button where it is, top-right.</li>
+      <li><b>The same button on every feed that plays a video</b>: Home, an opened post, an offer's posts.</li>
+      <li><b>The comments sheet everywhere there is a comment mark</b>: Home, an opened post, an offer's posts and the full-screen video feed.</li>
+      <li><b>A video waits while its comments are open</b> and carries on when they close — the same rule as the product popup.</li>
+      <li><b>The number beside the comment mark updates</b> the moment she sends a comment (it used to stay at the old number).</li>
+      <li><b>A half-written comment is kept</b> if she closes the sheet and opens it again on the same post.</li>
+      <li>The old comments page is removed; nothing leads to it any more.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

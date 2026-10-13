@@ -107,15 +107,21 @@ afterEach(() => { jest.useRealTimers(); });
 /* ═══════════════════════════════════════════ V1 */
 
 describe('V1 · a tap on a video in a feed opens it full screen', () => {
-  it('on a phone WITH the player: nothing over the video takes the tap — the card opens Play with this video first', () => {
+  // shopper-feed-sound-comments-sheet (S1): a playing feed video now has ONE thing on it that
+  // takes a tap — the sound button, bottom-left. Everything else about V1 holds: no pause layer,
+  // the player's own layer takes no touch, and the block passes touches through to the card.
+  it('on a phone WITH the player: nothing over the video takes the tap but its sound button — the card opens Play with this video first', () => {
     _setPlayerForTests(FakeVideo);
     const n = nav();
     const { getByTestId, queryByTestId } = render(<Feed navigation={n} post={VIDEO()} />);
     const video = getByTestId('video-v1');
     expect(queryByTestId('video-tap-v1')).toBeNull();              // the pause layer that swallowed the tap is gone
-    expect(queryByTestId('video-sound-v1')).toBeNull();            // feeds are muted, with no sound button
-    expect(touchCatchers(video)).toEqual([]);                      // nothing inside the video takes a touch
-    expect(video.props.pointerEvents).toBe('none');                // and the block itself lets touches through
+    const catchers = touchCatchers(video).map((c) => c.props.testID).filter(Boolean);
+    expect([...new Set(catchers)]).toEqual(['video-sound-v1']);    // the sound button, and nothing else
+    expect(video.props.pointerEvents).toBe('box-none');            // the block itself lets touches through
+    let layer = getByTestId('fake-player-v1').parent;
+    while (layer && layer.props.pointerEvents === undefined) layer = layer.parent;
+    expect(layer.props.pointerEvents).toBe('none');                // and the player's own layer takes none
     fireEvent.press(getByTestId('fake-player-v1'));                // a tap anywhere on the video…
     expect(n.navigate).toHaveBeenCalledTimes(1);
     expect(n.navigate).toHaveBeenCalledWith('PlayTab', expect.objectContaining({ start: 'v1', at: expect.any(Number) }));

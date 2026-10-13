@@ -14,9 +14,13 @@
  *                                             Back went to Home.
  * A bottom-tab screen says so with `{ tab: true }`; every other screen is a pushed one.
  *
- * shopper-video-pauses-for-popup — `covered`: one of the two sheets is open over this screen. The
+ * shopper-video-pauses-for-popup — `covered`: one of the sheets is open over this screen. The
  * sheets are drawn ON the screen, so the screen is still "in front" and its video played on, with
  * its sound, behind the products. A screen hands `covered` to useAutoplay and the video waits.
+ *
+ * shopper-feed-sound-comments-sheet — comments are the third sheet (they were a page: F6). A tap
+ * on the comment mark keeps her on the post and raises the comments from the bottom
+ * (`commentsPost`, drawn by CommentsSheet); they count as `covered` like the other two.
  */
 import { useCallback, useState } from 'react';
 
@@ -25,6 +29,7 @@ export const PLAY_OVER = 'PlayOver';
 export function useShopNav(navigation, { tab = false } = {}) {
   const [shopPost, setShopPost] = useState(null);
   const [signIn, setSignIn] = useState(false);
+  const [commentsPost, setCommentsPost] = useState(null);
 
   const openPost = useCallback((post) => {
     if (!post) return;
@@ -38,13 +43,14 @@ export function useShopNav(navigation, { tab = false } = {}) {
   }, [navigation, tab]);
   const openCreator = useCallback((c) => { if (c && c.id) navigation.navigate('CreatorStore', { id: c.id, name: c.name }); }, [navigation]);
   const openBrand = useCallback((b) => { if (b && b.id) navigation.navigate('BrandStore', { id: b.id, name: b.name }); }, [navigation]);
-  const openComments = useCallback((post) => navigation.navigate('Comments', { postId: post.id }), [navigation]);
+  const openComments = useCallback((post) => { if (post && post.id) setCommentsPost(post); }, []);
+  const closeComments = useCallback(() => setCommentsPost(null), []);
   const goSignIn = useCallback(() => { setSignIn(false); navigation.navigate('FollowerLogin'); }, [navigation]);
 
   return {
-    openPost, openCreator, openBrand, openComments,
+    openPost, openCreator, openBrand, openComments, closeComments, commentsPost,
     shopPost, openShop: setShopPost, closeShop: () => setShopPost(null),
     signIn, needSignIn: () => setSignIn(true), closeSignIn: () => setSignIn(false), goSignIn,
-    covered: !!shopPost || signIn,
+    covered: !!shopPost || signIn || !!commentsPost,
   };
 }

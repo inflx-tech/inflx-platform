@@ -33,6 +33,7 @@ import { CS, fmtCount } from '../../components/shop/copyShop';
 import { VideoView, ShopSheet, SignInSheet, Loading, Empty, usePostActions, C } from '../../components/shop/bitsShop';
 import { BagButton } from '../../components/shop/orderBits';
 import { hasPlayer } from '../../components/shop/ShopVideo';
+import CommentsSheet from '../../components/shop/CommentsSheet';
 import { useShopNav, PLAY_OVER } from '../../components/shop/useShopNav';
 import { useAutoplay } from '../../components/shop/useAutoplay';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -52,7 +53,7 @@ function Reel({ post, height, nav, index, active, held, sound, onSound }) {
       <View style={[st.bag, { right: hasPlayer() ? 56 : 12 }]} testID={`reel-bag-${post.id}`}><BagButton overlay="dark" /></View>
       <View style={st.rail}>
         <TouchableOpacity onPress={a.like} style={st.railBtn} testID={`reel-like-${post.id}`}><View style={st.railIc}><Icon name={a.liked ? 'heart' : 'heart-outline'} size={22} color={a.liked ? '#FF5A5A' : '#fff'} /></View><Text style={st.railN}>{fmtCount(a.likes)}</Text></TouchableOpacity>
-        <TouchableOpacity onPress={() => nav.openComments(post)} style={st.railBtn}><View style={st.railIc}><Icon name="comment-outline" size={21} color="#fff" /></View><Text style={st.railN}>{fmtCount(post.counts ? post.counts.comments : 0)}</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => nav.openComments(post)} style={st.railBtn} testID={`reel-comments-${post.id}`}><View style={st.railIc}><Icon name="comment-outline" size={21} color="#fff" /></View><Text style={st.railN} testID={`reel-comments-n-${post.id}`}>{fmtCount(a.comments)}</Text></TouchableOpacity>
         <TouchableOpacity onPress={a.share} style={st.railBtn}><View style={st.railIc}><Icon name="share-outline" size={22} color="#fff" /></View><Text style={st.railN}>{fmtCount(post.counts ? post.counts.shares : 0)}</Text></TouchableOpacity>
         <TouchableOpacity onPress={a.save} style={st.railBtn} testID={`reel-save-${post.id}`}><View style={st.railIc}><Icon name={a.saved ? 'bookmark' : 'bookmark-outline'} size={21} color="#fff" /></View><Text style={st.railN}>{a.saved ? 'Saved' : 'Save'}</Text></TouchableOpacity>
       </View>
@@ -168,6 +169,7 @@ export default function PlayScreen({ navigation, route }) {
       ) : null}
       <ShopSheet post={nav.shopPost} visible={!!nav.shopPost} onClose={nav.closeShop} surface="play" />
       <SignInSheet visible={nav.signIn} onClose={nav.closeSignIn} onSignIn={nav.goSignIn} />
+      <CommentsSheet post={nav.commentsPost} visible={!!nav.commentsPost} onClose={nav.closeComments} navigation={navigation} surface="play" />
     </SafeAreaView>
   );
 }

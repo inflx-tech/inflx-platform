@@ -1,0 +1,34 @@
+{
+  "feature": "shopper-feed-sound-comments-sheet",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 13 Oct 2026: \"in homefeed video is not displaying any sound, it should by default sound is off and sound button below left where user turn on or off it if he wants, next one is comment when some one try to comment then a new page is opening instead opening popup from below to write comment..so pls fix these things as well\")",
+  "approved_at": "2026-10-13T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "Claude, under the founder's standing delegation and his instruction of 13 Oct 2026 (\"pls fix these things as well\") — the board draws the two things he asked for where he asked for them (a sound button at the video's bottom-left; comments rising from the bottom). He has NOT reviewed the board itself; it is shown to him with the release request, with the eight decisions taken for him listed on it.",
+  "mockup_locked_at": "2026-10-13T00:00:00+05:30",
+  "mockup_final": "04-preview/mockups/shopper-feed-sound-comments-sheet.html",
+  "notes": "Shopper app only. (1) A video playing in a feed card is silent to begin with and has a sound button at its bottom-left; once on, it stays on for the following feed videos until she turns it off or the app closes. (2) Comments come up from the bottom of the screen she is on, as a sheet; the comments page and its route are removed. No server, no website, no migration. Production-impacting (shopper app OTA) — explicit go required before the push and the OTA. RELEASE GO: founder (chat 13 Oct 2026: \"pls release it\") — asked with the board open, the eight decisions taken for him listed (sound stays on across feed videos until turned off or the app closes; the full-screen video feed keeps its own sound; the button on every feed; the comments sheet everywhere there is a comment mark; a video waits while its comments are open; the comment number follows; a half-written comment is kept; the old page removed) and what the release is (one shopper-app update over the air). The deploy record follows in its own commit.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-10-13T00:00:00+05:30",
+    "phone": "components/shop/feedSound.js + CommentsSheet.js (new); ShopVideo.js, bitsShop.js, useShopNav.js; screens/shop/HomeScreen.js, PostScreen.js, OfferPostsScreen.js, PlayScreen.js; navigation/FollowerNavigator.js; screens/shop/CommentsScreen.js deleted",
+    "new_tests": "feedSoundCommentsSheet.test.js 17/17",
+    "changed_tests": "shopperWalkVideo.test.js V1 restated (one thing on a feed video takes a tap: the sound button); shop15.test.js and shopperAppFixes.test.js mount the sheet in place of the page (two checks re-made for a sheet that can only be left to sign in); duplicateScreens.test.js asserts Comments is not registered",
+    "mobile_tests": "129 suites / 3021 tests, all passing (was 128 / 3004)",
+    "backend": "not touched — nothing run",
+    "website": "not touched",
+    "migration": "none",
+    "device": "NOT seen on a phone — real sound, the sheet's slide and the keypad under the comment box exist only there. Maestro not run.",
+    "no_new_app_build": "no native change; the shopper app ships over the air"
+  }
+}

@@ -17,6 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { followerApi } from '../../services/api';
 import { CS } from '../../components/shop/copyShop';
 import { TopBar, CircleRow, PostCard, ShopSheet, SignInSheet, Loading, Empty, C } from '../../components/shop/bitsShop';
+import CommentsSheet from '../../components/shop/CommentsSheet';
 import { useShopNav } from '../../components/shop/useShopNav';
 import { useAutoplay } from '../../components/shop/useAutoplay';
 import { shopStore, whoParams, ensureDeviceHeader, isSignedIn, choicesKey } from '../../components/shop/shopStore';
@@ -152,6 +153,7 @@ export default function HomeScreen({ navigation }) {
       )}
       <ShopSheet post={nav.shopPost} visible={!!nav.shopPost} onClose={nav.closeShop} surface="home" />
       <SignInSheet visible={nav.signIn} onClose={nav.closeSignIn} onSignIn={nav.goSignIn} />
+      <CommentsSheet post={nav.commentsPost} visible={!!nav.commentsPost} onClose={nav.closeComments} navigation={navigation} surface="home" />
     </SafeAreaView>
   );
 }

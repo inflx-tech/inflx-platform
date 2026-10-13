@@ -37,7 +37,10 @@ it('item 12\'s two screens are registered where their doors lead', () => {
 it('the shopper app registers its five tabs and every screen its taps lead to', () => {
   const stacks = screensByStack('FollowerNavigator.js');
   expect(stacks.Tab).toEqual(['HomeTab', 'DiscoverTab', 'PlayTab', 'SavedTab', 'ProfileTab']);
-  for (const name of ['Tabs', 'Welcome', 'Post', 'Comments', 'CreatorStore', 'Collection', 'BrandStore', 'BrandOffers', 'OfferPosts', 'Search', 'EditProfile', 'FollowerLogin', 'LegalList', 'LegalDocument']) {
+  // shopper-feed-sound-comments-sheet: 'Comments' left this list — comments are a sheet over the
+  // post she is on, and the page is gone.
+  expect(stacks.Stack).not.toContain('Comments');
+  for (const name of ['Tabs', 'Welcome', 'Post', 'CreatorStore', 'Collection', 'BrandStore', 'BrandOffers', 'OfferPosts', 'Search', 'EditProfile', 'FollowerLogin', 'LegalList', 'LegalDocument']) {
     expect(stacks.Stack).toContain(name);
   }
   const src = fs.readFileSync(path.join(__dirname, '..', 'FollowerNavigator.js'), 'utf8');
