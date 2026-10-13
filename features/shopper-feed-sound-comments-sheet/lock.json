@@ -30,5 +30,23 @@
     "migration": "none",
     "device": "NOT seen on a phone — real sound, the sheet's slide and the keypad under the comment box exist only there. Maestro not run.",
     "no_new_app_build": "no native change; the shopper app ships over the air"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-13",
+    "by": "founder go (chat, 13 Oct 2026: \"pls release it\")",
+    "migration": "none",
+    "commit": "f6e0743e (pushed 3bf3977a..f6e0743e; gov-check OK: 16 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 24 files staged by path incl. the deletion of CommentsScreen.js, nothing of another window)",
+    "render_and_websites": "no server or website code in this commit; the push restarted the server with the same code. The publish waited for it: six good answers in a row from health and the manifest, 15 seconds apart.",
+    "ota": {
+      "follower": 242,
+      "influencer": "237 — unchanged, not published",
+      "brand": "246 — unchanged, not published",
+      "native_runtime": "3 — unchanged; no native code",
+      "note": "published from the committed tree (gated on the app code on disk being exactly the commit and otaUpdater untouched). follower was 241. The manifest was read back and the served bundle downloaded: it carries the comments sheet and the bottom-left sound button, and has no Comments screen and no navigation to one."
+    },
+    "money": "none.",
+    "not_seen": "Not looked at on a phone — real sound, the slide of the sheet and the keypad under the comment box exist only there. Maestro not run. pnpm qa not run (no server or website change).",
+    "pending": "the founder's walk: Home › a playing video › the sound button bottom-left (on, off) › a tap on the video itself opens it full screen; the comment mark › the sheet from the bottom › tap the box (it must stay above the keypad) › Send › the number goes up › close. The same comment sheet in the full-screen video feed. release.released stays false until then.",
+    "open_for_the_founder": "the refund-policy sentence reminder was raised at this release go (eighth time); he released without taking it up."
   }
 }
