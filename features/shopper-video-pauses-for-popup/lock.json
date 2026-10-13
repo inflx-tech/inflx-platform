@@ -29,5 +29,23 @@
     "migration": "none",
     "device": "NOT seen on a phone — the native player and real sound exist only there. Maestro not run.",
     "no_new_app_build": "no native change; the shopper app ships over the air"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-13",
+    "by": "founder go (chat, 13 Oct 2026: \"pls release it\")",
+    "migration": "none",
+    "commit": "0750c39d (pushed 98f859b2..0750c39d; gov-check OK: 8 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 16 files staged by path, nothing of another window)",
+    "render_and_websites": "no server or website code in this commit; the push restarted the server with the same code. The publish waited for it: six good answers in a row from health and the manifest, 15 seconds apart, after one failed poll during the restart.",
+    "ota": {
+      "follower": 241,
+      "influencer": "237 — unchanged, not published",
+      "brand": "246 — unchanged, not published",
+      "native_runtime": "3 — unchanged; no native code",
+      "note": "published from the committed tree (gated on the app code on disk being exactly the commit and otaUpdater untouched). follower was 240. The manifest was read back and the served bundle downloaded: it carries the fix's own code (the nav helper's covered, the rule's shownId/held, held passed to the player)."
+    },
+    "money": "none — nothing is saved or sent except the existing watch event.",
+    "not_seen": "Not looked at on a phone — the native player and real sound exist only there. Maestro not run. pnpm qa not run (no server or website change).",
+    "pending": "the founder's walk: shopper app › the video feed › tap the button under a video (a Build your deal post, a discount post, a post with no offer) › the video and its sound stop › close the products › the same video carries on. release.released stays false until then.",
+    "open_for_the_founder": "the refund-policy sentence reminder was raised at this release go (seventh time); he released without taking it up."
   }
 }
