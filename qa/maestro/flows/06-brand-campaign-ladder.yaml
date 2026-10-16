@@ -18,7 +18,7 @@
 # It asserts on WORDS THE SCREENS OWN, never on numbers, because the practice world changes
 # as the founder uses it and a flow that fails when the data moves is a flow nobody runs.
 
-appId: in.inflx.app.brand
+appId: com.inflx.brand
 ---
 - launchApp:
     clearState: false

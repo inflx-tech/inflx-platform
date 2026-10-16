@@ -380,7 +380,7 @@ describe.each([
 
 describe('Terms for a creator', () => {
   it('the ref the deliverables chooser scrolls with is still the page\'s own ScrollView (board D, frame D2)', async () => {
-    const Native = require('react-native/jest/MockNativeMethods');
+    const Native = (m => m.default || m)(require('react-native/jest/MockNativeMethods'));
     const WINDOW = { 'deliverables-list': [18, 470, 324, 220] };
     Native.measureInWindow.mockImplementation(function measure(cb) { cb(...(WINDOW[this.props.testID] || [18, 420, 172, 48])); });
     Native.measureLayout.mockImplementation((within_, done) => done(18, 900, 324, 220));

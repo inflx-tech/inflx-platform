@@ -6,7 +6,7 @@
 # Run: pnpm qa:maestro         (runs all qa/maestro/flows/*.yaml)
 #      pnpm qa:maestro:doctor  (verify readiness first)
 
-appId: in.inflx.app.follower
+appId: com.inflx.followers
 ---
 - launchApp:
     clearState: true

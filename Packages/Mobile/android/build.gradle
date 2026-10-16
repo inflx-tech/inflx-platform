@@ -1,11 +1,15 @@
 buildscript {
     ext {
-        buildToolsVersion = "34.0.0"
-        minSdkVersion = 21
-        compileSdkVersion = 34
-        targetSdkVersion = 34
-        ndkVersion = "25.1.8937393"
-        kotlinVersion = "1.8.0"
+        buildToolsVersion = "36.0.0"
+        // 24 = Android 7.0. Google Play's automatic protection refuses bundles below 24
+        // (upload error, 11 Oct 2026). Applies to all three apps and to sideload builds.
+        minSdkVersion = 24
+        compileSdkVersion = 36
+        // 36 = Android 16. Google Play refuses new apps and updates below 36
+        // (upload error, 16 Oct 2026). Needs React Native 0.81+ (see package.json).
+        targetSdkVersion = 36
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.1.20"
     }
     repositories {
         google()

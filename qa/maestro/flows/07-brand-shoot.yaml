@@ -24,7 +24,7 @@
 # every time the founder uses it, and a flow that fails when the data moves is a flow nobody
 # runs twice.
 
-appId: in.inflx.app.brand
+appId: com.inflx.brand
 ---
 - launchApp:
     clearState: false

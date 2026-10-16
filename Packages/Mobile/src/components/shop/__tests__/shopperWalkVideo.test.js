@@ -292,7 +292,7 @@ describe('V2 · the video that plays changes the instant a swipe lands', () => {
 
   it('with React Native\'s own viewability rules: play switches on the swipe, impressions and dwell still wait their second', () => {
     jest.useFakeTimers();
-    const ViewabilityHelper = require('@react-native/virtualized-lists/Lists/ViewabilityHelper');
+    const ViewabilityHelper = (m => m.default || m)(require('react-native/Libraries/Lists/ViewabilityHelper'));
     const data = [A, B];
     const { out } = probe(data);
     const pairs = out.current.seenProps.viewabilityConfigCallbackPairs;
@@ -326,7 +326,7 @@ describe('V2 · the video that plays changes the instant a swipe lands', () => {
 
   it('a video flicked past in under a second never counts as seen, but it did play', () => {
     jest.useFakeTimers();
-    const ViewabilityHelper = require('@react-native/virtualized-lists/Lists/ViewabilityHelper');
+    const ViewabilityHelper = (m => m.default || m)(require('react-native/Libraries/Lists/ViewabilityHelper'));
     const data = [A, B, VIDEO({ id: 'c' })];
     const { out } = probe(data);
     const pairs = out.current.seenProps.viewabilityConfigCallbackPairs;

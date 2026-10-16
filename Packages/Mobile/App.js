@@ -17,11 +17,22 @@ import BrandNavigator from './src/navigation/BrandNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { checkForOtaUpdate, confirmAppliedVersion } from './src/services/otaUpdater';
 import { ensureDeviceHeader } from './src/components/shop/shopStore';
+import SystemBarFrame from './src/components/shell/SystemBarFrame';
 import { openPendingNotification } from './src/components/shop/notifications';
 
 export const AuthContext = createContext({ setRole: () => {} });
 
+// Android 16 draws apps edge-to-edge; the frame keeps every screen between the status bar and
+// the navigation bar, exactly where it has always been (src/components/shell/SystemBarFrame.js).
 export default function App() {
+  return (
+    <SystemBarFrame>
+      <AppBody />
+    </SystemBarFrame>
+  );
+}
+
+function AppBody() {
   const [role, setRole] = useState(null); // null = loading, '' = unauthenticated
   const [showSplash, setShowSplash] = useState(true);
 

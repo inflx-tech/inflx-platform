@@ -13,7 +13,7 @@
 # A pass here is the minimum smoke for Flow 28. A deeper flow drives through
 # auth + Home screen + Notifications (see 04-influencer-flow-28-home.yaml).
 
-appId: in.inflx.app.influencer
+appId: com.inflx.influencer
 ---
 - launchApp:
     clearState: true

@@ -106,8 +106,8 @@ If any check fails, the doctor prints the fix command and exits 1.
 ## Mobile dev with Maestro (Phase 2 sub-contract 3 onward)
 
 INFLX ships three Android variants from one RN codebase:
-`in.inflx.app.brand`, `in.inflx.app.influencer`,
-`in.inflx.app.follower`. **Maestro is the mobile E2E lane** (parallel
+`com.inflx.brand`, `com.inflx.influencer`,
+`com.inflx.followers`. **Maestro is the mobile E2E lane** (parallel
 to Playwright on web).
 
 ### One-time install
@@ -210,9 +210,9 @@ git update-index --no-skip-worktree Packages/Mobile/src/config/api-overrides.js
 
 ```bash
 cd Packages/Mobile
-pnpm android:brand        # in.inflx.app.brand (debug)
-pnpm android:influencer   # in.inflx.app.influencer (debug)
-pnpm android:follower     # in.inflx.app.follower (debug)
+pnpm android:brand        # com.inflx.brand (debug)
+pnpm android:influencer   # com.inflx.influencer (debug)
+pnpm android:follower     # com.inflx.followers (debug)
 ```
 
 The smoke flow targets the follower variant by default. To target a

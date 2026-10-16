@@ -23,8 +23,8 @@
  *      Back key; the delivery-address pop-up has no way out until the send ends.
  */
 import React from 'react';
-import { Modal, StyleSheet } from 'react-native';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 
 jest.mock('@react-navigation/native', () => ({
   useFocusEffect: (cb) => { const R = require('react'); R.useEffect(() => { const c = cb(); return typeof c === 'function' ? c : undefined; }, [cb]); },
@@ -50,6 +50,16 @@ const {
 const RemoteAddressScreen = require('../../../screens/influencer/RemoteAddressScreen').default;
 
 const flat = (node) => StyleSheet.flatten(node.props.style) || {};
+/**
+ * The opacity a TouchableOpacity is fading to. React Native 0.81's test environment runs a
+ * native-driver animation to its end without reporting the values back, so the drawn opacity
+ * reads 1 throughout; the target is the button's own style, which is what the phone shows once
+ * the 250 ms fade has run: TouchableOpacity fades to its own style's opacity (its _opacityInactive).
+ */
+const fadingTo = (r, testID) => {
+  const t = r.UNSAFE_getAllByType(TouchableOpacity).find((n) => n.props.testID === testID);
+  return (StyleSheet.flatten(t && t.props.style) || {}).opacity;
+};
 const noop = () => {};
 
 /* ───────────────────────────────────────────────────────────── 1 · the list */
@@ -219,7 +229,7 @@ describe('her delivery address: the confirm pop-up while the address is being se
     const r = await reviewOpen(navigation);
     fireEvent.press(r.getByTestId('sheet-send'));
     await waitFor(() => expect(r.getByTestId('sheet-cancel').props.accessibilityState).toEqual({ disabled: true }));
-    await waitFor(() => expect(flat(r.getByTestId('sheet-cancel')).opacity).toBe(0.6));   // the fade to grey takes a moment
+    await waitFor(() => expect(fadingTo(r, 'sheet-cancel')).toBe(0.6));                  // the fade to grey takes a moment
     fireEvent.press(r.getByTestId('sheet-cancel'));
     fireEvent.press(r.getByTestId('sheet-cancel'));
     expect(r.getByTestId('confirm-sheet')).toBeTruthy();                   // still there: nothing else closes it
@@ -238,7 +248,9 @@ describe('her delivery address: the confirm pop-up while the address is being se
     const navigation = { navigate: jest.fn(), goBack: jest.fn() };
     api.influencerApi.myRemoteAddress.mockResolvedValue({ success: false, error: { code: 'VALIDATION_ERROR', field: 'street', message: 'Add a house or flat number.' } });
     const r = await reviewOpen(navigation);
-    fireEvent.press(r.getByTestId('sheet-send'));
+    // React 19 (React Native 0.81): the refused answer is let land inside act(), so the screen's
+    // response to it has been drawn before it is checked. What is checked is unchanged.
+    await act(async () => { fireEvent.press(r.getByTestId('sheet-send')); });
     await waitFor(() => expect(r.queryByTestId('confirm-sheet')).toBeNull());
     expect(r.getByTestId('f-street-error').props.children).toBe('Add a house or flat number.');
     expect(navigation.navigate).not.toHaveBeenCalled();

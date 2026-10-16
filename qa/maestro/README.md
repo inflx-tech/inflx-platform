@@ -1,8 +1,8 @@
 # qa/maestro/ — INFLX Mobile E2E test lane
 
 Maestro flow definitions for the three Android variants
-(`in.inflx.app.brand`, `in.inflx.app.influencer`,
-`in.inflx.app.follower`). Runs against a connected Android device or
+(`com.inflx.brand`, `com.inflx.influencer`,
+`com.inflx.followers`). Runs against a connected Android device or
 emulator via ADB.
 
 Contract: `features/maestro-infrastructure/`.
@@ -29,8 +29,8 @@ pnpm qa:maestro           # run all qa/maestro/flows/*.yaml; exit 0 only if all 
 
 1. Create `qa/maestro/flows/NN-<name>.yaml` (numeric prefix for sort
    order; e.g. `01-follower-public-browse.yaml`).
-2. Set `appId:` at the top — one of `in.inflx.app.brand`,
-   `in.inflx.app.influencer`, `in.inflx.app.follower`.
+2. Set `appId:` at the top — one of `com.inflx.brand`,
+   `com.inflx.influencer`, `com.inflx.followers`.
 3. Add Maestro steps (`- launchApp:`, `- tapOn:`, `- assertVisible:`,
    `- takeScreenshot:`, etc. — see [Maestro
    docs](https://maestro.mobile.dev/api-reference/commands)).

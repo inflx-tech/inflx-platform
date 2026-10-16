@@ -64,6 +64,25 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:728830348327:android:d9325aaf324e39bcc79202",
+        "android_client_info": {
+          "package_name": "com.inflx.brand"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1jvwREa5n4tIVmmpK_47N5gnefJsiD9I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:728830348327:android:bcfc77de32602898c79202",
         "android_client_info": {
           "package_name": "in.inflx.app.follower"
@@ -83,9 +102,66 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:728830348327:android:bcfc77de32602898c79202",
+        "android_client_info": {
+          "package_name": "com.inflx.followers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1jvwREa5n4tIVmmpK_47N5gnefJsiD9I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:728830348327:android:bcfc77de32602898c79203",
+        "android_client_info": {
+          "package_name": "in.inflx.app.follower.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1jvwREa5n4tIVmmpK_47N5gnefJsiD9I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:728830348327:android:0b553cecddd2f63cc79202",
         "android_client_info": {
           "package_name": "in.inflx.app.influencer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1jvwREa5n4tIVmmpK_47N5gnefJsiD9I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:728830348327:android:0b553cecddd2f63cc79202",
+        "android_client_info": {
+          "package_name": "com.inflx.influencer"
         }
       },
       "oauth_client": [],

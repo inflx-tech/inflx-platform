@@ -573,16 +573,6 @@ describe('ui-walk-fixes board A — the set name box', () => {
     r.getByText('Edit set');
     expect(r.getByTestId('set-name').props.value).toBe('Set B · Jewellery');
     expect(r.getByTestId('set-name-counter').props.children).toBe(`${'Set B · Jewellery'.length} / 60`);
-    // a live, locked set: the name is the one thing still editable, and it is the stored one.
-    // It is a Store Visit set, so the screen asks for the branch list — this test's own answer.
-    brandApi.listBranches.mockResolvedValue(ok({ branches: [{ id: 'b1', name: 'Banjara Hills', cityName: 'Hyderabad', stateName: 'Telangana', isMain: true }] }));
-    const live = render(<BrandSetEditScreen navigation={nav()} route={{ params: { campaignId: 'c1', campaignName: 'Diwali Edit 2026', dateRules: RULES, set: SET_A } }} />);
-    await waitFor(() => expect(brandApi.listBranches).toHaveBeenCalledTimes(1));
-    expect(live.getByTestId('set-name').props.value).toBe('Set A · Ethnic wear');
-    expect(live.getByTestId('set-name').props.editable).not.toBe(false);
-    live.getByText('Banjara Hills, Hyderabad');
-    live.getByTestId('lock-note');
-    live.unmount();
 
     fireEvent.changeText(r.getByTestId('set-name'), '');
     fireEvent.press(r.getByTestId('save-set'));
@@ -594,6 +584,20 @@ describe('ui-walk-fixes board A — the set name box', () => {
     fireEvent.press(r.getByTestId('save-set'));
     await waitFor(() => expect(brandApi.updateCampaignSet).toHaveBeenCalledWith('c1', 'sB', { name: 'Festive jewellery', goal: 'engagement', shoot_mode: 'shipment', branch_id: null, go_live_date: SET_B.postingDate }));
     await waitFor(() => expect(n.navigate).toHaveBeenCalledWith('BrandSetDetail', { campaignId: 'c1', setId: 'sB', toast: 'Set saved.' }));
+
+    // The live, locked set is checked last: since React Native 0.81's testing library, a screen
+    // rendered beside another stops receiving taps and typing, so the first screen is finished
+    // with before this one is drawn. What is checked is unchanged.
+    // a live, locked set: the name is the one thing still editable, and it is the stored one.
+    // It is a Store Visit set, so the screen asks for the branch list — this test's own answer.
+    brandApi.listBranches.mockResolvedValue(ok({ branches: [{ id: 'b1', name: 'Banjara Hills', cityName: 'Hyderabad', stateName: 'Telangana', isMain: true }] }));
+    const live = render(<BrandSetEditScreen navigation={nav()} route={{ params: { campaignId: 'c1', campaignName: 'Diwali Edit 2026', dateRules: RULES, set: SET_A } }} />);
+    await waitFor(() => expect(brandApi.listBranches).toHaveBeenCalledTimes(1));
+    expect(live.getByTestId('set-name').props.value).toBe('Set A · Ethnic wear');
+    expect(live.getByTestId('set-name').props.editable).not.toBe(false);
+    live.getByText('Banjara Hills, Hyderabad');
+    live.getByTestId('lock-note');
+    live.unmount();
   });
 
   it('renaming a set opens with its stored name; the Duplicate sheet keeps "<name> (copy)" (check 3)', async () => {

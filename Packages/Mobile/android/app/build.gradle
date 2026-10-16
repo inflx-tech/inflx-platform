@@ -50,6 +50,9 @@ react {
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]
+
+    /* Autolinking */
+    autolinkLibrariesWithApp()
 }
 
 /**
@@ -68,7 +71,41 @@ def enableProguardInReleaseBuilds = false
  * give correct results when using with locales other than en-US. Note that
  * this variant is about 6MiB larger per architecture than default.
  */
-def jscFlavor = 'org.webkit:android-jsc:+'
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+
+/**
+ * Play Store upload signing - opt-in, one app at a time.
+ *
+ *   gradlew bundleBrandRelease -PplayRelease=brand
+ *
+ * reads brand.storeFile / brand.storePassword / brand.keyAlias / brand.keyPassword
+ * from android/keystore.properties (git-ignored, NEVER committed) and signs ONLY
+ * that flavor's release with its upload key. The other flavors' release outputs
+ * come out unsigned in that run, so one app's key can never sign another app.
+ *
+ * Without -PplayRelease nothing changes: release builds keep the debug key,
+ * exactly as the sideloaded APKs in /APKs always have.
+ */
+def playFlavor = project.findProperty("playRelease")
+def playSigning = [:]
+if (playFlavor) {
+    def propsFile = rootProject.file("keystore.properties")
+    if (!propsFile.exists()) {
+        throw new GradleException("-PplayRelease=${playFlavor} needs android/keystore.properties - copy keystore.properties.example and fill it in.")
+    }
+    def props = new Properties()
+    propsFile.withInputStream { props.load(it) }
+    ["storeFile", "storePassword", "keyAlias", "keyPassword"].each { k ->
+        def v = props.getProperty("${playFlavor}.${k}")?.trim()
+        if (!v) {
+            throw new GradleException("android/keystore.properties has no value for ${playFlavor}.${k}")
+        }
+        playSigning[k] = v
+    }
+    if (!file(playSigning.storeFile).exists()) {
+        throw new GradleException("Upload keystore not found at ${playSigning.storeFile}")
+    }
+}
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -95,17 +132,36 @@ android {
     productFlavors {
         brand {
             dimension "role"
-            applicationIdSuffix ".brand"
+            // The brand app's id is com.inflx.brand - the id it carries on the
+            // Play Store. It is a full id, not a suffix on in.inflx.app like the
+            // other apps. Code still lives in the in.inflx.app namespace, so no
+            // Kotlin package or import changes with it.
+            applicationId "com.inflx.brand"
+            // Each app is its own Play listing with its own version codes. Play took code 1 for
+            // the brand app on an upload in October 2026, so the brand app counts on from 2.
+            // Raise it by one for every upload Play accepts; versionName is what people see.
+            versionCode 2
             resValue "string", "app_role", "brand"
         }
         influencer {
             dimension "role"
-            applicationIdSuffix ".influencer"
+            // Same rule as brand: com.inflx.influencer is the id this app carries
+            // on the Play Store - a full id, not a suffix on in.inflx.app.
+            applicationId "com.inflx.influencer"
+            // Its own Play listing, its own version codes: counts on from 2 (October 2026),
+            // one higher for every upload Play accepts.
+            versionCode 2
             resValue "string", "app_role", "influencer"
         }
         follower {
             dimension "role"
-            applicationIdSuffix ".follower"
+            // Same rule as brand and influencer: com.inflx.followers is the id the
+            // shopper app carries on the Play Store. Note the id is plural while the
+            // flavor stays `follower`. The staging twin below keeps its own id.
+            applicationId "com.inflx.followers"
+            // Its own Play listing, its own version codes: counts on from 2 (October 2026),
+            // one higher for every upload Play accepts.
+            versionCode 2
             resValue "string", "app_role", "follower"
         }
         // Staging twin of `follower` — separate app id + label so it installs
@@ -128,15 +184,42 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (playFlavor) {
+            play {
+                storeFile file(playSigning.storeFile)
+                storePassword playSigning.storePassword
+                keyAlias playSigning.keyAlias
+                keyPassword playSigning.keyPassword
+            }
+        }
+    }
+    if (playFlavor) {
+        def playTarget = productFlavors.findByName(playFlavor)
+        if (playTarget == null) {
+            throw new GradleException("-PplayRelease=${playFlavor} is not one of the app flavors: ${productFlavors.names}")
+        }
+        playTarget.signingConfig = signingConfigs.play
+    }
+    packaging {
+        jniLibs {
+            // react-native-compressor bundles AndroidLame (MP3 audio). Its x86_64 copy is 4 KB
+            // aligned, which Google Play's 16 KB page-size check refuses. The app never
+            // compresses audio (src/utils/videoPrep.js uses Video and Image only), so that
+            // library is never loaded; every other native library is 16 KB ready.
+            excludes += ["lib/x86_64/libandroidlame.so"]
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Sideload builds keep the debug key. A Play build (-PplayRelease=<flavor>)
+            // leaves this unset so the flavor's own upload key above is used -
+            // a build type's signing config would otherwise override the flavor's.
+            if (!playFlavor) {
+                signingConfig signingConfigs.debug
+            }
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
@@ -146,7 +229,6 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    implementation("com.facebook.react:flipper-integration")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
@@ -155,7 +237,6 @@ dependencies {
     }
 }
 
-apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 
 // ─── Flow 28 (2026-05-26): react-native-vector-icons MaterialCommunityIcons ───
 // One-time NATIVE_RUNTIME bump 1→2; required by mobile-influencer bucket Flow 28
