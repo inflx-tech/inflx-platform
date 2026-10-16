@@ -11,7 +11,7 @@
  *   1. maestro CLI on PATH (maestro -v)
  *   2. adb on PATH (adb version)
  *   3. at least one device/emulator connected (adb devices)
- *   4. in.inflx.app.follower installed on device
+ *   4. com.inflx.followers installed on device
  *
  * Contract: features/maestro-infrastructure/
  */
@@ -34,7 +34,7 @@ const bad = (m, fix) => {
 };
 const skip = (m, why) => console.log(`[maestro-doctor] (deferred) ${m} — ${why}`);
 
-const FOLLOWER_APP = 'in.inflx.app.follower';
+const FOLLOWER_APP = 'com.inflx.followers';
 const INSTALL_HINT_WIN =
   'download the latest Maestro release from\n               ' +
   'https://github.com/mobile-dev-inc/maestro/releases\n               ' +

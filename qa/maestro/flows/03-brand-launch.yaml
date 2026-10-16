@@ -7,7 +7,7 @@
 #
 # Contract: features/redesign-flow-28-influencer-mobile-home-notifications/
 
-appId: in.inflx.app.brand
+appId: com.inflx.brand
 ---
 - launchApp:
     clearState: true

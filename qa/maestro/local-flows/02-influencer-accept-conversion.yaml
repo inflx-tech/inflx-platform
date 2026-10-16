@@ -16,7 +16,7 @@
 #
 # Run standalone:  maestro test qa/maestro/flows/02-influencer-accept-conversion.yaml
 
-appId: in.inflx.app.influencer
+appId: com.inflx.influencer
 ---
 - launchApp:
     clearState: true

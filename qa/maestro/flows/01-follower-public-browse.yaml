@@ -23,7 +23,7 @@
 #   - assertVisible: "Browsing as guest"
 #   - assertVisible: "Sign in to save"
 
-appId: in.inflx.app.follower
+appId: com.inflx.followers
 ---
 - launchApp:
     clearState: true

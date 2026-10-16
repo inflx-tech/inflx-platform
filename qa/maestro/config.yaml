@@ -13,9 +13,9 @@ lane:
   output_dir: qa/artifacts/qa-maestro           # gitignored; per-run timestamped subdirs
 
 apps:
-  brand:       in.inflx.app.brand              # APK variant: brandDebug / brandRelease
-  influencer:  in.inflx.app.influencer         # APK variant: influencerDebug / influencerRelease
-  follower:    in.inflx.app.follower           # APK variant: followerDebug / followerRelease
+  brand:       com.inflx.brand                 # APK variant: brandDebug / brandRelease
+  influencer:  com.inflx.influencer            # APK variant: influencerDebug / influencerRelease
+  follower:    com.inflx.followers             # APK variant: followerDebug / followerRelease
 
 default_target: follower                       # the smoke flow uses this; other flows can override
 

@@ -15,7 +15,7 @@
 # On green, set features/meals-customer-mobile/lock.json
 #   release.maestro_green = true.
 
-appId: in.inflx.app.follower
+appId: com.inflx.followers
 ---
 - launchApp
 
