@@ -5,7 +5,13 @@
  * Contract: features/shoppable-posts-v2 · rules Docs/OFFER_TERMS_POSTS_RULES.md §4
  */
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+
+// React 19 (React Native 0.81) runs a screen's after-load effects later under test than React 18
+// did. These screens copy the saved draft into their own state in such an effect, so a tap made
+// before it runs is overwritten. On a phone the effect runs within a frame of the data arriving;
+// settle() lets it run before the test acts, as it would for a person. Nothing asserted changes.
+const settle = () => act(async () => {});
 
 jest.mock('../../../services/api', () => ({
   influencerApi: {
@@ -210,6 +216,7 @@ describe('P6 · P7 · P8 — products', () => {
     const n = nav();
     const { getByText, getByTestId } = render(<PostProducts navigation={n} route={{ params: { postId: 'p1' } }} />);
     await waitFor(() => getByTestId('post-products'));
+    await settle();
     getByText('Any 2 Jeans for ₹2,999 · 3 products');
     getByText('Pick at least 2 so a shopper can complete the bundle from this post.');
     fireEvent.press(getByTestId('pick-j1'));
@@ -241,6 +248,7 @@ describe('P6 · P7 · P8 — products', () => {
     const n = nav();
     const { getByText, getByTestId, queryByTestId } = render(<PostPrice navigation={n} route={{ params: { postId: 'p1' } }} />);
     await waitFor(() => getByTestId('post-price'));
+    await settle();
     getByText('Shows your products up to ₹999, including cheaper ones.');
     expect(queryByTestId('pick-f3')).toBeNull();      // ₹1,499 is above Under ₹999
     getByText('Men › Topwear');
@@ -298,6 +306,7 @@ describe('P11 — review and send', () => {
     const n = nav();
     const { getByText, getByTestId } = render(<PostReview navigation={n} route={{ params: { postId: 'p1' } }} />);
     await waitFor(() => getByTestId('post-review'));
+    await settle();
     getByText('How shoppers will find it');
     getByText('Men › Bottomwear › Jeans'); getByText('from your products');
     getByText('Bundle · Any 2 for ₹2,999'); getByText('from your offer');

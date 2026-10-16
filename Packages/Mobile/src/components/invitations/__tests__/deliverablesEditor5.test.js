@@ -444,7 +444,7 @@ describe('the screen moves so the whole opened list is in view (D2, D7)', () => 
   });
 
   describe('wired to the page it sits in', () => {
-    const Native = require('react-native/jest/MockNativeMethods');
+    const Native = (m => m.default || m)(require('react-native/jest/MockNativeMethods'));
     const WINDOW = { 'ed-row-1': [18, 420, 324, 42], 'ed-list': [18, 470, 324, 220] };
     beforeEach(() => {
       Native.measureInWindow.mockImplementation(function measure(cb) { cb(...(WINDOW[this.props.testID] || [18, 420, 172, 48])); });

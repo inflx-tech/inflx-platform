@@ -19,7 +19,10 @@ tmp/
 **/android/app/build/
 **/android/.gradle/
 **/android/local.properties
+# Play Store upload-key passwords (see keystore.properties.example)
+**/android/keystore.properties
 **/android/.idea/
+**/android/.kotlin/
 **/android/*.iml
 
 # iOS — fully excluded (we don't ship iOS yet)

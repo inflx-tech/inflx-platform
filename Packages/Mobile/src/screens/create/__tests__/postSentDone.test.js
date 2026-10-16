@@ -97,6 +97,8 @@ beforeEach(() => {
 afterEach(() => errors.mockRestore());
 const unhandled = () => errors.mock.calls.map((c) => String(c[0])).filter((m) => /was not handled by any navigator/.test(m));
 
+// React 19 (React Native 0.81): a screen pushed by navigate() renders when the surrounding act()
+// ends, so a button is looked up first and only the tap goes inside act(). What is checked is unchanged.
 describe('a post that is with INFLX', () => {
   it('after sending: one main button, "Done" — it opens Home, and the steps she made the post with are gone from the Create tab', async () => {
     const { ref, findByTestId, getByText, queryByTestId } = mount();
@@ -128,7 +130,7 @@ describe('a post that is with INFLX', () => {
     expect(where(ref)).toEqual({ tab: 'CreateTab', create: ['CreateHome'] });
 
     go(ref, 'PostStatus', { postId: 'p1' });
-    await act(async () => { fireEvent.press(await findByTestId('done')); });
+    { const target = await findByTestId('done'); await act(async () => { fireEvent.press(target); }); }
     expect(where(ref)).toEqual({ tab: 'HomeTab', create: ['CreateHome'] });
   });
 
@@ -136,7 +138,7 @@ describe('a post that is with INFLX', () => {
     const { ref, findByTestId } = mount('HomeTab');
     go(ref, 'CreateTab', { screen: 'PostStatus', params: { postId: 'p1' }, initial: false });
     expect(where(ref)).toEqual({ tab: 'CreateTab', create: ['CreateHome', 'PostStatus'] });
-    await act(async () => { fireEvent.press(await findByTestId('done')); });
+    { const target = await findByTestId('done'); await act(async () => { fireEvent.press(target); }); }
     expect(where(ref)).toEqual({ tab: 'HomeTab', create: ['CreateHome'] });
     expect(unhandled()).toEqual([]);
   });
@@ -145,7 +147,7 @@ describe('a post that is with INFLX', () => {
     const { ref, findByTestId } = mount('HomeTab');
     go(ref, 'CreateTab', { screen: 'PostStatus', params: { postId: 'p1' } });
     expect(where(ref)).toEqual({ tab: 'CreateTab', create: ['PostStatus'] });
-    await act(async () => { fireEvent.press(await findByTestId('done')); });
+    { const target = await findByTestId('done'); await act(async () => { fireEvent.press(target); }); }
     expect(where(ref).tab).toBe('HomeTab');
     expect(unhandled()).toEqual([]);
   });

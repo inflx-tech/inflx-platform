@@ -72,7 +72,7 @@ const HINT = 'Reels, posts, stories, YouTube videos and shorts.';
  * floating strip any more (board C), so the page moves 80 less.
  */
 function expectPageMovedForOpenedList(r, { page, chooser }) {
-  const Native = require('react-native/jest/MockNativeMethods');
+  const Native = (m => m.default || m)(require('react-native/jest/MockNativeMethods'));
   const listId = `${chooser}-list`;
   Native.measureInWindow.mockImplementation(function measure(cb) { cb(...(this.props.testID === listId ? [18, 470, 324, 220] : [18, 420, 172, 48])); });
   Native.measureLayout.mockImplementation((within_, done) => done(18, 900, 324, 220));
