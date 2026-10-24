@@ -64,5 +64,25 @@
     "decisions_in_build": "see 06-diff/notes.md — Entire store counts products free TODAY (item 20 rule); the lock is read live from approvals; release_held_for_posts says why a due row waited; counters without the number keep it; a counter carrying the allocation is refused",
     "first_run_catch": "the first full run had 6 newly failing: five fixtures that sent a Pay for Content invitation without posts/allocation or expected the content stage before her first approved post (updated to the rule, each marked Item 21), and one static check that caught the Entire store reads filtering deleted offers — removed from the code (a deleted offer is always an ended one; only the brand's own lists may read the mark)",
     "migration_applied": "209 applied on production 24 Oct 2026 with scripts/run-209.js --apply BEFORE the push: four shape checks on; every count identical before and after (35 collaborations, 8 sell_v2 rows, 5 content rows, 18 escrow rows, 0 queued, 12 Pay for Content collaborations, 0 on new terms)"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-24",
+    "by": "founder go (chat: \"pls go and deploy item 21\")",
+    "migration": "209_item21_content_posts.sql applied with scripts/run-209.js --apply before the push: four shape checks on; every count identical before and after (35 collaborations, 12 Pay for Content all old terms, 0 queued escrow rows)",
+    "commit": "72eb2b54 (pushed e0327d41..72eb2b54; 61 files, staged by path). The push also carried the unpushed RN 0.81 merge 8ccf74fd (phones only; native runtime 4)",
+    "render": "proved by content 13:35 IST: a test-number creator's Pay for Content invitation read (GET /v1/influencers/me/invitations/:id) now carries the item 21 field shoppablePostsN; practice brand login read-only",
+    "vercel": "not opened; OfferPage.js parse-checked; the End-offer dialog line shows only on an offer held by a signed Entire store collaboration (none in production yet)",
+    "ota": {
+      "influencer": 238,
+      "brand": 247,
+      "native_runtime": "4",
+      "note": "runtime 4 = the Play Store builds (code-2 AABs) and any sideload built from main after 16 Oct; a runtime-3 sideloaded phone receives nothing more"
+    },
+    "money": "no money moved: 0 queued final payments in production; the sale split engine is not edited (commission null → ₹0, item 20's path)",
+    "walk": "founder device walk of T1–T5, C1–C5, G1–G8, P1–P5, W1 pending; needs a NEW Pay for Content invitation (every existing one is on the old terms)",
+    "open_after_deploy": [
+      "Docs/OFFER_TERMS_POSTS_RULES.md not updated (founder's rule: master docx only); the §2.2 table there still says Pay for Content has no shoppable posts and whole-store is removed",
+      "pre-existing failing suite deliverables-when-buying-content reads a deleted phone file (unrelated, in the baseline)"
+    ]
   }
 }
