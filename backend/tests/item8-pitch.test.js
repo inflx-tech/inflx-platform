@@ -793,8 +793,10 @@ describe('a pitch becomes an ordinary invitation (checks 19, 20)', () => {
     const set = await api.post(`/campaigns/${camp.body.data.campaign.id}/sets`, b.token, {
       name: 'Set B', goal: 'engagement', shoot_mode: 'shipment', go_live_date: day(25),
     });
+    // Item 21 (rules v1.34 §7A): a Pay for Content invitation also carries the posts number and what she posts about.
+    const terms21 = await require('./helpers/sell').sellable(b.brandId, { fee: 9000, deliverables: [{ type: 'reel', count: 1 }, { type: 'story', count: 2 }] });
     const inv = await api.post(`/campaigns/${camp.body.data.campaign.id}/sets/${set.body.data.set.id}/invitations`, b.token, {
-      creators: [{ influencerId: c.influencerId, poolEntryId: entryId, terms: { fee: 9000, deliverables: [{ type: 'reel', count: 1 }, { type: 'story', count: 2 }] } }],
+      creators: [{ influencerId: c.influencerId, poolEntryId: entryId, terms: terms21 }],
     });
     expect(inv.status).toBe(201);
 

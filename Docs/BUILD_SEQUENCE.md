@@ -29,7 +29,8 @@ The 21 items (plus the 3b insert). Each runs: rules → mockups → lock → gap
 | 18 | Disputes (§22, 26) | Parked by the founder at the discussion stage | `features/item18-disputes/00-discussion` (the map of what can go wrong, the survey, 13 open decisions) | 9 Oct |
 | 19 | Home and Needs You (§24; rules v1.32) | Built | `features/item19-home` (2d4c47e3, OTA influencer 233 / brand 244; no migration) | 9 Oct |
 | 20 | Creator who owns a brand (§2D; rules v1.33) | Built | `features/item20-own-brand` (df21784c, migration 206, OTA influencer 234 / brand 245) | 10 Oct |
-| 21 | Launch clean-up | Later | — | — |
+| 21 | Pay for Content shoppable posts + Entire store (§7A, 12.2, 19, 21, 22; rules v1.34) | Built, not deployed | `features/item21-content-posts` (migration 209) | — |
+| 22 | Launch clean-up | Later | — | — |
 
 ## Why 13 and 16 came before 14 and 15
 

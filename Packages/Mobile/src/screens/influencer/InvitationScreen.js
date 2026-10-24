@@ -139,12 +139,14 @@ export default function InvitationScreen({ navigation, route }) {
           {/* creator-terms-v2 (C1): one row — her offers + products — that opens "What you can sell". */}
           {t.sell ? (
             <TouchableOpacity onPress={() => navigation.navigate('CreatorSell', { ciId })} accessibilityRole="button" testID="sell-row">
-              <KV5 k={D.sell} v={`${t.sell.words} ›`} />
+              <KV5 k={t.shoppablePostsN != null ? D.postAbout : D.sell} v={`${t.sell.words} ›`} />
             </TouchableOpacity>
           ) : null}
           {t.scope ? <KV5 k={D.sell} v={t.scope.kind === 'store' ? D.sellStore : t.scope.words} /> : null}
           {t.offer && t.offer.kind !== 'none' ? <KV5 k={D.offer} v={t.offer.name || C5.offer.specialLine} /> : null}
           {t.shoppablePostsMin != null ? <KV5 k={D.posts} v={D.postsValue(t.shoppablePostsMin || MIN_SHOPPABLE_POSTS)} /> : null}
+          {/* Item 21: Pay for Content — the brand's number, with no commission on sales through them. */}
+          {t.shoppablePostsN != null ? <KV5 k={D.posts} v={D.postsNValue(t.shoppablePostsN)} testID="posts-n-row" /> : null}
           {t.fee != null ? <KV5 k={D.fee} v={rupees5(t.fee)} /> : null}
           {t.deliverablesWords ? <KV5 k={D.post} v={t.deliverablesWords} /> : null}
           {t.usageRights ? <KV5 k={D.reuse} v={t.usageRights.words} /> : null}

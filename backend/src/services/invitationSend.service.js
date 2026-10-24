@@ -186,8 +186,9 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
     : { alloc_scope: body.alloc_scope, alloc_category_node_id: body.alloc_category_node_id, alloc_category: body.alloc_category, alloc_product_ids: body.alloc_product_ids };
   // creator-terms-v2: what she can sell = her offers + products without offers (rules 2.3, 2.4).
   // Validated against the set's posting date and FROZEN here; nothing of the old scope is written.
+  // Item 21 (rules v1.34 §7A): a Pay for Content invitation carries what she POSTS ABOUT the same way.
   const sellPlan = terms.sell
-    ? await creatorTerms.resolveSell({ brandId: brand.id, postingDate: set.go_live_date, sell: terms.sell, creatorName: name })
+    ? await creatorTerms.resolveSell({ brandId: brand.id, postingDate: set.go_live_date, sell: terms.sell, creatorName: name, postsAbout: goal === 'engagement' })
     : null;
   const alloc = sellPlan ? null : await inputs.resolveAllocation({ brandId: brand.id, ...allocInput });
   if (SELLING_GOALS.includes(goal) && !alloc && !sellPlan) {
@@ -333,6 +334,8 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
     values: {
       sell_v2: !!sellPlan, sell_mode: sellPlan ? sellPlan.mode : null, sell_product_ids: sellPlan ? sellPlan.productIds : [],
       min_shoppable_posts: minShoppable, pool_entry_id: poolEntry ? poolEntry.id : null,
+      // Item 21: the number of shoppable posts the brand asked for (Pay for Content only).
+      shoppable_posts_n: goal === 'engagement' && sellPlan ? terms.shoppablePostsN : null,
       agreed_fee: agreedFee, posting_date: postingDate, offer_expires_at: expiresAt,
       offer_type: offer.effType || null, offer_config_json: offer.effConfig ? JSON.stringify(offer.effConfig) : null,
       commission_pct, coupon_code: finalCouponCode,
@@ -361,10 +364,10 @@ async function insertOne(plan, { campaign, set, tx }) {
         alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
         offer_valid_until, offer_valid_from, agreement_id, channels_json, formats_json,
         invited_at, invited_by, source, source_group_id, brand_note, usage_rights_json,
-        min_shoppable_posts, pool_entry_id, sell_v2, sell_mode, sell_product_ids)
+        min_shoppable_posts, pool_entry_id, sell_v2, sell_mode, sell_product_ids, shoppable_posts_n)
      VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
              $17, $18, $19, $20::jsonb, $21, $22, $23, $24::jsonb, $25::jsonb,
-             now(), $26, $27, $28, $29, $30::jsonb, $31, $32, $33, $34, $35::uuid[])
+             now(), $26, $27, $28, $29, $30::jsonb, $31, $32, $33, $34, $35::uuid[], $36)
      RETURNING *`,
     [
       set.id, plan.influencer_id, v.agreed_fee, v.posting_date, v.offer_expires_at,
@@ -376,6 +379,7 @@ async function insertOne(plan, { campaign, set, tx }) {
       plan.actorUserId, plan.source, plan.sourceGroupId, v.brand_note, v.usage_rights_json,
       v.min_shoppable_posts || null, v.pool_entry_id || null,
       !!v.sell_v2, v.sell_mode || null, v.sell_product_ids || [],
+      v.shoppable_posts_n || null,
     ]
   );
   const ci = rows[0];

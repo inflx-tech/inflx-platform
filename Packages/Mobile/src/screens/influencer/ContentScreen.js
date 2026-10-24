@@ -47,6 +47,9 @@ import { FeeCard12, FileTile12, AddTile12, RowHead12, NoteLine12, RoundPill12, Q
 import { SendSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { C12, MSG12, LIMITS12, day10 } from '../../components/content/copy12';
+// Item 21: Path 1 of a Pay for Content collaboration with shoppable posts, drawn as item 14 draws it.
+import { Progress14, PostLine14, postSub14 } from './SaleLiveScreen';
+import { C14 } from '../../components/sale/copy14';
 
 const mimeOf = (a) => {
   const t = String((a && a.type) || '').toLowerCase();
@@ -204,6 +207,14 @@ export default function ContentScreen({ navigation, route }) {
     await act(() => influencerApi.contentPosted(ciId), C12.postedDone);
   }
   const report = (note) => act(() => influencerApi.contentReport(ciId, { kind: 'brand_silent', note }), C12.reportedDone);
+  /** Item 21 (board G1): item 13's flow, opened with the brand and this collaboration filled in. */
+  async function createPost() {
+    setBusy(true);
+    const r = await influencerApi.createPost(ciId);
+    setBusy(false);
+    if (!r || !r.success) { show(refuse(r)); return; }
+    navigation.navigate('CreateTab', { screen: 'PostType', params: { postId: r.data.post.id }, initial: false });
+  }
 
   if (status === 'loading') return <View style={base.screen}><Header title={C12.titleHers} onBack={() => navigation.goBack()} /><Skeleton rows={6} /></View>;
   if (status === 'error') return <View style={base.screen}><Header title={C12.titleHers} onBack={() => navigation.goBack()} /><LoadErrorList what={C12.couldntLoad} onRetry={load} /></View>;
@@ -217,6 +228,7 @@ export default function ContentScreen({ navigation, route }) {
   const pendingOf = (rowKey) => Object.entries(uploads).filter(([, u]) => u.rowKey === rowKey);
   const stepsHers = (c.steps || []).map((st) => (
     st.key === 'shoot' ? { ...st, detail: st.at ? C12.steps.done(day10(st.at)) : st.detail }
+      : st.key === 'posts' ? { ...st, label: C12.stepPosts }                                   // item 21: "1 of 3"
       : st.key === 'content' ? { ...st, detail: stage === 'draft' ? C12.steps.uploadWhat : st.detail }
         : st.key === 'live' ? { ...st, detail: c.postingDate ? C12.steps.posts(day10(c.postingDate)) : null }
           : { ...st, detail: st.at ? day10(st.at) : null }));
@@ -254,6 +266,27 @@ export default function ContentScreen({ navigation, route }) {
           <Card7 title={C12.toldInflxTitle} testID="told-inflx"><Text style={s.para}>{C12.toldInflxBody(brand, c.money.t1.amount)}</Text></Card7>
         ) : null}
         {c.delayed && !c.frozen ? <AmberBox10 text={C12.delayedHers(c.postingDate)} testID="delayed-box" /> : null}
+
+        {/* Item 21 (board G1–G6) — Path 1: her shoppable posts, counted against the brand's number. */}
+        {c.path1 && stage !== 'shoot_not_done' ? (
+          <Card7 title={C12.path1Title} testID="path1">
+            <Text style={s.para}>{C12.path1WhoHers}</Text>
+            <Progress14 p1={c.path1} line={c.finalHeldForPosts ? C12.finalWaitsPosts(c.postsShort, c.money.t3.amount) : null} testID="path1-progress" />
+            {c.path1.posts.map((p) => { const sub = postSub14(p, c.postingDate); return <PostLine14 key={p.id} post={p} sub={sub.sub} waiting={sub.waiting} right={<Text style={s.hint}>{C14.postState[p.state] || ''}</Text>} />; })}
+            {stage !== 'complete' ? <SecondaryButton label={C14.createPost} onPress={createPost} busy={busy} testID="create-post" /> : null}
+          </Card7>
+        ) : null}
+        {/* Item 21 (D4) — Path 2 waits for the first approved post. */}
+        {stage === 'posts' ? (
+          <>
+            <WaitBox10 text={C12.path2Locked(brand)} testID="path2-locked" />
+            <StepLine10 steps={stepsHers} />
+            <Card7 title={C12.whatYouAgreed} testID="what-you-agreed">
+              {c.rows.map((r) => <Row10 key={r.key} label={r.label} value={String(r.count)} testID={`owe-${r.key}`} />)}
+              <Row10 label={C12.usageRights} value={(c.usageRights && c.usageRights.words) || C12.noUsageRights} />
+            </Card7>
+          </>
+        ) : null}
 
         {/* C15 — the shoot first. */}
         {stage === 'shoot_not_done' ? (
@@ -380,7 +413,9 @@ export default function ContentScreen({ navigation, route }) {
             <GreenBox10 text={!c.liveConfirmedAt ? C12.inflxSettled : c.liveConfirmedBy === 'inflx' ? C12.inflxConfirmed(c.liveConfirmedAt) : C12.theyConfirmed(brand, c.liveConfirmedAt)} testID="confirmed-box" />
             <FeeCard12 money={c.money} side="creator" />
             {stage === 'live' && c.money.returned > 0 ? <WaitBox10 text={C12.returnedToBrand(c.money.returned)} testID="returned-box" /> : null}
-            {stage === 'live' && !(c.money.returned > 0) ? <WaitBox10 text={C12.inWallet(c.money.t2.amount, c.money.t3.amount, c.finalDueAt)} testID="in-wallet" /> : null}
+            {/* Item 21 (D3, board G5): the last payment waits for her posts. */}
+            {stage === 'live' && !(c.money.returned > 0) && c.finalHeldForPosts ? <AmberBox10 text={C12.finalHeldHers(c.postsShort, c.money.t3.amount)} testID="final-held" /> : null}
+            {stage === 'live' && !(c.money.returned > 0) && !c.finalHeldForPosts ? <WaitBox10 text={C12.inWallet(c.money.t2.amount, c.money.t3.amount, c.finalDueAt)} testID="in-wallet" /> : null}
             <StepLine10 steps={paidSteps} />
           </>
         ) : null}

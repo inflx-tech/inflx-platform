@@ -13,7 +13,9 @@
 const draft = require('../draft5');
 const { MSG5, DELIVERABLE_TYPES } = require('../copy5');
 
-const content = (deliverables, more = {}) => ({ ...draft.defaultTerms('engagement'), fee: '8000', deliverables, ...more });
+// Item 21 (rules v1.34 §7A): a Pay for Content invitation also carries what she posts about — the
+// Entire store here, so these checks stay about the deliverables alone.
+const content = (deliverables, more = {}) => ({ ...draft.defaultTerms('engagement'), fee: '8000', deliverables, sellMode: 'store', ...more });
 
 describe('Pay for Content — what she delivers, as the rule sees it (check 13)', () => {
   it('a new invitation starts with one line: Instagram reel, 1 (frame D1)', () => {
@@ -74,7 +76,8 @@ describe('Pay for Content — what she delivers, as the rule sees it (check 13)'
 describe('what is sent to the server is unchanged: [{ type, count }] (check 14)', () => {
   it('sends each line as its type and a whole number', () => {
     const t = content([{ type: 'reel', count: 1 }, { type: 'story', count: 2 }]);
-    expect(draft.toServer('engagement', t)).toEqual({ fee: 8000, deliverables: [{ type: 'reel', count: 1 }, { type: 'story', count: 2 }] });
+    // Item 21: the posts number and what she posts about travel beside the deliverables, which are unchanged.
+    expect(draft.toServer('engagement', t)).toEqual({ fee: 8000, deliverables: [{ type: 'reel', count: 1 }, { type: 'story', count: 2 }], shoppablePosts: 1, offers: [], productsWithoutOffers: { mode: 'store' } });
   });
 
   it('a count that arrived as text is sent as a number', () => {

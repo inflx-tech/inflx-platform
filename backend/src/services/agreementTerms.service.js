@@ -50,7 +50,7 @@ function decryptQuiet(v) { if (!v) return ''; try { return decrypt(v) || ''; } c
 
 const CONTEXT_SQL = `
   SELECT ci.id, ci.status, ci.influencer_id, ci.agreed_fee, ci.commission_pct,
-         ci.formats_json, ci.usage_rights_json, ci.brand_note, ci.min_shoppable_posts,
+         ci.formats_json, ci.usage_rights_json, ci.brand_note, ci.min_shoppable_posts, ci.shoppable_posts_n,
          ci.alloc_scope, ci.alloc_category, ci.alloc_category_node_id, ci.alloc_product_ids,
          ci.sell_v2, ci.sell_mode, ci.sell_product_ids,
          ci.answered_at,
@@ -226,7 +226,8 @@ async function buildSnapshot(ctx, client = db) {
 
   const products = ctx.alloc_scope === 'products' ? await productNames(ctx.alloc_product_ids, client) : [];
   // creator-terms-v2 (rules 2.7): her offers as of signing + her products without offers.
-  const sellV2 = selling && ctx.sell_v2
+  // Item 21 (rules v1.34 §9): a Pay for Content collaboration names what she posts about the same way.
+  const sellV2 = (selling || goal === 'engagement') && ctx.sell_v2
     ? await require('./creatorTerms.service').agreementSell({ id: ctx.id, sell_v2: true, sell_mode: ctx.sell_mode, sell_product_ids: ctx.sell_product_ids })
     : null;
   const usage = jsonObj(ctx.usage_rights_json);
@@ -292,6 +293,8 @@ async function buildSnapshot(ctx, client = db) {
       minShoppablePosts: selling
         ? (ctx.min_shoppable_posts != null ? Number(ctx.min_shoppable_posts) : MIN_SHOPPABLE_POSTS)
         : null,
+      // Item 21 (rules v1.34 §7A, §12.2): the number of shoppable posts the brand asked for, frozen here.
+      shoppablePosts: goal === 'engagement' && ctx.sell_v2 && ctx.shoppable_posts_n != null ? Number(ctx.shoppable_posts_n) : null,
     },
 
     // ---- what she may sell (Pay for Sale and Hybrid) --------------------

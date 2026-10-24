@@ -88,11 +88,13 @@ function postOut(p, postingDate, today) {
 }
 
 /** Path 1 for one collaboration: the minimum, what counts, what is where, and whether Path 2 is open. */
-async function path1(ciId, r, conn = db) {
+async function path1(ciId, r, conn = db, { min: minOverride = null } = {}) {
   const today = todayInIndia();
   const postingDate = calendarDay(r.go_live_date);
   const posts = (await postsOf(ciId, conn)).map((p) => postOut(p, postingDate, today));
-  const min = r.min_shoppable_posts != null ? Number(r.min_shoppable_posts) : Number(await platformSettings.get('min_shoppable_posts'));
+  // Item 21: a Pay for Content collaboration counts against the number on its terms, never the admin minimum.
+  const min = minOverride != null ? Number(minOverride)
+    : r.min_shoppable_posts != null ? Number(r.min_shoppable_posts) : Number(await platformSettings.get('min_shoppable_posts'));
   const approved = posts.filter((p) => p.counts).length;
   return {
     min, approved, short: Math.max(0, min - approved), met: approved >= min,
@@ -361,12 +363,38 @@ async function tellCompleted(ciId) {
  */
 async function afterPostApproved(postId) {
   try {
-    const { rows: [p] } = await db.query(`SELECT campaign_influencer_id FROM creator_posts WHERE id = $1`, [postId]);
+    const { rows: [p] } = await db.query(
+      `SELECT cp.campaign_influencer_id, cs.goal FROM creator_posts cp JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
+         JOIN campaign_sets cs ON cs.id = ci.set_id WHERE cp.id = $1`, [postId]);
     if (!p) return;
+    // Item 21 (D3): on Pay for Content an approval can be what releases a final 50% whose date has
+    // passed — paid in the approval's own transaction, with completion inside it (rules v1.34 §12.2).
+    if (p.goal === 'engagement') {
+      const contentMoney = require('./contentMoney.service');
+      const out = await db.withTransaction((client) => contentMoney.releaseHeldFinal(client, p.campaign_influencer_id));
+      if (out && out.amount != null) await tellFinalPaid(p.campaign_influencer_id, out);
+      return;
+    }
     const out = await db.withTransaction((client) => completeIfDue(client, p.campaign_influencer_id));
     if (out && out.completed) await tellCompleted(p.campaign_influencer_id);
   } catch (e) {
     console.error('[sale-live] completion after approval failed:', e.message);
+  }
+}
+
+/** Item 21 — after commit: the final 50% an approval released, and the completion that came with it. */
+async function tellFinalPaid(ciId, out) {
+  const r = await contentGate.load(ciId, { side: 'admin' });
+  if (!r) return;
+  const { NOTIFY12 } = require('./contentCopy');
+  const rupees = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  await notificationService.send({ userId: r.creator_user_id, type: NOTIFY12.FINAL_PAID.type, title: NOTIFY12.FINAL_PAID.title,
+    body: `Your shoppable posts are approved. ${rupees(out.amount)} is in your wallet.${out.completed ? ' The collaboration is complete.' : ''}`,
+    data: { screen: 'my_content', campaign_influencer_id: ciId }, sendSms: false }).catch((e) => console.error('[NOTIFICATION] final paid failed:', e.message));
+  if (out.completed) {
+    await notificationService.send({ userId: r.brand_user_id, type: NOTIFY12.COMPLETED.type, title: NOTIFY12.COMPLETED.title,
+      body: `${first(r.creator_name)}'s shoppable posts are approved and she has been paid in full. The collaboration is complete.`,
+      data: { screen: 'brand_content', campaign_influencer_id: ciId, campaign_id: r.campaign_id, set_id: r.set_id }, sendSms: false }).catch((e) => console.error('[NOTIFICATION] completed failed:', e.message));
   }
 }
 

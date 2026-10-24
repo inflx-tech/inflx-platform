@@ -709,6 +709,8 @@ describe('Delayed and the reminder lane (checks 30, 32, 59)', () => {
     const w = await world();
     const p = await product(w.brandId);
     await shot(w, [{ productId: p.id, quantity: 1, disposition: 'return' }]);
+    // Item 21: the content step of a Pay for Content collaboration opens on her first approved post.
+    await require('./helpers/item12').firstPostApproved(w);
     await setPostingDate(w.s.id, addDays(todayInIndia(), -1));
 
     const out = await delayedJob.run({ today: todayInIndia() });

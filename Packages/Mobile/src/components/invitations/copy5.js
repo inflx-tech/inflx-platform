@@ -15,6 +15,9 @@ export const MSG5 = {
   DELIVERABLE_DUP: "You've already added that. Change the count instead.",
   // creator-terms-v2 (rules 2.2): offers + products without offers; at least one of the two.
   SELL_NOTHING: (f) => `Give ${f} at least one offer or one product without an offer.`,
+  // Item 21 (rules v1.34 §7A)
+  POST_ABOUT_NOTHING: (f) => `Give ${f} at least one offer or one product to post about, or your entire store.`,
+  POSTS_N: 'How many shoppable posts should she make? 1 to 10.',
   SCOPE_CATEGORIES: 'Pick at least one category.',
   SCOPE_PRODUCTS: 'Pick at least one product.',
   USAGE_PLACE: 'Choose where the brand can use the content.',
@@ -121,7 +124,10 @@ export const C5 = {
     commission: 'Commission', sell: 'What she can sell', change: 'Change',
     offer: 'Follower offer', none: 'None',
     shoppable: 'Shoppable posts', shoppableValue: (n) => `${plural(n, 'post', 'posts')} · set by INFLX`,
-    fee: 'Fee', feeHint: 'Paid 25% on signing, 25% when the content is live, 50% after it stays live.',
+    // Item 21 (rules v1.34 §7A): Pay for Content — the number of shoppable posts, and what she posts about.
+    postsN: 'Shoppable posts in INFLX', postsNHint: 'Posts in the INFLX shop on what you choose below. 1 to 10. She earns no commission on them.',
+    postsAbout: 'What she posts about',
+    fee: 'Fee', feeHint: 'Paid 25% on signing, 25% when the content is live, 50% after it stays live — once her shoppable posts are approved.',
     delivers: 'What she delivers', addAnother: 'Add another', deliverHint: 'Reels, posts, stories, YouTube videos and shorts.',
     // ui-walk-fixes (board D, frames D2 / D3): the one new word — beside a type that already has a line.
     added: 'Added',
@@ -138,6 +144,13 @@ export const C5 = {
   sell: {
     offers: 'Offers', productsWithout: 'Products without offers',
     offersNone: 'None given', productsNone: 'None',
+    // Item 21 (rules v1.34 §7A): the Entire store — every offer and every product without an offer, now and later.
+    store: 'Entire store', storeSub: 'Every offer and every product without an offer. New ones join by themselves.',
+    storeSet: 'Set · new offers and products join', storeCovers: 'Covered by Entire store',
+    storeSummary: 'your entire store',
+    summaryPosts: (words, n) => `She posts about: ${words} · ${plural(n, 'shoppable post', 'shoppable posts')}`,
+    noCommission: 'No commission — the fee is her whole pay.',
+    everyoneHintPosts: 'Copies the fee, the deliverables, the posts and what she posts about. You can still change any creator.',
     offersValue: (n, p) => `${plural(n, 'offer', 'offers')} · ${plural(p, 'product', 'products')}`,
     productsValue: (n) => `${plural(n, 'product', 'products')} · normal price`,
     productsAll: (n) => `All ${plural(n, 'product', 'products')} · normal price`,
@@ -278,6 +291,8 @@ export const C5 = {
       commission: 'Commission', commissionValue: (p) => `${fmtPct5(p)} on what you sell`,
       sell: 'You can sell', sellStore: 'Anything in the store',
       offer: 'Shopper offer', posts: 'Shoppable posts', postsValue: (n) => `At least ${n}`,
+      // Item 21: Pay for Content — the brand's number, no commission; "You post about" opens the same screen.
+      postsNValue: (n) => `${n} in INFLX · no commission`, postAbout: 'You post about',
       fee: 'Fee', post: 'You post', reuse: 'Brand can reuse',
       payTitle: 'How the fee is paid',
       pay: (a, b, c) => `${rupees5(a)} when you both sign · ${rupees5(b)} when the brand confirms your content is live · ${rupees5(c)} after it stays live`,

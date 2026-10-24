@@ -22,9 +22,25 @@ async function ensureFreeProduct(brandId) {
   return p.id;
 }
 
-/** Old-style selling terms → new ones. Anything already in the new shape passes through. */
+/**
+ * Old-style selling terms → new ones. Anything already in the new shape passes through.
+ *
+ * Item 21 (rules v1.34 §7A): a Pay for Content invitation now carries what she POSTS ABOUT and the
+ * number of shoppable posts, the same way — so a content fixture that names neither becomes its
+ * closest new equivalent: ONE shoppable post, on all products without offers. Suites whose subject
+ * is the content package itself get that first post made and approved by `markShootDone`
+ * (helpers/item12), because the package waits for it (D4). A fixture that says `shoppablePosts: null`
+ * is left alone (it is proving the refusal).
+ */
 async function sellable(brandId, terms) {
-  if (!terms || (terms.commissionPct === undefined && terms.commission_pct === undefined)) return terms;
+  if (!terms) return terms;
+  const content = terms.fee !== undefined && terms.commissionPct === undefined && terms.commission_pct === undefined && terms.deliverables !== undefined;
+  if (content) {
+    if (terms.offers !== undefined || terms.productsWithoutOffers !== undefined || terms.shoppablePosts === null) return terms;
+    await ensureFreeProduct(brandId);
+    return { ...terms, shoppablePosts: terms.shoppablePosts === undefined ? 1 : terms.shoppablePosts, productsWithoutOffers: { mode: 'all' } };
+  }
+  if (terms.commissionPct === undefined && terms.commission_pct === undefined) return terms;
   if (terms.offers !== undefined || terms.productsWithoutOffers !== undefined) return terms;
   const { scope, alloc_scope, categoryNodeId, category, productIds, offer, ...rest } = terms;
   await ensureFreeProduct(brandId);

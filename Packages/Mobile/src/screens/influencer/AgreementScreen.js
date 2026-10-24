@@ -136,9 +136,13 @@ export default function AgreementScreen({ navigation, route }) {
             value={remote ? 'Remote · they ship to you' : `Store Visit · ${t.branchName}${t.branchCity ? ', ' + t.branchCity : ''}`}
             testID="mode-row" />
           {work.usageRights ? <TermRow7 label={C7.creator.brandCanReuse} value={work.usageRights.words} testID="usage-row" /> : null}
-          {t.sell ? <TermRow7 label={C7.creator.youCanSell} value={t.sell.words} testID="sell-row" /> : null}
+          {t.sell ? <TermRow7 label={work.shoppablePosts != null ? C7.creator.youPostAbout : C7.creator.youCanSell} value={t.sell.words} testID="sell-row" /> : null}
           {work.minShoppablePosts != null
             ? <TermRow7 label={C7.creator.shoppablePosts} value={C7.creator.atLeast(work.minShoppablePosts)} testID="shoppable-row" />
+            : null}
+          {/* Item 21: Pay for Content — the agreed number in INFLX, no commission. */}
+          {work.shoppablePosts != null
+            ? <TermRow7 label={C7.creator.shoppablePosts} value={C7.creator.inInflx(work.shoppablePosts)} testID="shoppable-n-row" />
             : null}
         </Card7>
 

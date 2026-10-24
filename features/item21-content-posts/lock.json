@@ -1,0 +1,68 @@
+{
+  "feature": "item21-content-posts",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 24 Oct 2026: \"pls lock the screens\")",
+  "approved_at": "2026-10-24T09:30:00.000Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 24 Oct 2026: \"pls lock the screens\")",
+  "mockup_locked_at": "2026-10-24T09:30:00.000Z",
+  "notes": "Item 21 of 22 — Pay for Content gains a brand-set number of shoppable posts (no commission) on offers/products the brand chooses; every Aim gains the Entire store allocation (living). Discussed 24 Oct 2026; decisions D1–D6 taken in chat; defaults R1–R10 shown with board v1; LOCKED 24 Oct 2026 on board v1 with D1–D6 and R1–R10 as drawn; board v2 records the lock. Survey in 00-survey/. Master rules v1.34 written (Downloads). BUILT 24 Oct 2026; not deployed — the deploy needs the founder's explicit go.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "walk_fixes": []
+  },
+  "boards": {
+    "apps": {
+      "file": "04-preview/mockups/item21-content-posts-v2.html",
+      "screens": "T1-T5, C1-C5, G1-G8, P1-P5, W1",
+      "superseded": [
+        "04-preview/mockups/item21-content-posts-v1.html"
+      ],
+      "locked_by": "founder (chat 24 Oct 2026: \"pls lock the screens\")",
+      "locked_at": "2026-10-24T09:30:00.000Z"
+    }
+  },
+  "decisions": {
+    "decided_by": "founder (chat 24 Oct 2026)",
+    "D1_brand_sets_posts_number_1_to_10_counterable": true,
+    "D2_offers_and_products_as_pay_for_sale": true,
+    "D3_final_50_waits_for_posts_approved": true,
+    "D4_path2_locked_until_first_approved_post": true,
+    "D5_no_commission_creator_share_zero": true,
+    "D6_entire_store_living_all_aims": true
+  },
+  "defaults_accepted": {
+    "R1": true,
+    "R2": true,
+    "R3": true,
+    "R4": true,
+    "R5": true,
+    "R6": true,
+    "R7": true,
+    "R8": true,
+    "R9": true,
+    "R10": true,
+    "accepted_by": "founder (chat 24 Oct 2026: \"pls lock the screens\")"
+  },
+  "build": {
+    "built_at": "2026-10-24",
+    "rules": "master v1.34 (sections 7, 7A, 7B, 9, 11.2, 12.2, 19, 21, 22, 25) — Downloads/INFLX_Master_Business_Rules_Phase_1_v1.34.docx",
+    "migration": "209_item21_content_posts.sql (additive; runner scripts/run-209.js; dry run on production 24 Oct 2026: 35 collaborations, 12 Pay for Content all old terms, 0 queued escrow rows, nothing written)",
+    "backend": "tests/item21-content-posts.test.js 18/18 (E1–E26 of 03-expected-outputs.md); shoppable-posts-v2, item19-home, item12-*, item14, item15, creator-terms-v2, item20 green after the fixture change; full compare vs backend/baseline_item21.json (HEAD 8ccf74fd on an untouched copy) — see build.compare",
+    "compare": "scripts/compare-tests.js baseline_item21.json after2_item21.json (24 Oct 2026, full run on the edited tree): before 155 suites / 2200 tests / 1993 passed / 179 failed; after 156 / 2218 / 2013 passed / 177 failed; 19 new (all passing), 0 newly failing, 2 newly passing, 1 gone (renamed: shoppable-posts-v2 \"a Pay for Content collaboration is not one she makes shoppable posts for\" → \"…makes shoppable posts on the new terms, and not on the old\")",
+    "mobile": "130 suites / 3030 tests green (item21.test.js 9 new; item5Brand, refusedBoxShown, draft5, tabBarRealNavigator updated to the rule as it now is)",
+    "website": "OfferPage.js checked to parse; not opened in a browser",
+    "fixtures": "tests/helpers/sell.js makes every Pay for Content fixture its closest new equivalent (1 post, all products without offers); tests/helpers/item12.js markShootDone makes and approves her first post through item 13's routes (openPath2:false keeps the lock)",
+    "decisions_in_build": "see 06-diff/notes.md — Entire store counts products free TODAY (item 20 rule); the lock is read live from approvals; release_held_for_posts says why a due row waited; counters without the number keep it; a counter carrying the allocation is refused",
+    "first_run_catch": "the first full run had 6 newly failing: five fixtures that sent a Pay for Content invitation without posts/allocation or expected the content stage before her first approved post (updated to the rule, each marked Item 21), and one static check that caught the Entire store reads filtering deleted offers — removed from the code (a deleted offer is always an ended one; only the brand's own lists may read the mark)",
+    "migration_applied": "209 applied on production 24 Oct 2026 with scripts/run-209.js --apply BEFORE the push: four shape checks on; every count identical before and after (35 collaborations, 8 sell_v2 rows, 5 content rows, 18 escrow rows, 0 queued, 12 Pay for Content collaborations, 0 on new terms)"
+  }
+}

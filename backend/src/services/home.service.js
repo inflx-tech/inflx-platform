@@ -140,6 +140,7 @@ function brandSigned(r, row, x) {
         ? need('confirm_live', 'content', { ...at, line: B.confirm_live(), why: B.whyPayment, since: x.contentAt })
         : need('review', 'content', { ...at, line: B.review_content(), since: x.contentAt });
     }
+    if (c.move === 'make_posts') return her('her_posts', 'content', B.w_make_posts());    // item 21
     if (c.move === 'send_content') return her('her_content', 'content', B.w_send_content(x.posting));
     if (c.move === 'make_changes') return her('her_changes', 'content', B.w_make_changes());
     if (c.move === 'post_and_link') return her('her_posting', 'content', B.w_post_and_link());
@@ -385,6 +386,8 @@ function creatorSigned(r, card, x) {
 
   const c = card.content;
   if (c && c.line) {
+    // Item 21: Path 2 waits for her first approved post; the "Shoppable post needed" row already says so.
+    if (c.move === 'make_posts') return x.postOwed ? null : mine('make_posts', 'content', C.make_posts());
     if (c.move === 'send_content') return mine('send_content', 'content', C.send_content());
     if (c.move === 'make_changes') return mine('make_changes', 'content', C.make_changes_content());
     if (c.move === 'post_and_link') return mine('post_and_link', 'content', C.post_and_link());
@@ -502,17 +505,29 @@ async function creatorPostRows(influencerId, today) {
   const C = COPY.CREATOR;
   const collabs = (await shoppablePosts.myCollabs(influencerId)).filter(shoppablePosts.postable);
   const done = await shoppablePosts.doneCounts(collabs.map((c) => c.id));
+  // Item 21 (D3): on Pay for Content a queued final 50% waits for her posts — the row says what it unlocks.
+  const held = new Map();
+  if (collabs.some((c) => c.goal === 'engagement')) {
+    const { rows } = await db.query(
+      `SELECT campaign_influencer_id AS ci_id, amount::float AS amount FROM escrow_entries
+        WHERE campaign_influencer_id = ANY($1::uuid[]) AND tranche_number = 3 AND status = 'queued'`,
+      [collabs.filter((c) => c.goal === 'engagement').map((c) => c.id)]);
+    for (const r of rows) held.set(r.ci_id, r.amount);
+  }
   const needs = [];
   const waiting = [];
   const owed = new Set();
   for (const ci of collabs) {
-    const min = ci.min_shoppable_posts == null ? 1 : Number(ci.min_shoppable_posts);
+    const min = shoppablePosts.minOf(ci);
     const posting = ci.go_live_date ? calendarDay(ci.go_live_date) : null;
     const n = done.get(ci.id) || 0;
-    if (n >= min || (posting && isBefore(posting, today))) continue;
+    const holds = held.has(ci.id);
+    // Past the posting date the row goes — unless (item 21) the money still waits on these posts.
+    if (n >= min || (posting && isBefore(posting, today) && !holds)) continue;
     owed.add(ci.id);
     needs.push(need('post_needed', 'createPost', { id: `${ci.id}:post_needed`, ciId: ci.id, who: { type: 'icon', name: C.postNeededName, icon: 'post' },
-      line: C.postNeeded(ci.brand_name, ci.campaign_name, n, min), context: C.createCtx, why: posting ? C.before(posting) : null, date: posting, blocks: false, done: n, min }));
+      line: holds ? C.postNeededHeld(ci.brand_name, ci.campaign_name, n, min, held.get(ci.id)) : C.postNeeded(ci.brand_name, ci.campaign_name, n, min),
+      context: C.createCtx, why: posting && !isBefore(posting, today) ? C.before(posting) : holds ? C.unlocksFinal() : null, date: posting, blocks: false, done: n, min }));
   }
   const { rows } = await db.query(
     `SELECT cp.id, cp.status, cp.reject_reason, cp.updated_at, cp.own_brand, b.business_name AS brand_name, c.name AS campaign_name

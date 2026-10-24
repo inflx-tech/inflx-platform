@@ -366,11 +366,19 @@ describe('I3 · I4 · I5 — terms, creator by creator (creator-terms-v2: offers
     start('engagement');
     const n = nav();
     const { getByText, getByTestId, queryByText, queryByTestId } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
-    getByText('Paid 25% on signing, 25% when the content is live, 50% after it stays live.');
-    expect(queryByTestId('sell-offers')).toBeNull();   // Pay for Content terms don't change (rules 2.2)
+    getByText('Paid 25% on signing, 25% when the content is live, 50% after it stays live — once her shoppable posts are approved.');
+    // Item 21 (rules v1.34 §7A): Pay for Content now asks how many shoppable posts, and what she posts about (board T1).
+    getByTestId('posts-field'); within(getByTestId('sell-field')).getAllByText('What she posts about', { exact: false }); getByTestId('sell-store');
+    within(getByTestId('posts-field')).getByText(C5.terms.postsNHint);
     fireEvent.press(getByTestId('terms-next'));
     getByText(MSG5.FEE_REQUIRED);
+    getByText(`⚠ ${MSG5.POST_ABOUT_NOTHING('Priya')}`);
     fireEvent.changeText(getByTestId('fee'), '8000');
+    fireEvent.changeText(getByTestId('posts'), '3');
+    fireEvent.press(getByTestId('sell-store'));                      // Entire store, in one tap
+    getByText('She posts about: your entire store · 3 shoppable posts');
+    getByText(C5.sell.noCommission);
+    expect(queryByText(`⚠ ${MSG5.POST_ABOUT_NOTHING('Priya')}`)).toBeNull();
     // D1: a new invitation still starts with one line — Instagram reel, 1 — and the hint under it.
     within(getByTestId('deliverables-row-0-type')).getByText('Instagram reel');
     within(getByTestId('deliverables-row-0-count-value')).getByText('1');
@@ -422,6 +430,10 @@ describe('I3 · I4 · I5 — terms, creator by creator (creator-terms-v2: offers
     expect(d.terms.s.fee).toBe('8000');
     expect(d.terms.s.deliverables).toEqual([{ type: 'reel', count: 1 }, { type: 'story', count: 2 }]);
     expect(d.terms.s.usage).toEqual({ on: true, durationDays: 60, places: ['ads'] });
+    // Item 21 (R10): the posts number and the Entire store are copied too, and sent as the server reads them.
+    expect(d.terms.s.posts).toBe('3');
+    expect(d.terms.s.sellMode).toBe('store');
+    expect(draft.toServer('engagement', d.terms.p)).toMatchObject({ fee: 8000, shoppablePosts: 3, offers: [], productsWithoutOffers: { mode: 'store' } });
   });
 
   it('Hybrid refuses a ₹0 fixed fee; "All products without offers" and "Use these terms for everyone" copy the product list (checks 8, 11; T3, rules 2.5)', async () => {

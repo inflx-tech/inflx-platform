@@ -87,6 +87,20 @@ export const C12 = {
   openContentHers: 'Go to your content',
   openContentBrand: 'Open the content',
 
+  /* ── Item 21 (board G1–G7): Path 1, the lock on Path 2, the final payment that waits ── */
+  path1Title: 'Shoppable posts',
+  path1WhoHers: 'Checked by INFLX. Post about what the brand chose — no commission, your fee is your pay.',
+  path1WhoBrand: 'INFLX checks these. She earns no commission on them.',
+  path2Locked: (brand) => `Locked until INFLX approves your first shoppable post. ${brand} check the content here, and a reel that sends people to INFLX needs something they can buy.`,
+  path2LockedBrand: (name) => `${first(name)} is making her shoppable posts. The content opens for you when INFLX approves the first.`,
+  finalWaitsPosts: (n, amount) => `The final ${rupees5(amount)} waits for ${plural(n, 'more approved post', 'more approved posts')}.`,
+  finalHeldHers: (n, amount) => `${rupees5(amount)} is due but waits for ${plural(n, 'more approved shoppable post', 'more approved shoppable posts')}. Make ${n === 1 ? 'it' : 'them'} and it is released on approval.`,
+  lastWaitsPosts: (amount, n) => `The last ${rupees5(amount)} follows 7 days after your confirmation — once INFLX has approved ${plural(n, 'more of her shoppable posts', 'more of her shoppable posts')}.`,
+  confirmWaitsPosts: (n) => `It also waits for ${plural(n, 'more approved shoppable post', 'more approved shoppable posts')}.`,
+  reportPostsNotMade: "She hasn't made her shoppable posts — tell INFLX",
+  reportPostsBody: "The posting date has passed and she is short of the shoppable posts you agreed. INFLX looks at it with you both. Nothing moves until they do; her final payment stays locked.",
+  stepPosts: 'Shoppable posts',
+
   /* ── C2 ── */
   aimLine: (mode) => `Pay for Content · ${mode === 'visit' ? 'Store Visit' : 'Remote'}`,
   active: 'Active',

@@ -39,7 +39,10 @@ const first = (name) => String(name || '').trim().split(/\s+/)[0] || 'She';
 async function contentStageOf(ciId, conn = db) {
   const cc = await content.contentRow(ciId, conn);
   const rounds = cc ? await content.roundsOf(cc.id, conn) : [];
-  return { cc, rounds, stage: content.stageOf(cc, rounds) };
+  // Item 21: the posts term, so the stage can be `posts` (Path 2 locked) and Delayed can say so.
+  const r = await contentGate.load(ciId, { side: 'admin' }, conn);
+  const posts = r ? await contentGate.postsOf(ciId, r, conn) : null;
+  return { cc, rounds, posts, stage: flow.stageWithPosts(content.stageOf(cc, rounds), cc, posts) };
 }
 
 function tell(r, side, key, body) {
@@ -72,7 +75,10 @@ async function flagDelayedContent({ today = null } = {}) {
         AND cs.go_live_date IS NOT NULL AND cs.go_live_date < $1::date
         AND con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL
         AND pe.status = 'completed'
-        AND (cc.id IS NULL OR cc.live_confirmed_at IS NULL)`, [t]);
+        AND (cc.id IS NULL OR cc.live_confirmed_at IS NULL
+             -- Item 21 (R8): live, but still short of the agreed shoppable posts
+             OR (ci.sell_v2 AND ci.shoppable_posts_n IS NOT NULL AND cc.completed_at IS NULL
+                 AND (SELECT count(*) FROM creator_posts cp WHERE cp.campaign_influencer_id = ci.id AND cp.v2 AND cp.approved_at IS NOT NULL) < ci.shoppable_posts_n))`, [t]);
   const told = [];
   for (const row of rows) {
     out.checked += 1;
@@ -84,8 +90,8 @@ async function flagDelayedContent({ today = null } = {}) {
         if (!locked[0]) return;
         const gate = await shootGate.shootGate(row.ci_id, tx);
         if (!gate || !gate.open) { out.skippedGate += 1; return; }
-        const { stage } = await contentStageOf(row.ci_id, tx);
-        const delayed = flow.delayedStageFor(stage);
+        const { stage, posts } = await contentStageOf(row.ci_id, tx);
+        const delayed = flow.delayedStageFor(stage, posts);
         if (!delayed) return;
         const { rowCount } = await tx.query(
           `UPDATE campaign_influencers SET delayed_at = now(), delayed_stage = $2 WHERE id = $1 AND delayed_at IS NULL`,
@@ -152,8 +158,8 @@ async function currentDelayedStage(row) {
     // Item 14: a Pay for Sale collaboration's stage follows it through the two paths.
     if (row.goal === 'conversion' || row.goal === 'hybrid') return require('./saleLive.service').currentDelayedStageSale(row.ci_id);
     if (row.goal !== 'engagement') return null;
-    const { stage } = await contentStageOf(row.ci_id);
-    return flow.delayedStageFor(stage);                              // null once live: keep the last
+    const { stage, posts } = await contentStageOf(row.ci_id);
+    return flow.delayedStageFor(stage, posts);                       // null once live (and the posts met): keep the last
   }
   const mode = String((pe && pe.mode) || row.shoot_mode || 'remote').toLowerCase();
   if (mode === 'visit') return shootPlan.delayedStageOf(pe) || 'plan_not_sent';
@@ -165,6 +171,8 @@ async function currentDelayedStage(row) {
 /* ───────────────────────────────────────────── J2b — the 48-hour lane */
 
 const REMINDER = {
+  // Item 21: Path 2 waits for her first approved shoppable post.
+  make_posts:     (r) => ({ side: 'creator', body: `Your shoppable posts for ${r.brand_name} are waiting. The content step opens when INFLX approves the first.` }),
   send_content:   (r) => ({ side: 'creator', body: `Your content for ${r.brand_name} is waiting. Upload what you agreed and send it.` }),
   make_changes:   (r) => ({ side: 'creator', body: `${r.brand_name} asked for changes. Send the changes when you're ready.` }),
   review_content: (r) => ({ side: 'brand', body: `${first(r.creator_name)}'s content is waiting for your review.` }),
@@ -205,8 +213,9 @@ async function remindContent({ now = new Date() } = {}) {
         if (!contentGate.rowsOf(r.terms_json)) return;               // Q7: INFLX settles those, not a reminder
         const cc = await content.ensureContent(tx, g);                // the step is open; its row may be born here
         const rounds = await content.roundsOf(cc.id, tx);
-        const stage = content.stageOf(cc, rounds);
-        const move = flow.openMove(stage, cc, rounds, contentGate.shootDoneAt(r));
+        const posts = await contentGate.postsOf(row.ci_id, r, tx);   // item 21
+        const stage = flow.stageWithPosts(content.stageOf(cc, rounds), cc, posts);
+        const move = flow.openMove(stage, cc, rounds, contentGate.shootDoneAt(r), posts);
         if (!move || !move.since) return;
         const anchor = Math.max(new Date(move.since).getTime(), cc.reminder_sent_at ? new Date(cc.reminder_sent_at).getTime() : 0);
         if (now.getTime() - anchor < HOURS_48) return;

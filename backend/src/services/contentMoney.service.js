@@ -96,8 +96,18 @@ async function releaseFinal(client, escrowId, { now = new Date() } = {}) {
     `SELECT id, brand_reported_at FROM collab_content WHERE campaign_influencer_id = $1 FOR UPDATE`, [e.ci_id]);
   if (cc && cc.brand_reported_at) return { skipped: 'brand_report', ciId: e.ci_id };
 
+  // Item 21 (rules v1.34 §12.2, D3): a Pay for Content final 50% is released at the LATER of its
+  // date and INFLX approving the agreed number of shoppable posts. Short of them, the row waits
+  // and says why; the approval that completes the number releases it (releaseHeldFinal).
+  const hold = await postsHold(client, e.ci_id);
+  if (hold) {
+    await client.query(`UPDATE escrow_entries SET release_held_for_posts = true WHERE id = $1 AND NOT release_held_for_posts`, [e.id]);
+    return { skipped: 'posts', ciId: e.ci_id, short: hold.short };
+  }
+
   const out = await escrowService.processTrancheRelease(client, e.id, e.influencer_id, e.brand_id, e.campaign_id);
   if (out.alreadyReleased) return null;
+  await client.query(`UPDATE escrow_entries SET release_held_for_posts = false WHERE id = $1 AND release_held_for_posts`, [e.id]);
 
   const done = await afterFinalPaid(client, { ciId: e.ci_id, campaignId: e.campaign_id }, cc || null);
   return {
@@ -105,6 +115,34 @@ async function releaseFinal(client, escrowId, { now = new Date() } = {}) {
     campaignId: e.campaign_id, brandId: e.brand_id, influencerId: e.influencer_id, hasContent: !!cc,
     ...(done.hybrid ? { hybrid: true } : {}),
   };
+}
+
+/**
+ * Item 21 — is this collaboration's final 50% held for its shoppable posts? { n, approved, short }
+ * when it is a Pay for Content collaboration signed with posts and still short of them; null otherwise.
+ */
+async function postsHold(client, ciId) {
+  const { rows: [x] } = await client.query(
+    `SELECT ci.sell_v2, ci.shoppable_posts_n, cs.goal,
+            (SELECT count(*)::int FROM creator_posts cp WHERE cp.campaign_influencer_id = ci.id AND cp.v2 AND cp.approved_at IS NOT NULL) AS approved
+       FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id WHERE ci.id = $1`, [ciId]);
+  if (!x || x.goal !== 'engagement' || !x.sell_v2 || x.shoppable_posts_n == null) return null;
+  const n = Number(x.shoppable_posts_n);
+  return x.approved >= n ? null : { n, approved: x.approved, short: n - x.approved };
+}
+
+/**
+ * Item 21 — INFLX approved a post: if this collaboration's final 50% is queued, its date has passed
+ * and the agreed number is now reached, release it here, in the caller's transaction. Returns what
+ * releaseFinal returns, or null when there is nothing due.
+ */
+async function releaseHeldFinal(client, ciId, { now = new Date() } = {}) {
+  const { rows: [e] } = await client.query(
+    `SELECT id, release_due_at FROM escrow_entries WHERE campaign_influencer_id = $1 AND tranche_number = 3 AND status = 'queued'`, [ciId]);
+  if (!e) return null;
+  if (e.release_due_at && new Date(e.release_due_at) > now) return null;     // the job pays it on its date
+  const out = await releaseFinal(client, e.id, { now });
+  return out && !out.skipped ? out : null;
 }
 
 /**
@@ -158,4 +196,4 @@ function stillLockedOf(escrowRows) {
     .reduce((s, e) => s + Number(e.amount || 0), 0) * 100) / 100;
 }
 
-module.exports = { dueAtFor, lockEscrow, releaseSecond, releaseFinal, stillLockedOf, afterFinalPaid };
+module.exports = { dueAtFor, lockEscrow, releaseSecond, releaseFinal, stillLockedOf, afterFinalPaid, postsHold, releaseHeldFinal };

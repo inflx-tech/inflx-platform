@@ -46,8 +46,9 @@ async function world({ shootDone = true, goal = 'conversion', min = null } = {})
   const c = await w10.campaign(b);
   const s = await w10.set(b, c.id, { goal, shoot_mode: 'shipment', go_live_date: day(12) });
   const cr = await H.creator({ name: 'Priya Rao' });
+  // Item 21: a Pay for Content invitation carries the posts number and what she posts about.
   const terms = goal === 'engagement'
-    ? { fee: 9000, deliverables: [{ type: 'reel', count: 1 }] }
+    ? { fee: 9000, deliverables: [{ type: 'reel', count: 1 }], shoppablePosts: 2, productsWithoutOffers: { mode: 'chosen', productIds: free } }
     : { commissionPct: 10, offers: [bundle, discount, fixed], productsWithoutOffers: { mode: 'chosen', productIds: free } };
   const inv = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms }] });
   if (inv.status !== 201) throw new Error(`invite: ${JSON.stringify(inv.body)}`);
@@ -136,8 +137,13 @@ describe('who can post, and for what (P2, P3; checks 1–3)', () => {
     });
   });
 
-  test('a Pay for Content collaboration is not one she makes shoppable posts for', async () => {
+  // Item 21 (rules v1.34 §12.2): a Pay for Content collaboration on the new terms makes shoppable
+  // posts too (the brand's number, no commission); one signed before them still does not.
+  test('a Pay for Content collaboration makes shoppable posts on the new terms, and not on the old', async () => {
     const w = await world({ goal: 'engagement' });
+    expect((await api.get(`${P}/brands`, w.cr.token)).body.data.brands.map((b) => b.id)).toEqual([w.brandId]);
+    expect((await api.post(P, w.cr.token, { campaign_influencer_id: w.ciId })).status).toBe(200);
+    await query(`UPDATE campaign_influencers SET sell_v2 = false, sell_mode = NULL, sell_product_ids = '{}', shoppable_posts_n = NULL WHERE id = $1`, [w.ciId]);
     expect((await api.get(`${P}/brands`, w.cr.token)).body.data.brands).toEqual([]);
     expect((await api.post(P, w.cr.token, { campaign_influencer_id: w.ciId })).status).toBe(404);
   });

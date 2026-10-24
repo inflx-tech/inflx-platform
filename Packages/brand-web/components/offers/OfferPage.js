@@ -248,6 +248,13 @@ export default function OfferPage({ id }) {
                 <span className="xs">It drops out of {view.unsigned_invitations > 1 ? 'them' : 'it'} and the creator{view.unsigned_invitations > 1 ? 's are' : ' is'} told. An invitation left with nothing to sell is withdrawn.</span>
               </div>
             )}
+            {/* Item 21 (R3): signed collaborations on the Entire store hold every offer, this one included. */}
+            {view.store_collaborations && view.store_collaborations.collaborations > 0 && (
+              <div className="card nobox" style={{ gap: 4 }} data-testid="end-store">
+                <span className="sm"><b>It&apos;s also in {view.store_collaborations.collaborations} signed collaboration{view.store_collaborations.collaborations > 1 ? 's' : ''} that sell your entire store.</b></span>
+                <span className="xs">{view.store_collaborations.posts > 0 ? `Their ${view.store_collaborations.posts} live post${view.store_collaborations.posts > 1 ? 's' : ''} for this offer ${view.store_collaborations.posts > 1 ? 'are' : 'is'} removed from the shop. ` : ''}Everything else they sell is untouched.</span>
+              </div>
+            )}
             <div className="hint">{view.pool.counts.buy === 1 ? 'Its 1 product becomes' : `All ${view.pool.counts.buy} products become`}{view.pool.counts.gift ? ' (and its gifts)' : ''} free right away. It stays in your list as Ended until you delete it, with its dates ({span(o.starts_on, o.ends_on)}).</div>
             {dlgErr && <div className="err">{dlgErr}</div>}
             <div className="row" style={{ justifyContent: 'flex-end' }}>

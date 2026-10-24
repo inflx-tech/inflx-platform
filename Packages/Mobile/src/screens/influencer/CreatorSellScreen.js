@@ -25,6 +25,10 @@ export const C12 = {
   normalRow: (n) => `${n} ${n === 1 ? 'product' : 'products'} · no offer`,
   hint: "When an offer ends, your posts using it leave the shop. Products at normal price keep selling until they're out of stock.",
   none: 'Nothing to sell here yet.',
+  // Item 21 (board C4, C5)
+  noCommission: 'No commission on these — your fee is your pay.',
+  storeLine: 'Everything in the store: every offer and every product without an offer, including ones added later. An offer that ends leaves.',
+  titlePosts: 'What you post about',
   runs: 'Runs', how: 'How it works for shoppers', gifts: (n) => `${n} ${n === 1 ? 'gift' : 'gifts'}`,
   more: (n) => `+${n}`,
 };
@@ -59,9 +63,11 @@ export default function CreatorSellScreen({ navigation, route }) {
   const list = (d.products && d.products.list) || [];
   return (
     <View style={base.screen} testID="creator-sell">
-      <Header title={C12.title} onBack={() => navigation.goBack()} />
+      <Header title={d.no_commission ? C12.titlePosts : C12.title} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <Text style={s.sub}>{C12.sub(d.brand_name, d.set_name, d.commission_pct)}</Text>
+        {d.no_commission ? <Text style={s.sub} testID="no-commission">{C12.noCommission}</Text> : null}
+        {d.store ? <Text style={s.sub} testID="store-line">{C12.storeLine}</Text> : null}
         {d.offers.length ? <Text style={s.eyebrow}>{C12.offers(d.offers.length)}</Text> : null}
         {d.offers.map(o => (
           <TouchableOpacity key={o.id} style={s.card} onPress={() => navigation.navigate('CreatorOffer', { ciId, offerId: o.id })} testID={`sell-offer-${o.id}`}>

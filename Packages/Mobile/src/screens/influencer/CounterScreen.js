@@ -39,15 +39,15 @@ import { C6, MSG6, TERM_LABEL, rupees6, fmtPct6, snapshotLine6 } from '../../com
  * filed under that name nothing here draws it. Each goes to the line it is about; anything this
  * screen has no line for is still said on the form line.
  */
-const SERVER_FIELD = { formats_json: 'deliverables', agreed_fee: 'fee', commission_pct: 'commissionPct', usage_rights_json: 'usage' };
+const SERVER_FIELD = { formats_json: 'deliverables', agreed_fee: 'fee', commission_pct: 'commissionPct', usage_rights_json: 'usage', shoppable_posts_n: 'posts' };
 /** The lines "Send counter" can refuse, in the order the form draws them; 'form' is the line at the end. */
-const COUNTER_FIELDS = ['commissionPct', 'fee', 'deliverables', 'usage', 'note', 'form'];
+const COUNTER_FIELDS = ['commissionPct', 'fee', 'deliverables', 'posts', 'usage', 'note', 'form'];
 
 export default function CounterScreen({ navigation, route }) {
   const { ciId } = route?.params || {};
   const [status, setStatus] = useState('loading');
   const [thread, setThread] = useState(null);
-  const [terms, setTerms] = useState({ commissionPct: '', fee: '', deliverables: [], usage: { on: false, durationDays: 30, places: [] } });
+  const [terms, setTerms] = useState({ commissionPct: '', fee: '', deliverables: [], posts: '', usage: { on: false, durationDays: 30, places: [] } });
   const [note, setNote] = useState('');
   const [errs, setErrs] = useState({});
   const [saving, setSaving] = useState(false);
@@ -71,6 +71,7 @@ export default function CounterScreen({ navigation, route }) {
       commissionPct: c.commissionPct != null ? String(c.commissionPct) : '',
       fee: c.fee != null ? String(c.fee) : '',
       deliverables: (c.deliverables || []).map(d => ({ ...d })),
+      posts: c.shoppablePostsN != null ? String(c.shoppablePostsN) : '',     // item 21
       usage: c.usageRights && c.usageRights.on ? { on: true, durationDays: c.usageRights.durationDays, places: [...(c.usageRights.places || [])] } : { on: false, durationDays: 30, places: [] },
     });
     setStatus('ready');
@@ -86,10 +87,13 @@ export default function CounterScreen({ navigation, route }) {
   const limit = neg.roundLimit || 2;
   const left = Math.max(0, limit - round);
   const current = thread.current || {};
+  const hasPosts = goal === 'engagement' && current.shoppablePostsN != null;   // item 21: only where the brand set a number
   const proposed = {
     commissionPct: terms.commissionPct === '' ? null : Number(terms.commissionPct),
     fee: terms.fee === '' ? null : Number(terms.fee),
     deliverables: terms.deliverables,
+    // item 21: the posts number travels only where the brand set one — an older collaboration's counter is sent exactly as before
+    ...(hasPosts ? { shoppablePostsN: terms.posts === '' ? null : Number(terms.posts) } : {}),
     usageRights: terms.usage.on ? { on: true, durationDays: terms.usage.durationDays, places: terms.usage.places } : null,
   };
   const mins = thread.minimums || null; // never sent to a creator; kept for symmetry
@@ -104,6 +108,7 @@ export default function CounterScreen({ navigation, route }) {
       const rowsError = deliverableRowsError5(rows);
       if (!rows.length) e.deliverables = MSG5.DELIVERABLES_EMPTY;
       else if (rowsError) e.deliverables = rowsError;
+      if (hasPosts) { const p = Number(terms.posts); if (terms.posts === '' || !Number.isInteger(p) || p < 1 || p > 10) e.posts = MSG5.POSTS_N; }
       if (terms.usage.on && !terms.usage.places.length) e.usage = MSG5.USAGE_PLACE;
     }
     if (note.length > 300) e.note = MSG6.NOTE_LONG;
@@ -128,6 +133,7 @@ export default function CounterScreen({ navigation, route }) {
           goal !== 'engagement' ? 'commissionPct' : null,
           goal !== 'conversion' ? 'fee' : null,
           goal === 'engagement' ? 'deliverables' : null,
+          hasPosts ? 'posts' : null,
           goal === 'engagement' && terms.usage.on ? 'usage' : null,
           'note',
         ].filter(Boolean);
@@ -177,6 +183,16 @@ export default function CounterScreen({ navigation, route }) {
               <DeliverablesEditor5 rows={terms.deliverables} onChange={(rows) => { setTerms(t => ({ ...t, deliverables: rows })); setErrs(x => ({ ...x, deliverables: undefined, form: undefined })); }} error={errs.deliverables} testID="counter-deliverables" scrollRef={scrollRef} />
               <ChangeLine6 label={C6.counter.theyAsked} from={deliverablesShort(current.deliverables) || '—'} to={deliverablesShort(terms.deliverables) || '—'} testID="change-deliverables" />
             </View>
+            {/* Item 21 (board C2): the posts number is hers to counter; what she posts about is not. */}
+            {hasPosts ? (
+              <View style={s.field} ref={reveal.mark('posts')} collapsable={false} testID="counter-posts-field">
+                <Text style={s.label}>{C6.counter.posts} <Text style={{ color: T.danger }}>*</Text></Text>
+                <NumberField value={String(terms.posts)} onChangeText={(v) => { setTerms(t => ({ ...t, posts: v })); setErrs(x => ({ ...x, posts: undefined, form: undefined })); }} suffix="posts" testID="counter-posts" />
+                <ChangeLine6 label={C6.counter.theyAsked} from={String(current.shoppablePostsN)} to={terms.posts || '—'} testID="change-posts" />
+                <Text style={s.hint}>{C6.counter.postsHint}</Text>
+                <FieldError text={errs.posts} />
+              </View>
+            ) : null}
             <View style={s.field}>
               <SwitchRow label={C6.counter.reuse} value={terms.usage.on} onValueChange={(on) => { setTerms(t => ({ ...t, usage: { ...t.usage, on } })); setErrs(x => ({ ...x, form: undefined })); }} testID="counter-usage-switch" />
               {current.usageRights && current.usageRights.on ? (

@@ -128,7 +128,8 @@ export function ReportSheet12({ visible, kind, brandName, busy, serverError, onR
   const [note, setNote] = useState('');
   const [err, setErr] = useState(null);
   useEffect(() => { if (visible) { setNote(''); setErr(null); } }, [visible]);
-  const body = kind === 'rounds_used' ? C12.reportRoundsUsed : kind === 'posted_wrong' ? C12.reportPostedWrong : C12.reportSilent(brandName);
+  const body = kind === 'rounds_used' ? C12.reportRoundsUsed : kind === 'posted_wrong' ? C12.reportPostedWrong
+    : kind === 'posts_not_made' ? C12.reportPostsBody : C12.reportSilent(brandName);
   function go() {
     const n = note.trim();
     if (n.length > 500) { setErr(MSG12.REASON_TOO_LONG); return; }

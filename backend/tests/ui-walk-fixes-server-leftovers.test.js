@@ -96,8 +96,9 @@ describe('1 · Needs You counts an agreement the brand took back (U6a, check 23)
     const w = await w10.world('engagement');
     // Two more creators in the same set, both accepted.
     const others = await Promise.all(['Ritu Verma', 'Kavya Rao'].map(name => creator({ name })));
+    const terms21 = await require('./helpers/sell').sellable(w.brandId, w10.CONTENT);   // item 21: posts + what she posts about
     const inv = okd(await api.post(`${w.url}/invitations`, w.b.token, {
-      creators: others.map(c => ({ influencerId: c.influencerId, terms: w10.CONTENT })),
+      creators: others.map(c => ({ influencerId: c.influencerId, terms: terms21 })),
     }), 201);
     const ids = Object.fromEntries(inv.body.data.rows.map(x => [x.name, x.id]));
     for (const [i, name] of ['Ritu Verma', 'Kavya Rao'].entries()) okd(await api.post(`/influencers/me/invitations/${ids[name]}/accept`, others[i].token));

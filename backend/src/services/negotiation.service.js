@@ -225,7 +225,8 @@ function termsOf(ctx) {
   switch (ctx.goal) {
     case 'engagement':
       // The places keep the order they were chosen in; only the no-change check sorts (canon).
-      return { fee: ctx.agreed_fee != null ? Number(ctx.agreed_fee) : null, deliverables: jsonArr(ctx.formats_json).map(d => ({ type: d.type, count: Number(d.count) || 1 })), usageRights: usage && usage.on ? { on: true, durationDays: usage.duration_days == null ? null : Number(usage.duration_days), places: [...(usage.places || [])] } : null };
+      // Item 21: the number of shoppable posts is a term she may counter (rules v1.34 §7B); null on old terms.
+      return { fee: ctx.agreed_fee != null ? Number(ctx.agreed_fee) : null, deliverables: jsonArr(ctx.formats_json).map(d => ({ type: d.type, count: Number(d.count) || 1 })), usageRights: usage && usage.on ? { on: true, durationDays: usage.duration_days == null ? null : Number(usage.duration_days), places: [...(usage.places || [])] } : null, shoppablePostsN: ctx.shoppable_posts_n != null ? Number(ctx.shoppable_posts_n) : null };
     case 'hybrid':
       return { fee: ctx.agreed_fee != null ? Number(ctx.agreed_fee) : null, commissionPct: ctx.commission_pct != null ? Number(ctx.commission_pct) : null };
     default:
@@ -244,7 +245,7 @@ function normalizeSnapshot(goal, terms, mode = 'strict', shoot = null) {
   const t = validateTerms(goal, terms || {}, { mode });
   switch (goal) {
     case 'engagement':
-      return { fee: t.fee, deliverables: t.deliverables || [], usageRights: t.usageRights ? { on: true, durationDays: t.usageRights.duration_days, places: [...t.usageRights.places] } : null };
+      return { fee: t.fee, deliverables: t.deliverables || [], usageRights: t.usageRights ? { on: true, durationDays: t.usageRights.duration_days, places: [...t.usageRights.places] } : null, shoppablePostsN: t.shoppablePostsN != null ? t.shoppablePostsN : null };
     case 'hybrid':
       return { fee: t.fee, commissionPct: t.commissionPct };
     default:
@@ -281,7 +282,7 @@ function canon(s) {
   const u = s.usageRights && s.usageRights.on ? { d: s.usageRights.durationDays == null ? 'forever' : Number(s.usageRights.durationDays), p: [...(s.usageRights.places || [])].sort() } : null;
   const d = (s.deliverables || []).map(x => `${x.type}:${Number(x.count) || 1}`).sort();
   const v = s.visitAt ? new Date(s.visitAt).getTime() : null;
-  return JSON.stringify({ c: s.commissionPct == null ? null : Number(s.commissionPct), f: s.fee == null ? null : Number(s.fee), d, u, v: Number.isNaN(v) ? String(s.visitAt) : v });
+  return JSON.stringify({ c: s.commissionPct == null ? null : Number(s.commissionPct), f: s.fee == null ? null : Number(s.fee), d, u, v: Number.isNaN(v) ? String(s.visitAt) : v, n: s.shoppablePostsN == null ? null : Number(s.shoppablePostsN) });
 }
 const sameSnapshot = (a, b) => canon(a) === canon(b);
 
@@ -289,7 +290,7 @@ const sameSnapshot = (a, b) => canon(a) === canon(b);
 function termsLine(goal, s) {
   if (!s) return null;
   if (s.visitAt !== undefined) return whenLine(s.visitAt);          // Item 10: "Sat 18 Oct, 11:00 am"
-  if (goal === 'engagement') return [s.fee != null ? `₹${inr(s.fee)}` : null, deliverablesInWords(s.deliverables)].filter(Boolean).join(' · ');
+  if (goal === 'engagement') return [s.fee != null ? `₹${inr(s.fee)}` : null, deliverablesInWords(s.deliverables), s.shoppablePostsN != null ? `${s.shoppablePostsN} shoppable post${Number(s.shoppablePostsN) === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ');
   if (goal === 'hybrid') return [s.fee != null ? `₹${inr(s.fee)}` : null, pct(s.commissionPct)].filter(Boolean).join(' + ');
   return pct(s.commissionPct);
 }
@@ -306,6 +307,10 @@ function changesBetween(goal, prev, next) {
   if (goal === 'engagement') {
     push('fee', prev.fee != null ? `₹${inr(prev.fee)}` : '—', next.fee != null ? `₹${inr(next.fee)}` : '—');
     push('deliverables', deliverablesInWords(prev.deliverables) || '—', deliverablesInWords(next.deliverables) || '—');
+    // Item 21: "They asked for 3 shoppable posts → 2".
+    if (prev.shoppablePostsN != null || next.shoppablePostsN != null) {
+      push('shoppablePostsN', prev.shoppablePostsN != null ? String(prev.shoppablePostsN) : '—', next.shoppablePostsN != null ? String(next.shoppablePostsN) : '—');
+    }
     const uw = (u) => (u && u.on ? usageInWords({ on: true, duration_days: u.durationDays, places: u.places }) : 'Off');
     push('usageRights', uw(prev.usageRights), uw(next.usageRights));
   } else {
@@ -453,6 +458,15 @@ async function counter({ ctx, by, terms, note, actorUserId, legacy = false, reop
   const text = typeof note === 'string' ? note.trim() : '';
   if (text.length > 300) throw new AppError('VALIDATION_ERROR', MSG.NOTE_LONG, 422, 'note');
   const snapshot = normalizeSnapshot(goal, legacy ? snapshotFromLegacy(goal, current, terms || {}) : terms, legacy ? 'legacy' : 'strict', isShoot(ctx) ? ctx : null);
+  if (goal === 'engagement' && !isShoot(ctx)) {
+    // Item 21 (rules v1.34 §7B): what she posts about is the brand's alone — a counter that carries
+    // offers, products or the Entire store is refused, never quietly dropped.
+    if (!legacy && require('./creatorTerms.service').readSellInput(terms || {})) throw new AppError('VALIDATION_ERROR', require('./creatorTerms.service').MSG.CANT_COUNTER_SELL, 422, 'offers');
+    // An app that does not know the posts number leaves it as it stands.
+    if (snapshot.shoppablePostsN == null && current && current.shoppablePostsN != null) snapshot.shoppablePostsN = current.shoppablePostsN;
+    // A collaboration with no posts term (old terms, or a pitch) never gains one through a counter.
+    if (!(current && current.shoppablePostsN != null)) snapshot.shoppablePostsN = null;
+  }
   if (sameSnapshot(snapshot, current)) throw new AppError('VALIDATION_ERROR', MSG.NOTHING_CHANGED, 422, 'terms');
 
   const next = other(by);
@@ -593,11 +607,14 @@ async function accept({ ctx, by, actorUserId }) {
               agreed_fee     = CASE WHEN $2 IN ('engagement','hybrid') THEN $3 ELSE agreed_fee END,
               commission_pct = CASE WHEN $2 IN ('conversion','hybrid') THEN $4 ELSE commission_pct END,
               formats_json   = CASE WHEN $2 = 'engagement' THEN $5::jsonb ELSE formats_json END,
-              usage_rights_json = CASE WHEN $2 = 'engagement' THEN $6::jsonb ELSE usage_rights_json END
+              usage_rights_json = CASE WHEN $2 = 'engagement' THEN $6::jsonb ELSE usage_rights_json END,
+              -- Item 21: the agreed number of shoppable posts (only ever set where one was sent).
+              shoppable_posts_n = CASE WHEN $2 = 'engagement' AND shoppable_posts_n IS NOT NULL THEN COALESCE($7::smallint, shoppable_posts_n) ELSE shoppable_posts_n END
         WHERE id = $1`,
       [ctx.id, goal, s.fee != null ? s.fee : null, s.commissionPct != null ? s.commissionPct : null,
         s.deliverables ? JSON.stringify(s.deliverables) : null,
-        s.usageRights && s.usageRights.on ? JSON.stringify({ on: true, duration_days: s.usageRights.durationDays, places: s.usageRights.places }) : null]
+        s.usageRights && s.usageRights.on ? JSON.stringify({ on: true, duration_days: s.usageRights.durationDays, places: s.usageRights.places }) : null,
+        s.shoppablePostsN != null ? Number(s.shoppablePostsN) : null]
     );
     await endThread(tx, ctx.neg_id, 'agreed', actorUserId);
   });
@@ -757,7 +774,8 @@ async function thread(ctx, side) {
   const goal = ctx.goal;
   const turns = await turnsOf(ctx.neg_id);
   const zero = termsOf(ctx);
-  const sellBlock = ctx.sell_v2 && goal !== 'engagement'
+  // Item 21: a Pay for Content collaboration on the new terms carries what she posts about too.
+  const sellBlock = ctx.sell_v2
     ? (await require('./creatorTerms.service').sellFor([ctx])).get(ctx.id) : null;
   let prev = zero;
   const shaped = [];
@@ -829,7 +847,7 @@ async function thread(ctx, side) {
     turns: shaped.reverse(),
     // creator-terms-v2: the new terms read "2 offers + 12 products"; offers can't be countered (2.6).
     invitation: { terms: zero, termsLine: termsLine(goal, zero), sentAt: ctx.invited_at || ctx.created_at,
-      scopeWords: goal !== 'engagement' ? (sellBlock ? sellBlock.words : scopeWords(ctx)) : null,
+      scopeWords: sellBlock ? sellBlock.words : goal !== 'engagement' ? scopeWords(ctx) : null,
       offerName: goal !== 'engagement' && !sellBlock ? offerName(ctx) : null },
     moveRequest: ctx.move_requested_at ? { goLiveDate: ctx.deferred_go_live_date ? calendarDay(ctx.deferred_go_live_date) : null, shootMode: ctx.deferred_shoot_mode || null, note: ctx.deferred_note || null, requestedAt: ctx.move_requested_at, answer: ctx.move_answer || null, answeredAt: ctx.move_answered_at || null } : null,
     pool: ctx.pool_id ? { entryId: ctx.pool_id, state: ctx.pool_state, expiresAt: ctx.pool_expires_at } : null,

@@ -57,6 +57,8 @@ function normalizeTerms(raw = {}) {
   return {
     commissionPct: pick('commissionPct', 'commission_pct'),
     fee: pick('fee', 'agreed_fee'),
+    // Item 21 (rules v1.34 §7A): the number of shoppable posts the brand asks for on Pay for Content.
+    shoppablePosts: pick('shoppablePosts', 'shoppablePostsN', 'shoppable_posts_n'),
     scope: pick('scope', 'alloc_scope'),
     categoryNodeId: pick('categoryNodeId', 'alloc_category_node_id'),
     category: pick('category', 'alloc_category'),
@@ -91,6 +93,7 @@ function validateTerms(goal, raw, { mode = 'strict', sell: wantSell = false } = 
     deliverables: null, note: null, usageRights: null,
     offer: null, offerValidFrom: null, offerValidUntil: null,
     sell: null,
+    shoppablePostsN: null,
   };
   // ── Money ────────────────────────────────────────────────────────────────
   if (selling) {
@@ -118,10 +121,19 @@ function validateTerms(goal, raw, { mode = 'strict', sell: wantSell = false } = 
   // an app that still sends them is told to update. The legacy brief door keeps its old reading.
   const sell = readSellInput(raw);
   // Only the invitation send carries what she can sell; a counter or a pitch is money and work only.
-  const newTerms = selling && strict && wantSell;
+  // Item 21 (rules v1.34 §7A): a Pay for Content invitation carries it too — what she POSTS ABOUT —
+  // together with the number of shoppable posts the brand asks for (1–10). Neither is on a counter
+  // (she may counter the number, below; never the allocation) nor on a pitch.
+  const newTerms = (selling || goal === 'engagement') && strict && wantSell;
   if (newTerms) {
     if (!sell) fail(SELL_MSG.OLD_TERMS, 'offers');
     out.sell = sell;
+  }
+  if (goal === 'engagement') {
+    const n = num(t.shoppablePosts);
+    if (!has(t.shoppablePosts)) { if (strict && wantSell) fail(SELL_MSG.POSTS_N, 'shoppable_posts_n'); }
+    else if (n == null || !Number.isInteger(n) || n < 1 || n > 10) fail(SELL_MSG.POSTS_N, 'shoppable_posts_n');
+    else out.shoppablePostsN = n;
   }
 
   // ── Selling scope (Pay for Sale, Hybrid) — the legacy door only (creator-terms-v2) ──

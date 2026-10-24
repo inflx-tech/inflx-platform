@@ -171,8 +171,10 @@ export const C7 = {
     mode: 'Mode',
     brandCanReuse: 'Brand can reuse',
     youCanSell: 'You can sell',
+    youPostAbout: 'You post about',                                     // item 21
     shoppablePosts: 'Shoppable posts',
     atLeast: (n) => `At least ${n}`,
+    inInflx: (n) => `${n} in INFLX · no commission`,                     // item 21
     returningTitle: 'Returning the products',
     returning: (days, brand) => `Send back anything you don't keep within ${days} days of posting. ${brand} pay the return shipping.`,
     standardTerms: 'INFLX standard terms',

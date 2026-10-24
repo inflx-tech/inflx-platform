@@ -87,6 +87,9 @@ const MSG = {
   SALE_IN_PACKAGE: 'This post is already in what you sent them.',
   SALE_NOTHING_TO_REPORT: 'There is nothing to report at this point.',
 
+  // Item 21 (rules v1.34 §12.2) — Pay for Content with shoppable posts
+  PATH2_LOCKED: (brand) => `Opens when INFLX approves your first shoppable post. ${brand} checks this part.`,
+  FINAL_WAITS_POSTS: (n) => `The final payment waits for ${n} more approved shoppable post${n === 1 ? '' : 's'}.`,
   // Admin (Q13, Q14)
   RELEASE_REASON_REQUIRED: 'Give a reason of at least 5 characters.',
   RELEASE_NOT_ALLOWED: (status) => `A ${status} payment can't be released by hand.`,

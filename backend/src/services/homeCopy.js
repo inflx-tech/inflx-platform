@@ -123,6 +123,9 @@ const CREATOR = {
   send_social: () => "Send them what you'll share.",
   postNeededName: 'Shoppable post needed',
   postNeeded: (brand, campaign, done, min) => `${brand} · ${campaign}. You have made ${done} of ${min}.`,
+  // Item 21 (D3): the final payment of a Pay for Content collaboration waits for these posts.
+  postNeededHeld: (brand, campaign, done, min, amount) => `${brand} · ${campaign}. You have made ${done} of ${min}. ${min - done} more release ${inr(amount || 0)}.`,
+  unlocksFinal: () => 'Unlocks your final payment',
   before: (day) => `Before ${dayMon(day)}`,
   postBackName: 'A post was sent back',
   postBack: (reason) => (reason ? `INFLX asked for a fix: “${String(reason).trim().slice(0, 120)}”` : 'INFLX asked for a fix.'),

@@ -113,6 +113,7 @@ export function copyTermsToAll(setId, fromId) {
       sellMode: src.sellMode || 'none', sellProductIds: [...(src.sellProductIds || [])],
       sellProducts: [...(src.sellProducts || [])], sellAllCount: src.sellAllCount || 0,
       deliverables: (src.deliverables || []).map(r => ({ ...r })),
+      posts: src.posts,      // item 21 (R10)
       usage: { ...src.usage, places: [...(src.usage.places || [])] },
     };
   }
@@ -137,6 +138,8 @@ export function defaultTerms(goal) {
     //   sellMode: 'none' | 'all' | 'chosen'  ·  sellProductIds / sellProducts (chosen)  ·  sellAllCount (all)
     sellOffers: [], sellMode: 'none', sellProductIds: [], sellProducts: [], sellAllCount: 0,
     deliverables: goal === 'engagement' ? [{ type: 'reel', count: 1 }] : [],
+    // Item 21 (rules v1.34 §7A): on Pay for Content, how many shoppable posts she makes in INFLX (1–10).
+    posts: goal === 'engagement' ? '1' : '',
     note: '',
     usage: { on: false, durationDays: 30, places: [] },
   };
@@ -154,11 +157,15 @@ export function validateLocal(goal, t) {
     else if (c <= 0 || c > 100) e.commissionPct = MSG5.COMMISSION_RANGE;
     // creator-terms-v2 (rules 2.2): at least one offer or one product without an offer. The screen
     // words it with her first name (MSG5.SELL_NOTHING).
-    if (!sellProductCount(t) && !(t.sellOffers || []).length) e.sell = 'SELL_NOTHING';
+    if (!sellsSomething(t)) e.sell = 'SELL_NOTHING';
   }
   if (goal === 'engagement') {
     const f = num(t.fee);
     if (f == null || Number.isNaN(f) || f <= 0 || !Number.isInteger(f)) e.fee = MSG5.FEE_REQUIRED;
+    // Item 21: the posts number (1–10) and what she posts about are required, as for a selling Aim.
+    const p = num(t.posts);
+    if (p == null || Number.isNaN(p) || !Number.isInteger(p) || p < 1 || p > 10) e.posts = MSG5.POSTS_N;
+    if (!sellsSomething(t)) e.sell = 'POST_ABOUT_NOTHING';
     const rows = t.deliverables || [];
     if (!rows.length) e.deliverables = MSG5.DELIVERABLES_EMPTY;
     else {
@@ -184,16 +191,19 @@ export function validateLocal(goal, t) {
 /** What the server receives per creator (either spelling is accepted; this is the camel one). */
 export function toServer(goal, t) {
   const out = {};
-  if (selling(goal)) {
-    out.commissionPct = num(t.commissionPct);
+  if (selling(goal)) out.commissionPct = num(t.commissionPct);
+  if (selling(goal) || goal === 'engagement') {
     // creator-terms-v2: offers are linked by id; the product list is frozen by the server at sending.
-    out.offers = (t.sellOffers || []).map(o => o.id);
-    out.productsWithoutOffers = t.sellMode === 'chosen'
-      ? { mode: 'chosen', productIds: [...(t.sellProductIds || [])] }
-      : { mode: t.sellMode === 'all' ? 'all' : 'none' };
+    // Item 21: the Entire store is a rule — sent as a mode, with nothing to list; Pay for Content
+    // sends what she posts about the same way.
+    out.offers = t.sellMode === 'store' ? [] : (t.sellOffers || []).map(o => o.id);
+    out.productsWithoutOffers = t.sellMode === 'store' ? { mode: 'store' }
+      : t.sellMode === 'chosen' ? { mode: 'chosen', productIds: [...(t.sellProductIds || [])] }
+        : { mode: t.sellMode === 'all' ? 'all' : 'none' };
   }
   if (goal !== 'conversion') out.fee = num(t.fee);
   if (goal === 'engagement') {
+    out.shoppablePosts = num(t.posts);
     out.deliverables = (t.deliverables || []).map(r => ({ type: r.type, count: Number(r.count) || 1 }));
     if (t.usage && t.usage.on) out.usageRights = { on: true, durationDays: t.usage.durationDays == null ? null : Number(t.usage.durationDays), places: t.usage.places || [] };
   }
@@ -207,9 +217,12 @@ export function sellProductCount(t) {
   if (t.sellMode === 'all') return t.sellAllCount || 0;
   return 0;
 }
+/** Does she get anything to sell or post about? The Entire store always counts (item 21). */
+export const sellsSomething = (t) => t.sellMode === 'store' || !!sellProductCount(t) || !!(t.sellOffers || []).length;
 
-/** "2 offers + 12 products" · "1 offer · no other products" · "40 products at normal price" (T7) */
+/** "2 offers + 12 products" · "1 offer · no other products" · "40 products at normal price" (T7) · "your entire store" (item 21) */
 export function sellWords(t) {
+  if (t.sellMode === 'store') return 'your entire store';
   const o = (t.sellOffers || []).length, p = sellProductCount(t);
   const off = `${o} ${o === 1 ? 'offer' : 'offers'}`, pr = `${p} ${p === 1 ? 'product' : 'products'}`;
   if (o && p) return `${off} + ${pr}`;

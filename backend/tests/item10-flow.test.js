@@ -371,6 +371,9 @@ describe('Delayed (checks 22, 23, 24)', () => {
     const future = await w10.signedByBoth('engagement');
     const remote = await w10.signedByBoth('conversion', { mode: 'shipment' });
     for (const w of [notSent, sentOnly, agreedW, attendedW, done, remote]) await backdate(w);
+    // Item 21 (rules v1.34 §12.2): a Pay for Content collaboration now has shoppable posts, and its
+    // content step opens on the first approval; this test is about the content stage after that.
+    await require('./helpers/item12').firstPostApproved(done);
     const out = await delayedJob.run();
 
     // ASSERTION DRIFT, item 11 (features/item11-remote, Phase 2c).

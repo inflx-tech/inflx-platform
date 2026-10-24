@@ -350,6 +350,10 @@ describe('item 19 · the Remote shoot', () => {
   it('shoot done: "send the products back" has a door, beside her content step (two rows, one collaboration)', async () => {
     const done = await api.post(`${C(w)}/done`, w.cr.token, {});
     expect(done.status).toBe(200);
+    // Item 21 (rules v1.34 §12.2): the content step opens once INFLX approves her first shoppable
+    // post; until then the row is "Shoppable post needed". This test is about the return's door.
+    expect(kindsOf((await cList(w.cr, 'needs')).rows.filter((r) => r.open.ciId === w.ciId))).toEqual(['post_needed', 'send_back']);
+    await w12.firstPostApproved(w);
     const needs = (await cList(w.cr, 'needs')).rows.filter((r) => r.open.ciId === w.ciId);
     expect(kindsOf(needs)).toEqual(['send_back', 'send_content']);
     expect(needs.find((r) => r.kind === 'send_back')).toMatchObject({ open: { screen: 'remote', ciId: w.ciId }, line: 'Shoot done. Send the products back.' });

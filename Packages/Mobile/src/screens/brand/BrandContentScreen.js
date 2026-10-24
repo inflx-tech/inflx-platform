@@ -39,6 +39,12 @@ import { FeeCard12, FileTile12, RowHead12, NoteLine12, RoundPill12, History12, L
 import { ChangesSheet12, NoteSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { C12, day10 } from '../../components/content/copy12';
+// Item 21: Path 1 of a Pay for Content collaboration with shoppable posts, drawn as item 14 draws it.
+import { Progress14, PostLine14, postSub14 } from '../influencer/SaleLiveScreen';
+import { C14 } from '../../components/sale/copy14';
+
+/** The brand's report sheets and the reason each sends (item 12's two; item 21 adds the posts). */
+const REPORT_KIND = { report_rounds: 'rounds_used', report_posted: 'posted_wrong', report_posts: 'posts_not_made' };
 
 export default function BrandContentScreen({ navigation, route }) {
   const { campaignId, setId, ciId } = route.params || {};
@@ -109,6 +115,7 @@ export default function BrandContentScreen({ navigation, route }) {
   const noteCount = Object.values(notes).filter(Boolean).length;
   const steps = (c.steps || []).map((st) => (
     st.key === 'shoot' ? { ...st, label: c.mode === 'visit' ? C12.steps.shootPlan : C12.steps.shoot, detail: st.at ? (c.mode === 'visit' ? C12.steps.visited(day10(st.at)) : C12.steps.done(day10(st.at))) : null }
+      : st.key === 'posts' ? { ...st, label: C12.stepPosts }                                       // item 21: "1 of 3"
       : st.key === 'content' ? { ...st, detail: ['draft', 'changes'].includes(stage) ? C12.steps.withHer(name) : null }
         : st.key === 'live' ? { ...st, detail: c.postingDate ? C12.steps.posts(day10(c.postingDate)) : null }
           : { ...st, detail: st.at ? day10(st.at) : null }));
@@ -133,6 +140,22 @@ export default function BrandContentScreen({ navigation, route }) {
 
         {stage === 'shoot_not_done' ? (
           <EmptyState title={C12.shootNotDoneTitle} body={c.mode === 'visit' ? C12.brandOpensVisit : C12.brandOpensRemote} />
+        ) : null}
+
+        {/* Item 21 (board G3, G7) — Path 1, watched: INFLX approves shop posts, not the brand. */}
+        {c.path1 && stage !== 'shoot_not_done' ? (
+          <Card7 title={C12.path1Title} testID="path1">
+            <Text style={s.para}>{C12.path1WhoBrand}</Text>
+            <Progress14 p1={c.path1} line={c.finalHeldForPosts ? C12.finalWaitsPosts(c.postsShort, c.money.t3.amount) : null} testID="path1-progress" />
+            {c.path1.posts.map((p) => { const sub = postSub14(p, c.postingDate); return <PostLine14 key={p.id} post={p} sub={sub.sub} waiting={sub.waiting} right={<Text style={s.para}>{C14.postState[p.state] || ''}</Text>} />; })}
+          </Card7>
+        ) : null}
+        {stage === 'posts' ? (
+          <>
+            <StepLine10 steps={steps} />
+            <WaitBox10 text={C12.path2LockedBrand(name)} testID="path2-locked" />
+            <FeeCard12 money={c.money} side="brand" />
+          </>
         ) : null}
 
         {/* C2 — waiting for her, and the money ahead. */}
@@ -206,7 +229,7 @@ export default function BrandContentScreen({ navigation, route }) {
             ) : (
               <View style={[s.preview, { backgroundColor: T.state.active.bg }]} testID="confirm-preview">
                 <Text style={[s.previewTitle, { color: T.state.active.fg }]}>{C12.confirmReleases(c.money.t2.amount)}</Text>
-                <Text style={[s.previewSub, { color: T.state.active.fg }]}>{C12.confirmReleasesSub(c.money.fee, c.money.t3.amount, c.money.waitDays)}</Text>
+                <Text style={[s.previewSub, { color: T.state.active.fg }]}>{C12.confirmReleasesSub(c.money.fee, c.money.t3.amount, c.money.waitDays)}{c.postsShort ? ` ${C12.confirmWaitsPosts(c.postsShort)}` : ''}</Text>
               </View>
             )}
           </>
@@ -218,7 +241,9 @@ export default function BrandContentScreen({ navigation, route }) {
             <FeeCard12 money={c.money} side="brand" />
             {c.money.returned > 0
               ? <WaitBox10 text={C12.returnedToYou(c.money.returned)} testID="returned-box" />
-              : <WaitBox10 text={C12.lastFollows(c.money.t3.amount, c.finalDueAt)} testID="last-follows" />}
+              : c.finalHeldForPosts
+                ? <WaitBox10 text={C12.lastWaitsPosts(c.money.t3.amount, c.postsShort)} testID="last-waits-posts" />
+                : <WaitBox10 text={C12.lastFollows(c.money.t3.amount, c.finalDueAt)} testID="last-follows" />}
           </>
         ) : null}
 
@@ -250,12 +275,14 @@ export default function BrandContentScreen({ navigation, route }) {
             {c.can.reportPostedWrong ? <TextButton label={C12.somethingWrong} onPress={() => { if (!busy) { setSheetError(null); setSheet('report_posted'); } }} testID="something-wrong" /> : null}
           </>
         ) : null}
+        {/* Item 21 (R7, board G7): past the posting date and short of her posts — at any stage. */}
+        {c.can && c.can.reportPostsNotMade ? <TextButton label={C12.reportPostsNotMade} onPress={() => { if (!busy) { setSheetError(null); setSheet('report_posts'); } }} testID="report-posts" /> : null}
       </BottomBar>
 
       <ChangesSheet12 visible={sheet === 'changes'} round={c.round} noteCount={noteCount} busy={busy} serverError={sheetError}
         onSend={askChanges} onClose={() => setSheet(null)} />
-      <ReportSheet12 visible={sheet === 'report_rounds' || sheet === 'report_posted'} kind={sheet === 'report_rounds' ? 'rounds_used' : 'posted_wrong'}
-        busy={busy} serverError={sheetError} onReport={report(sheet === 'report_rounds' ? 'rounds_used' : 'posted_wrong')} onClose={() => setSheet(null)} />
+      <ReportSheet12 visible={['report_rounds', 'report_posted', 'report_posts'].includes(sheet)} kind={REPORT_KIND[sheet] || 'posted_wrong'}
+        busy={busy} serverError={sheetError} onReport={report(REPORT_KIND[sheet] || 'posted_wrong')} onClose={() => setSheet(null)} />
       <NoteSheet12 visible={!!noteFor} initial={noteFor ? notes[noteFor] : ''} onClose={() => setNoteFor(null)}
         onSave={(n) => { setNotes((x) => ({ ...x, [noteFor]: n })); setNoteFor(null); }} />
       {/* H1–H6 — one tap on a tile opens the file here. "Add a note" only on a file under review,

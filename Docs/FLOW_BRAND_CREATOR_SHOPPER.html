@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX flow: Pay for Sale, one brand, one creator</title>
+<style>
+:root{color-scheme:light;--page:#EEEEEA;--bg:#fff;--surface:#F6F6F3;--border:#E5E4DE;--ink:#1A1A17;--ink2:#5B5A53;--ink3:#77766E;
+--brand:#FFF3C4;--brandfg:#7A5A00;--creator:#E6EFFC;--creatorfg:#1D5FBF;--shopper:#E4F5EA;--shopperfg:#1A7A3D;--money:#FFEBDD;--moneyfg:#B04600;--inflx:#EFE8FC;--inflxfg:#6A3FC6;
+--sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:30px;margin:0 0 6px;letter-spacing:-.015em}h2{font-size:20px;margin:30px 0 10px}
+.lede{color:var(--ink2);max-width:78ch;margin:0 0 14px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.cast{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:14px 0 20px}
+.cast .c{border-radius:14px;padding:12px 14px}.cast b{display:block;font-size:14px}.cast span{font-size:12.5px}
+.c-brand{background:var(--brand);color:var(--brandfg)}.c-creator{background:var(--creator);color:var(--creatorfg)}.c-shopper{background:var(--shopper);color:var(--shopperfg)}
+.flow{display:grid;grid-template-columns:1fr 70px 1fr;gap:0 10px}
+.head{position:sticky;top:0;z-index:2;padding:9px;border-radius:12px;font-weight:800;text-align:center;margin-bottom:10px}
+.h-brand{background:var(--brand);color:var(--brandfg)}.h-creator{background:var(--creator);color:var(--creatorfg)}
+.stepno{grid-column:1/-1;margin:18px 0 6px;display:flex;align-items:center;gap:10px;border-top:1px solid var(--border);padding-top:12px}
+.stepno b{font-family:var(--mono);font-size:11px;background:var(--ink);color:#fff;border-radius:999px;padding:3px 9px}
+.stepno span{font-weight:800;font-size:15px}.stepno i{font-style:normal;color:var(--ink3);font-size:12px}
+.box{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:10px 12px;font-size:13px;margin-bottom:8px}
+.box b{display:block;font-size:13.5px}.box p{margin:2px 0 0;color:var(--ink2);font-size:12.5px}
+.box .ex{display:block;margin-top:6px;padding:7px 9px;border-radius:9px;background:var(--surface);color:var(--ink2);font-size:12.5px}
+.ex em{font-style:normal;color:var(--ink);font-weight:700}
+.b-brand{border-left:4px solid #E0B000}.b-creator{border-left:4px solid #4A86D9}.b-money{border-left:4px solid #E07A2E;background:var(--money)}.b-shopper{border-left:4px solid #3BA65F}
+.b-money .ex{background:rgba(255,255,255,.65)}
+.mid{display:grid;place-items:center;color:var(--ink3);font-family:var(--mono);font-size:10.5px;text-align:center;line-height:1.25;padding-bottom:8px}
+.mid .a{font-size:22px;line-height:1;color:var(--ink2)}
+.admin{display:inline-block;font-family:var(--mono);font-size:10.5px;background:var(--inflx);color:var(--inflxfg);padding:2px 7px;border-radius:6px;margin-top:5px}
+.alt{display:block;margin-top:6px;font-size:11.5px;color:var(--ink3);border-top:1px dashed var(--border);padding-top:5px}.alt b{display:inline;font-size:11.5px;color:var(--ink2)}
+.wide{grid-column:1/-1}.quiet{opacity:.55}
+.shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.shop .box{margin:0}
+table{border-collapse:collapse;width:100%;background:var(--bg);border-radius:12px;overflow:hidden;font-size:12.5px;margin-top:8px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:9px 10px;border-bottom:1px solid var(--border);background:var(--surface)}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2)}td:first-child{color:var(--ink);font-weight:700;white-space:nowrap}
+.note{background:var(--surface);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--ink2);margin-top:10px}
+</style></head><body><div class="wrap">
+<span class="eyebrow">INFLX · Pay for Sale · one brand, one creator, one shopper · master rules v1.34 · 24 Oct 2026</span>
+<h1>Pay for Sale, from the first listing to the first rupee</h1>
+<p class="lede">Left: what the <b>brand</b> does. Right: what the <b>creator</b> does. The middle says what passes between them. INFLX is only a tag inside a box where it approves or pays. The story ends in the shopper app, because the deal they make is only real when a shopper buys through her post.</p>
+
+<div class="cast">
+  <div class="c c-brand"><b>Meera Fashions — the brand</b><span>Women's fashion, Hyderabad. Website for listings and offers; brand app for everything with creators.</span></div>
+  <div class="c c-creator"><b>Asha Menon — the creator</b><span>42,000 Instagram followers. Creator app only.</span></div>
+  <div class="c c-shopper"><b>Priya — the shopper</b><span>Follows Asha on Instagram. Follower app; no login until she buys.</span></div>
+</div>
+<p class="lede"><b>Pay for Sale</b> means: no fixed money. Asha earns a commission on every sale through her posts, for as long as they sell. Where <b>Pay for Content</b> or <b>Hybrid</b> differ, a dashed grey line says so. Those are the only differences.</p>
+
+<div class="flow">
+<div class="head h-brand">MEERA FASHIONS — BRAND</div><div></div><div class="head h-creator">ASHA — CREATOR</div>
+
+<div class="stepno"><b>1</b><span>Both are on INFLX</span><i>once, before anything</i></div>
+<div class="box b-brand"><b>Registers the brand</b><p>Business name, GSTIN, main branch, a login number.</p><span class="admin">INFLX approves the account</span></div>
+<div class="mid">no contact yet</div>
+<div class="box b-creator"><b>Registers as a creator</b><p>Name, city, links Instagram and YouTube. Sets what she accepts: Aims, modes, cities, minimum commission.</p><span class="admin">INFLX measures her numbers and approves</span><span class="ex">Accepts all Aims and both modes · minimum commission <em>8%</em>.</span></div>
+
+<div class="stepno"><b>2</b><span>The brand builds its store</span><i>website</i></div>
+<div class="box b-brand"><b>Lists products</b><p>Name, price, sizes, colours, stock, photos. "Pushed to store".</p><span class="ex"><em>61 products</em>: kurtas, shirts, scarves, jeans.</span></div>
+<div class="mid"></div>
+<div class="box b-creator quiet"><b>—</b><p>Nothing for her yet.</p></div>
+<div class="box b-brand"><b>Builds offers</b><p>Discount, bundle or free gift. Each offer has a frozen product pool and dates. A product can be in only one running offer.</p><span class="ex"><em>"Festive 20% off"</em> on 52 products, 1–30 Nov.<br><em>"Any 2 jeans ₹2,999"</em> on 9 jeans, 5–30 Nov.</span></div>
+<div class="mid"></div><div></div>
+
+<div class="stepno"><b>3</b><span>The brand plans</span><i>brand app</i></div>
+<div class="box b-brand"><b>Campaign → set</b><p>A set fixes the <b>Aim</b>, the <b>posting date</b> (the last day to go live) and the <b>mode</b> (Store Visit at a branch, or Remote parcel).</p><span class="ex">Campaign <em>Diwali 2026</em> → set <em>Diwali Denim</em>: <em>Pay for Sale</em> · posting date <em>8 Nov</em> · Remote. Creators can join until 5 Nov (date − 3).</span></div>
+<div class="mid"></div>
+<div class="box b-creator quiet"><b>Or she pitches first</b><p>Aim + commission only. An agreed pitch puts her in the brand's pool, waiting for a set.</p></div>
+<div class="box b-brand"><b>Picks the creator</b><p>From discovery, a group, or the pool. Each pick is checked against her settings and minimums.</p><span class="ex">Finds Asha in discovery: Hyderabad, fashion, 42k. Her settings allow it.</span></div>
+<div class="mid"></div><div></div>
+
+<div class="stepno"><b>4</b><span>Terms, invitation, negotiation</span><i>the first contact</i></div>
+<div class="box b-brand"><b>Sets Asha's terms</b><p><b>Commission %</b> on what shoppers pay, and <b>what she can sell</b>: offers she is given · products without offers · or the <b>Entire store</b> (every offer and every free product, now and later). Minimum shoppable posts: 1, set by INFLX.</p><span class="ex"><em>10%</em> · both offers + all 10 products not in any offer (frozen today).</span><span class="alt"><b>Pay for Content:</b> fee + social deliverables + N shoppable posts + what she posts about; no commission. <b>Hybrid:</b> fee + commission + what she can sell.</span></div>
+<div class="mid"><span class="a">→</span>invitation</div>
+<div class="box b-creator"><b>Reads the invitation</b><p>The set's locked terms (Aim, date, mode, reply-by) and her own: "10% on what you sell · You can sell: 2 offers + 10 products · Shoppable posts: at least 1".</p><span class="ex">Taps "You can sell" and sees each offer's deal, dates, and what she earns on an example sale.</span></div>
+<div class="box b-brand"><b>Answers the counter</b><p>Accepts it whole, counters back, or declines. Two rounds by default.</p><span class="ex">Accepts <em>12%</em>.</span></div>
+<div class="mid"><span class="a">←</span>counter<br><span class="a">→</span>accepted</div>
+<div class="box b-creator"><b>Accepts, counters or declines</b><p>On Pay for Sale she can counter only the commission. Never the offers or products.</p><span class="ex">Counters <em>12%</em>: "They offered 10% → 12%."</span></div>
+
+<div class="stepno"><b>5</b><span>The agreement</span><i>both sign before the cutoff, or it expires</i></div>
+<div class="box b-brand"><b>Sends the agreement, then signs</b><p>The terms are frozen into one document with INFLX's standard terms: 12%, the two offers as they stand, the 10 products, the posting date, the mode.</p><span class="ex">Signs second, 20 Oct.</span></div>
+<div class="mid"><span class="a">→</span>agreement<br><span class="a">←</span>signed<br><span class="a">→</span>signed</div>
+<div class="box b-creator"><b>Reads and signs</b><p>Types her name. The PDF is hers.</p><span class="ex">Signs first, 19 Oct.</span></div>
+<div class="box b-money wide"><b>Money at the signatures: none</b><p>Pay for Sale locks nothing and pays nothing. Her money comes from sales, later.</p><span class="alt"><b>Pay for Content and Hybrid:</b> the fee (+ 8% campaign fee on Pay for Content) is locked from the brand's wallet and 25% is paid to her at once.</span></div>
+
+<div class="stepno"><b>6</b><span>The shoot</span><i>Remote, in this story</i></div>
+<div class="box b-brand"><b>Picks what to send, books the parcel</b><p>Products from what she can sell, each marked Return or Gift. One parcel through Shiprocket; shipping and the return shipping paid from the wallet.</p><span class="ex">2 jeans + 1 kurta (return), 1 scarf (gift). Booked 22 Oct.</span></div>
+<div class="mid"><span class="a">←</span>address<br><span class="a">→</span>parcel</div>
+<div class="box b-creator"><b>Gives her delivery address and sizes</b><p>Locks when sent.</p><span class="ex">Banjara Hills, size M, 28.</span></div>
+<div class="box b-brand"><b>Receives the returns, confirms</b><p>Or it confirms itself after the admin days.</p></div>
+<div class="mid"><span class="a">←</span>shoot done<br><span class="a">←</span>returns</div>
+<div class="box b-creator"><b>Checks the parcel, shoots, marks the shoot done</b><p>Reports any difference without being stopped. Books the return pickup from her door later.</p><span class="ex">All 4 arrived. Shoots 26 Oct. <em>"Shoot done"</em> opens the next step.</span></div>
+<div class="box wide quiet" style="border-style:dashed"><span class="alt" style="border:0;padding:0;margin:0"><b>Store Visit instead:</b> the brand sends a plan (branch, time) → she counters the time or accepts → she marks "I attended" → the brand confirms, or it confirms itself.</span></div>
+
+<div class="stepno"><b>7</b><span>Going live, Path 1 — the shoppable posts</span><i>INFLX checks; the brand only watches</i></div>
+<div class="box b-brand"><b>Watches the count</b><p>"0 of 1 approved" → "1 approved · minimum met". Sees each post, and once it sells, its orders and her commission. The brand cannot approve a shop post.</p></div>
+<div class="mid">she posts<br>in INFLX<br><span class="a">↓</span></div>
+<div class="box b-creator"><b>Creates a shoppable post</b><p>This brand, this collaboration, <b>one offer or none</b>, products from that offer or her normal-price list, theme tags, a photo or video, a caption → send to INFLX.</p><span class="ex">Post 1: an <em>offer post</em> on "Any 2 jeans ₹2,999", 4 jeans, tags Festive · Denim · Weekend, a 25-second video.</span><span class="admin">INFLX approves 28 Oct → code BQ7K2M · link inflx.in/p/BQ7K2M · in the shop from 5 Nov, the day the offer starts</span></div>
+<div class="box b-creator"><b>Makes more, any time</b><span class="ex">Post 2: a <em>price post</em>, 3 scarves at normal price. Approved 30 Oct, in the shop at once.</span></div>
+<div class="mid"></div><div></div>
+<div class="box wide" style="border-left:4px solid #4A86D9"><b>The first approval unlocks Path 2</b><p>Until then the social step is locked on both sides: a reel that sends people to INFLX needs something they can buy.</p></div>
+
+<div class="stepno"><b>8</b><span>Going live, Path 2 — the social post</span><i>the brand checks this one</i></div>
+<div class="box b-brand"><b>Reviews the package</b><p>One verdict on the whole package: approve, or ask for changes with a reason (two rounds by default).</p><span class="ex">Approves first time.</span></div>
+<div class="mid"><span class="a">←</span>package<br><span class="a">→</span>approved</div>
+<div class="box b-creator"><b>Names what she will share, uploads it, sends as one package</b><p>She picks the rows herself: an approved post + a place. At least one. The brand never chooses them.</p><span class="ex"><em>BQ7K2M as an Instagram reel</em> + <em>BQ7K2M as a story</em>. Uploads the reel video and the story image.</span></div>
+<div class="box b-brand"><b>Opens the links, confirms live — once</b><p>Or reports: not what was approved, something missing, not posted. If the brand does nothing, it <b>confirms itself after 7 days</b>.</p><span class="ex">Opens the reel and the story screenshot. <em>Confirms live 6 Nov.</em></span><span class="alt"><b>Pay for Content and Hybrid:</b> the confirmation releases 25% of the fee, so it never confirms itself.</span></div>
+<div class="mid"><span class="a">←</span>links<br><span class="a">→</span>confirmed</div>
+<div class="box b-creator"><b>Posts on Instagram, pastes the link, screenshot for the story, "I've posted"</b><span class="ex">Reel up 5 Nov, with inflx.in/p/BQ7K2M in the caption.</span></div>
+
+<div class="stepno"><b>9</b><span>Completed — and the selling goes on</span><i>posting date 8 Nov</i></div>
+<div class="box b-money wide"><b>Completed = minimum approved in Path 1 + confirmed in Path 2, whichever is last</b><p>Nothing is paid at Completed. Her posts stay in the shop: the offer post until "Any 2 jeans" ends on 30 Nov, the price post until the scarves are out of stock. A post approved after 8 Nov still counts, marked late.</p><span class="ex"><em>Completed 6 Nov.</em> Both sides see "Completed · selling".</span><span class="alt"><b>Pay for Content:</b> Completed when the final 50% is paid, 7 days after the confirmation and once her N posts are approved. <b>Hybrid:</b> all three payments out + minimum met.</span></div>
+
+<div class="stepno"><b>10</b><span>The shopper — where it all lands</span><i>follower app</i></div>
+<div class="wide shop">
+  <div class="box b-shopper"><b>Priya sees the reel</b><p>Taps the link in Asha's caption: <em>inflx.in/p/BQ7K2M</em>. INFLX records a visit, channel "Instagram reel".</p></div>
+  <div class="box b-shopper"><b>The post opens in the app</b><p>Asha's video, the 4 jeans, "Any 2 for ₹2,999" exactly as Meera built it. No login.</p></div>
+  <div class="box b-shopper"><b>Deal page → bag</b><p>Picks 2 jeans, sizes 28. The deal applies inside this post only: <em>₹2,999</em> for the pair.</p></div>
+  <div class="box b-shopper"><b>Place order</b><p>Signs in with her number, adds an address, pays ₹2,999 (card, or cash on delivery). One parcel per brand.</p></div>
+  <div class="box b-brand"><b>Meera ships</b><p>Sees the order on the website, packs, books the courier. Priya tracks it.</p></div>
+  <div class="box b-shopper"><b>Delivered 12 Nov</b><p>7-day return window from delivery. She keeps them.</p></div>
+</div>
+<div class="box b-money wide"><b>The ₹2,999 splits per item at Place order and is frozen on the line</b><span class="ex"><em>Asha ₹359.88</em> (12%) · <em>INFLX ₹149.95</em> (5%, fashion post-sale rate) · <em>Meera ₹2,489.17</em>. Shown as "coming" to both while the window runs.<br>19 Nov, window closed: ₹359.88 is <em>added to Asha's wallet</em>, ₹2,489.17 to Meera's. Asha's stats on BQ7K2M: "1 sale · ₹359.88 to you". She withdraws to her bank from ₹100.</span><span class="alt"><b>Pay for Content:</b> Asha ₹0, INFLX ₹149.95, Meera ₹2,849.05 — her fee was her whole pay.</span></div>
+<div class="box b-shopper wide"><b>Where else Priya meets the same posts</b><p>Asha's store (inflx.in/s/asha: every live post of hers, any brand) · Meera's store (every live post for Meera, any creator) · Home rails by category, offer kind, price band, theme · Asha's collections (/c/CODE). She never sees a campaign, a set, an agreement or the commission.</p></div>
+</div>
+
+<h2>The same story as a checklist, for scripts</h2>
+<table><thead><tr><th>Step</th><th>Brand</th><th>Creator</th><th>Between them</th><th>Money</th></tr></thead><tbody>
+<tr><td>1 On INFLX</td><td>register (INFLX approves)</td><td>register, socials, settings (INFLX approves)</td><td>—</td><td>—</td></tr>
+<tr><td>2 Store</td><td>products · offers (pool, dates)</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>3 Plan</td><td>campaign · set (Aim, date, mode) · pick creators</td><td>or pitch → pool</td><td>—</td><td>—</td></tr>
+<tr><td>4 Terms</td><td>commission + what she can sell · send · answer counter</td><td>read · accept / counter (commission only) / decline</td><td>invitation → · counter ← · accept →</td><td>—</td></tr>
+<tr><td>5 Agreement</td><td>send · sign</td><td>sign</td><td>agreement → · signatures</td><td>none (Pay for Sale)</td></tr>
+<tr><td>6 Shoot</td><td>Remote: pick, book, confirm returns · Visit: plan, confirm</td><td>Remote: address, check, shoot done, return · Visit: time, attended</td><td>address ← · parcel → · shoot done ← · returns ←</td><td>shipping from the wallet</td></tr>
+<tr><td>7 Path 1</td><td>watches the count</td><td>shoppable posts → INFLX approves → code, in the shop</td><td>first approval unlocks Path 2</td><td>—</td></tr>
+<tr><td>8 Path 2</td><td>approve / changes · confirm live (or it confirms itself in 7 days)</td><td>names rows (post + place) → package → posts on social → links → posted</td><td>package ← · verdict → · links ← · confirmed →</td><td>—</td></tr>
+<tr><td>9 Completed</td><td>sees "Completed · selling"</td><td>keeps making posts if she likes</td><td>—</td><td>—</td></tr>
+<tr><td>10 Shop</td><td>ships · confirms returns · wallet after the window</td><td>shares links · stats · wallet after the window · withdraws</td><td>a post, a link, a sale</td><td>per-item split: her %, INFLX's rate, the brand the rest</td></tr>
+</tbody></table>
+<div class="note">A script picks one Aim (step 3), one allocation (step 4) and one mode (step 6), then walks steps 4 → 10 with one brand, one creator and one order. The screens and words of each step live in the contract folders under <code>features/item*</code>; the rules in master v1.34 sections 2B, 5B, 7A, 7B, 9, 11, 12.1, 13, 14–17A, 19.</div>
+</div></body></html>

@@ -96,6 +96,8 @@ async function render(contract) {
   if (s.work.deliverablesWords) row('Deliverables', s.work.deliverablesWords);
   if (s.work.usageRights) row('Usage rights', s.work.usageRights.words);
   if (s.work.minShoppablePosts != null) row('Shoppable posts', `At least ${s.work.minShoppablePosts}`);
+  // Item 21: the brand-set number on Pay for Content, with no commission on sales through them.
+  if (s.work.shoppablePosts != null) row('Shoppable posts', `${s.work.shoppablePosts} in INFLX · no commission`);
   if (s.sell) row('She may sell', s.sell.words);
   // creator-terms-v2 (rules 2.7): each offer as of signing, with its dates, and the end rule.
   if (s.sell && Array.isArray(s.sell.offers)) {

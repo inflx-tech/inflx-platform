@@ -13,8 +13,15 @@
 const { query } = require('./item3');
 const w10 = require('./item10');
 
-/** Mark the shoot done exactly as item 10 (visit confirm) or item 11 (Remote shoot done) writes it. */
-async function markShootDone(w, { at = null } = {}) {
+/**
+ * Mark the shoot done exactly as item 10 (visit confirm) or item 11 (Remote shoot done) writes it.
+ *
+ * Item 21 (rules v1.34 §12.2, D4): a Pay for Content collaboration on the new terms reaches the
+ * content package only once INFLX has approved her first shoppable post. The content suites are
+ * about the package, so `markShootDone` makes and approves that first post through the real API
+ * (item 13's routes, item 13's admin approval) unless told `openPath2: false`.
+ */
+async function markShootDone(w, { at = null, openPath2 = true } = {}) {
   const ts = at || new Date().toISOString();
   if (w.mode === 'visit') {
     await query(
@@ -28,7 +35,60 @@ async function markShootDone(w, { at = null } = {}) {
       [w.pe.id, ts]);
   }
   w.pe = (await query(`SELECT * FROM production_events WHERE id = $1`, [w.pe.id])).rows[0];
+  if (openPath2) await firstPostApproved(w);
   return w;
+}
+
+/**
+ * Item 21 — her first shoppable post, approved by INFLX: a price post on one of the products she
+ * was given, through item 13's own routes. Does nothing for a collaboration without a posts term.
+ * Returns the post id, or null.
+ */
+async function firstPostApproved(w) {
+  const { rows: [ci] } = await query(
+    `SELECT ci.sell_v2, ci.shoppable_posts_n, cs.goal FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id WHERE ci.id = $1`, [w.ciId]);
+  if (!ci || ci.goal !== 'engagement' || !ci.sell_v2 || ci.shoppable_posts_n == null) return null;
+  const id = await sendPricePost(w);
+  await approvePost(w, id);
+  return id;
+}
+
+/** A complete PRICE post on the first product she may sell, sent to INFLX. Returns the post id. */
+async function sendPricePost(w, caption = 'The kurta I wore all week') {
+  const { api, app } = require('./item3');
+  const request = require('supertest');
+  const P = '/influencers/me/shoppable-posts';
+  const patch = (id, body) => request(app).patch(`/v1${P}/${id}`).set('Authorization', `Bearer ${w.cr.token}`).send(body);
+  const d = await api.post(P, w.cr.token, { campaign_influencer_id: w.ciId });
+  if (d.status !== 200) throw new Error(`draft: ${JSON.stringify(d.body)}`);
+  const id = d.body.data.post.id;
+  const o = await api.get(`${P}/${id}/options`, w.cr.token);
+  if (o.status !== 200) throw new Error(`options: ${JSON.stringify(o.body)}`);
+  const free = (o.body.data.price_products || o.body.data.products_without_offers || []).map((p) => p.id);
+  if (!free.length) throw new Error('firstPostApproved: she has no product without an offer to post about');
+  await patch(id, { post_kind: 'price', draft_step: 4 });
+  await patch(id, { product_ids: free.slice(0, 1), draft_step: 6 });
+  const tags = (await query(`SELECT id FROM theme_tags ORDER BY tag_group, name LIMIT 1`)).rows.map((r) => r.id);
+  await patch(id, { theme_tag_ids: tags, draft_step: 7 });
+  const u = await api.post(`${P}/${id}/upload-url`, w.cr.token, { content_type: 'image/jpeg', size_bytes: 2048 });
+  if (u.status !== 200) throw new Error(`upload-url: ${JSON.stringify(u.body)}`);
+  const url = new URL(u.body.data.url);
+  const put = await request(app).put(`${url.pathname}${url.search}`).set('Content-Type', u.body.data.headers['Content-Type']).send(Buffer.alloc(2048, 7));
+  if (put.status !== 200) throw new Error(`put: ${put.status}`);
+  await patch(id, { media_kind: 'image', media_layout: 'single', media: [{ r2_key: u.body.data.key, mime: 'image/jpeg' }], draft_step: 8 });
+  await patch(id, { caption });
+  const s = await api.post(`${P}/${id}/submit`, w.cr.token);
+  if (s.status !== 200) throw new Error(`submit: ${JSON.stringify(s.body)}`);
+  return id;
+}
+
+/** INFLX approves a post (item 13's admin route — every hook runs, item 21's included). */
+async function approvePost(w, postId) {
+  const { api } = require('./item3');
+  if (!w.admin) w.admin = await require('./factories').createAdminUser();
+  const r = await api.post(`/admin/posts/${postId}/approve`, w.admin.token);
+  if (r.status !== 200) throw new Error(`approve: ${JSON.stringify(r.body)}`);
+  return r;
 }
 
 /** Signed by both, funded, and the shoot done — the state the content step opens on. */
@@ -46,7 +106,7 @@ const creatorScope = (w) => ({ side: 'creator', userId: w.cr.userId });
 const B = (w) => `${w.url}/invitations/${w.ciId}/content`;
 const C = (w) => `/influencers/me/invitations/${w.ciId}/content`;
 
-module.exports = { markShootDone, shotDone, brandScope, creatorScope, B, C };
+module.exports = { markShootDone, shotDone, brandScope, creatorScope, B, C, firstPostApproved, sendPricePost, approvePost };
 
 /* ── Uploads through the real mock storage route (a real port, streamed like a phone) ── */
 

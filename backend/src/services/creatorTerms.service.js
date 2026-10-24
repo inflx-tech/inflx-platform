@@ -32,6 +32,11 @@ const PRE_SIGN = ['invited', 'applied', 'accepted', 'negotiating'];
 
 const MSG = {
   SELL_NOTHING: (name) => `Give ${first(name)} at least one offer or one product without an offer.`,
+  // Item 21 (rules v1.34): Pay for Content words, and the Entire store.
+  POST_ABOUT_NOTHING: (name) => `Give ${first(name)} at least one offer or one product to post about, or your entire store.`,
+  POSTS_N: 'How many shoppable posts should she make? 1 to 10.',
+  STORE_EMPTY: 'Your store has nothing to sell yet. Publish an offer or a product first.',
+  CANT_COUNTER_SELL: "What you post about is the brand's to set.",
   OLD_TERMS: 'What a creator can sell has changed. Update the app, then set her terms again.',
   OFFER_UNKNOWN: "One of those offers isn't one of yours.",
   OFFER_NOT_VALID: (offer, day) => `"${offer}" has to start by ${rules.dayMonth(day)} and end after it. It can't be given for this set.`,
@@ -138,6 +143,9 @@ function readSellInput(raw) {
   const offersIn = t.offers !== undefined ? t.offers : t.offer_ids;
   const pwo = t.productsWithoutOffers !== undefined ? t.productsWithoutOffers : t.products_without_offers;
   if (offersIn === undefined && pwo === undefined) return null;
+  // Item 21 (rules v1.34 §7A): the Entire store — every offer and every product without an offer,
+  // now and later. Sent as { productsWithoutOffers: { mode: 'store' } } or { entireStore: true }.
+  if ((pwo && pwo.mode === 'store') || t.entireStore === true || t.entire_store === true) return { offerIds: [], mode: 'store', productIds: [] };
   const offerIds = Array.isArray(offersIn) ? [...new Set(offersIn.map((x) => (x && typeof x === 'object' ? x.id : x)).filter(Boolean).map(String))] : [];
   const mode = pwo && ['none', 'all', 'chosen'].includes(pwo.mode) ? pwo.mode : 'none';
   const productIds = pwo && Array.isArray(pwo.productIds || pwo.product_ids)
@@ -146,12 +154,32 @@ function readSellInput(raw) {
 }
 
 /**
+ * Item 21 — what the Entire store holds today: published offers not ended, and the products in no
+ * offer TODAY (the same list her price-post picker reads, as a post for the creator's own brand
+ * reads it — item 20, D1). A product whose offer starts later is hers at normal price until then.
+ */
+async function storeToday(brandId, { today = todayInIndia() } = {}) {
+  const { rows: [o] } = await db.query(
+    `SELECT count(*)::int AS n FROM brand_offers o
+      WHERE o.brand_id = $1 AND o.engine = 2 AND o.status = 'published' AND o.ends_on >= $2::date`, [brandId, today]);
+  const free = await pool.productsWithoutOffers(brandId, { day: today, mode: 'on' });
+  return { offers: o.n, products: free.length, productIds: free.map((p) => p.id) };
+}
+
+/**
  * Validates what the brand gives this creator and FREEZES the products. Throws the first problem.
  * @returns { offerIds, mode, productIds, endsSoon:[offer names] }
  */
-async function resolveSell({ brandId, postingDate, sell, creatorName }) {
+async function resolveSell({ brandId, postingDate, sell, creatorName, postsAbout = false }) {
   const D = calendarDay(postingDate);
   const out = { offerIds: [], mode: sell.mode, productIds: [], endsSoon: [] };
+  // Item 21: the Entire store is a rule, not a list — nothing is frozen. It can only be sent on a
+  // store that has something to sell today (R2).
+  if (sell.mode === 'store') {
+    const s = await storeToday(brandId);
+    if (!s.offers && !s.products) throw new AppError('VALIDATION_ERROR', MSG.STORE_EMPTY, 422, 'offers');
+    return out;
+  }
   if (sell.offerIds.length) {
     const choices = await offerChoices(brandId, D);
     const valid = new Map(choices.offers.map((o) => [o.id, o]));
@@ -185,7 +213,8 @@ async function resolveSell({ brandId, postingDate, sell, creatorName }) {
     }
   }
   if (!out.offerIds.length && !out.productIds.length) {
-    throw new AppError('VALIDATION_ERROR', sell.mode === 'all' && !out.offerIds.length ? MSG.NO_PRODUCTS_FREE(D) : MSG.SELL_NOTHING(creatorName), 422, 'offers');
+    throw new AppError('VALIDATION_ERROR', sell.mode === 'all' && !out.offerIds.length ? MSG.NO_PRODUCTS_FREE(D)
+      : postsAbout ? MSG.POST_ABOUT_NOTHING(creatorName) : MSG.SELL_NOTHING(creatorName), 422, 'offers');
   }
   if (!out.productIds.length) out.mode = 'none';
   return out;
@@ -200,10 +229,11 @@ async function linkOffers(ciId, offerIds, tx = db) {
 
 /* ───────────────────────────────────────────── reading (brand rows, creator screens, agreement) */
 
-/** "2 offers + 12 products" · "2 offers" · "12 products at normal price". */
-function sellWords(nOffers, nProducts) {
+/** "2 offers + 12 products" · "2 offers" · "12 products at normal price" · "Entire store · 4 offers + 61 products today". */
+function sellWords(nOffers, nProducts, store = false) {
   const o = `${nOffers} offer${nOffers === 1 ? '' : 's'}`;
   const p = `${nProducts} product${nProducts === 1 ? '' : 's'}`;
+  if (store) return `Entire store · ${[nOffers ? o : null, nProducts ? p : null].filter(Boolean).join(' + ') || 'nothing yet'} today`;
   if (nOffers && nProducts) return `${o} + ${p}`;
   if (nOffers) return o;
   if (nProducts) return `${p} at normal price`;
@@ -249,7 +279,29 @@ async function sellFor(ciRows, { today = todayInIndia(), withProducts = false } 
     });
     byCi.set(l.ci_id, list);
   }
+  // Item 21: an Entire store row reads the store as it is TODAY — its offers and its free products —
+  // never a list of its own (rules v1.34 §7A).
+  const storeRows = v2.filter((r) => r.sell_mode === 'store');
+  const brandOf = new Map();
+  if (storeRows.length) {
+    const { rows: bs } = await db.query(
+      `SELECT ci.id, c.brand_id FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id
+        WHERE ci.id = ANY($1::uuid[])`, [storeRows.map((r) => r.id)]);
+    for (const b of bs) brandOf.set(b.id, b.brand_id);
+  }
+  const storeCache = new Map();
   for (const r of v2) {
+    if (r.sell_mode === 'store') {
+      const brandId = brandOf.get(r.id);
+      if (!storeCache.has(brandId)) {
+        const offers = (await storeOffersFor(brandId, today)).map((o) => ({ ...o, display_status: rules.displayStatus(o, today) }));
+        const s = await storeToday(brandId, { today });
+        const list = withProducts ? await liveProducts(s.productIds) : [];
+        storeCache.set(brandId, { offers, products: { mode: 'store', count: s.products, store: true, ...(withProducts ? { list } : {}) }, words: sellWords(offers.length, s.products, true) });
+      }
+      out.set(r.id, { ...storeCache.get(brandId), store: true });
+      continue;
+    }
     const offers = byCi.get(r.id) || [];
     const products = await liveProducts(r.sell_product_ids || []);
     out.set(r.id, {
@@ -261,8 +313,36 @@ async function sellFor(ciRows, { today = todayInIndia(), withProducts = false } 
   return out;
 }
 
+/** Item 21 — the Entire store's offers: every published offer of the brand not yet ended, as the sell block shapes one. */
+async function storeOffersFor(brandId, today = todayInIndia()) {
+  const { rows } = await db.query(
+    `SELECT o.id, o.name, o.offer_type, o.sub_type, o.offer_config_json, o.status, o.starts_on, o.ends_on, o.ended_at,
+            (SELECT count(*)::int FROM offer_pool_items i WHERE i.offer_id = o.id AND i.pool = 'buy' AND i.removed_at IS NULL) AS products,
+            (SELECT count(*)::int FROM offer_pool_items i WHERE i.offer_id = o.id AND i.pool = 'gift' AND i.removed_at IS NULL) AS gifts
+       FROM brand_offers o
+      WHERE o.brand_id = $1 AND o.engine = 2 AND o.status = 'published' AND o.ends_on >= $2::date
+      ORDER BY o.starts_on, o.name`, [brandId, today]);
+  return rows.map((l) => {
+    const shaped = { ...l, starts_on: calendarDay(l.starts_on), ends_on: calendarDay(l.ends_on), offer_config_json: l.offer_config_json || {} };
+    return { id: l.id, name: l.name, type_label: rules.typeLabel(l.offer_type, l.sub_type), deal: rules.creatorDeal(shaped, l.products, l.gifts),
+      products: l.products, gifts: l.gifts, starts_on: shaped.starts_on, ends_on: shaped.ends_on };
+  });
+}
+
+/** Item 21 — is this collaboration on the Entire store? (one small read; callers that have the row test sell_mode themselves) */
+async function isStore(ciId, conn = db) {
+  const { rows: [x] } = await conn.query(`SELECT sell_mode, c.brand_id FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id WHERE ci.id = $1`, [ciId]);
+  return x && x.sell_mode === 'store' ? x.brand_id : null;
+}
+
 /** Products she can sell right now: her offers' live buy pools + her normal-price list. */
 async function sellableProductIds(ciId, conn = db) {
+  // Item 21: the Entire store — every product of the store that is on sale, in an offer or not.
+  const storeBrand = await isStore(ciId, conn);
+  if (storeBrand) {
+    const { rows: all } = await conn.query(`SELECT id FROM brand_products WHERE brand_id = $1 AND is_active = true AND pushed_to_store = true`, [storeBrand]);
+    return all.map((r) => r.id);
+  }
   const { rows } = await conn.query(
     `SELECT DISTINCT i.product_id AS id
        FROM collab_offers co JOIN brand_offers o ON o.id = co.offer_id
@@ -310,15 +390,23 @@ async function creatorSell(influencerId, ciId) {
   return {
     brand_name: ci.brand_name, set_name: ci.set_name, campaign_name: ci.campaign_name, commission_pct: pct,
     offers, products: block.products, words: block.words,
+    // Item 21: the Entire store, and a Pay for Content collaboration (what she POSTS ABOUT, no commission).
+    store: !!block.store, no_commission: ci.goal === 'engagement',
   };
 }
 
 /** C3 — one offer, read-only: the deal for shoppers, the dates, what she earns, every product. */
 async function creatorOffer(influencerId, ciId, offerId) {
   const ci = await ownCollab(influencerId, ciId);
-  const { rows } = await db.query(
-    `SELECT o.* FROM collab_offers co JOIN brand_offers o ON o.id = co.offer_id
-      WHERE co.campaign_influencer_id = $1 AND co.offer_id = $2 AND co.dropped_at IS NULL`, [ci.id, offerId]);
+  // Item 21: on the Entire store any published offer of the brand is hers, linked or not.
+  const { rows } = ci.sell_mode === 'store'
+    ? await db.query(
+      `SELECT o.* FROM brand_offers o JOIN campaigns c ON c.brand_id = o.brand_id JOIN campaign_sets cs ON cs.campaign_id = c.id
+        JOIN campaign_influencers ci ON ci.set_id = cs.id
+       WHERE ci.id = $1 AND o.id = $2 AND o.engine = 2 AND o.status = 'published'`, [ci.id, offerId])
+    : await db.query(
+      `SELECT o.* FROM collab_offers co JOIN brand_offers o ON o.id = co.offer_id
+        WHERE co.campaign_influencer_id = $1 AND co.offer_id = $2 AND co.dropped_at IS NULL`, [ci.id, offerId]);
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Not found', 404);
   const o = { ...rows[0], starts_on: calendarDay(rows[0].starts_on), ends_on: calendarDay(rows[0].ends_on), offer_config_json: rows[0].offer_config_json || {} };
   const frozen = await pool.frozenPool(o.id);
@@ -339,6 +427,17 @@ async function creatorOffer(influencerId, ciId, offerId) {
 async function agreementSell(ci) {
   const block = (await sellFor([ci])).get(ci.id);
   if (!block) return null;
+  // Item 21 (rules v1.34 §7A, §9): the Entire store is recorded as the RULE, not as a list. The
+  // offers and the count are what the store held at signing, for the record only.
+  if (block.store) {
+    return {
+      store: true,
+      offers: block.offers.map((o) => ({ name: o.name, deal: o.deal, starts_on: o.starts_on, ends_on: o.ends_on })),
+      products_count: block.products.count,
+      words: 'Everything in the store, now and later',
+      offers_end_line: 'Every offer and every product without an offer, including ones added later. When an offer ends, posts using it are removed from the shop.',
+    };
+  }
   return {
     offers: block.offers.map((o) => ({ name: o.name, deal: o.deal, starts_on: o.starts_on, ends_on: o.ends_on })),
     products_count: block.products.count,
@@ -352,12 +451,32 @@ async function agreementSell(ci) {
 const UNSIGNED_SQL = `ci.status::text = ANY($2::text[])
   AND NOT EXISTS (SELECT 1 FROM contracts con WHERE con.campaign_influencer_id = ci.id AND ${SIGNED_CONTRACT_SQL})`;
 
-/** How many unsigned invitations hold this offer — the warning before ending it. */
+/** How many unsigned invitations hold this offer — the warning before ending it. Item 21: an unsigned Entire store invitation of the brand holds every offer. */
 async function unsignedWith(offerId) {
   const { rows } = await db.query(
     `SELECT count(DISTINCT ci.id)::int AS n FROM collab_offers co JOIN campaign_influencers ci ON ci.id = co.campaign_influencer_id
       WHERE co.offer_id = $1 AND co.dropped_at IS NULL AND ${UNSIGNED_SQL}`, [offerId, PRE_SIGN]);
-  return rows[0].n;
+  const { rows: st } = await db.query(
+    `SELECT count(DISTINCT ci.id)::int AS n FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id
+      WHERE ci.sell_mode = 'store' AND c.brand_id = (SELECT brand_id FROM brand_offers WHERE id = $1) AND ${UNSIGNED_SQL}`, [offerId, PRE_SIGN]);
+  return rows[0].n + st[0].n;
+}
+
+/**
+ * Item 21 (R3) — the signed Entire store collaborations of this offer's brand, and how many of their
+ * live posts use the offer: the second line of the End-offer warning.
+ */
+async function storeSignedWith(offerId) {
+  const { rows: [x] } = await db.query(
+    `SELECT count(DISTINCT ci.id)::int AS collaborations,
+            (SELECT count(*)::int FROM creator_posts cp WHERE cp.offer_id = $1 AND cp.v2 AND cp.status = 'approved'
+               AND cp.campaign_influencer_id IN (SELECT ci2.id FROM campaign_influencers ci2 JOIN campaign_sets cs2 ON cs2.id = ci2.set_id JOIN campaigns c2 ON c2.id = cs2.campaign_id
+                                                  WHERE ci2.sell_mode = 'store' AND c2.brand_id = (SELECT brand_id FROM brand_offers WHERE id = $1))) AS posts
+       FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id
+      WHERE ci.sell_mode = 'store' AND c.brand_id = (SELECT brand_id FROM brand_offers WHERE id = $1)
+        AND ci.status::text = ANY($2::text[])
+        AND EXISTS (SELECT 1 FROM contracts con WHERE con.campaign_influencer_id = ci.id AND ${SIGNED_CONTRACT_SQL})`, [offerId, LIVE_CI]);
+  return { collaborations: x.collaborations, posts: x.posts };
 }
 
 /**
@@ -491,5 +610,7 @@ module.exports = {
   offerChoices, freeProducts, readSellInput, resolveSell, linkOffers,
   sellWords, sellFor, sellableProductIds, liveProducts,
   creatorSell, creatorOffer, agreementSell,
-  unsignedWith, dropEndedOffer, creatorsHoldingProduct, afterProductChange,
+  unsignedWith, storeSignedWith, dropEndedOffer, creatorsHoldingProduct, afterProductChange,
+  // Item 21 — the Entire store
+  storeToday, storeOffersFor, isStore,
 };

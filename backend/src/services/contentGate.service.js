@@ -41,7 +41,7 @@ const HYBRID = 'hybrid';
 
 const SELECT = `
   SELECT ci.id AS ci_id, ci.status AS ci_status, ci.influencer_id, ci.delayed_at, ci.delayed_stage, ci.sell_v2,
-         ci.min_shoppable_posts,
+         ci.min_shoppable_posts, ci.shoppable_posts_n, ci.sell_mode,
          cs.id AS set_id, cs.name AS set_name, cs.goal, cs.shoot_mode AS set_mode, cs.go_live_date,
          c.id AS campaign_id, c.name AS campaign_name, c.brand_id, c.status AS campaign_status,
          b.business_name AS brand_name, bu.id AS brand_user_id,
@@ -135,7 +135,23 @@ function shootDoneAt(r) {
  * Refuse unless the content step is open for this caller. Returns what every path needs next.
  * `conn` lets a transaction ask before it writes.
  */
-async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = false, allowOldTerms = false } = {}) {
+/**
+ * Item 21 (rules v1.34 §12.2) — Path 1 of a Pay for Content collaboration signed with shoppable
+ * posts: the number the brand asked for, how many INFLX has approved, and whether Path 2 is open
+ * (the first approval opens it, as on Pay for Sale). null for a collaboration with no posts term.
+ */
+async function postsOf(ciId, r, conn = db) {
+  if (!r || !r.sell_v2 || r.shoppable_posts_n == null) return null;
+  const { rows: [x] } = await conn.query(
+    `SELECT count(*)::int AS n FROM creator_posts WHERE campaign_influencer_id = $1 AND v2 AND approved_at IS NOT NULL`, [ciId]);
+  const n = Number(r.shoppable_posts_n);
+  return { n, approved: x.n, short: Math.max(0, n - x.n), met: x.n >= n, open: x.n >= 1 };
+}
+
+async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = false, allowOldTerms = false, allowLocked = null } = {}) {
+  // A read may look at a locked Path 2 (it draws the lock); a write may not, unless it says so
+  // (the brand's "she hasn't made her posts" report is made while it is locked).
+  const lockedOk = allowLocked == null ? allowShootNotDone : allowLocked;
   const r = await load(ciId, scope, conn);
   if (!r) throw new AppError('NOT_FOUND', 'Not found', 404);
 
@@ -149,14 +165,18 @@ async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = f
   if (r.goal !== PAY_FOR_CONTENT) throw new AppError('NOT_PAY_FOR_CONTENT', MSG.NOT_PAY_FOR_CONTENT, 404);
 
   const shootDone = r.pe_status === 'completed';
+  const posts = await postsOf(ciId, r, conn);
   if (!shootDone) {
     if (!allowShootNotDone) throw new AppError('SHOOT_NOT_DONE', MSG.SHOOT_NOT_DONE, 422, 'status');
-    return { r, gate, rows: rowsOf(r.terms_json) || [], shootDone: false, shootDoneAt: null };
+    return { r, gate, rows: rowsOf(r.terms_json) || [], shootDone: false, shootDoneAt: null, posts };
   }
 
   const rows = rowsOf(r.terms_json);
   if (!rows) throw new AppError('NO_ROWS', MSG.NO_ROWS, 422, 'status');
-  return { r, gate, rows, shootDone: true, shootDoneAt: shootDoneAt(r) };
+  // Item 21 (D4): with shoppable posts on the terms, the content package waits for the first one
+  // INFLX approves — the server refuses, not only the screen.
+  if (posts && !posts.open && !lockedOk) throw new AppError('PATH2_LOCKED', MSG.PATH2_LOCKED(r.brand_name), 422, 'status');
+  return { r, gate, rows, shootDone: true, shootDoneAt: shootDoneAt(r), posts };
 }
 
 /**
@@ -173,4 +193,4 @@ async function saleGate(ciId, r, gate, conn, { allowShootNotDone, allowOldTerms 
   return { r, gate, rows: shootDone ? await saleRowsOf(ciId, conn) : [], shootDone, shootDoneAt: shootDoneAt(r), aim: 'sale', hybrid: r.goal === HYBRID, oldTerms: false };
 }
 
-module.exports = { assertContentOpen, load, rowsOf, saleRowsOf, shootDoneAt, PAY_FOR_CONTENT, PAY_FOR_SALE, HYBRID, SELECT };
+module.exports = { assertContentOpen, load, rowsOf, saleRowsOf, shootDoneAt, postsOf, PAY_FOR_CONTENT, PAY_FOR_SALE, HYBRID, SELECT };

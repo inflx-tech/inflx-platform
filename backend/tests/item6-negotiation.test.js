@@ -99,7 +99,8 @@ describe('countering, per Aim (checks 1–5)', () => {
       { term: 'usageRights', from: '60 days · social and ads', to: 'Off' },
     ]));
     const stored = await turns((await negRow(w.ciId)).id);
-    expect(stored[0].terms_json).toEqual({ fee: 12000, deliverables: [{ type: 'reel', count: 1 }, { type: 'story', count: 1 }], usageRights: null });
+    // Item 21: the fixture carries one shoppable post; a counter that does not name the number keeps it.
+    expect(stored[0].terms_json).toEqual({ fee: 12000, deliverables: [{ type: 'reel', count: 1 }, { type: 'story', count: 1 }], usageRights: null, shoppablePostsN: 1 });
   });
 
   it('a Hybrid counter carries the fixed fee and the commission, and refuses ₹0 (check 3)', async () => {

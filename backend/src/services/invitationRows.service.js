@@ -131,7 +131,8 @@ async function termsBlock(r, goal) {
   const usage = jsonObj(r.usage_rights_json);
   const selling = goal === 'conversion' || goal === 'hybrid';
   // creator-terms-v2: her offers (linked) + products without offers (frozen), not a scope (rules §2).
-  const sell = selling && r.sell_v2 ? (await creatorTerms.sellFor([r])).get(r.id) : null;
+  // Item 21: a Pay for Content collaboration on the new terms carries what she POSTS ABOUT the same way.
+  const sell = (selling || goal === 'engagement') && r.sell_v2 ? (await creatorTerms.sellFor([r])).get(r.id) : null;
   const products = r.alloc_scope === 'products' ? await productNames(r.alloc_product_ids) : [];
   return {
     goal,
@@ -147,6 +148,8 @@ async function termsBlock(r, goal) {
     } : null,
     // Item 6: the minimum stamped at send (rules §7B); the constant for rows sent before it.
     shoppablePostsMin: selling ? (r.min_shoppable_posts != null ? Number(r.min_shoppable_posts) : MIN_SHOPPABLE_POSTS) : null,
+    // Item 21 (rules v1.34 §7A): the number the brand asked for on Pay for Content; null on old terms.
+    shoppablePostsN: goal === 'engagement' && r.sell_v2 && r.shoppable_posts_n != null ? Number(r.shoppable_posts_n) : null,
     deliverables: goal === 'engagement' ? jsonArr(r.formats_json).map(d => ({ type: d.type, count: Number(d.count) || 1 })) : null,
     deliverablesWords: goal === 'engagement' ? deliverablesInWords(jsonArr(r.formats_json)) : null,
     usageRights: goal === 'engagement' && usage && usage.on ? { on: true, durationDays: usage.duration_days == null ? null : Number(usage.duration_days), places: usage.places || [], words: usageInWords(usage) } : null,
@@ -207,7 +210,7 @@ const rowSelect = (extra = '') => `
          ci.sell_v2, ci.sell_mode, ci.sell_product_ids, cardinality(ci.sell_product_ids) AS sell_product_count,
          (SELECT count(*)::int FROM collab_offers co WHERE co.campaign_influencer_id = ci.id AND co.dropped_at IS NULL) AS sell_offer_count,
          ci.offer_type, ci.offer_config_json, ci.brand_offer_id, ci.offer_valid_from, ci.offer_valid_until,
-         ci.formats_json, ci.brand_note, ci.usage_rights_json, ci.agreement_id, ci.min_shoppable_posts, ci.pool_entry_id,
+         ci.formats_json, ci.brand_note, ci.usage_rights_json, ci.agreement_id, ci.min_shoppable_posts, ci.shoppable_posts_n, ci.pool_entry_id,
          ci.invited_at, ci.created_at, ci.answered_at, ci.declined_reason, ci.declined_note,
          ci.deferred_go_live_date, ci.deferred_shoot_mode, ci.deferred_at, ci.deferred_note, ci.move_requested_at, ci.move_answer, ci.move_answered_at,
          ci.withdrawn_at, ci.removed_at,
@@ -380,7 +383,7 @@ async function invitationForBrand(ciId, setId, goal) {
 
 /** Her card query; `extra` as for rowSelect. */
 const creatorSelect = (extra = '') => `
-  SELECT ${extra}ci.id, ci.status, ci.agreed_fee, ci.commission_pct, ci.agreement_id, ci.min_shoppable_posts, ci.pool_entry_id,
+  SELECT ${extra}ci.id, ci.status, ci.agreed_fee, ci.commission_pct, ci.agreement_id, ci.min_shoppable_posts, ci.shoppable_posts_n, ci.pool_entry_id,
          ci.alloc_scope, ci.alloc_category, ci.alloc_category_node_id, ci.alloc_product_ids,
          ci.sell_v2, ci.sell_mode, ci.sell_product_ids, cardinality(ci.sell_product_ids) AS sell_product_count,
          (SELECT count(*)::int FROM collab_offers co WHERE co.campaign_influencer_id = ci.id AND co.dropped_at IS NULL) AS sell_offer_count,
@@ -553,6 +556,7 @@ function creatorState(r, today) {
  */
 const CONTENT_LINES = {
   creator: {
+    make_posts: () => 'Create your shoppable posts. The content step opens when INFLX approves the first.',   // item 21
     send_content: () => 'Upload your content and send it.',
     make_changes: (r) => `${r.brand_name} asked for changes.`,
     review_content: (r) => `With ${r.brand_name} for review.`,
@@ -562,6 +566,7 @@ const CONTENT_LINES = {
     reported: () => 'INFLX is looking at this.',
   },
   brand: {
+    make_posts: (r) => `${String(r.name || 'She').split(' ')[0]} is making her shoppable posts.`,   // item 21
     send_content: (r) => `${String(r.name || 'She').split(' ')[0]} is working on the content.`,
     make_changes: (r) => `With ${String(r.name || 'her').split(' ')[0]} for changes.`,
     review_content: () => 'Your move. Review her content.',

@@ -42,14 +42,14 @@ export function termValue(goal, key, terms) {
   }
 }
 // Item 10: `visitAt` is the store visit's one negotiable term; the server prints its values.
-export const TERM_LABEL = { commissionPct: 'Commission', fee: 'Fee', deliverables: 'What you deliver', usageRights: 'Usage rights', postingDate: 'Posts on', shootMode: 'Mode', visitAt: 'Time' };
-/** Which terms a change line may show, per Aim (rules v1.18 §7B). */
-export const NEGOTIABLE = { conversion: ['commissionPct'], engagement: ['fee', 'deliverables', 'usageRights'], hybrid: ['fee', 'commissionPct'] };
+export const TERM_LABEL = { commissionPct: 'Commission', fee: 'Fee', deliverables: 'What you deliver', usageRights: 'Usage rights', shoppablePostsN: 'Shoppable posts', postingDate: 'Posts on', shootMode: 'Mode', visitAt: 'Time' };
+/** Which terms a change line may show, per Aim (rules v1.18 §7B; item 21 adds the posts number on Pay for Content). */
+export const NEGOTIABLE = { conversion: ['commissionPct'], engagement: ['fee', 'deliverables', 'shoppablePostsN', 'usageRights'], hybrid: ['fee', 'commissionPct'] };
 
-/** "13%" · "₹12,000 · 1 reel, 1 story" · "₹5,000 + 10%" */
+/** "13%" · "₹12,000 · 1 reel, 1 story" · "₹12,000 · 1 reel, 1 story · 3 shoppable posts" · "₹5,000 + 10%" */
 export function snapshotLine6(goal, s) {
   if (!s) return '';
-  if (goal === 'engagement') return [s.fee != null && s.fee !== '' ? rupees5(s.fee) : null, deliverablesShort(s.deliverables)].filter(Boolean).join(' · ');
+  if (goal === 'engagement') return [s.fee != null && s.fee !== '' ? rupees5(s.fee) : null, deliverablesShort(s.deliverables), s.shoppablePostsN != null && s.shoppablePostsN !== '' ? `${s.shoppablePostsN} shoppable ${Number(s.shoppablePostsN) === 1 ? 'post' : 'posts'}` : null].filter(Boolean).join(' · ');
   if (goal === 'hybrid') return [s.fee != null && s.fee !== '' ? rupees5(s.fee) : null, fmtPct5(s.commissionPct)].filter(Boolean).join(' + ');
   return fmtPct5(s.commissionPct);
 }
@@ -69,6 +69,8 @@ export const C6 = {
     rows: { aim: 'Aim', posts: 'Posts on', mode: 'Mode', sell: 'You can sell' },
     commission: 'Commission', fee: 'Fee', fixedFee: 'Fixed fee',
     delivers: "What you'll deliver", addAnother: 'Add another',
+    // Item 21 (rules v1.34 §7B)
+    posts: 'Shoppable posts in INFLX', postsHint: "No commission on these — the fee is your pay. What you post about is the brand's to set.",
     reuse: 'Brand can reuse the content',
     theirOffer: 'Their offer', theyAsked: 'They asked for', sheAsked: (f) => `${f} asked for`,
     theyAskedUsage: (words) => `They asked for ${words}.`,

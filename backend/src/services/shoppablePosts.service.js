@@ -51,7 +51,9 @@ const VIDEO = { 'video/mp4': 'mp4' };
 const MB = 1024 * 1024;
 const LIMIT_MB = { image: 10, video: 200 };
 const COVER_MB = 2;                      // a picture taken from a video (W15) — small on purpose
-const SELLING = ['conversion', 'hybrid'];
+// Item 21 (rules v1.34 §12.2): a Pay for Content collaboration on the new terms makes shoppable
+// posts too — `postable` still asks for sell_v2, which an old-terms one never has.
+const SELLING = ['conversion', 'hybrid', 'engagement'];
 const COLLAB_ON = ['contracted', 'active', 'completed'];
 const GROUPS = ['season', 'occasion', 'style', 'use'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -66,7 +68,7 @@ const inr = rules.inr;
 
 const COLLAB_SQL = `
   SELECT ci.id, ci.influencer_id, ci.status::text AS status, ci.sell_v2, ci.sell_mode, ci.sell_product_ids,
-         ci.commission_pct, ci.agreed_fee, ci.min_shoppable_posts,
+         ci.commission_pct, ci.agreed_fee, ci.min_shoppable_posts, ci.shoppable_posts_n,
          cs.id AS set_id, cs.name AS set_name, cs.goal, cs.go_live_date,
          c.id AS campaign_id, c.name AS campaign_name, c.brand_id,
          b.business_name AS brand_name, b.logo_url AS brand_logo,
@@ -81,6 +83,15 @@ const COLLAB_SQL = `
 /** The one rule (D2). Changes here when the founder's shoot-plan rules arrive (O1). */
 function postable(ci) {
   return !!(ci && ci.sell_v2 && SELLING.includes(ci.goal) && COLLAB_ON.includes(ci.status) && ci.signed && ci.shoot_done);
+}
+
+/**
+ * How many posts this collaboration owes: the admin minimum on Pay for Sale and Hybrid; on Pay for
+ * Content (item 21) the number the brand asked for. ONE rule for the Create tab, Home and completion.
+ */
+function minOf(ci) {
+  if (ci && ci.goal === 'engagement') return ci.shoppable_posts_n == null ? 1 : Number(ci.shoppable_posts_n);
+  return ci && ci.min_shoppable_posts != null ? Number(ci.min_shoppable_posts) : 1;
 }
 
 /** Her selling collaborations on the new terms that are signed — postable or waiting for the shoot. */
@@ -149,6 +160,8 @@ async function doneCounts(ciIds) {
 function earningWords(ci) {
   const pct = ci.commission_pct == null ? null : `${Number(ci.commission_pct) % 1 === 0 ? Number(ci.commission_pct) : Number(ci.commission_pct).toFixed(1)}%`;
   if (ci.goal === 'hybrid' && ci.agreed_fee != null) return `earning ${[pct, inr(ci.agreed_fee)].filter(Boolean).join(' + ')}`;
+  // Item 21 (D5): Pay for Content pays the fee alone — a sale through her post earns her nothing.
+  if (ci.goal === 'engagement') return 'fixed fee · no commission';
   return pct ? `earning ${pct}` : null;
 }
 
@@ -185,7 +198,7 @@ async function collaborations(influencerId, brandId) {
   const done = await doneCounts(collabs.map((c) => c.id));
   return collabs.map((ci) => {
     const sell = sells.get(ci.id);
-    const min = ci.min_shoppable_posts == null ? 1 : Number(ci.min_shoppable_posts);
+    const min = minOf(ci);
     return {
       id: ci.id, campaign_name: ci.campaign_name, set_name: ci.set_name,
       sell_words: sell ? sell.words : null,
@@ -223,8 +236,8 @@ async function storeOffers(brandId, today = todayInIndia()) {
       ORDER BY o.offer_type, o.ends_on, o.name`, [brandId, today]);
   return rows.map((o) => ({ ...o, starts_on: calendarDay(o.starts_on), ends_on: calendarDay(o.ends_on), offer_config_json: o.offer_config_json || {} }));
 }
-/** The offers this post may use: the collaboration's, or his own store's. */
-const offersFor = (ctx, today = todayInIndia()) => (ctx.own ? storeOffers(ctx.brand_id, today) : runningOffers(ctx, today));
+/** The offers this post may use: the collaboration's, or his own store's — or, on the Entire store (item 21), the whole store's. */
+const offersFor = (ctx, today = todayInIndia()) => (ctx.own || ctx.sell_mode === 'store' ? storeOffers(ctx.brand_id, today) : runningOffers(ctx, today));
 
 async function offerRow(offerId) {
   const { rows } = await db.query(`SELECT * FROM brand_offers WHERE id = $1`, [offerId]);
@@ -304,7 +317,7 @@ async function storeProductsWithoutOffers(brandId, today = todayInIndia()) {
   return priceRows(rows);
 }
 /** The products a price post may carry: the collaboration's, or his own store's. */
-const priceProductsFor = (ctx, today = todayInIndia()) => (ctx.own ? storeProductsWithoutOffers(ctx.brand_id, today) : priceProducts(ctx));
+const priceProductsFor = (ctx, today = todayInIndia()) => (ctx.own || ctx.sell_mode === 'store' ? storeProductsWithoutOffers(ctx.brand_id, today) : priceProducts(ctx));
 
 async function priceRows(rows) {
   const paths = await categoryPaths(rows.map((r) => r.leaf_id).filter(Boolean));
@@ -355,7 +368,7 @@ async function themeTags() {
 /* ───────────────────────────────────────────── reading a post */
 
 const POST_SQL = `
-  SELECT cp.*, ci.set_id, cs.name AS set_name, cs.goal, cs.go_live_date, c.name AS campaign_name,
+  SELECT cp.*, ci.set_id, ci.commission_pct AS ci_commission_pct, cs.name AS set_name, cs.goal, cs.go_live_date, c.name AS campaign_name,
          b.business_name AS brand_name, b.logo_url AS brand_logo,
          o.name AS offer_name, o.offer_type, o.sub_type, o.offer_config_json, o.status AS offer_status,
          o.starts_on AS offer_starts_on, o.ends_on AS offer_ends_on,
@@ -481,11 +494,13 @@ async function salesOf(postIds) {
   return new Map(rows.map((r) => [r.post_id, { orders: r.orders, commission: Number(r.commission), sales: Number(r.sales) }]));
 }
 
-/** Item 20: a post for his own brand earns no commission, so it says what it sold. */
-function salesWords(s, own = false) {
+/** Item 20: a post for his own brand earns no commission, so it says what it sold. Item 21 (R9): so does a post on a collaboration that pays none. */
+function salesWords(s, noCommission = false) {
   if (!s || !s.orders) return 'No sales yet';
-  return `${s.orders} sale${s.orders > 1 ? 's' : ''} · ${own ? inr(s.sales) : `${inr(s.commission)} to you`}`;
+  return `${s.orders} sale${s.orders > 1 ? 's' : ''} · ${noCommission ? inr(s.sales) : `${inr(s.commission)} to you`}`;
 }
+/** True when nothing from a sale through this post reaches the creator: his own brand, or a collaboration with no commission %. */
+const noCommissionOn = (p) => !!(p && (p.own_brand || (p.campaign_influencer_id && p.ci_commission_pct == null)));
 
 async function tagsById() {
   const all = await themeTags();
@@ -533,7 +548,8 @@ async function shape(p, { media, products, sales, tags, paths, today = todayInIn
       offer_ended_on: removedReason === 'offer_ended' ? calendarDay(p.offer_ends_on) : null,
     } : null,
     sales: sales.get(p.id) || { orders: 0, commission: 0, sales: 0 },
-    sales_words: salesWords(sales.get(p.id), !!p.own_brand),
+    sales_words: salesWords(sales.get(p.id), noCommissionOn(p)),
+    no_commission: noCommissionOn(p),
     can: {
       edit: p.status === 'draft',
       fix: p.status === 'rejected',
@@ -1019,7 +1035,7 @@ async function createHome(influencerId) {
   const collabs = (await myCollabs(influencerId)).filter(postable);
   const done = await doneCounts(collabs.map((c) => c.id));
   const needs = collabs.map((ci) => {
-    const min = ci.min_shoppable_posts == null ? 1 : Number(ci.min_shoppable_posts);
+    const min = minOf(ci);
     const posting = calendarDay(ci.go_live_date);
     return { campaign_influencer_id: ci.id, brand_id: ci.brand_id, brand_name: ci.brand_name, brand_logo: ci.brand_logo,
       set_name: ci.set_name, campaign_name: ci.campaign_name, posting_date: posting, done: done.get(ci.id) || 0, min };
@@ -1272,5 +1288,5 @@ module.exports = {
   getPost, getMany, getAny, listMine, createHome, stateOf, liveDayOf, titleOf, bandFor, shopperPrice, priceBands, themeTags,
   approveCheck, afterDecision, adminShape,
   afterOfferEnded, afterProductsLeftOffer, afterProductChange, sweepEndedOffers, refreshFacets, offerPostStats,
-  doneCounts, myCollabs, canPost,
+  doneCounts, myCollabs, canPost, minOf,
 };

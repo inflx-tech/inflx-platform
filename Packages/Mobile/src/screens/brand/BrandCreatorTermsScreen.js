@@ -51,12 +51,12 @@ import { Stepper5, LockedSetCard5, MinBox5, DeliverablesEditor5 } from '../../co
 import { OffersSheet, ProductsSheet, ChooseProductsModal } from '../../components/invitations/sellSheets';
 import { C5, MSG5, USAGE_DURATIONS, USAGE_PLACES, first, rupees5, fmtPct5, MIN_SHOPPABLE_POSTS } from '../../components/invitations/copy5';
 import { C6 } from '../../components/negotiation/copy6';
-import { getDraft, setTerms, setMinimums, copyTermsToAll, defaultTerms, validateLocal, sellProductCount, markOver50Confirmed } from '../../components/invitations/draft5';
+import { getDraft, setTerms, setMinimums, copyTermsToAll, defaultTerms, validateLocal, sellProductCount, sellWords, markOver50Confirmed } from '../../components/invitations/draft5';
 
 const TT = C5.terms;
 const SL = C5.sell;
 /** What "Next" can refuse (validateLocal's keys), in the order each Aim's form draws them. */
-const TERMS_FIELDS = ['fee', 'commissionPct', 'sell', 'deliverables', 'note', 'usage'];
+const TERMS_FIELDS = ['fee', 'commissionPct', 'deliverables', 'posts', 'sell', 'note', 'usage'];
 
 /**
  * The screen the navigator holds. It only decides WHOSE form is on show: the form below is keyed
@@ -131,11 +131,35 @@ function TermsForm({ navigation, route, creator }) {
   const offersN = (t.sellOffers || []).length;
   const offerProducts = (t.sellOffers || []).reduce((a, o) => a + (o.products || 0), 0);
   const productsN = sellProductCount(t);
+  // Item 21 (rules v1.34 §7A): the Entire store, for every Aim; and what she posts about on Pay for Content.
+  const store = t.sellMode === 'store';
+  const postsAbout = goal === 'engagement';
 
   const update = (patch) => { setT(prev => ({ ...prev, ...patch })); setErrs(prev => { const e = { ...prev }; for (const k of Object.keys(patch)) delete e[k]; if (patch.sellOffers || patch.sellMode) delete e.sell; return e; }); };
 
   const belowCommission = mins.commissionPct != null && t.commissionPct !== '' && Number(t.commissionPct) < Number(mins.commissionPct);
   const belowFee = mins.fee != null && t.fee !== '' && Number(t.fee) < Number(mins.fee);
+
+  /**
+   * creator-terms-v2 (T1, T5): what she can sell — her offers and products without offers. Item 21
+   * adds the Entire store (every Aim) and uses the same rows for what she POSTS ABOUT on Pay for
+   * Content. Entire store stands alone: picking it empties the two rows; opening a row leaves it.
+   */
+  const pickStore = () => update(store
+    ? { sellMode: 'none' }
+    : { sellMode: 'store', sellOffers: [], sellProductIds: [], sellProducts: [], sellAllCount: 0 });
+  const openRow = (which) => { if (store) update({ sellMode: 'none' }); setSheet(which); };
+  const sellField = (
+    <View ref={reveal.mark('sell')} collapsable={false} testID="sell-field">
+      <Text style={s.label}>{postsAbout ? TT.postsAbout : TT.sell}<Text style={{ color: T.danger }}> *</Text></Text>
+      <SellRow title={SL.store} set={store} testID="sell-store" onPress={pickStore} sub={store ? SL.storeSet : SL.storeSub} />
+      <SellRow title={SL.offers} set={offersN > 0} testID="sell-offers" onPress={() => openRow('offers')}
+        sub={store ? SL.storeCovers : offersN ? SL.offersValue(offersN, offerProducts) : SL.offersNone} />
+      <SellRow title={SL.productsWithout} set={productsN > 0} testID="sell-products" onPress={() => openRow('products')}
+        sub={store ? SL.storeCovers : productsN ? SL.productsValue(productsN) : SL.productsNone} />
+      {errs.sell ? <View style={s.errBox} testID="sell-error"><Text style={s.errText}>⚠ {errs.sell === 'POST_ABOUT_NOTHING' ? MSG5.POST_ABOUT_NOTHING(f) : MSG5.SELL_NOTHING(f)}</Text></View> : null}
+    </View>
+  );
 
   function save() {
     setTerms(setId, creator.id, t);
@@ -188,18 +212,10 @@ function TermsForm({ navigation, route, creator }) {
               {mins.commissionPct != null ? <Text style={s.hint}>{TT.minCommission(f, fmtPct5(mins.commissionPct))}</Text> : null}
               {belowCommission ? <MinBox5 text={MSG5.BELOW_MIN(f, fmtPct5(mins.commissionPct))} testID="min-commission" /> : null}
             </Field>
-            {/* creator-terms-v2 (T1, T5): two rows replace the scope chips and the follower offer. */}
-            <View ref={reveal.mark('sell')} collapsable={false} testID="sell-field">
-              <Text style={s.label}>{TT.sell}<Text style={{ color: T.danger }}> *</Text></Text>
-              <SellRow title={SL.offers} set={offersN > 0} testID="sell-offers" onPress={() => setSheet('offers')}
-                sub={offersN ? SL.offersValue(offersN, offerProducts) : SL.offersNone} />
-              <SellRow title={SL.productsWithout} set={productsN > 0} testID="sell-products" onPress={() => setSheet('products')}
-                sub={productsN ? SL.productsValue(productsN) : SL.productsNone} />
-              {errs.sell ? <View style={s.errBox} testID="sell-error"><Text style={s.errText}>⚠ {MSG5.SELL_NOTHING(f)}</Text></View> : null}
-            </View>
-            {offersN || productsN ? (
+            {sellField}
+            {offersN || productsN || store ? (
               <View style={s.sum} testID="sell-summary">
-                <Text style={s.sumMain}>{SL.summary(offersN, offerProducts, productsN)}</Text>
+                <Text style={s.sumMain}>{store ? `She can sell: ${SL.storeSummary}` : SL.summary(offersN, offerProducts, productsN)}</Text>
                 {t.commissionPct !== '' ? <Text style={s.sumSub}>{SL.summaryMoney(fmtPct5(t.commissionPct))}</Text> : null}
               </View>
             ) : null}
@@ -216,6 +232,17 @@ function TermsForm({ navigation, route, creator }) {
             <Field label={TT.delivers} required error={null} mark={reveal.mark('deliverables')} testID="deliverables-field">
               <DeliverablesEditor5 rows={t.deliverables} onChange={(rows) => update({ deliverables: rows })} error={errs.deliverables} scrollRef={scrollRef} />
             </Field>
+            {/* Item 21 (board T1): how many shoppable posts, and what she posts about — no commission. */}
+            <Field label={TT.postsN} required error={errs.posts} hint={TT.postsNHint} mark={reveal.mark('posts')} testID="posts-field">
+              <NumberField value={String(t.posts)} onChangeText={(v) => update({ posts: v })} placeholder="3" suffix="posts" testID="posts" />
+            </Field>
+            {sellField}
+            {offersN || productsN || store ? (
+              <View style={s.sum} testID="sell-summary">
+                <Text style={s.sumMain}>{SL.summaryPosts(sellWords(t), Number(t.posts) || 0)}</Text>
+                <Text style={s.sumSub}>{SL.noCommission}</Text>
+              </View>
+            ) : null}
             <View ref={reveal.mark('note')} collapsable={false} testID="note-field">
               <TextField4 label={TT.note} value={t.note} onChangeText={(v) => update({ note: v })} placeholder={TT.notePlaceholder} max={300} multiline error={errs.note} testID="note" />
             </View>
@@ -230,7 +257,7 @@ function TermsForm({ navigation, route, creator }) {
           </>
         ) : null}
 
-        {n > 1 ? <SwitchRow label={TT.everyone} hint={selling ? SL.everyoneHint : TT.everyoneHint} value={everyone} onValueChange={setEveryone} testID="everyone-switch" /> : null}
+        {n > 1 ? <SwitchRow label={TT.everyone} hint={selling ? SL.everyoneHint : postsAbout ? SL.everyoneHintPosts : TT.everyoneHint} value={everyone} onValueChange={setEveryone} testID="everyone-switch" /> : null}
       </FormScroll>
       {toast}
       </FormArea>

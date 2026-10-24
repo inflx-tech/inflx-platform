@@ -386,7 +386,10 @@ describe('the cross-tab jumps in the code all ask for the main page underneath',
     const inner = jumps.filter((j) => !MAINS.includes(j.target) && !SHELLS.includes(j.file));
     expect(inner.map((j) => j.file).sort()).toEqual([
       'BrandGroupDetailScreen.js', 'BrandPitchScreen.js', 'BrandPoolScreen.js', 'BrandSetDetailScreen.js',
-      'BrandWalletLockedScreen.js', 'CreatorNotificationsScreen.js', 'PitchThreadScreen.js', 'SaleLiveScreen.js',
+      'BrandWalletLockedScreen.js',
+      // Item 21: the content screen opens item 13's flow for a Pay for Content post, as SaleLiveScreen does.
+      'ContentScreen.js',
+      'CreatorNotificationsScreen.js', 'PitchThreadScreen.js', 'SaleLiveScreen.js',
       // Item 19: every jump Home makes goes through this one line (jumpFromHome).
       'open19.js',
     ]);

@@ -83,10 +83,14 @@ function slotsOf(rows, s) {
  * Whose move it is, and since when — ONE rule for Needs You and the 48-hour reminders (J2b).
  * null when nobody owes anything: live, complete, or held by a brand's report.
  */
-function openMove(stage, cc, rounds, shootDoneAt) {
+function openMove(stage, cc, rounds, shootDoneAt, posts = null) {
   if (cc && cc.brand_reported_at) return null;
   const last = rounds[rounds.length - 1] || null;
   switch (stage) {
+    // Item 21: Path 2 is locked until INFLX approves her first shoppable post; once live, the final
+    // 50% waits for the agreed number (D3, D4). Either way the move is hers: make the posts.
+    case 'posts':     return { key: 'make_posts', side: 'creator', since: shootDoneAt };
+    case 'live':      return posts && !posts.met ? { key: 'make_posts', side: 'creator', since: cc.live_confirmed_at } : null;
     case 'draft':     return { key: 'send_content', side: 'creator', since: shootDoneAt };
     case 'changes':   return { key: 'make_changes', side: 'creator', since: last && last.verdict_at };
     case 'in_review': return { key: 'review_content', side: 'brand', since: last && last.submitted_at };
@@ -103,6 +107,9 @@ function openMove(stage, cc, rounds, shootDoneAt) {
  */
 const CONTENT_MOVE_SQL = (ci) => `(
   SELECT CASE
+           -- Item 21: with shoppable posts on the terms, the package waits for the first approved post.
+           WHEN ${ci}.sell_v2 AND ${ci}.shoppable_posts_n IS NOT NULL AND (cc.id IS NULL OR cc.first_submitted_at IS NULL)
+                AND NOT EXISTS (SELECT 1 FROM creator_posts cpx WHERE cpx.campaign_influencer_id = ${ci}.id AND cpx.v2 AND cpx.approved_at IS NOT NULL) THEN 'make_posts'
            WHEN cc.id IS NULL THEN 'send_content'
            WHEN cc.brand_reported_at IS NOT NULL THEN 'reported'
            WHEN cc.live_confirmed_at IS NOT NULL THEN 'live'
@@ -124,15 +131,28 @@ const CONTENT_MOVE_SQL = (ci) => `(
 /** collabStep's vocabulary for the content move (step 5, whose turn it is). */
 const SOCIAL_STATE_OF_MOVE = {
   review_content: 'submitted', make_changes: 'changes_asked', post_and_link: 'approved',
-  confirm_live: 'posted', live: 'confirmed', reported: 'none', send_content: 'none',
+  confirm_live: 'posted', live: 'confirmed', reported: 'none', send_content: 'none', make_posts: 'none',
 };
 
-/** The Delayed stage for a content-step stage (§12.2, v1.29). null once the content is live. */
-function delayedStageFor(stage) {
+/**
+ * The Delayed stage for a content-step stage (§12.2, v1.29). null once the content is live —
+ * unless (item 21, v1.34) the collaboration is still short of its agreed shoppable posts.
+ */
+function delayedStageFor(stage, posts = null) {
+  if (stage === 'posts' || (stage === 'live' && posts && !posts.met)) return 'posts_not_approved';
   return {
     draft: 'content_not_submitted', changes: 'content_changes_requested', in_review: 'content_in_review',
     approved: 'content_not_posted', posted: 'content_not_confirmed',
   }[stage] || null;
+}
+
+/**
+ * Item 21 — item 12's stage, with `posts` in front of it while Path 2 is locked: shoppable posts on
+ * the terms, none approved yet, nothing ever sent. ONE rule for the screen, Needs You, the jobs.
+ */
+function stageWithPosts(stage, cc, posts) {
+  if (stage === 'draft' && posts && !posts.open && !(cc && cc.first_submitted_at)) return 'posts';
+  return stage;
 }
 
 /* ───────────────────────────────────────────────────────────── G1 — the state */
@@ -148,7 +168,10 @@ async function read(ciId, scope) {
   const s = await snapshot(db, ciId, cc);
   const settingRounds = await platformSettings.get('content_change_rounds');
   const settingWait = await platformSettings.get('final_payment_wait_days');
-  const base = shape(g, cc, s, scope.side, settingRounds, settingWait);
+  // Item 21: Path 1 of a Pay for Content collaboration with shoppable posts, counted against the
+  // brand's number (saleLive draws the list; the number is the terms', never the admin minimum).
+  const p1 = !isSale(g) && g.posts ? await sale().path1(ciId, g.r, db, { min: g.posts.n }) : null;
+  const base = shape(g, cc, s, scope.side, settingRounds, settingWait, p1);
   if (!isSale(g)) return base;
   return shapeSale(g, cc, s, scope.side, base, g.oldTerms ? null : await sale().saleExtra(g, cc, s, scope.side));
 }
@@ -246,11 +269,14 @@ function shapeSale(g, cc, s, side, base, x) {
   };
 }
 
-function shape(g, cc, s, side, settingRounds, settingWait = 7) {
+function shape(g, cc, s, side, settingRounds, settingWait = 7, p1 = null) {
   const r = g.r;
   const terms = r.terms_json || {};
   const money = terms.money || {};
-  const stage = !g.shootDone ? 'shoot_not_done' : content.stageOf(cc, s.rounds);
+  // Item 21: the posts term (null on old terms and on sale collaborations, which have their own shape).
+  const posts = !isSale(g) && g.posts ? g.posts : null;
+  const locked = !!(posts && !posts.open);
+  const stage = !g.shootDone ? 'shoot_not_done' : stageWithPosts(content.stageOf(cc, s.rounds), cc, posts);
   const frozen = !!(cc && cc.brand_reported_at);
   const allowed = cc && cc.rounds_allowed != null ? cc.rounds_allowed : settingRounds;
   const current = cc ? cc.current_round : 1;
@@ -310,8 +336,8 @@ function shape(g, cc, s, side, settingRounds, settingWait = 7) {
     ...(side === 'brand' ? { campaignFee: Number(money.campaignFee || 0) } : {}),
   };
 
-  const move = g.shootDone ? openMove(stage, cc, s.rounds, g.shootDoneAt) : null;
-  const liveStage = delayedStageFor(stage);
+  const move = g.shootDone ? openMove(stage, cc, s.rounds, g.shootDoneAt, posts) : null;
+  const liveStage = delayedStageFor(stage, posts);
   const delayed = r.delayed_at ? {
     at: r.delayed_at,
     stage: g.shootDone && liveStage ? liveStage : r.delayed_stage,
@@ -334,10 +360,19 @@ function shape(g, cc, s, side, settingRounds, settingWait = 7) {
     confirmLive: !frozen && stage === 'posted' && !settledByInflx,
     reportRoundsUsed: !frozen && inReview && current > allowed,
     reportPostedWrong: !frozen && stage === 'posted',
+    // Item 21 (R7): once the posting date has passed and she is short of her posts.
+    reportPostsNotMade: !frozen && !!posts && !posts.met && postingPassed(postingDate) && stage !== 'complete',
   };
+  // Item 21 (D3): the final 50% is queued, its date may have passed, and her posts are short.
+  const finalHeldForPosts = !!(posts && !posts.met && esc(3) && esc(3).status === 'queued');
 
   return {
     invitationId: r.ci_id, contentId: cc ? cc.id : null,
+    // Item 21 — Path 1 and the lock on Path 2 (null on old terms: the one-path step of item 12).
+    path1: p1 ? { min: p1.min, approved: p1.approved, short: p1.short, met: p1.met, late: p1.late, inReview: p1.inReview, sentBack: p1.sentBack, open: p1.open, posts: p1.posts } : null,
+    path2Locked: locked,
+    finalHeldForPosts,
+    postsShort: posts ? posts.short : 0,
     campaignName: r.campaign_name, setName: r.set_name, mode: r.pe_mode || r.set_mode,
     brand: { name: r.brand_name }, creator: { name: r.creator_name },
     stage, frozen,
@@ -376,11 +411,16 @@ function shape(g, cc, s, side, settingRounds, settingWait = 7) {
     steps: [
       { key: 'signed', label: 'Agreement signed', state: 'done', at: g.gate.signed.at },
       { key: 'shoot', label: 'Shoot', state: g.shootDone ? 'done' : 'now', at: g.shootDoneAt },
-      { key: 'content', label: 'Content', state: ['live', 'complete'].includes(stage) ? 'done' : g.shootDone ? 'now' : 'later', at: cc ? cc.live_confirmed_at : null },
+      // Item 21: the posts step sits between the shoot and the content, counted against the terms.
+      ...(posts ? [{ key: 'posts', label: 'Shoppable posts', state: posts.met ? 'done' : g.shootDone ? 'now' : 'later', detail: `${posts.approved} of ${posts.n}` }] : []),
+      { key: 'content', label: 'Content', state: ['live', 'complete'].includes(stage) ? 'done' : g.shootDone && !locked ? 'now' : 'later', at: cc ? cc.live_confirmed_at : null },
       { key: 'live', label: 'Live and paid', state: stage === 'complete' ? 'done' : stage === 'live' ? 'now' : 'later', at: cc ? cc.completed_at : null, postingDate },
     ],
   };
 }
+
+/** Has the posting date passed, in India? */
+const postingPassed = (postingDate) => !!(postingDate && todayInIndia() > postingDate);
 
 /* ───────────────────────────────────────────────────────────── notifications (after commit) */
 
@@ -743,8 +783,10 @@ async function confirmLive(ciId, scope, { amount } = {}) {
     diary(g.r, 'brand', scope.userId, 'confirmed_live', { second: out.secondAmount, final_due_at: out.dueAt });
     return read(ciId, scope);
   }
+  // Item 21 (D3): the last payment also waits for the agreed shoppable posts, when she is short.
+  const postsLine = g.posts && !g.posts.met ? ` — once INFLX has approved ${g.posts.short} more shoppable post${g.posts.short === 1 ? '' : 's'}` : '';
   notifyCreator(g.r, NOTIFY12.LIVE_CONFIRMED,
-    `${g.r.brand_name} confirmed your content is live. ${rupees(out.secondAmount)} is in your wallet. The last ${rupees(out.finalAmount)} arrives on ${shortDay(out.dueAt)}.`);
+    `${g.r.brand_name} confirmed your content is live. ${rupees(out.secondAmount)} is in your wallet. The last ${rupees(out.finalAmount)} arrives on ${shortDay(out.dueAt)}${postsLine}.`);
   diary(g.r, 'brand', scope.userId, 'confirmed_live', { second: out.secondAmount, final_due_at: out.dueAt });
   return read(ciId, scope);
 }
@@ -758,7 +800,8 @@ async function confirmLive(ciId, scope, { amount } = {}) {
  *            (approval §2.5), who may still confirm and pay.
  */
 async function report(ciId, scope, { kind, note } = {}) {
-  const g = await contentGate.assertContentOpen(ciId, scope);
+  // Item 21: the brand may report "she hasn't made her shoppable posts" while Path 2 is still locked.
+  const g = await contentGate.assertContentOpen(ciId, scope, db, { allowLocked: scope.side === 'brand' });
   const text = note == null ? null : String(note).trim() || null;
   if (text && text.length > 500) refuse('REASON_TOO_LONG', MSG.REASON_TOO_LONG, 422, 'note');
   const out = await db.withTransaction(async (client) => {
@@ -772,10 +815,13 @@ async function report(ciId, scope, { kind, note } = {}) {
       const postingPassed = !!(g.r.go_live_date && todayInIndia() > calendarDay(g.r.go_live_date));
       // Item 14 (S23): three reasons once she has posted; "she hasn't posted" also once she was
       // approved and the posting date has passed. Pay for Content keeps its two, unchanged.
+      // Item 21 (R7): on Pay for Content with shoppable posts, "she hasn't made her posts" once the
+      // posting date has passed and she is short — at any stage before Completed.
+      const postsNotMade = !isSale(g) && kind === 'posts_not_made' && !!g.posts && !g.posts.met && postingPassed && stage !== 'complete';
       const ok = isSale(g)
         ? roundsUsed || (['posted_wrong', 'missing', 'not_posted'].includes(kind) && stage === 'posted')
           || (kind === 'not_posted' && stage === 'approved' && postingPassed)
-        : roundsUsed || (kind === 'posted_wrong' && stage === 'posted');
+        : roundsUsed || (kind === 'posted_wrong' && stage === 'posted') || postsNotMade;
       if (!ok) refuse('REPORT_NOT_OPEN', MSG.REPORT_NOT_OPEN, 422, 'kind');
       const { rowCount } = await client.query(
         `UPDATE collab_content SET brand_reported_at = now(), brand_reported_by = $2, brand_report_kind = $3, brand_report_note = $4, updated_at = now()
@@ -815,6 +861,6 @@ async function report(ciId, scope, { kind, note } = {}) {
 
 module.exports = {
   read, shape, snapshot, caption, submit, approve, askChanges, setProof, clearProof, markPosted, confirmLive, report,
-  openMove, delayedStageFor, validLink, missingOf, slotsOf, draftFiles, DELAYED_STAGE_LABEL,
+  openMove, delayedStageFor, stageWithPosts, validLink, missingOf, slotsOf, draftFiles, DELAYED_STAGE_LABEL,
   CONTENT_MOVE_SQL, SOCIAL_STATE_OF_MOVE,
 };

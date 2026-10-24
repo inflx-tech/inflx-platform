@@ -294,7 +294,8 @@ describe('Terms for a creator — "Next creator" refused: the form goes to the f
   });
 
   it('Pay for Content with re-use switched on and no place chosen: that block, drawn only then, is the one shown', async () => {
-    const { r, n } = await terms('engagement', { fee: '8000' });
+    // Item 21: Pay for Content also needs what she posts about — the Entire store here, so only the place is missing.
+    const { r, n } = await terms('engagement', { fee: '8000', sellMode: 'store' });
     fireEvent(r.getByTestId('usage-switch'), 'valueChange', true);
     const scrollTo = onAPhone(r, form(r), { room: 500, scrolledTo: 0, blocks: { ...CONTENT, 'usage-field': { top: 720, height: 110 } } });
     fireEvent.press(r.getByTestId('terms-next'));
@@ -322,7 +323,7 @@ describe('Terms for a creator — "Next creator" refused: the form goes to the f
   });
 
   it('terms with nothing wrong go on to the next creator and the form is left where she had it', async () => {
-    const { r, n } = await terms('engagement', { fee: '8000' });
+    const { r, n } = await terms('engagement', { fee: '8000', sellMode: 'store' });     // item 21: something to post about
     const scrollTo = onAPhone(r, form(r), { room: 270, scrolledTo: 380, blocks: CONTENT });
     fireEvent.press(r.getByTestId('terms-next'));
     expect(n.push).toHaveBeenCalledWith('BrandCreatorTerms', { campaignId: 'c1', setId: 'sA', index: 1 });

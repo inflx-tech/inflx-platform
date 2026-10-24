@@ -302,6 +302,8 @@ async function view(brandId, offerId, { today = todayInIndia() } = {}) {
     posts: { live: postStats.live, note: postStats.live ? null : 'Posts using this offer show here once INFLX approves them.' },
     // creator-terms-v2 (founder Q1): the warning before ending it.
     unsigned_invitations: offer.status === 'draft' ? 0 : await require('./creatorTerms.service').unsignedWith(offer.id),
+    // Item 21 (R3): the signed Entire store collaborations of this brand, and their live posts for this offer.
+    store_collaborations: offer.status === 'draft' ? { collaborations: 0, posts: 0 } : await require('./creatorTerms.service').storeSignedWith(offer.id),
   };
 }
 
