@@ -55,6 +55,19 @@ const askChanges   = asyncHandler(async (req, res) => send(res, await flow.askCh
 const confirmLive  = asyncHandler(async (req, res) => send(res, await flow.confirmLive(req.params.ciId, brandScope(req), req.body || {})));
 const brandReport  = asyncHandler(async (req, res) => send(res, await flow.report(req.params.ciId, brandScope(req), req.body || {})));
 
+/* ── post-performance-v2 — "Update now": every link of this collaboration read once (P7) ── */
+const postStats = require('../services/postStats.service');
+const contentGate = require('../services/contentGate.service');
+async function refreshStats(req, res, scope, trigger) {
+  // Scoped like every content door: not yours → 404.
+  await contentGate.assertContentOpen(req.params.ciId, scope, undefined, { allowShootNotDone: true, allowOldTerms: true });
+  const out = await postStats.refreshCollab(req.params.ciId, { trigger });
+  return success(res, { content: await flow.read(req.params.ciId, scope), refreshed: out });
+}
+const creatorRefreshStats = asyncHandler((req, res) => refreshStats(req, res, creatorScope(req), 'update_now'));
+const brandRefreshStats   = asyncHandler((req, res) => refreshStats(req, res, brandScope(req), 'update_now'));
+const adminRefreshStats   = asyncHandler(async (req, res) => success(res, { refreshed: await postStats.refreshCollab(req.params.ciId, { trigger: 'admin' }) }));
+
 /* ── The device proof (Phase 2b) ── */
 const probe = require('../services/uploadProbe.service');
 const probeStatus = asyncHandler(async (req, res) => success(res, probe.status()));
@@ -62,6 +75,7 @@ const probeUrl = asyncHandler(async (req, res) => success(res, await probe.url(r
 const probeConfirm = asyncHandler(async (req, res) => success(res, await probe.confirm(req.user.sub, req.body || {})));
 
 module.exports = {
+  creatorRefreshStats, brandRefreshStats, adminRefreshStats,
   brandScope, creatorScope, adminScope,
   requestUpload, confirmUpload, removeFile, requestCoverUpload, confirmCover,
   creatorFileUrl, brandFileUrl, adminFileUrl,

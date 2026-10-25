@@ -384,6 +384,8 @@ export const campaignApi = {
   getOpenGroupMatches: (cid, si, params) => api.get(`/campaigns/${cid}/sets/${si}/open-group-matches${params ? '?' + params : ''}`),
   // Analytics
   getEngagement: (id) => api.get(`/brands/me/campaigns/${id}/engagement`),
+  // post-performance-v2 (P7): the campaign's one "Update now" — every link read once; once a day; budget-gated.
+  refreshEngagement: (id) => api.post(`/brands/me/campaigns/${id}/engagement/refresh`, {}),
   getConversions: (id) => api.get(`/brands/me/campaigns/${id}/conversions`),
   // Command Center Phase 2 — store-clicks rollup (per-influencer + per-set)
   getClicks: (id) => api.get(`/brands/me/campaigns/${id}/clicks`),
@@ -592,10 +594,8 @@ export async function uploadAdminStockImage(file, presignFn) {
 }
 
 // Item 12 (approval Q2): the content doors — read, media, review, confirm-live — are retired
-// server-side. Content is sent, reviewed and confirmed in the app. Only the stats refresh stays.
-export const deliverableApi = {
-  refreshStats: (id) => api.post(`/deliverables/${id}/refresh-stats`),
-};
+// server-side. Content is sent, reviewed and confirmed in the app. post-performance-v2 (P11): the
+// per-deliverable stats refresh is gone too; the campaign's numbers come from campaignApi.getEngagement.
 
 export const negotiationApi = {
   get: (id) => api.get(`/negotiations/${id}`),

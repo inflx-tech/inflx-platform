@@ -26,7 +26,10 @@ const running = new Map(); // accountId → promise (in-process double-run guard
 
 async function monthSpend() {
   try { return await apify.monthlyUsageUsd(); } catch (e) {
-    const { rows } = await db.query(`SELECT COALESCE(sum(usage_usd),0)::float AS usd FROM creator_social_runs WHERE started_at >= date_trunc('month', now())`);
+    // post-performance-v2 (P4): the campaign post reads spend from the same budget — both run tables count.
+    const { rows } = await db.query(
+      `SELECT (SELECT COALESCE(sum(usage_usd),0) FROM creator_social_runs WHERE started_at >= date_trunc('month', now()))::float
+            + (SELECT COALESCE(sum(usage_usd),0) FROM post_stat_runs WHERE started_at >= date_trunc('month', now()))::float AS usd`);
     return { usd: rows[0].usd, source: 'run_log', error: e.message };
   }
 }

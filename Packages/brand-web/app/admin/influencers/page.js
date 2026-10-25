@@ -1293,8 +1293,12 @@ function HandleChecksTab() {
         {flags.map(f => (
           <div key={f.id} className="border-t border-border py-3 flex items-start justify-between gap-2 text-xs">
             <div>
-              <div className="font-bold text-t1">{f.kind === 'failing_3' ? '3 failures in a row' : f.kind === 'budget' ? 'Monthly Apify budget reached' : 'Safety ceiling hit'}{f.creator_name ? ` · ${f.creator_name} (${f.platform} @${f.handle_norm})` : ''}</div>
-              <div className="text-t3 mt-1">{new Date(f.created_at).toLocaleString('en-IN')} · {JSON.stringify(f.detail)}</div>
+              <div className="font-bold text-t1">{f.kind === 'failing_3' ? '3 failures in a row' : f.kind === 'budget' ? 'Monthly Apify budget reached' : f.kind === 'owner_mismatch' ? 'Posted from another account' : 'Safety ceiling hit'}{f.creator_name ? ` · ${f.creator_name} (${f.platform} @${f.handle_norm})` : ''}</div>
+              {/* post-performance-v2 (W2): the collaboration, the row and both handles, in words. */}
+              {f.kind === 'owner_mismatch' && f.detail ? (
+                <div className="text-t2 mt-1">{[f.detail.campaignName, f.detail.setName].filter(Boolean).join(' › ')}{f.detail.label ? ` · ${f.detail.label}` : ''} · expected @{f.detail.expected} · found @{f.detail.found}{f.detail.url ? <> · <a href={f.detail.url} target="_blank" rel="noreferrer" className="underline">open the link</a></> : null}</div>
+              ) : null}
+              <div className="text-t3 mt-1">{new Date(f.created_at).toLocaleString('en-IN')}{f.kind === 'owner_mismatch' ? '' : ` · ${JSON.stringify(f.detail)}`}</div>
             </div>
             <div className="flex gap-2">
               {f.account_id && <button onClick={() => act('measure', f.account_id)} disabled={!!busy} className="px-3 py-1.5 bg-orange-50 border border-orange-200 text-orange-700 font-bold rounded-lg">↻ Measure now</button>}
@@ -1304,8 +1308,8 @@ function HandleChecksTab() {
         ))}
       </div>
       {costs && (
-        <div className="text-xs text-t2">Apify this month ({costs.month}): <b>${Number(costs.accountMonthUsd ?? costs.socialRunsUsd ?? 0).toFixed(2)}</b> of ${costs.budgetUsd} budget
-          {costs.byPlatform && costs.byPlatform.length > 0 && <span className="text-t3"> — social runs: {costs.byPlatform.map(p => `${p.platform} $${p.usd.toFixed(2)} (${p.runs} runs)`).join(', ')}</span>}
+        <div className="text-xs text-t2">Apify this month ({costs.month}): <b>${Number(costs.accountMonthUsd ?? costs.totalUsd ?? costs.socialRunsUsd ?? 0).toFixed(2)}</b> of ${costs.budgetUsd} budget
+          <span className="text-t3"> · creators ${Number(costs.socialRunsUsd || 0).toFixed(2)}{costs.socialRuns != null ? ` (${costs.socialRuns} runs)` : ''} · posts ${Number(costs.postRuns ? costs.postRuns.usd : 0).toFixed(2)} ({costs.postRuns ? costs.postRuns.runs : 0} runs)</span>
         </div>
       )}
     </div>

@@ -99,17 +99,27 @@ function secondaryButtons(source) {
   return found;
 }
 
-/** The eight, as recorded: file → the testIDs of its outline buttons that pass `disabled`. */
+/**
+ * The eight, as recorded: file → the testIDs of its outline buttons that pass `disabled`.
+ * post-performance-v2 (board M2, 25 Oct 2026) added four more, by design: the "Update now" outline
+ * button at the foot of the brand's content and Going live screens, her Going live screen and her
+ * post stats is off while its read runs (`disabled={busy}`), so one tap sends one read. Recorded in
+ * features/post-performance-v2/06-diff/notes.md.
+ */
 const RECORDED = {
   'components/remote/sheets11.js': [
     'shoot-done-cancel', 'pickup-cancel', 'self-sent-cancel', 'cancel-booking-cancel',
     'gift-cancel', 'report-cancel', 'confirm-return-cancel',
   ],
   'screens/influencer/RemoteAddressScreen.js': ['sheet-cancel'],
+  'screens/brand/BrandContentScreen.js': ['update-now'],
+  'screens/brand/BrandSaleLiveScreen.js': ['update-now'],
+  'screens/influencer/SaleLiveScreen.js': ['update-now'],
+  'screens/create/PostStatsScreen.js': ['update-now'],
 };
 
 describe('the outline button now obeys `disabled`: the callers that already passed it', () => {
-  it('are exactly the eight recorded Remote-shoot pop-ups, each as `disabled={busy}`', () => {
+  it('are exactly the eight recorded Remote-shoot pop-ups and post-performance-v2\'s four Update now buttons, each as `disabled={busy}`', () => {
     const seen = {};
     let all = 0;
     for (const file of walk(SRC)) {

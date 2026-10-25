@@ -137,7 +137,11 @@ const costs = asyncHandler(async (req, res) => {
       WHERE date_trunc('month', r.started_at) = date_trunc('month', COALESCE($1::date, now()))
       GROUP BY a.platform`, [month]);
   const spend = await measure.monthSpend().catch(e => ({ usd: null, error: e.message }));
-  return success(res, { month: month ? month.slice(0, 7) : new Date().toISOString().slice(0, 7), byPlatform: rows, socialRunsUsd: rows.reduce((a, r) => a + r.usd, 0), accountMonthUsd: spend.usd, accountSource: spend.source, budgetUsd: env.APIFY_MONTHLY_BUDGET_USD });
+  // post-performance-v2 (P4, E12): the campaign post reads, by platform, beside the creator runs.
+  const postRuns = await require('../services/postStats.service').monthRuns(month);
+  const socialRunsUsd = rows.reduce((a, r) => a + r.usd, 0);
+  return success(res, { month: month ? month.slice(0, 7) : new Date().toISOString().slice(0, 7), byPlatform: rows, socialRunsUsd, accountMonthUsd: spend.usd, accountSource: spend.source, budgetUsd: env.APIFY_MONTHLY_BUDGET_USD,
+    postRuns, socialRuns: rows.reduce((a, r) => a + r.runs, 0), totalUsd: Math.round((socialRunsUsd + postRuns.usd) * 10000) / 10000 });
 });
 
 const adminCreator = asyncHandler(async (req, res) => {

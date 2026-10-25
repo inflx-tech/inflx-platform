@@ -17,6 +17,9 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { CL } from '../../components/create/copyLinks';
 import { rupeesP } from '../../components/create/copyCreate';
 import { StateChip, s as b } from '../../components/create/bitsCreate';
+// post-performance-v2 (board B3): the set's views on social media, and one line per post. Contract: features/post-performance-v2
+import { SocialLine } from '../../components/content/StatLine12';
+import { STATS, indian } from '../../components/content/copyStats';
 
 export default function BrandSetPostsScreen({ navigation, route }) {
   const { campaignId, setId, setName } = route.params || {};
@@ -42,6 +45,12 @@ export default function BrandSetPostsScreen({ navigation, route }) {
       {status === 'loading' ? <Skeleton /> : status === 'error' ? <LoadError onRetry={load} /> : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
           <Text style={b.rowMeta}>{CL.postsSub(d)}</Text>
+          {d.social ? (
+            <View style={x.kpi2} testID="set-social">
+              <View style={x.kpi}><Text style={x.kpiV}>{indian(d.social.views)}</Text><Text style={x.kpiL}>{STATS.viewsOnSocial}</Text></View>
+              <View style={x.kpi}><Text style={x.kpiV}>{indian(d.totals.orders)}</Text><Text style={x.kpiL}>{CL.orders}</Text></View>
+            </View>
+          ) : null}
           {d.live ? <View style={{ marginVertical: 10 }}><SecondaryButton label={CL.copyAll(d.live)} onPress={copyAll} testID="copy-all" /></View> : null}
           {d.posts.length ? d.posts.map(p => (
             <TouchableOpacity key={p.id} style={x.row} testID={`post-${p.id}`}
@@ -51,6 +60,7 @@ export default function BrandSetPostsScreen({ navigation, route }) {
                 <Text style={x.name}>{p.title} · {p.creator_name.split(' ')[0]}</Text>
                 <Text style={x.code}>{p.code}</Text>
                 <Text style={b.rowMeta}>{p.state === 'approved' ? CL.goesLiveRow(p.goes_live_on) : CL.postRow(p.totals)}</Text>
+                {p.social ? <SocialLine sum={p.social} side="brand" testID={`social-${p.id}`} /> : null}
               </View>
               <StateChip state={p.state} />
             </TouchableOpacity>
@@ -81,6 +91,10 @@ export default function BrandSetPostsScreen({ navigation, route }) {
 const x = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.border },
   th: { width: 40, height: 50, borderRadius: 8, backgroundColor: T.surface, marginRight: 10 },
+  kpi2: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  kpi: { flex: 1, borderWidth: 1, borderColor: T.border, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10 },
+  kpiV: { fontFamily: fonts.sansBold, fontSize: 16, color: T.ink },
+  kpiL: { fontFamily: fonts.sansRegular, fontSize: 10.5, color: T.ink3 },
   name: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink },
   code: { fontFamily: fonts.mono || fonts.sansRegular, fontSize: 11.5, color: T.ink2, marginTop: 1 },
   card: { backgroundColor: T.surface, borderRadius: 14, padding: 12, marginTop: 14 },

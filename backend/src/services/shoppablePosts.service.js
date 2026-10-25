@@ -592,6 +592,10 @@ async function getPost(influencerId, postId) {
   const out = (await hydrate([p]))[0];
   // listing-shop-safety (C1): a live post whose products are all paused, or whose set is not whole.
   out.not_in_shop = out.state === 'live' ? await notInShopWhy(p) : null;
+  // post-performance-v2 (board C3): the post's social numbers, one line under Share / Stats.
+  if (['approved', 'live', 'removed'].includes(out.state) && !out.own_brand) {
+    out.social = (await require('./postStats.service').socialOfPost(p.id, { postingDate: out.collaboration ? out.collaboration.posting_date : null })).summary;
+  }
   return out;
 }
 

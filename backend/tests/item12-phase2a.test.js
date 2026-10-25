@@ -153,9 +153,12 @@ describe('item 12 · the eight /deliverables doors refuse for every Aim (check 3
     expect(t2.status).toBe('locked');
   });
 
-  it('the stats refresh is NOT retired — it is not part of the content flow', async () => {
+  // post-performance-v2 (P11, E25): the stats refresh went with deliverable_stats — the numbers now come
+  // from the links she hands in at the content step. The door is gone, not retired with a sentence.
+  it('the stats refresh is gone too (post-performance-v2): the route file no longer mounts it', () => {
     const src = require('fs').readFileSync(require.resolve('../src/routes/deliverable.routes.js'), 'utf8');
-    expect(src).toMatch(/router\.post\('\/:id\/refresh-stats', authenticate, refreshDeliverableStats\)/);
+    expect(src).not.toMatch(/refresh-stats',/);
+    expect(src).not.toMatch(/refreshDeliverableStats/);
   });
 });
 

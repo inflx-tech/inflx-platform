@@ -43,7 +43,10 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, Row10, AmberBox10, GreenBox10, WaitBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FeeCard12, FileTile12, AddTile12, RowHead12, NoteLine12, RoundPill12, QuoteBox12, Line12, LinkBox12, useSaves12, hasCover12, sendCover12 } from '../../components/content/bits12';
+import { FeeCard12, FileTile12, AddTile12, RowHead12, NoteLine12, RoundPill12, QuoteBox12, Line12, LinkBox12, LinkLine12, useSaves12, hasCover12, sendCover12 } from '../../components/content/bits12';
+// post-performance-v2 (board C1): the one line under every link once she has posted. Contract: features/post-performance-v2
+import { StatLine } from '../../components/content/StatLine12';
+import { STATS } from '../../components/content/copyStats';
 import { SendSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { C12, MSG12, LIMITS12, day10 } from '../../components/content/copy12';
@@ -417,6 +420,34 @@ export default function ContentScreen({ navigation, route }) {
             {stage === 'live' && !(c.money.returned > 0) && c.finalHeldForPosts ? <AmberBox10 text={C12.finalHeldHers(c.postsShort, c.money.t3.amount)} testID="final-held" /> : null}
             {stage === 'live' && !(c.money.returned > 0) && !c.finalHeldForPosts ? <WaitBox10 text={C12.inWallet(c.money.t2.amount, c.money.t3.amount, c.finalDueAt)} testID="in-wallet" /> : null}
             <StepLine10 steps={paidSteps} />
+          </>
+        ) : null}
+
+        {/* post-performance-v2 (C1) — her links, each with its one line: the numbers from Instagram and
+            YouTube once read, "Numbers come the morning after…" until then; Stories can't be tracked. */}
+        {['posted', 'live', 'complete'].includes(stage) ? (
+          <>
+            {c.rows.map((row) => (
+              <View key={row.key} style={s.row} testID={`links-row-${row.key}`}>
+                <RowHead12 row={row} have={row.proofs.filter((p) => p.filled).length} />
+                {row.isStory ? (
+                  <>
+                    <View style={s.tiles}>
+                      {row.proofs.filter((p) => p.screenshotFileId).map((p) => (
+                        <FileTile12 key={p.slot} file={{ id: p.screenshotFileId, kind: 'photo' }} url={urls[p.screenshotFileId]} onPress={() => openShot(row, p.slot)} />
+                      ))}
+                    </View>
+                    <StatLine stats={{ state: 'story' }} side="creator" many={row.count > 1} testID={`stat-${row.key}`} />
+                  </>
+                ) : row.proofs.filter((p) => p.filled).map((p) => (
+                  <View key={p.slot} style={s.link}>
+                    <LinkLine12 url={p.url} testID={`link-${row.key}-${p.slot}`} />
+                    <StatLine stats={p.stats} side="creator" testID={`stat-${row.key}-${p.slot}`} />
+                  </View>
+                ))}
+              </View>
+            ))}
+            <Line12 text={STATS.note} testID="stats-note" />
           </>
         ) : null}
       </FormScroll>

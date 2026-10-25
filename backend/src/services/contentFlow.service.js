@@ -172,9 +172,11 @@ async function read(ciId, scope) {
   // brand's number (saleLive draws the list; the number is the terms', never the admin minimum).
   const p1 = !isSale(g) && g.posts ? await sale().path1(ciId, g.r, db, { min: g.posts.n }) : null;
   const base = shape(g, cc, s, scope.side, settingRounds, settingWait, p1);
-  if (!isSale(g)) return base;
-  return shapeSale(g, cc, s, scope.side, base, g.oldTerms ? null : await sale().saleExtra(g, cc, s, scope.side));
+  const out = !isSale(g) ? base : shapeSale(g, cc, s, scope.side, base, g.oldTerms ? null : await sale().saleExtra(g, cc, s, scope.side));
+  // post-performance-v2: every proof carries its social numbers (`stats`), the same words on both sides.
+  return postStats().decorateRead(out, cc ? cc.id : null);
 }
+const postStats = () => require('./postStats.service');
 
 /**
  * Item 14 — the same step, as a Pay for Sale collaboration reads it (board v2, S4–S24). Item 12's
@@ -650,6 +652,9 @@ async function setProof(ciId, scope, rowKey, slotRaw, { url, screenshotFileId } 
       `INSERT INTO content_proofs (content_id, row_key, slot, url, screenshot_file_id) VALUES ($1,$2,$3,$4,$5)
        ON CONFLICT (content_id, row_key, slot) DO UPDATE SET url = EXCLUDED.url, screenshot_file_id = EXCLUDED.screenshot_file_id, updated_at = now()`,
       [cc.id, row.key, slot, link, shot]);
+    // post-performance-v2 (P2): an outside row's link is final at save — tracked now; a replaced link
+    // closes the old row and opens a new one. Package rows wait for "I've posted everything".
+    if (row.outside && link) await postStats().trackOne(client, cc.id, row.key, slot, link);
   });
   return read(ciId, scope);
 }
@@ -688,6 +693,8 @@ async function markPosted(ciId, scope) {
         `UPDATE collab_content SET posted_at = $2, posted_by = $3, autoconfirm_days = $4, autoconfirm_at = $5, updated_at = now()
           WHERE id = $1 AND posted_at IS NULL`, [cc.id, now, scope.userId, stamp.days, stamp.at]);
       if (rowCount !== 1) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+      // post-performance-v2 (P2): her package links are final now — tracked, in the same transaction.
+      await postStats().trackRows(client, cc.id, pkgRows(g.rows), { trackedFrom: now });
       return { links: s.proofs.length, sale: stamp };
     }
     const after = startOfIndiaDay(addDays(istDayOf(now), days));
@@ -695,6 +702,7 @@ async function markPosted(ciId, scope) {
       `UPDATE collab_content SET posted_at = $2, posted_by = $3, report_silence_days = $4, report_after_at = $5, updated_at = now()
         WHERE id = $1 AND posted_at IS NULL`, [cc.id, now, scope.userId, days, after]);
     if (rowCount !== 1) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+    await postStats().trackRows(client, cc.id, pkgRows(g.rows), { trackedFrom: now });
     return { links: s.proofs.length };
   });
   if (out.sale) {

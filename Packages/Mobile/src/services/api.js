@@ -482,6 +482,8 @@ export const brandApi = {
   contentReport:     (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/report`, body),
   // shopper-walk-fixes (W15): `cover` asks for the picture taken from a video (`?cover=1`), never the video.
   contentFileUrl:    (c, s2, ciId, fileId, cover) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/files/${fileId}/url${cover ? '?cover=1' : ''}`),
+  // post-performance-v2 (P7): "Update now" — every link of this collaboration read once; once a day; budget-gated.
+  contentRefreshStats: (c, s2, ciId) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/stats/refresh`, {}),
 
   // ── Item 8 · the pitches a brand receives. Contract: features/item8-pitch ─
   // Accepting creates a pool entry and nothing else, which is why there is no
@@ -813,6 +815,8 @@ export const influencerApi = {
   contentRemoveFile:  (id, fileId) => api.delete(`/influencers/me/invitations/${id}/content/files/${fileId}`),
   // shopper-walk-fixes (W15): `cover` asks for the picture taken from a video (`?cover=1`), never the video.
   contentFileUrl:     (id, fileId, cover) => api.get(`/influencers/me/invitations/${id}/content/files/${fileId}/url${cover ? '?cover=1' : ''}`),
+  // post-performance-v2 (P7): her "Update now" — every link of this collaboration read once; once a day; budget-gated.
+  contentRefreshStats: (id) => api.post(`/influencers/me/invitations/${id}/content/stats/refresh`, {}),
   // The picture her phone took from a video she has added: ask (a JPEG of exactly sizeBytes, at
   // most 1 MB), PUT it with uploadContentFile, then confirm. The video itself is never touched.
   contentCoverUrl:     (id, fileId, sizeBytes) => api.post(`/influencers/me/invitations/${id}/content/files/${fileId}/cover-url`, { sizeBytes }),
@@ -849,7 +853,6 @@ export const influencerApi = {
   getNegotiationByCampaignInfluencer: (ciId) => api.get(`/negotiations/by-ci/${ciId}`),
   submitNegotiationTurn: (id, data) => api.post(`/negotiations/${id}/respond`, data),
   getDeliverables: () => api.get('/campaigns'),  // via campaign list
-  refreshStats: (id) => api.post(`/deliverables/${id}/refresh-stats`),
   getContractWithDeliverables: (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
   getContract: (id) => api.get(`/contracts/${id}`),
   signContract: (id, data) => api.post(`/contracts/${id}/sign`, data),

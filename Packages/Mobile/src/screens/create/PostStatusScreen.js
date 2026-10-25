@@ -18,6 +18,10 @@ import { StateChip, Footer, useDraft, routeFor, s as b } from '../../components/
 // Item 20 — a post for the brand he runs: its own words, and where he shared it. Contract: features/item20-own-brand
 import { O20 } from '../../components/ownbrand/copy20';
 import PlacesCard20 from '../../components/ownbrand/PlacesCard20';
+// post-performance-v2 (board C3): the post's numbers on social media, one line under Share and Stats. Contract: features/post-performance-v2
+import { SocialLine } from '../../components/content/StatLine12';
+import { STATS, indian } from '../../components/content/copyStats';
+import { day10 } from '../../components/shoot/copy10';
 
 /** Whole days from today to 'YYYY-MM-DD' (phone's calendar). */
 export function daysUntil(day, now = new Date()) {
@@ -136,6 +140,18 @@ export default function PostStatusScreen({ navigation, route }) {
               <View style={{ flex: 1, marginRight: post.state === 'live' ? 8 : 0 }}><SecondaryButton label={`${CL.share} · ${post.code}`} onPress={() => navigation.navigate('PostShare', { postId })} testID="share" /></View>
               {post.state === 'live' ? <View style={{ flex: 1 }}><SecondaryButton label={CL.stats} onPress={() => navigation.navigate('PostStats', { postId })} testID="stats" /></View> : null}
             </View> : null}
+            {/* post-performance-v2 (C3): "On social media · …", then the links she gave at going live with their views. */}
+            {!own && post.social ? <SocialLine sum={post.social} side="creator" testID="social-line" style={{ marginBottom: 10 }} /> : null}
+            {!own && post.social && post.social.items && post.social.items.length ? (
+              <Block title={STATS.whereShared} testID="where-shared">
+                {post.social.items.map((i) => (
+                  <View key={i.rowKey} style={st.shared} testID={`shared-${i.rowKey}`}>
+                    <Text style={b.rowMeta}>{i.label}{i.date ? ` · ${day10(i.date)}` : ''}</Text>
+                    <Text style={b.rowMeta}>{i.views == null ? '—' : `${indian(i.views)} ${STATS.views}`}</Text>
+                  </View>
+                ))}
+              </Block>
+            ) : null}
             {own ? <PlacesCard20 postId={postId} /> : null}
             <Text style={b.hint}>{own ? O20.noEdits : CP.noEdits}</Text>
             <DangerButton label={CP.takeDown} busy={busy} onPress={() => confirm(CP.takeDownQ, own ? O20.takeDownBody : CP.takeDownBody, CP.takeDown, takeDown)} testID="take-down" />
@@ -178,4 +194,5 @@ const st = StyleSheet.create({
   num: { flex: 1, borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 12, marginRight: 8 },
   numLabel: { fontFamily: fonts.sansSemiBold, fontSize: 11.5, color: T.ink3 },
   numValue: { fontFamily: fonts.sansBold, fontSize: 18, color: T.ink, marginTop: 4 },
+  shared: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
 });

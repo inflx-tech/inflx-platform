@@ -197,16 +197,24 @@ function PeriodSelector({ days, onChange }) {
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 
-/** Item 3b — one line: what INFLX has spent on Apify this month against the budget. Contract: features/item3b-social-numbers */
+/**
+ * Item 3b — one line: what INFLX has spent on Apify this month against the budget.
+ * post-performance-v2 (board W2): the line splits into creators (Level 1) and posts (the campaign
+ * post reads); a post read waits when the month is tight, creator numbers don't.
+ * Contract: features/item3b-social-numbers · features/post-performance-v2
+ */
 function ApifyCostLine() {
   const [c, setC] = useState(null);
   useEffect(() => { adminApi.socialCosts().then(r => { if (r.success) setC(r.data); }).catch(() => {}); }, []);
   if (!c) return null;
-  const spent = Number(c.accountMonthUsd ?? c.socialRunsUsd ?? 0);
+  const spent = Number(c.accountMonthUsd ?? c.totalUsd ?? c.socialRunsUsd ?? 0);
+  const creators = Number(c.socialRunsUsd || 0);
+  const posts = c.postRuns ? Number(c.postRuns.usd || 0) : 0;
+  const postRuns = c.postRuns ? Number(c.postRuns.runs || 0) : 0;
   return (
-    <div className="mb-4 text-xs text-t2 bg-white border border-border rounded-xl px-3 py-2">
+    <div className="mb-4 text-xs text-t2 bg-white border border-border rounded-xl px-3 py-2" data-testid="apify-cost-line">
       Apify this month ({c.month}): <b>${spent.toFixed(2)}</b> of ${c.budgetUsd} budget
-      {Array.isArray(c.byPlatform) && c.byPlatform.length > 0 && <span className="text-t3"> — social runs: {c.byPlatform.map(p => `${p.platform} $${Number(p.usd).toFixed(2)} (${p.runs} runs)`).join(', ')}</span>}
+      <span className="text-t3"> · creators ${creators.toFixed(2)}{c.socialRuns != null ? ` (${c.socialRuns} runs)` : ''} · posts ${posts.toFixed(2)} ({postRuns} runs) · a post read waits when the month is tight; creator numbers don&apos;t</span>
     </div>
   );
 }

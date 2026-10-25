@@ -8,7 +8,11 @@ import React, { useCallback, useState } from 'react';
 import { View, ScrollView, Text, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { influencerApi, brandApi } from '../../services/api';
-import { Skeleton, LoadError } from '../../components/settings/feedback';
+import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
+import { SecondaryButton } from '../../components/settings/primitives';
+// post-performance-v2 (boards B4, C4): "On social media" above the channels; Update now on hers only (M2). Contract: features/post-performance-v2
+import { LinkCard } from '../../components/content/StatLine12';
+import { STATS } from '../../components/content/copyStats';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { CL } from '../../components/create/copyLinks';
@@ -21,6 +25,8 @@ export default function PostStatsScreen({ navigation, route }) {
   const { postId, brand } = route.params || {};
   const [d, setD] = useState(null);
   const [status, setStatus] = useState('loading');
+  const [busy, setBusy] = useState(false);
+  const { toast, show } = useToast();
 
   const load = useCallback(async () => {
     const r = brand ? await brandApi.setPostStats(brand.campaignId, brand.setId, postId) : await influencerApi.postStats(postId);
@@ -28,6 +34,16 @@ export default function PostStatsScreen({ navigation, route }) {
     setD(r.data); setStatus('ready');
   }, [postId, brand]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
+  // post-performance-v2 (C4, P7): her Update now — the server answers "once a day" in the server's words.
+  async function updateNow() {
+    if (!d || !d.collaboration_id) return;
+    setBusy(true);
+    const r = await influencerApi.contentRefreshStats(d.collaboration_id);
+    setBusy(false);
+    if (!r || !r.success) { show((r && r.error && r.error.message) || ''); return; }
+    load();
+  }
+  const social = (d && d.social) || [];
 
   const top = d ? Math.max(1, ...d.visits.map(v => v.visits)) : 1;
   return (
@@ -41,6 +57,16 @@ export default function PostStatsScreen({ navigation, route }) {
             <View style={st.k}><Text style={st.kv}>{d.totals.orders}</Text><Text style={st.kl}>{CL.orders}</Text></View>
             <View style={st.k} testID="stat-money"><Text style={st.kv}>{rupeesP(d.own_brand ? d.totals.sales : d.totals.commission)}</Text><Text style={st.kl}>{d.own_brand ? O20.salesWord : brand ? CL.commissionWord : CL.toYou}</Text></View>
           </View>
+          {/* post-performance-v2 (B4, C4) — the post's links on Instagram and YouTube, above the channels. */}
+          {social.length ? (
+            <View testID="on-social">
+              <View style={st.socialHead}>
+                <Text style={b.label}>{STATS.onSocial}</Text>
+                {!brand ? <SecondaryButton label={STATS.updateNow} onPress={updateNow} disabled={busy} inline testID="update-now" /> : null}
+              </View>
+              {social.map((item) => <LinkCard key={item.rowKey} item={item} side={brand ? 'brand' : 'creator'} testID={`social-${item.rowKey}`} />)}
+            </View>
+          ) : null}
           <Text style={b.label}>{CL.visitsBy}</Text>
           {d.visits.length ? d.visits.map(v => (
             <View key={v.channel}>
@@ -63,6 +89,7 @@ export default function PostStatsScreen({ navigation, route }) {
           <Text style={[b.hint, { marginTop: 10 }]}>{d.own_brand ? O20.inflxHint : CL.inflxHint}</Text>
         </ScrollView>
       )}
+      {toast}
     </View>
   );
 }
@@ -80,4 +107,5 @@ const st = StyleSheet.create({
   line: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
   place: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink2, marginLeft: 78, marginTop: -4, marginBottom: 6 },
   lv: { fontFamily: fonts.sansBold, fontSize: 12.5, color: T.ink },
+  socialHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

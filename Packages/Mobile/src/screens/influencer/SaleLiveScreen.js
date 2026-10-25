@@ -49,7 +49,10 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FileTile12, AddTile12, NoteLine12, RoundPill12, QuoteBox12, Line12, CountChip12, FeeCard12, LinkBox12, useSaves12, VideoFace12, hasCover12, sendCover12 } from '../../components/content/bits12';
+import { FileTile12, AddTile12, NoteLine12, RoundPill12, QuoteBox12, Line12, CountChip12, FeeCard12, LinkBox12, LinkLine12, useSaves12, VideoFace12, hasCover12, sendCover12 } from '../../components/content/bits12';
+// post-performance-v2 (board C2): the one line under every link, and Update now once the brand confirmed. Contract: features/post-performance-v2
+import { StatLine } from '../../components/content/StatLine12';
+import { STATS } from '../../components/content/copyStats';
 import { SendSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { MSG12, LIMITS12 } from '../../components/content/copy12';
@@ -541,6 +544,28 @@ export default function SaleLiveScreen({ navigation, route }) {
           </View>
         ) : null}
 
+        {/* post-performance-v2 (C2) — her links once posted, each with its one line. */}
+        {['posted', 'live', 'complete'].includes(stage) && pkg.some((row) => ((row.proofs || [])[0] || {}).filled) ? (
+          <View style={s.pathCard} testID="my-links">
+            <Text style={s.pathTitle}>{STATS.yourLinks}</Text>
+            {pkg.map((row) => {
+              const proof = (row.proofs || [])[0] || {};
+              if (!proof.filled) return null;
+              return (
+                <View key={row.key} style={s.row} testID={`link-row-${row.key}`}>
+                  <Text style={s.rowLabel}>{rowTitle(row)}</Text>
+                  {row.isStory ? <StatLine stats={{ state: 'story' }} side="creator" testID={`stat-${row.key}`} /> : (
+                    <>
+                      <LinkLine12 url={proof.url} testID={`link-${row.key}`} />
+                      <StatLine stats={proof.stats} side="creator" testID={`stat-${row.key}`} />
+                    </>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
+
         {/* Item 15 (S1, S6): Hybrid's fixed amount — paid, next, and the last part. */}
         {c.money && !['old_terms', 'shoot_not_done'].includes(stage) ? <FeeCard12 money={c.money} side="creator" testID="payments" /> : null}
 
@@ -558,8 +583,12 @@ export default function SaleLiveScreen({ navigation, route }) {
                       : <AddTile12 onPress={() => addFiles(row, 'story_proof')} testID={`add-shot-${row.key}`} />
                   ) : (
                     // J7 — the same self-saving box; no "Save link" button. It never counts toward "I've posted everything".
-                    <LinkBox12 saves={saves} id={linkKey(row)} url={proof.url} send={sendLink(row)}
-                      placeholder={C14.pasteLink} testID={`link-${row.key}`} />
+                    <>
+                      <LinkBox12 saves={saves} id={linkKey(row)} url={proof.url} send={sendLink(row)}
+                        placeholder={C14.pasteLink} testID={`link-${row.key}`} />
+                      {/* post-performance-v2: an outside link is read from the moment it is saved. */}
+                      {proof.filled ? <StatLine stats={proof.stats} side="creator" testID={`stat-${row.key}`} /> : null}
+                    </>
                   )}
                   <FieldError text={rowError[row.key]} />
                 </View>
@@ -603,6 +632,13 @@ export default function SaleLiveScreen({ navigation, route }) {
         ) : null}
         {stage === 'posted' && c.can.report ? (
           <SecondaryButton label={C14.askInflx} onPress={() => { setSheetError(null); setSheet('report'); }} testID="ask-inflx" />
+        ) : null}
+        {/* post-performance-v2 (C2, M2): once the brand confirmed, Update now — once a day. */}
+        {['live', 'complete'].includes(stage) && c.social && c.social.canUpdate ? (
+          <>
+            <SecondaryButton label={STATS.updateNow} onPress={() => { if (!busy) act(() => influencerApi.contentRefreshStats(ciId)); }} disabled={busy} testID="update-now" />
+            <Text style={s.hint} testID="update-hint">{STATS.updateHintHers}</Text>
+          </>
         ) : null}
       </BottomBar>
 

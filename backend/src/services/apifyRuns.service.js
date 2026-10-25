@@ -131,11 +131,14 @@ function defaultMock(actor, input) {
 }
 
 async function mockRun(actor, input) {
-  const items = mockResolver ? await mockResolver(actor, input) : defaultMock(actor, input);
+  let items = mockResolver ? await mockResolver(actor, input) : defaultMock(actor, input);
   if (items && items.__refuse) throw new ApifyRefusedError('mock: usage limit exceeded', 402);
   if (items && items.__fail) throw new Error(items.__fail);
+  // post-performance-v2: a resolver may answer { items, usageTotalUsd } to say what the run cost.
+  let usd = 0;
+  if (items && !Array.isArray(items) && Array.isArray(items.items)) { usd = Number(items.usageTotalUsd || 0); items = items.items; }
   mockRunCounter += 1;
-  return { runId: `mock-${Date.now()}-${mockRunCounter}`, status: 'SUCCEEDED', statusMessage: 'mock', usageTotalUsd: 0, runTimeSecs: 0, items: Array.isArray(items) ? items : [] };
+  return { runId: `mock-${Date.now()}-${mockRunCounter}`, status: 'SUCCEEDED', statusMessage: 'mock', usageTotalUsd: usd, runTimeSecs: 0, items: Array.isArray(items) ? items : [] };
 }
 
 module.exports = { startAndWait, monthlyUsageUsd, ApifyRefusedError, looksLikeBudgetRefusal, setMockResolver, setMockUsage, loadFixture, defaultMock };

@@ -1,10 +1,19 @@
 'use strict';
 
+/**
+ * The brand website's campaign Analytics read.
+ *
+ * post-performance-v2 (P1, P11): the old apify-engagement cron, deliverables.live_url and
+ * deliverable_stats are retired — nothing had written them since item 12 retired submit-live. The
+ * path stays, the shape is new (E11, proved in post-performance-v2.test.js). This suite keeps the
+ * door's auth and the legacy case: a campaign with only pre-item-12 deliverables answers the new
+ * shape empty, with no error (02-workflow C9).
+ */
+
 const request = require('supertest');
 const app = require('../src/app');
 const { truncateAll, query } = require('./helpers/db');
 const { createBrandUser, createInfluencerUser, registerBrand, registerInfluencer } = require('./helpers/factories');
-const { run: runEngagementJob } = require('../src/jobs/apify-engagement.job');
 
 beforeEach(async () => {
   await truncateAll();
@@ -20,8 +29,6 @@ describe('Engagement Analytics', () => {
     const { token: infToken, user: infUser } = await createInfluencerUser();
     const inf = await registerInfluencer(infToken, { instagram_handle: 'eng_test_inf' });
     await query(`UPDATE users SET status = 'approved' WHERE id = $1`, [infUser.id]);
-    // Set followers for engagement rate calculation
-    await query(`UPDATE influencers SET followers_count = 180000 WHERE id = $1`, [inf.id]);
 
     const { rows: [campaign] } = await query(
       `INSERT INTO campaigns (brand_id, name, status, total_budget) VALUES ($1, 'Engagement Test Campaign', 'live', 1000000) RETURNING *`,
@@ -36,7 +43,7 @@ describe('Engagement Analytics', () => {
       [cs.id, inf.id]
     );
 
-    // Create a live deliverable
+    // A pre-item-12 deliverable with a live_url: nothing reads it any more (post-performance-v2 P1).
     const { rows: [deliverable] } = await query(
       `INSERT INTO deliverables (campaign_influencer_id, type, status, live_url)
        VALUES ($1, 'reel', 'live', 'https://instagram.com/p/test123') RETURNING *`,
@@ -46,46 +53,37 @@ describe('Engagement Analytics', () => {
     return { brandToken, infToken, brand, brandUser, inf, infUser, campaign, cs, ci, deliverable };
   }
 
-  test('apify-engagement cron creates deliverable_stats rows', async () => {
+  // post-performance-v2 (E25): the cron that wrote deliverable_stats is deleted; the daily job now
+  // reads proof_stats, and a legacy deliverable is never one of them.
+  test('the daily post-stats job never reads a legacy deliverable and never writes deliverable_stats', async () => {
     const { deliverable } = await setup();
-
-    const result = await runEngagementJob();
-    expect(result.scraped).toBe(1);
-
-    const { rows: [stats] } = await query(
-      `SELECT * FROM deliverable_stats WHERE deliverable_id = $1`,
-      [deliverable.id]
-    );
-    expect(stats).toBeTruthy();
-    expect(parseInt(stats.reach)).toBe(41000);
-    expect(parseInt(stats.likes)).toBe(9800);
-    expect(parseInt(stats.shares)).toBe(319);
+    const jobs = require('../src/jobs');
+    expect(jobs.apifyEngagementJob).toBeUndefined();
+    const out = await jobs.postStatsJob.run();
+    expect(out.skipped).toBeUndefined();
+    expect(out.ran).toBe(0);
+    const { rows } = await query(`SELECT * FROM deliverable_stats WHERE deliverable_id = $1`, [deliverable.id]);
+    expect(rows).toHaveLength(0);
   });
 
-  test('GET /brands/me/campaigns/:id/engagement returns correct structure', async () => {
+  test('GET /brands/me/campaigns/:id/engagement returns the post-performance-v2 shape, empty for a legacy campaign (C9)', async () => {
     const { brandToken, campaign } = await setup();
-
-    // Run engagement job first to populate stats
-    await runEngagementJob();
 
     const res = await request(app)
       .get(`/v1/brands/me/campaigns/${campaign.id}/engagement`)
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.campaign_id).toBe(campaign.id);
-    expect(res.body.data.campaign_name).toBe('Engagement Test Campaign');
-    expect(res.body.data.totals).toBeDefined();
-    // engagement.service.js:151-163 — totals shape: total_likes/
-    // total_comments/total_views/avg_er + by_set/by_influencer
-    // (no category_benchmark_er / daily_reach in this analytics version)
-    expect(res.body.data.totals.total_likes).toBeDefined();
-    expect(res.body.data.totals.total_comments).toBeDefined();
-    expect(res.body.data.totals.total_views).toBeDefined();
-    expect(res.body.data.totals.avg_er).toBeDefined();
-    expect(res.body.data.by_influencer).toBeInstanceOf(Array);
-    expect(res.body.data.by_influencer.length).toBeGreaterThanOrEqual(1);
-    expect(res.body.data.by_set).toBeInstanceOf(Array);
+    expect(res.body.data.campaignId).toBe(campaign.id);
+    expect(res.body.data.campaignName).toBe('Engagement Test Campaign');
+    expect(res.body.data.totals).toEqual({ views: 0, likes: 0, comments: 0, links: 0, linksRead: 0, waiting: 0, updatedAt: null });
+    expect(res.body.data.byCreator).toBeInstanceOf(Array);
+    expect(res.body.data.byCreator).toHaveLength(1);
+    expect(res.body.data.byCreator[0]).toMatchObject({ handle: '@eng_test_inf', links: 0 });
+    expect(res.body.data.bySet).toHaveLength(1);
+    expect(res.body.data.links).toEqual([]);
+    expect(res.body.data).not.toHaveProperty('by_influencer');
+    expect(JSON.stringify(res.body.data)).not.toMatch(/engagement_rate|avg_er/);
   });
 
   test('GET /brands/me/campaigns/:id/engagement returns 404 for unknown campaign', async () => {
@@ -104,5 +102,14 @@ describe('Engagement Analytics', () => {
       .get(`/v1/brands/me/campaigns/${campaign.id}/engagement`)
       .set('Authorization', `Bearer ${infToken}`);
     expect(res.status).toBe(403);
+  });
+
+  // post-performance-v2 (E25): the per-deliverable refresh door is gone, not retired with a sentence.
+  test('POST /deliverables/:id/refresh-stats is gone (404)', async () => {
+    const { brandToken, deliverable } = await setup();
+    const res = await request(app)
+      .post(`/v1/deliverables/${deliverable.id}/refresh-stats`)
+      .set('Authorization', `Bearer ${brandToken}`);
+    expect(res.status).toBe(404);
   });
 });

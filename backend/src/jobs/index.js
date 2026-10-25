@@ -17,7 +17,6 @@ const tranche3Job          = require('./tranche-3-release.job');
 const offerExpiryJob       = require('./offer-expiry.job');
 // collab-part2 — lapse unanswered handshake requests + unbriefed agreements.
 const handshakeExpiryJob   = require('./handshake-expiry.job');
-const apifyEngagementJob   = require('./apify-engagement.job');
 const campaignStatusJob    = require('./campaign-status.job');
 const bookingReminderJob   = require('./booking-reminder.job');
 const lowWalletJob         = require('./low-wallet-alert.job');
@@ -35,6 +34,11 @@ const postsOfferEndedJob     = require('./posts-offer-ended.job');
 const checkoutExpiryJob      = require('./checkout-expiry.job');
 // Item 3b — creator social numbers (Instagram/YouTube through Apify). Contract: features/item3b-social-numbers
 const socialMeasureJob       = require('./social-measure.job');
+// post-performance-v2 — the campaign post links' views, likes and comments, on the day curve, under
+// the same Apify budget (Level 1 first). The old apify-engagement job (deliverables.live_url →
+// deliverable_stats, nothing had written either since item 12) is deleted with it.
+// Contract: features/post-performance-v2
+const postStatsJob           = require('./post-stats.job');
 // Item 4 — a set whose cutoff passed with nobody signed expires. Contract: features/item4-campaigns-sets
 const setExpiryJob           = require('./set-expiry.job');
 // Item 8 — the pitch lane: the two reminders, the unanswered close, and the early
@@ -86,9 +90,6 @@ function startAllJobs() {
   // negotiation-housekeeping — hourly: pool expiry + closing notices, silence reminders (item 6)
   cron.schedule('50 * * * *', () => negotiationHousekeepingJob.run(), { timezone: tz });
 
-  // apify-engagement — 06:00 UTC daily
-  cron.schedule('0 6 * * *', apifyEngagementJob.run);
-
   // campaign-status — 00:05 UTC daily
   cron.schedule('5 0 * * *', campaignStatusJob.run);
 
@@ -136,6 +137,10 @@ function startAllJobs() {
   // the monthly Apify budget, retries failures the next day.
   cron.schedule('25 * * * *', socialMeasureJob.run, { timezone: tz });
 
+  // post-stats (post-performance-v2) — 06:10 India time daily, after the 05:25 social-measure tick:
+  // the links due on the day curve, batched per platform, behind the same budget guard (Level 1 wins).
+  cron.schedule('10 6 * * *', () => postStatsJob.run(), { timezone: tz });
+
   // set-expiry (item 4) — hourly at :40, India time. One transaction per set, row-locked;
   // expired_at is the guard that makes a second run a no-op.
   cron.schedule('40 * * * *', () => setExpiryJob.run(), { timezone: tz });
@@ -173,7 +178,6 @@ module.exports = {
   commissionConfirmJob,
   tranche3Job,
   offerExpiryJob,
-  apifyEngagementJob,
   campaignStatusJob,
   bookingReminderJob,
   lowWalletJob,
@@ -186,6 +190,7 @@ module.exports = {
   postsOfferEndedJob,
   checkoutExpiryJob,
   socialMeasureJob,
+  postStatsJob,
   setExpiryJob,
   pitchHousekeepingJob,
   collabDelayedJob,

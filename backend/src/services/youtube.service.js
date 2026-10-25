@@ -198,7 +198,8 @@ async function _runActor(actorId, input) {
   const token = env.APIFY_TOKEN;
   if (!token) throw new Error('APIFY_TOKEN is not configured.');
 
-  const url = `${APIFY_BASE}/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=120`;
+  // post-performance-v2 (E26): the token travels in the Authorization header, never in the URL.
+  const url = `${APIFY_BASE}/acts/${actorId}/run-sync-get-dataset-items?timeout=120`;
 
   console.log(`[APIFY] Calling sync endpoint for ${actorId}...`);
   console.log(`[APIFY] Input:`, JSON.stringify(input));
@@ -209,7 +210,7 @@ async function _runActor(actorId, input) {
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(input),
       signal: controller.signal,
     });

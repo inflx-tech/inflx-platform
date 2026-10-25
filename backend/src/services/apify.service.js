@@ -5,7 +5,8 @@ const path = require('path');
 const env = require('../config/env');
 
 const FIXTURE_PATH = path.join(__dirname, '../../mocks/apify_instagram.json');
-const ENGAGEMENT_FIXTURE_PATH = path.join(__dirname, '../../mocks/apify_engagement.json');
+// post-performance-v2 (P3, P11): scrapePostEngagement and its mocks/apify_engagement.json are gone —
+// campaign post links are read by postStats.service through the item 3b runner (run id + cost).
 
 // Apify API base
 const APIFY_BASE = 'https://api.apify.com/v2';
@@ -38,44 +39,6 @@ async function scrapeProfile(instagramHandle, forceRefresh = false) {
   const raw = items[0];
   console.log(`[APIFY] Profile scraped: @${instagramHandle} — ${raw.followersCount || 0} followers`);
   return normalise(raw);
-}
-
-/**
- * Scrape engagement stats for a specific Instagram post/reel URL.
- */
-async function scrapePostEngagement(live_url) {
-  if (env.APIFY_MOCK) {
-    const all = JSON.parse(fs.readFileSync(ENGAGEMENT_FIXTURE_PATH, 'utf8'));
-    const raw = all[live_url] || all['default'];
-    console.log(`[APIFY MOCK] Scraped post engagement for ${live_url}`);
-    return normaliseEngagement(raw);
-  }
-
-  console.log(`[APIFY] Scraping post engagement for ${live_url}...`);
-
-  // Extract shortcode from URL (e.g. /reel/DUd7Wy0EtCS/ → DUd7Wy0EtCS)
-  const shortcodeMatch = live_url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
-  if (!shortcodeMatch) {
-    throw new Error(`Could not extract Instagram shortcode from URL: ${live_url}`);
-  }
-  const shortcode = shortcodeMatch[2];
-
-  // apify/instagram-post-scraper requires 'username' but we can use
-  // the main instagram-scraper with directUrls which handles post URLs
-  const input = {
-    directUrls: [live_url],
-    resultsType: 'posts',
-    resultsLimit: 1,
-  };
-
-  const items = await _runActor('apify~instagram-scraper', input);
-  if (!items || items.length === 0) {
-    throw new Error(`Apify returned no data for URL: ${live_url}`);
-  }
-
-  const raw = items[0];
-  console.log(`[APIFY] Post scraped:`, JSON.stringify(raw).substring(0, 300));
-  return normaliseEngagement(raw);
 }
 
 // ─── Normalisation ──────────────────────────────────────────────────────────
@@ -112,18 +75,6 @@ function normalise(raw) {
   };
 }
 
-function normaliseEngagement(raw) {
-  // Handle all known field name variants from different Apify actors
-  return {
-    reach:       raw.reach       || raw.reachCount       || 0,
-    impressions: raw.impressions || raw.impressionsCount  || raw.videoViewCount || raw.videoPlayCount || raw.viewCount || 0,
-    likes:       raw.likes       || raw.likesCount        || 0,
-    comments:    raw.comments    || raw.commentsCount     || 0,
-    saves:       raw.saves       || raw.savesCount        || 0,
-    shares:      raw.shares      || raw.sharesCount       || 0,
-  };
-}
-
 // ─── Apify API Helper ───────────────────────────────────────────────────────
 
 /**
@@ -146,7 +97,8 @@ async function _runActor(actorId, input) {
 
   // Use the sync endpoint: starts actor, waits for finish, returns items
   // Timeout: 120 seconds (Apify default max for sync is 300s)
-  const url = `${APIFY_BASE}/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=120`;
+  // post-performance-v2 (E26): the token travels in the Authorization header, never in the URL.
+  const url = `${APIFY_BASE}/acts/${actorId}/run-sync-get-dataset-items?timeout=120`;
 
   console.log(`[APIFY] Calling sync endpoint for ${actorId}...`);
   console.log(`[APIFY] Input:`, JSON.stringify(input));
@@ -157,7 +109,7 @@ async function _runActor(actorId, input) {
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(input),
       signal: controller.signal,
     });
@@ -188,4 +140,4 @@ async function _runActor(actorId, input) {
   }
 }
 
-module.exports = { scrapeProfile, scrapePostEngagement };
+module.exports = { scrapeProfile };

@@ -1,0 +1,135 @@
+{
+  "feature": "post-performance-v2",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 25 Oct 2026: \"i accept all your recommendations ... pls lock all your suggestions\")",
+  "approved_at": "2026-10-25T14:13:45.752Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 25 Oct 2026: \"Lock the post-performance-v2 board v1 as drawn, with defaults M1-M3\")",
+  "mockup_locked_at": "2026-10-25T14:51:33.590Z",
+  "notes": "Level 2 of Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md: the campaign post's views / likes / comments on Instagram and YouTube, read from content_proofs.url (the only place live links land since item 12), through the item 3b Apify runner so every run has a run id and a cost in /admin/social/costs, under the US$5 budget guard, on a day-curve instead of §4.16's daily-30-then-weekly (which costs the whole budget at ~40 links). Supersedes features/post-performance (28 Sep draft, never approved) and drops Level 4 from its scope. Spec written 25 Oct 2026 from a verified code read; the 14 questions in 01-spec.md §9 were put to the founder in plain language and he accepted every recommendation (SPEC LOCKED 2026-10-25); production counts read 25 Oct 2026 after the founder's go (00-survey/prod-counts-2026-10-25.md: 14 links on 4 completed collaborations, deliverable_stats empty, Level 1 at US$2.49 of US$5 this month). The founder first parked the cost questions until Level 4, then the same day asked for them in plain language and accepted all 14 recommendations. Spec locked 25 Oct; board v1 LOCKED 25 Oct as drawn with M1-M3 (website first, then brand app, then creator app). BUILT 25 Oct 2026 (see build); not committed, not deployed — the deploy needs the founder's explicit go.",
+  "supersedes": "features/post-performance",
+  "rules": "Docs/OFFER_TERMS_POSTS_RULES.md §4.16 (v1.22, 11 Oct 2026; NOT updated — founder rule: master docx only); master rules v1.35 written 25 Oct 2026 (Downloads/INFLX_Master_Business_Rules_Phase_1_v1.35.docx): new section 13A Post Performance on Social Media; 2A, 12.1, 12.2, 32 and the version list amended",
+  "survey": "Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md §Level 2",
+  "proposed_decisions": {
+    "P1_source_is_content_proofs_url": "accepted",
+    "P2_tracking_starts_at_posted_or_outside_save": "accepted",
+    "P3_one_actor_per_platform_batched_50": "accepted",
+    "P4_runs_through_apifyRuns_new_post_stat_runs_table": "accepted",
+    "P5_day_curve_1_2_3_5_7_10_14_21_30_then_14d_to_90": "accepted",
+    "P6_scheduled_reads_yield_to_level1_under_budget": "accepted",
+    "P7_update_now_once_per_collab_per_day_budget_gated": "accepted",
+    "P8_owner_check_after_first_read_flag_not_refuse": "accepted",
+    "P9_level1_zero_cost_seed": "accepted",
+    "P10_views_likes_comments_only_no_shares_reach_er": "accepted",
+    "P11_retire_apify_engagement_refresh_stats_keep_deliverable_stats_one_release": "accepted",
+    "P12_item20_share_places_not_tracked": "accepted"
+  },
+  "open_questions": 14,
+  "step0_probe": {
+    "done": true,
+    "ran_at": "2026-10-25",
+    "by": "founder go in chat (\"Yes, run the Step-0 Apify probe now (at most US$0.05)\")",
+    "cost_usd": 0.0201,
+    "runs": {
+      "instagram": {
+        "actor": "apify~instagram-post-scraper",
+        "apify_run_id": "eeP5eQFph5vSU1Bh5",
+        "urls": 3,
+        "items": 3,
+        "run_usd": 0.0054,
+        "secs": 37
+      },
+      "youtube": {
+        "actor": "streamers~youtube-scraper",
+        "apify_run_id": "O4cjOl45zLN1R6aLG",
+        "urls": 4,
+        "items": 3,
+        "run_usd": 0.012,
+        "secs": 143
+      }
+    },
+    "findings": [
+      "Instagram post URLs in username[] work (/reel/ and /p/); a /reel/ URL comes back with url /p/<shortcode>; not-found = an error item {error:not_found}",
+      "YouTube: /shorts/, youtu.be and watch?v= URLs are each read on their own; channelUsername and channelId ARE returned; a non-existent id returns NO item at all (not an error item)",
+      "Per read: Instagram US$0.0027, YouTube US$0.004, no per-run start fee visible; account usage moved US$0.0201 while the two runs reported US$0.0174 — the gap equals one charged Instagram not-found result",
+      "Hidden likes seen for real (likesCount -1 on the reel); comments-off false on all; videoPlayCount present on the reel, null videoViewCount",
+      "One of the creator's own-profile posts (Dc1GyQhhwFF) came back with ownerUsername of ANOTHER account (a collaborative post): P8 must treat a mismatch as a flag, never a refusal, and the build should look for a co-author field in the raw item"
+    ],
+    "files": [
+      "00-survey/probe/instagram-by-url.json",
+      "00-survey/probe/youtube-by-url.json",
+      "00-survey/probe/summary.json",
+      "00-survey/PROBE-2026-10-25.md"
+    ],
+    "move_to_fixtures_at_build": [
+      "backend/tests/fixtures/apify/instagram-post-by-url.json",
+      "backend/tests/fixtures/apify/youtube-video-by-url.json"
+    ]
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "walk_fixes": []
+  },
+  "decisions": {
+    "decided_by": "founder (chat 25 Oct 2026: \"i accept all your recommendations ... pls lock all your suggestions\")",
+    "decided_at": "2026-10-25T14:13:45.752Z",
+    "Q1_schedule": "thin curve: reads on day 1,2,3,5,7,10,14,21,30, then every 14 days to day 90 (not §4.16 daily-30-then-weekly)",
+    "Q2_pay_for_content_stop": "same 90-day curve as Pay for Sale (not \"until the final payment\")",
+    "Q3_shares": "not shown on any screen; no paid Apify plan",
+    "Q4_update_now": "brand and creator, once per collaboration per 24 h, refused when the month budget is used up; admin exempt",
+    "Q5_wrong_account": "accept the link; after the first reading a different owner flags admin and the brand sees \"Posted from @other, not her account\"; no check at paste time",
+    "Q6_own_brand_share_places": "not tracked in this contract",
+    "Q7_level1_seed": "yes: show the Level 1 reading first, labelled with its date, until the first paid read",
+    "Q8_budget_priority": "creator channel numbers (Level 1) win; post reads yield when the month is tight",
+    "Q9_retire_legacy": "apify-engagement job and refresh-stats removed; deliverable_stats kept empty one release, dropped later",
+    "Q10_brand_web_er_tile": "AVG ER tile replaced by LINKS READ (\"12 of 14\")",
+    "Q11_after_day_90": "stop; Update now is the only way to a fresh number",
+    "Q12_release_order": "website, brand app and creator app in one release",
+    "Q13_facebook": "links accepted and shown with \"Facebook numbers come later\"; no Facebook scraper",
+    "Q14_backfill": "the 14 existing production links are read once when this ships (trigger backfill)"
+  },
+  "next": [
+    "founder go → node backend/scripts/run-210.js --dry then --apply on .env.prod-backup → commit by path → push (Render + Vercel) → OTA brand + creator → backfill the 14 links (trigger backfill)",
+    "founder device walk of B1–B4, C1–C4 and W1/W2; then the Playwright / Maestro captures into 06-diff"
+  ],
+  "boards": {
+    "apps_and_web": {
+      "file": "04-preview/mockups/post-performance-v2-v1.html",
+      "screens": "W1-W2, B1-B4, C1-C4, S1",
+      "drawn_at": "2026-10-25",
+      "locked_by": "founder (chat 25 Oct 2026: \"Lock the post-performance-v2 board v1 as drawn, with defaults M1-M3\")",
+      "locked_at": "2026-10-25T14:51:33.590Z",
+      "notes": "Board v1 LOCKED 2026-10-25 as drawn, with board defaults M1-M3 accepted. Website first, then brand app, then creator app."
+    }
+  },
+  "board_defaults_accepted": {
+    "M1_numbers_in_full_indian_grouping": true,
+    "M2_update_now_on_collab_screens_and_her_post_stats_not_brand_post_stats": true,
+    "M3_links_not_added_line_from_posting_date": true,
+    "accepted_by": "founder (chat 25 Oct 2026: \"Lock the post-performance-v2 board v1 as drawn, with defaults M1-M3\")",
+    "accepted_at": "2026-10-25T14:51:33.590Z"
+  },
+  "build": {
+    "built_at": "2026-10-25",
+    "rules": "master v1.35 §13A (Downloads/INFLX_Master_Business_Rules_Phase_1_v1.35.docx); Docs/OFFER_TERMS_POSTS_RULES.md §4.16 not touched (founder rule: master docx only)",
+    "migration": "210_post_performance_v2.sql (additive: post_stat_runs, proof_stats, proof_stat_reads; social_admin_flags.kind gains owner_mismatch; runner scripts/run-210.js --dry|--apply counts content_proofs, collab_content, deliverable_stats before and after; NOT run on production yet — needs the go)",
+    "backend": "tests/post-performance-v2.test.js 24/24 (E1–E27 of 03-expected-outputs.md, Apify mocked by URL from the two probe fixtures tests/fixtures/apify/instagram-post-by-url.json + youtube-video-by-url.json); engagement.test.js and item12-phase2a.test.js rewritten to the rule as it now is (the cron and refresh-stats are gone); full compare vs a fresh baseline — see build.compare",
+    "compare": "scripts/compare-tests.js baseline_post_performance_v2.json after_post_performance_v2.json (25–26 Oct 2026; baseline = full run on an untouched git worktree of HEAD c50acf88, after = full run on the edited tree, both serial on the 5544 test DB): before 156 suites / 2221 tests / 2016 passed / 177 failed; after 157 / 2246 / 2041 passed / 177 failed; 28 new, 0 newly failing, 0 newly passing, 3 gone. The 3 gone are the retired path's own checks, replaced in the same files: item12-phase2a 'the stats refresh is NOT retired' → 'the stats refresh is gone too'; engagement.test 'apify-engagement cron creates deliverable_stats rows' → 'the daily post-stats job never reads a legacy deliverable'; 'returns correct structure' → 'returns the post-performance-v2 shape, empty for a legacy campaign'. The raw baseline had 40 suites failing on lock timeouts after a single E21 recheck collided with it mid-run; those suites were rerun alone in the untouched worktree and spliced in (177 failed, the known pre-existing set) before the compare",
+    "mobile": "131 suites / 3053 tests, 3052 passed; the one failure (cancelWhileBusy.test.js, the record of outline buttons passing disabled) was the four new Update now buttons and now records them — 3053 green on rerun of the two suites (postPerformance.test.js 23 new; cancelWhileBusy.test.js records the four Update now buttons)",
+    "website": "app/dashboard/campaigns/[id]/page.js (Analytics tab per W1, header AVG ER → VIEWS, the per-deliverable ↻ and \"Refresh analytics\" gone), lib/api.js (refreshEngagement; deliverableApi removed), app/admin/analytics/page.js + app/admin/influencers/page.js (W2 cost line, \"Posted from another account\") — parse-checked with Next's Babel; not opened in a browser",
+    "fixtures": "the Step-0 probe's raw answers copied to backend/tests/fixtures/apify/; the mock resolver re-keys them to the links the worlds paste and may answer { items, usageTotalUsd } (apifyRuns.mockRun extended for it)",
+    "decisions_in_build": "see 06-diff/notes.md — proof_stats rows have their own id (a replaced outside link closes the old row); the curve is read from the due date (a skipped day is caught up with one read); not-found stops and counts as a read; Update now is one per collaboration per 24 h for both sides, judged from the run log; admin's read is exempt (POST /admin/collabs/:ciId/content/stats/refresh); the post read carries the summary; numbers_at beside last_read_at; both older sync Apify helpers send the token in the header (E26)",
+    "captures": "declared, not run: 04-preview/mockups/post-performance-v2-v1.capture.json (W1, needs a signed-in local brand-web) and qa/maestro/flows/08-post-performance.yaml (B1–B4; needs a device)",
+    "not_done": "Q14 backfill of the 14 production links: scripts/backfill-post-stats.js --dry|--apply (run after the push)",
+    "production_impacting": "migration 210 on Supabase, Render (backend), Vercel (brand web), OTA brand + creator (runtime 4) — explicit go required; the shopper app and money are untouched",
+    "migration_applied": "210 applied on production 25 Oct 2026 with scripts/run-210.js --apply BEFORE the push (founder go in chat): four shape checks on; every count identical before and after (14 content_proofs / 14 links, 5 collab_content, 0 deliverable_stats, 1 social_admin_flags, 79 creator_social_runs)"
+  }
+}

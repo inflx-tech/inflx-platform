@@ -1,0 +1,24 @@
+{
+  "ranAt": "2026-10-25T14:39:20.962Z",
+  "before": {
+    "usd": 2.6490882435617644,
+    "cap": 5,
+    "source": "apify"
+  },
+  "after": {
+    "usd": 2.6692036549854596,
+    "cap": 5,
+    "source": "apify"
+  },
+  "deltaUsd": 0.0201,
+  "instagram": {
+    "runId": "eeP5eQFph5vSU1Bh5",
+    "usd": 0.0054,
+    "items": 3
+  },
+  "youtube": {
+    "runId": "O4cjOl45zLN1R6aLG",
+    "usd": 0.012,
+    "items": 3
+  }
+}

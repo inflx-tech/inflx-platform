@@ -1,0 +1,5 @@
+{
+  "url": "http://localhost:3002/dashboard/campaigns/<campaign-id>?tab=ana",
+  "viewport": { "width": 1200, "height": 720 },
+  "note": "After-capture for W1 (the campaign page's Analytics tab) on the brand website, on a campaign with two read links and one waiting link; the brand must be signed in to the local brand-web first (the page is behind the brand's login). The phone frames (B1–B4, C1–C4) are captured by Maestro from qa/maestro/flows/08-post-performance.yaml on a device with a signed-in creator and brand; the board's one HTML holds every frame, and only one sibling can drive the live capture, so the web one is declared here and the phone flow is named in 06-diff/notes.md. Neither capture was run in the build session (no local brand-web server, no device)."
+}

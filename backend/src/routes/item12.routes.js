@@ -34,6 +34,8 @@ router.delete(`${C}/files/:fileId`,         ...creator, ctrl.removeFile);      /
 router.post  (`${C}/files/:fileId/cover-url`, ...creator, ctrl.requestCoverUpload); // W15 — a video's picture
 router.post  (`${C}/files/:fileId/cover`,     ...creator, ctrl.confirmCover);       // W15
 router.get   (`${C}/files/:fileId/url`,     ...creator, ctrl.creatorFileUrl);  // G12
+// post-performance-v2 (P7): her "Update now" — every link of this collaboration read once; once a day; budget-gated.
+router.post  (`${C}/stats/refresh`,          ...creator, ctrl.creatorRefreshStats);
 
 // ── Brand ────────────────────────────────────────────────────────────────────
 router.get   (`${B}`,                        ...brand, ctrl.brandRead);         // G1
@@ -42,6 +44,8 @@ router.post  (`${B}/changes`,                ...brand, ctrl.askChanges);        
 router.post  (`${B}/confirm-live`,           ...brand, ctrl.confirmLive);       // G10 — releases the second 25%
 router.post  (`${B}/report`,                 ...brand, ctrl.brandReport);       // G11 — rounds_used | posted_wrong
 router.get   (`${B}/files/:fileId/url`,     ...brand, ctrl.brandFileUrl);      // G12
+// post-performance-v2 (P7): the brand's "Update now" — the same once-a-day, budget-gated read.
+router.post  (`${B}/stats/refresh`,          ...brand, ctrl.brandRefreshStats);
 
 // ── The device proof (Phase 2b) — 404 unless CONTENT_UPLOAD_PROBE=on ──────────
 router.get ('/influencers/me/upload-probe',         ...creator, ctrl.probeStatus);
@@ -50,5 +54,7 @@ router.post('/influencers/me/upload-probe/confirm', ...creator, ctrl.probeConfir
 
 // ── Admin — only once a side has reported to INFLX (approval Q12) ────────────
 router.get('/admin/collabs/:ciId/content/files/:fileId/url', authenticate, requireCapability('production'), ctrl.adminFileUrl);
+// post-performance-v2 (P7): admin's Measure-now-style read of a collaboration's links — exempt from the budget.
+router.post('/admin/collabs/:ciId/content/stats/refresh', authenticate, requireCapability('marketing'), ctrl.adminRefreshStats);
 
 module.exports = router;

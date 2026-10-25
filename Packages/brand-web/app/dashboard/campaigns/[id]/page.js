@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { campaignApi, deliverableApi, contractApi, fmtRupees } from '../../../../lib/api';
+import { campaignApi, contractApi, fmtRupees } from '../../../../lib/api';
 import { StageRail, PrimeBar, deriveCampaignStage } from './CommandRail';
 import { contractLockAmount } from '../../../../lib/contracts';
 import PayoutSection from './PayoutSection';
@@ -65,6 +65,45 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 const nf = (n) => (n == null ? '—' : Number(n).toLocaleString('en-IN'));
+
+/* post-performance-v2 — the one line under a link, the board's S1 words (brand side), and its colour. */
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function whenWords(iso, now = new Date()) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const dayOf = (x) => Math.floor((x.getTime() - x.getTimezoneOffset() * 60000) / 86400000);
+  const days = dayOf(now) - dayOf(d);
+  const clock = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+  if (days <= 0) return `today ${clock}`;
+  if (days === 1) return `yesterday ${clock}`;
+  if (days < 31) return `${days} days ago`;
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+}
+const dayShort = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`; };
+const shortLink = (url) => { const s = String(url || '').replace(/^https?:\/\/(www\.|m\.)?/, '').replace(/\/$/, ''); return s.length > 28 ? `${s.slice(0, 26)}…` : s; };
+function numbersLine(st) {
+  const parts = [];
+  if (st.views != null) parts.push(`${nf(st.views)} views`);
+  parts.push(st.likesHidden ? 'Likes hidden' : `${nf(st.likes)} likes`);
+  parts.push(st.commentsOff ? 'Comments off' : `${nf(st.comments)} comments`);
+  return parts.join(' · ');
+}
+const INK = '#52525B', WAIT = '#1D5FBF', WARN = '#B04600', GONE = '#C42B2B';
+function statLine(st) {
+  if (!st) return { text: '', color: INK };
+  switch (st.state) {
+    case 'story': return { text: "Screenshot · stories can't be tracked", color: INK };
+    case 'facebook': return { text: 'Facebook numbers come later', color: INK };
+    case 'waiting': return { text: 'Numbers come the morning after she marks it posted', color: WAIT };
+    case 'gone': return { text: 'This post is no longer public', color: GONE };
+    case 'unreadable': return { numbers: st.updatedAt ? numbersLine(st) : null, text: "Couldn't read this link · we'll try again tomorrow", color: WARN };
+    case 'other_account': return { numbers: numbersLine(st), text: `Posted from @${st.ownerHandle}, not her account`, color: WARN };
+    case 'stopped': return { numbers: numbersLine(st), text: `Last read ${dayShort(st.updatedAt)}`, color: INK };
+    case 'ok': return { numbers: numbersLine(st), text: st.source === 'level1' ? `From her channel numbers, ${dayShort(st.sourceAt || st.updatedAt)}` : `Updated ${whenWords(st.updatedAt)}`, color: INK };
+    default: return { text: '', color: INK };
+  }
+}
 
 /* Wallet lock = (fee + bonus) × (1 + platform_fee_pct/100) — now single-sourced in
    lib/contracts (A3), shared with the campaigns-list strip + influencers modal. */
@@ -148,8 +187,7 @@ export default function CampaignCommandCenterPage() {
   const [openSets, setOpenSets]       = useState({});
   const [openInfs, setOpenInfs]       = useState({});
   const [briefOpen, setBriefOpen]     = useState(false);
-  const [refreshingAll, setRefreshingAll] = useState('');
-  const [refreshingOne, setRefreshingOne] = useState(null);
+  const [updating, setUpdating]       = useState(false);   // post-performance-v2: the one Update now
   const [toast, setToast]             = useState('');
   const [busyId, setBusyId]           = useState(null);
 
@@ -215,22 +253,20 @@ export default function CampaignCommandCenterPage() {
   const activeInf = allInfluencers.filter(ci => ['active', 'live'].includes(ci.status)).length;
 
   // Item 12 (approval Q2): no review or live-confirm queue is counted here any more — content is
-  // sent, reviewed and confirmed in the app, and the website shows it read-only. The live-post
-  // count stays: the AVG ER tile below reads it (engagement analytics, not review).
-  let liveDel = 0;
-  for (const ci of allInfluencers) for (const d of (ci.deliverables || [])) if (d.status === 'live') liveDel++;
+  // sent, reviewed and confirmed in the app, and the website shows it read-only.
+  // post-performance-v2: the live-post count went with the AVG ER tile (P10); the numbers below are
+  // read from the links she hands in (proof_stats), not from deliverables.
 
   const totalBudget     = Number(campaign.total_budget) || 0;
   const allocatedBudget = allInfluencers.reduce((sum, ci) => sum + (Number(ci.agreed_fee) || 0), 0);
 
-  const totals = engagement?.totals || {};
-  const bySet  = engagement?.by_set || [];
-  const byInf  = engagement?.by_influencer || [];
-  const engBySetId = Object.fromEntries(bySet.map(s => [s.set_id, s]));
-  const engByInfId = Object.fromEntries(byInf.map(i => [i.influencer_id, i]));
-  // engagement per-deliverable stats keyed by deliverable id
-  const engByDelId = {};
-  for (const inf of byInf) for (const d of (inf.deliverables || [])) engByDelId[d.id] = d;
+  // post-performance-v2 (E11): { totals, bySet[], byCreator[], links[] } — views, likes, comments, links read.
+  const totals    = engagement?.totals || {};
+  const bySet     = engagement?.bySet || [];
+  const byCreator = engagement?.byCreator || [];
+  const engLinks  = engagement?.links || [];
+  const engBySetId = Object.fromEntries(bySet.map(s => [s.setId, s]));
+  const engByInfId = Object.fromEntries(byCreator.map(i => [i.influencerId, i]));
 
   const escrowEntries  = escrow?.entries || escrow?.escrow_entries || [];
   const escrowLocked   = escrowEntries.filter(e => e.status === 'locked').reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -289,37 +325,18 @@ export default function CampaignCommandCenterPage() {
   const isSetOpen = (sid) => openSets[sid] !== undefined ? openSets[sid] : true;
   const isInfOpen = (ciid, hasAction) => openInfs[ciid] !== undefined ? openInfs[ciid] : hasAction;
 
-  /* ── Refresh actions ────────────────────────────────────────────────────── */
-  async function refreshDeliverable(delId) {
-    setRefreshingOne(delId);
-    const res = await deliverableApi.refreshStats(delId);
+  /* ── Update now (post-performance-v2, P7): every link of the campaign read once; once a day; budget-gated ── */
+  async function updateNow() {
+    setUpdating(true);
+    const res = await campaignApi.refreshEngagement(id).catch(() => ({ success: false }));
     if (res?.success) {
-      const eng = await campaignApi.getEngagement(id);
-      if (eng?.success) setEngagement(eng.data);
+      setEngagement(res.data);
     } else {
-      alert(res?.error?.message || 'Refresh failed');
-    }
-    setRefreshingOne(null);
-  }
-
-  async function refreshAllAnalytics() {
-    const liveIds = [];
-    for (const inf of byInf) for (const d of (inf.deliverables || [])) if (d.status === 'live') liveIds.push(d.id);
-    if (liveIds.length === 0) {
-      setRefreshingAll('refetching…');
-      const eng = await campaignApi.getEngagement(id);
+      showToast(res?.error?.message || 'Could not update the numbers.');
+      const eng = await campaignApi.getEngagement(id).catch(() => ({ success: false }));
       if (eng?.success) setEngagement(eng.data);
-      setRefreshingAll('');
-      return;
     }
-    for (let i = 0; i < liveIds.length; i++) {
-      setRefreshingAll(`re-scraping ${i + 1}/${liveIds.length}…`);
-      await deliverableApi.refreshStats(liveIds[i]).catch(() => null);
-    }
-    setRefreshingAll('updating totals…');
-    const eng = await campaignApi.getEngagement(id);
-    if (eng?.success) setEngagement(eng.data);
-    setRefreshingAll('');
+    setUpdating(false);
   }
 
   function showToast(msg) {
@@ -537,23 +554,14 @@ export default function CampaignCommandCenterPage() {
         )}
         <div className="flex-1 min-w-[100px] px-4 border-r border-[#F4F4F5]">
           <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">LIKES</div>
-          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{nf(totals.total_likes)}</div>
+          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{nf(totals.likes)}</div>
           <div className="text-[10px] text-[#A1A1AA] mt-0.5">{activeInf}/{totalInf} influencers active</div>
         </div>
+        {/* post-performance-v2 (P10): the AVG ER box is gone; views on social media, and how many links are read. */}
         <div className="flex-1 min-w-[90px] px-4">
-          <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">AVG ER</div>
-          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{totals.avg_er != null ? `${Number(totals.avg_er).toFixed(1)}%` : '—'}</div>
-          <div className="text-[10px] text-[#A1A1AA] mt-0.5">from {liveDel} live post{liveDel !== 1 ? 's' : ''}</div>
-        </div>
-        <div className="pl-4">
-          <button
-            onClick={refreshAllAnalytics}
-            disabled={!!refreshingAll}
-            className={`bg-[#FFC107] rounded-[10px] px-4 py-2.5 text-[12px] font-extrabold text-[#0A0A0A] whitespace-nowrap ${refreshingAll ? 'opacity-60' : 'hover:bg-[#E0A800]'}`}
-          >
-            {refreshingAll ? `↻ ${refreshingAll}` : '↻ Refresh analytics'}
-          </button>
-          <div className="text-[9.5px] text-[#A1A1AA] mt-1 text-center">re-scrapes every live post</div>
+          <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">VIEWS</div>
+          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{nf(totals.views)}</div>
+          <div className="text-[10px] text-[#A1A1AA] mt-0.5">{nf(totals.linksRead)} of {nf(totals.links)} links read · <button type="button" onClick={() => setTab('ana')} className="text-[#6B5A00] font-bold">detail ↗</button></div>
         </div>
       </div>
 
@@ -606,7 +614,7 @@ export default function CampaignCommandCenterPage() {
                     <MiniStat v={nf(eng.views)} k="VIEWS" />
                     <MiniStat v={nf(eng.likes)} k="LIKES" />
                     <MiniStat v={nf(eng.comments)} k="COMMENTS" />
-                    <MiniStat v={eng.engagement_rate != null ? `${eng.engagement_rate}%` : '—'} k="ER" />
+                    <MiniStat v={eng.links != null ? `${eng.read ?? 0}/${eng.links}` : '—'} k="LINKS READ" />
                     <MiniStat v={nf(clicksBySetId[set.id] || 0)} k="CLICKS" />
                     {setWantsSales && <SalesStat v={nf(setConv?.sales_count || 0)} k="SALES" />}
                     {setWantsSales && <SalesStat v={fmtRupees(setConv?.revenue || 0)} k="REVENUE" />}
@@ -618,7 +626,7 @@ export default function CampaignCommandCenterPage() {
                     {infs.length === 0 && <div className="px-10 py-4 text-[12px] text-[#A1A1AA]">No influencers in this set yet.</div>}
                     {infs.map(ci => {
                       const ieng = engByInfId[ci.influencer_id] || {};
-                      const handle = ci.instagram_handle || ci.handle || ieng.instagram_handle || ci.influencer_name || ci.name || '—';
+                      const handle = ci.instagram_handle || ci.handle || (ieng.handle ? String(ieng.handle).replace(/^@/, '') : null) || ci.influencer_name || ci.name || '—';
                       const pendingDateChange = ci.pending_date_change || null;
                       const hasAction = !!pendingDateChange;
                       const iOpen = isInfOpen(ci.id, hasAction || infs.length === 1);
@@ -653,7 +661,7 @@ export default function CampaignCommandCenterPage() {
                             <span className="ml-auto flex gap-4 items-center">
                               <MiniStat v={nf(ieng.views)} k="VIEWS" />
                               <MiniStat v={nf(ieng.likes)} k="LIKES" />
-                              <MiniStat v={ieng.engagement_rate != null ? `${ieng.engagement_rate}%` : '—'} k="ER" />
+                              <MiniStat v={ieng.links != null ? `${ieng.read ?? 0}/${ieng.links}` : '—'} k="LINKS READ" />
                               <MiniStat v={nf(clicksByInfId[ci.influencer_id] || 0)} k="CLICKS" />
                               {ciWantsSales && <SalesStat v={nf(ciConv?.sales_count || 0)} k="SALES" />}
                               {ciWantsSales && <SalesStat v={fmtRupees(ciConv?.revenue || 0)} k="REVENUE" />}
@@ -847,19 +855,34 @@ export default function CampaignCommandCenterPage() {
       )}
 
       {/* ════ ANALYTICS ════ */}
+      {/* post-performance-v2 (board W1): the numbers read from her links — views, likes, comments and how
+          many links are read — by set, by creator and by link, with the same one line as the apps. One
+          Update now for the campaign, once a day. No engagement rate, no shares, no reach, no saves. */}
       {tab === 'ana' && (
         <div>
-          <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2">LEVEL 1 — CAMPAIGN</div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
+            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px]">ON SOCIAL MEDIA · {String(campaign.name || '').toUpperCase()}</div>
+            <div className="flex items-center gap-2">
+              {totals.updatedAt && <span className="text-[11px] text-[#71717A]">Updated {whenWords(totals.updatedAt)}</span>}
+              {engagement?.canUpdate && (
+                <button type="button" onClick={updateNow} disabled={!!updating} data-testid="update-now"
+                  className={`bg-white border border-[#E4E4E7] rounded-[10px] px-3 py-1.5 text-[12px] font-bold text-[#0A0A0A] ${updating ? 'opacity-60' : 'hover:bg-[#FFF7CC] hover:border-[#FFC107]'}`}>
+                  {updating ? 'Updating…' : 'Update now'}
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5" data-testid="social-tiles">
             {[
-              { k: 'LIKES', v: nf(totals.total_likes) },
-              { k: 'COMMENTS', v: nf(totals.total_comments) },
-              { k: 'VIEWS', v: nf(totals.total_views) },
-              { k: 'AVG ER', v: totals.avg_er != null ? `${Number(totals.avg_er).toFixed(1)}%` : '—' },
+              { k: 'VIEWS', v: nf(totals.views) },
+              { k: 'LIKES', v: nf(totals.likes) },
+              { k: 'COMMENTS', v: nf(totals.comments) },
+              { k: 'LINKS READ', v: `${nf(totals.linksRead)} of ${nf(totals.links)}`, sub: totals.waiting ? `${totals.waiting} waiting` : null },
             ].map(c => (
               <div key={c.k} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4">
                 <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">{c.k}</div>
                 <div className="font-mono font-bold text-[24px] text-[#0A0A0A] mt-1">{c.v}</div>
+                {c.sub && <div className="text-[10.5px] text-[#71717A]">{c.sub}</div>}
               </div>
             ))}
           </div>
@@ -879,72 +902,72 @@ export default function CampaignCommandCenterPage() {
             </div>
           )}
 
+          {engLinks.length === 0 && (
+            <div className="bg-white border border-[#E4E4E7] rounded-[12px] p-6 text-center text-[13px] text-[#71717A]" data-testid="social-empty">
+              No social links yet — numbers appear once a creator marks her content posted.
+            </div>
+          )}
+
           {bySet.length > 0 && (<>
-            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2">LEVEL 2 — BY SET</div>
+            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2">BY SET</div>
             {bySet.map(s => {
-              const maxViews = Math.max(...bySet.map(x => x.views || 0), 1);
-              const sConv = convBySetId[s.set_id];
+              const sConv = convBySetId[s.setId];
               return (
-                <div key={s.set_id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-[13px] text-[#0A0A0A]">{s.set_name} <span className="text-[11px] text-[#71717A] font-medium">· {s.goal || '—'} · {s.influencers} influencer{s.influencers !== 1 ? 's' : ''}</span></span>
-                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(s.views)} views · {nf(s.likes)} likes · {nf(s.comments)} comments · ER {s.engagement_rate}% · {nf(clicksBySetId[s.set_id] || 0)} clicks</span>
+                <div key={s.setId} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2" data-testid={`social-set-${s.setId}`}>
+                  <div className="flex justify-between items-center gap-3 flex-wrap">
+                    <span className="font-bold text-[13px] text-[#0A0A0A]">{s.setName} <span className="text-[11px] text-[#71717A] font-medium">· {s.aim} · {s.creators} creator{s.creators !== 1 ? 's' : ''}</span></span>
+                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(s.views)} views · {nf(s.likes)} likes · {nf(s.comments)} comments · {s.links} link{s.links !== 1 ? 's' : ''}{clicksBySetId[s.setId] ? ` · ${nf(clicksBySetId[s.setId])} clicks` : ''}</span>
                   </div>
                   {sConv && sConv.sales_count > 0 && (
                     <div className="font-mono text-[11.5px] text-[#7E22CE] mt-1">{nf(sConv.sales_count)} sales · {fmtRupees(sConv.revenue)} revenue · {fmtRupees(sConv.commission_paid)} commission</div>
                   )}
-                  <div className="h-[6px] bg-[#F4F4F5] rounded-[3px] mt-2"><div className="h-[6px] bg-[#FFC107] rounded-[3px]" style={{ width: `${Math.round(((s.views || 0) / maxViews) * 100)}%` }} /></div>
                 </div>
               );
             })}
           </>)}
 
-          {byInf.length > 0 && (<>
-            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2 mt-5">LEVEL 3 — BY INFLUENCER</div>
-            {byInf.map(i => {
-              const maxViews = Math.max(...byInf.map(x => x.views || 0), 1);
-              const liveN = (i.deliverables || []).filter(d => d.status === 'live').length;
-              const otherN = (i.deliverables || []).length - liveN;
-              const iConv = convByInf[i.influencer_id];
+          {byCreator.length > 0 && (<>
+            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2 mt-5">BY CREATOR</div>
+            {byCreator.map(i => {
+              const iConv = convByInf[i.influencerId];
               return (
-                <div key={i.influencer_id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-[13px] text-[#0A0A0A]">{i.handle} <span className="text-[11px] text-[#71717A] font-medium">· {i.set_name} · {liveN} live{otherN > 0 ? ` + ${otherN} other` : ''}</span></span>
-                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(i.views)} views · {nf(i.likes)} likes · ER {i.engagement_rate}% · {nf(clicksByInfId[i.influencer_id] || 0)} clicks</span>
+                <div key={i.ciId} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2" data-testid={`social-creator-${i.ciId}`}>
+                  <div className="flex justify-between items-center gap-3 flex-wrap">
+                    <span className="font-bold text-[13px] text-[#0A0A0A]">{i.handle} <span className="text-[11px] text-[#71717A] font-medium">· {i.setName}</span></span>
+                    {i.missing
+                      ? <span className="text-[11.5px] text-[#1D5FBF]">Social links not added yet</span>
+                      : <span className="font-mono text-[11.5px] text-[#52525B]">{nf(i.views)} views · {nf(i.likes)} likes · {nf(i.comments)} comments · {i.links} link{i.links !== 1 ? 's' : ''}{clicksByInfId[i.influencerId] ? ` · ${nf(clicksByInfId[i.influencerId])} clicks` : ''}</span>}
                   </div>
                   {iConv && iConv.sales_count > 0 && (
                     <div className="font-mono text-[11.5px] text-[#7E22CE] mt-1">{nf(iConv.sales_count)} sales · {fmtRupees(iConv.revenue)} revenue · {fmtRupees(iConv.commission_paid)} commission{iConv.roi ? ` · ROI ${iConv.roi}×` : ''}</div>
                   )}
-                  <div className="h-[6px] bg-[#F4F4F5] rounded-[3px] mt-2"><div className="h-[6px] bg-[#FFC107] rounded-[3px]" style={{ width: `${Math.round(((i.views || 0) / maxViews) * 100)}%` }} /></div>
                 </div>
               );
             })}
           </>)}
 
-          {Object.keys(engByDelId).length > 0 && (<>
-            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2 mt-5">LEVEL 4 — BY DELIVERABLE</div>
-            {byInf.flatMap(i => (i.deliverables || []).map(d => ({ ...d, handle: i.handle }))).map(d => (
-              <div key={d.id} className="bg-white border border-[#E4E4E7] rounded-[12px] px-4 py-3 mb-2 flex items-center gap-3">
-                <span>{DEL_ICON[d.type] || '🎬'}</span>
-                <span className="font-bold text-[12.5px] text-[#0A0A0A]">{d.handle} <span className="capitalize font-medium text-[#52525B]">{(d.type || '').replace('_', ' ')}</span></span>
-                <span className={`text-[9px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] ${delPill(d).cls}`}>{delPill(d).label}</span>
-                <span className="ml-auto font-mono text-[11.5px] text-[#52525B]">
-                  {d.status === 'live'
-                    ? <>{nf(d.likes)} likes · {nf(d.comments)} comments{d.views != null ? <> · {nf(d.views)} views</> : null} · ER {d.engagement_rate != null ? `${d.engagement_rate}%` : '—'}{d.scraped_at ? <> · scraped {formatDate(d.scraped_at)}</> : null}</>
-                    : 'no stats until live'}
-                </span>
-                {d.status === 'live' && (
-                  <button onClick={() => refreshDeliverable(d.id)} disabled={refreshingOne === d.id}
-                    className="w-7 h-7 rounded-[8px] bg-white border border-[#E4E4E7] text-[13px] hover:bg-[#FFF7CC] hover:border-[#FFC107] disabled:opacity-50">
-                    {refreshingOne === d.id ? '…' : '↻'}
-                  </button>
-                )}
-              </div>
-            ))}
+          {engLinks.length > 0 && (<>
+            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2 mt-5">BY LINK</div>
+            {engLinks.map(l => {
+              const line = statLine(l.stats);
+              return (
+                <div key={`${l.ciId}-${l.rowKey}-${l.slot}`} className="bg-white border border-[#E4E4E7] rounded-[12px] px-4 py-3 mb-2" data-testid={`social-link-${l.rowKey}-${l.slot}`}>
+                  <div className="flex justify-between items-center gap-3 flex-wrap">
+                    <span className="font-bold text-[12.5px] text-[#0A0A0A]">{l.handle} · {l.label}{l.aim === 'Pay for Content' && !l.postCode ? ' · Pay for Content' : ''}</span>
+                    {l.screenshot
+                      ? <span className="text-[11.5px] text-[#71717A]">screenshot</span>
+                      : <a href={l.url} target="_blank" rel="noreferrer" className="font-mono text-[11.5px] text-[#52525B] underline">{shortLink(l.url)} ↗</a>}
+                  </div>
+                  <div className="text-[12px] mt-1" style={{ color: line.color }}>
+                    {line.numbers && <b className="text-[#0A0A0A]">{line.numbers}</b>}{line.numbers && line.text ? ' · ' : ''}{line.text}
+                  </div>
+                </div>
+              );
+            })}
           </>)}
           <div className="text-[11px] text-[#A1A1AA] mt-3">
-            Reach &amp; saves not shown — they need the influencer&apos;s Instagram Business API to be connected.
-            Stats auto-refresh daily; ↻ re-scrapes a post on demand.
+            Views, likes and comments are read from the public post. Shares, reach and saves aren&apos;t public.
+            Read on day 1, 2, 3, 5, 7, 10, 14, 21 and 30 after posting, then every two weeks for three months. Update now reads every link of this campaign once; once a day.
           </div>
         </div>
       )}

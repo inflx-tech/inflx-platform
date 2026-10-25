@@ -39,6 +39,9 @@ import { FeeCard12, FileTile12, RowHead12, NoteLine12, RoundPill12, History12, L
 import { ChangesSheet12, NoteSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { C12, day10 } from '../../components/content/copy12';
+// post-performance-v2 (board B1): her links with their numbers, and Update now once it's live. Contract: features/post-performance-v2
+import { StatLine, SocialNums } from '../../components/content/StatLine12';
+import { STATS } from '../../components/content/copyStats';
 // Item 21: Path 1 of a Pay for Content collaboration with shoppable posts, drawn as item 14 draws it.
 import { Progress14, PostLine14, postSub14 } from '../influencer/SaleLiveScreen';
 import { C14 } from '../../components/sale/copy14';
@@ -104,6 +107,30 @@ export default function BrandContentScreen({ navigation, route }) {
   }), C12.changesSent).then((ok) => { if (ok) setNotes({}); });
   const confirmLive = () => act(() => brandApi.contentConfirmLive(campaignId, setId, ciId, c.money.t2.amount), C12.confirmedDone);
   const report = (kind) => (note) => act(() => brandApi.contentReport(campaignId, setId, ciId, { kind, note }), C12.reportedDone);
+  // post-performance-v2 (P7): every link read once; the server says "once a day" or "budget used up".
+  const updateNow = () => act(() => brandApi.contentRefreshStats(campaignId, setId, ciId), null);
+  /** Her links, each with its numbers under it (B1): drawn once she has posted, and kept once live. */
+  const linkRows = () => c.rows.map((row) => (
+    <View key={row.key} style={s.row} testID={`posted-row-${row.key}`}>
+      <RowHead12 row={row} have={row.proofs.filter((p) => p.filled).length} />
+      {row.isStory ? (
+        <>
+          <View style={s.tiles}>
+            {row.proofs.filter((p) => p.screenshotFileId).map((p, i, shots) => (
+              <FileTile12 key={p.slot} file={{ id: p.screenshotFileId, kind: 'photo' }} url={urls[p.screenshotFileId]}
+                onPress={() => setViewer({ label: row.label, files: shots.map((x) => ({ id: x.screenshotFileId, kind: 'photo' })), index: i })} />
+            ))}
+          </View>
+          <StatLine stats={{ state: 'story' }} side="brand" many={row.count > 1} testID={`stat-${row.key}`} />
+        </>
+      ) : row.proofs.filter((p) => p.filled).map((p) => (
+        <View key={p.slot} style={s.link}>
+          <LinkLine12 url={p.url} testID={`link-${row.key}-${p.slot}`} />
+          <SocialNums stats={p.stats} side="brand" testID={`stat-${row.key}-${p.slot}`} />
+        </View>
+      ))}
+    </View>
+  ));
 
   const title = c ? c.creator.name : '';
   if (status === 'loading') return <View style={base.screen}><Header title={title} onBack={() => navigation.goBack()} /><Skeleton rows={6} /></View>;
@@ -211,19 +238,7 @@ export default function BrandContentScreen({ navigation, route }) {
           <>
             <MoveBox10 text={C12.yourMovePosted(name, c.postedAt)} testID="posted-move" />
             {c.reported.creator ? <AmberBox10 text={C12.sheToldInflx(name, c.reported.creator.at)} testID="she-told-inflx" /> : null}
-            {c.rows.map((row) => (
-              <View key={row.key} style={s.row} testID={`posted-row-${row.key}`}>
-                <RowHead12 row={row} have={row.proofs.filter((p) => p.filled).length} />
-                {row.isStory ? (
-                  <View style={s.tiles}>
-                    {row.proofs.filter((p) => p.screenshotFileId).map((p, i, shots) => (
-                      <FileTile12 key={p.slot} file={{ id: p.screenshotFileId, kind: 'photo' }} url={urls[p.screenshotFileId]}
-                        onPress={() => setViewer({ label: row.label, files: shots.map((x) => ({ id: x.screenshotFileId, kind: 'photo' })), index: i })} />
-                    ))}
-                  </View>
-                ) : row.proofs.map((p) => <LinkLine12 key={p.slot} url={p.url} testID={`link-${row.key}-${p.slot}`} />)}
-              </View>
-            ))}
+            {linkRows()}
             {c.settledByInflx ? (
               <WaitBox10 text={c.money.returned > 0 ? C12.returnedToYou(c.money.returned) : C12.settledForBrand} testID="settled-box" />
             ) : (
@@ -244,6 +259,7 @@ export default function BrandContentScreen({ navigation, route }) {
               : c.finalHeldForPosts
                 ? <WaitBox10 text={C12.lastWaitsPosts(c.money.t3.amount, c.postsShort)} testID="last-waits-posts" />
                 : <WaitBox10 text={C12.lastFollows(c.money.t3.amount, c.finalDueAt)} testID="last-follows" />}
+            {linkRows()}
           </>
         ) : null}
 
@@ -254,6 +270,7 @@ export default function BrandContentScreen({ navigation, route }) {
             <FeeCard12 money={c.money} side="brand" />
             <Record12 c={c} />
             {c.usageRights && c.usageRights.words ? <Line12 text={C12.usageAfter(c.usageRights.words)} testID="usage-after" /> : null}
+            {linkRows()}
           </>
         ) : null}
       </ScrollView>
@@ -277,6 +294,13 @@ export default function BrandContentScreen({ navigation, route }) {
         ) : null}
         {/* Item 21 (R7, board G7): past the posting date and short of her posts — at any stage. */}
         {c.can && c.can.reportPostsNotMade ? <TextButton label={C12.reportPostsNotMade} onPress={() => { if (!busy) { setSheetError(null); setSheet('report_posts'); } }} testID="report-posts" /> : null}
+        {/* post-performance-v2 (B1, M2): once it's live, the only control is Update now — once a day. */}
+        {['live', 'complete'].includes(stage) && c.social && c.social.canUpdate ? (
+          <>
+            <SecondaryButton label={STATS.updateNow} onPress={() => { if (!busy) updateNow(); }} disabled={busy} testID="update-now" />
+            <Text style={s.hint} testID="update-hint">{STATS.updateHintBrand}</Text>
+          </>
+        ) : null}
       </BottomBar>
 
       <ChangesSheet12 visible={sheet === 'changes'} round={c.round} noteCount={noteCount} busy={busy} serverError={sheetError}
@@ -306,6 +330,8 @@ const s = StyleSheet.create({
   row: { borderRadius: 14, borderWidth: 1, borderColor: T.border, padding: 14, marginBottom: 12, backgroundColor: '#FFFFFF' },
   tiles: { flexDirection: 'row', flexWrap: 'wrap' },
   preview: { borderRadius: 12, padding: 12, marginBottom: 12 },
+  link: { marginBottom: 8 },
+  hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, textAlign: 'center' },
   previewTitle: { fontFamily: fonts.sansBold, fontSize: 14.5 },
   previewSub: { fontFamily: fonts.sansRegular, fontSize: 12.5, marginTop: 3, lineHeight: 18 },
   page: { flex: 1 },

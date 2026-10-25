@@ -36,6 +36,9 @@ import { ChangesSheet12 } from '../../components/content/sheets12';
 import MediaViewer12 from '../../components/content/MediaViewer12';
 import { ReportSheet14 } from '../../components/sale/sheets14';
 import { C14, day10, rupees } from '../../components/sale/copy14';
+// post-performance-v2 (board B2): the one line under each row's link; Update now after confirming. Contract: features/post-performance-v2
+import { StatLine } from '../../components/content/StatLine12';
+import { STATS } from '../../components/content/copyStats';
 import { Progress14, PostLine14, postSub14 } from '../influencer/SaleLiveScreen';
 
 const STATE_TONE = { live: 'active', approved: 'waiting', in_review: 'waiting', sent_back: 'yourMove', removed: 'ended', draft: 'ended' };
@@ -124,11 +127,25 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
     const proof = (row.proofs || [])[0] || {};
     if (row.isStory) {
       return proof.screenshotFileId
-        ? <View style={s.tiles}><FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} onPress={() => setViewer({ ...named(row), files: [{ id: proof.screenshotFileId, kind: 'photo' }], index: 0 })} /></View>
+        ? (
+          <>
+            <View style={s.tiles}><FileTile12 file={{ id: proof.screenshotFileId, kind: 'photo' }} url={urls[proof.screenshotFileId]} onPress={() => setViewer({ ...named(row), files: [{ id: proof.screenshotFileId, kind: 'photo' }], index: 0 })} /></View>
+            <StatLine stats={{ state: 'story' }} side="brand" testID={`stat-${row.key}`} />
+          </>
+        )
         : null;
     }
-    return <LinkLine12 url={proof.url} testID={`link-${row.key}`} />;
+    if (!proof.url) return null;
+    return (
+      <>
+        <LinkLine12 url={proof.url} testID={`link-${row.key}`} />
+        {/* post-performance-v2 (B2): its one line — the numbers, or why there are none. */}
+        <StatLine stats={proof.stats} side="brand" testID={`stat-${row.key}`} />
+      </>
+    );
   }
+  // post-performance-v2 (P7): every link read once; the server says "once a day" or "budget used up".
+  const updateNow = () => act(() => brandApi.contentRefreshStats(campaignId, setId, ciId), null);
 
   return (
     <View style={base.screen} testID={`brand-sale-${stage}${c.frozen ? '-frozen' : ''}${c.delayed ? '-delayed' : ''}`}>
@@ -256,6 +273,16 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
           </View>
         ) : null}
 
+        {/* post-performance-v2 (B2) — her links once confirmed, each with its numbers. */}
+        {['live', 'complete'].includes(stage) && pkg.some((row) => ((row.proofs || [])[0] || {}).filled) ? (
+          <View style={s.pathCard} testID="her-links">
+            <Text style={s.pathTitle}>{STATS.herLinks}</Text>
+            {pkg.filter((row) => ((row.proofs || [])[0] || {}).filled).map((row) => (
+              <View key={row.key} style={s.row} testID={`link-row-${row.key}`}><Text style={s.rowLabel}>{rowTitle(row)}</Text><Proofs row={row} /></View>
+            ))}
+          </View>
+        ) : null}
+
         {/* Item 15 (S2, S4, S8): Hybrid's fixed amount — what she has had and what is still locked. No campaign fee on Hybrid. */}
         {c.money && !['old_terms', 'shoot_not_done'].includes(stage) ? <FeeCard12 money={c.money} side="brand" testID="payments" /> : null}
 
@@ -289,6 +316,13 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
         {reportKinds.length ? (
           <TextButton label={C14.somethingWrong} onPress={() => { if (!busy) { setSheetError(null); setSheet('report'); } }} testID="something-wrong" />
         ) : null}
+        {/* post-performance-v2 (B2, M2): Update now appears only after confirming — once a day. */}
+        {['live', 'complete'].includes(stage) && c.social && c.social.canUpdate ? (
+          <>
+            <SecondaryButton label={STATS.updateNow} onPress={() => { if (!busy) updateNow(); }} disabled={busy} testID="update-now" />
+            <Text style={s.hint} testID="update-hint">{STATS.updateHintBrand}</Text>
+          </>
+        ) : null}
       </BottomBar>
 
       <ChangesSheet12 visible={sheet === 'changes'} round={c.round} noteCount={0} busy={busy} serverError={sheetError}
@@ -309,6 +343,7 @@ const s = StyleSheet.create({
   pathCard: { borderRadius: 14, borderWidth: 1, borderColor: T.border, padding: 14, marginBottom: 12, backgroundColor: '#FFFFFF', gap: 8 },
   pathHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pathTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: T.ink },
+  hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 17, textAlign: 'center' },
   pathWho: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink2 },
   chip: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   chipText: { fontFamily: fonts.sansBold, fontSize: 11 },

@@ -1,0 +1,32 @@
+# post-performance-v2 — the "after" screenshots for the board's phone frames (B1–B4, C1–C4).
+# Contract: features/post-performance-v2 · 03-expected-outputs.md "Visual evidence required"
+#
+# Needs: a device or emulator with the brand app signed in as the brand of a Pay for Sale
+# collaboration whose creator has posted and been confirmed (two read links), and the creator app
+# signed in as that creator. The flow is screenshots only: it presses nothing that reads Apify.
+# Run: pnpm qa:maestro (see LOCAL.md). Not run in the build session (no device).
+appId: ${APP_ID}
+---
+- launchApp
+# B3 — the brand's set posts list: the set's views on social media beside orders; one line per post
+- tapOn:
+    id: "tab-campaigns"
+    optional: true
+- takeScreenshot: pp-b3-set-posts
+# B4 — one post's stats: "On social media" above "By channel", no Update now on the brand's
+- tapOn:
+    id: "post-.*"
+    optional: true
+- takeScreenshot: pp-b4-brand-post-stats
+- back
+# B2 — the brand's Going live screen, after confirming: her links with their one line, Update now at the foot
+- tapOn:
+    id: "brand-sale-live"
+    optional: true
+- takeScreenshot: pp-b2-brand-going-live
+- back
+# B1 — the brand's content screen (Pay for Content), after it's live: the three numbers under each link
+- tapOn:
+    id: "brand-content-live"
+    optional: true
+- takeScreenshot: pp-b1-brand-content

@@ -26,14 +26,15 @@
  *   POST /:id/submit-live   the live link     → G8/G9 a proof per slot, then "posted"
  *   POST /:id/confirm-live  confirm, pay T2   → G10  behind the content gate, contentMoney
  *
- * `refresh-stats` (Apify engagement numbers on a live deliverable) is untouched.
+ * `refresh-stats` (Apify engagement numbers on a live deliverable) went with post-performance-v2
+ * (P11): nothing could reach a live legacy deliverable, and the numbers now come from the links she
+ * hands in at the content step (proof_stats). Contract: features/post-performance-v2
  */
 
 const { Router } = require('express');
 const { authenticate } = require('../middleware/auth');
 const AppError = require('../utils/AppError');
 const { MSG } = require('../services/contentCopy');
-const { refreshDeliverableStats } = require('../controllers/engagement.controller');
 
 const router = Router();
 
@@ -52,9 +53,6 @@ const RETIRED = [
   ['post', '/:id/confirm-live',  'RETIRED_12_CONFIRM_LIVE', MSG.RETIRED_12_CONFIRM_LIVE],
 ];
 for (const [method, path, code, message] of RETIRED) router[method](path, authenticate, retired(code, message));
-
-// On-demand stats refresh via Apify (brand or influencer) — not part of the content flow.
-router.post('/:id/refresh-stats', authenticate, refreshDeliverableStats);
 
 module.exports = router;
 module.exports.RETIRED = RETIRED;

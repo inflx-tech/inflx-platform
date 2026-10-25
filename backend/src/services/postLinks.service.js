@@ -289,11 +289,16 @@ async function statsOf(p) {
     for (const ch of places.keys()) if (!visits.some((x) => x.channel === ch)) visits.push({ channel: ch, label: CHANNEL_LABEL[ch], visits: 0 });
     for (const x of visits) x.places = places.get(x.channel) || [];
   }
+  // post-performance-v2 (E13): the post's links on Instagram and YouTube with their numbers, above "By channel".
+  const social = p.own_brand ? { links: [], summary: null }
+    : await require('./postStats.service').socialOfPost(p.id, { postingDate: p.collaboration ? p.collaboration.posting_date : null });
   return {
     post_id: p.id, title: p.title, code: p.code, brand_name: p.collaboration.brand_name, own_brand: !!p.own_brand,
     live_since: p.state === 'live' ? p.live_since : null, state: p.state,
+    collaboration_id: p.collaboration ? p.collaboration.id || null : null,
     totals: { visits: sum(visits, 'visits'), orders: sum(orders, 'orders'), sales: sum(orders, 'sales'), commission: Math.round(sum(orders, 'commission') * 100) / 100 },
     visits, orders,
+    social: social.links, social_summary: social.summary,
   };
 }
 
@@ -305,7 +310,7 @@ async function myStats(influencerId, postId) {
 
 async function ownSet(brandUserId, campaignId, setId) {
   const { rows } = await db.query(
-    `SELECT cs.id, cs.name AS set_name, c.id AS campaign_id, c.name AS campaign_name, c.brand_id
+    `SELECT cs.id, cs.name AS set_name, cs.go_live_date, c.id AS campaign_id, c.name AS campaign_name, c.brand_id
        FROM campaign_sets cs JOIN campaigns c ON c.id = cs.campaign_id JOIN brands b ON b.id = c.brand_id
       WHERE cs.id = $1 AND c.id = $2 AND b.user_id = $3`, [setId, campaignId, brandUserId]);
   if (!rows[0]) throw notFound();
@@ -323,12 +328,15 @@ async function setPosts(brandUserId, campaignId, setId, { ciId = null } = {}) {
     `SELECT cp.id FROM creator_posts cp JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
       WHERE cp.v2 AND ci.set_id = $1 AND cp.post_code IS NOT NULL${extra} ORDER BY cp.approved_at`, params);
   const all = await posts.getMany(rows.map((r) => r.id));
+  // post-performance-v2 (E14, M3): one line per post — its links' views, likes and comments, or
+  // "Social links not added yet" from the posting date on.
+  const social = await require('./postStats.service').summariesOfPosts(all, { postingDate: set.go_live_date });
   const out = [];
   for (const p of all) {
     const s = await statsOf(p);
     const creator = await storeOf(p.influencer_id);
     out.push({ id: p.id, title: p.shopper_title || p.title, code: p.code, state: p.state, creator_name: creator ? creator.name : '',
-      goes_live_on: p.state === 'approved' ? p.goes_live_on : null, totals: s.totals });
+      goes_live_on: p.state === 'approved' ? p.goes_live_on : null, totals: s.totals, social: social.get(p.id) || null });
   }
   const live = out.filter((p) => p.state === 'live');
   const { rows: [t] } = await db.query(
@@ -340,9 +348,10 @@ async function setPosts(brandUserId, campaignId, setId, { ciId = null } = {}) {
   // What the brand receives is what settlement stores (brand_net), never worked out here.
   const brandNet = Number(t.brand_net);
   const creators = new Set(out.map((p) => p.creator_name));
+  const socialViews = out.reduce((n, p) => n + (p.social ? p.social.views : 0), 0);
   return {
     campaign_name: set.campaign_name, set_name: set.set_name, creators: creators.size, live: live.length,
-    posts: out,
+    posts: out, social: { views: socialViews },
     totals: { orders: t.orders, sales, commission, inflx_fee: fee, you_receive: brandNet },
     copy_text: live.length
       ? [`Shop our ${set.campaign_name} looks on INFLX. Search a code:`, ...live.map((p) => `${p.code} · ${p.title} by ${firstName(p.creator_name)}`)].join('\n')
