@@ -373,3 +373,55 @@ describe('run outcomes, retries, flags, budget (checks 9, 20, 21, 26)', () => {
     expect(offenders.map(f => path.relative(path.join(__dirname, '..'), f))).toEqual([]);
   });
 });
+
+describe('a shorts-only channel (backend-defect-youtube-shorts-only-subscribers, 25 Oct 2026)', () => {
+  // The Videos tab of a channel that only posts shorts answers with an error item, the way the
+  // Streams tab does for a channel with no streams. The channel totals ride on the Shorts items.
+  const NO_VIDEOS = [{ url: 'https://www.youtube.com/@lakkireddyakshayareddy-30/about', input: 'https://www.youtube.com/@lakkireddyakshayareddy-30', error: 'CHANNEL_HAS_NO_VIDEOS' }];
+  // The probe fixture's dates age out of the 90-day window; the shorts are re-dated inside it.
+  const recent = (items) => items.map((i, k) => ({ ...i, date: new Date(Date.now() - (k + 1) * 86400000).toISOString() }));
+  const shortsOnly = (actor, input) => {
+    if (!/youtube-scraper/.test(actor)) return apify.defaultMock(actor, input);
+    return Number(input.maxResultsShorts) > 0 ? recent(apify.loadFixture('youtube-shorts.json')) : NO_VIDEOS;
+  };
+
+  it('the full run reads the subscribers from the shorts; a later profile run keeps them', async () => {
+    apify.setMockResolver(shortsOnly);
+    const c = await pendingCreator({ youtube_handle: YT });
+    await approveViaSql(c);
+    const out = await measure.tick({});
+    expect(out.ran).toBe(1); expect(out.results[0].result).toBe('success');
+    const yt = await acc(c.influencerId, 'youtube');
+    expect(yt.state).toBe('ok');
+    expect(await accounts.latestSnapshot(yt.id)).toMatchObject({ subscribers: '52000', total_videos: '7', channel_id: 'UCLbs1qmAgK6p6_jIgj0gSlg' });
+    expect(await accounts.currentMetrics(yt.id)).toMatchObject({ yt_long_count: 0, yt_short_count: 4, yt_uploads_90d: 4 });
+    expect(Number((await legacy(c.influencerId)).youtube_subscribers)).toBe(52000);
+    const b = await brand();
+    const p = await api.get(`/influencers/${c.influencerId}`, b.token);
+    expect(p.body.data.social.youtube).toMatchObject({ state: 'ok', subscribers: 52000, avgLongViews: null, uploads90d: 4 });
+    expect(p.body.data.social.youtube.avgShortsViews).toBeGreaterThan(0);
+
+    // The weekly profile run: the one-item Videos read is empty too, so it reads one short instead.
+    const r = await measure.runAccount(yt.id, 'profile', 'schedule');
+    expect(r.result).toBe('success');
+    const run = (await query(`SELECT detail FROM creator_social_runs WHERE id = $1`, [r.runId])).rows[0];
+    expect(run.detail.runIds).toHaveLength(2);
+    expect(await accounts.latestSnapshot(yt.id)).toMatchObject({ subscribers: '52000' });
+    expect(Number((await legacy(c.influencerId)).youtube_subscribers)).toBe(52000);
+  });
+
+  it('a channel whose uploads carry no totals keeps its last snapshot instead of writing a blank one', async () => {
+    apify.setMockResolver(null);
+    const c = await pendingCreator({ youtube_handle: YT });
+    await approveViaSql(c);
+    await measure.tick({});
+    const yt = await acc(c.influencerId, 'youtube');
+    expect(Number((await legacy(c.influencerId)).youtube_subscribers)).toBe(52000);
+    const strip = ({ numberOfSubscribers, channelTotalViews, channelTotalVideos, ...rest }) => rest;
+    apify.setMockResolver((actor, input) => (/youtube-scraper/.test(actor) ? apify.defaultMock(actor, input).map(strip) : apify.defaultMock(actor, input)));
+    const r = await measure.runAccount(yt.id, 'profile', 'schedule');
+    expect(r.result).toBe('success');
+    expect((await query(`SELECT count(*)::int n FROM creator_social_profile_snapshots WHERE account_id = $1`, [yt.id])).rows[0].n).toBe(1);
+    expect(Number((await legacy(c.influencerId)).youtube_subscribers)).toBe(52000);
+  });
+});

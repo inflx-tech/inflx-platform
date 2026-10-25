@@ -76,28 +76,38 @@ async function youtubeRun(acc, runType, ctx) {
   // being handed an empty URL and answering "invalid-input" four times. Say why, without a call.
   if (!url) throw new Error('No channel address stored for this YouTube account — ask the creator to re-enter the handle.');
   const since = windowFor(ctx.now).start.toISOString().slice(0, 10);
+  const base = { startUrls: [{ url }], maxResultStreams: 0 };
+  const hasTotals = (ch) => !ch.error && !ch.empty;
+  // The channel totals from a one-item read: the Videos tab first, then the Shorts tab. A channel
+  // that only posts shorts answers the Videos tab with an error item (the way a channel with no
+  // streams answers the Streams tab), and its totals ride on the shorts instead
+  // (backend-defect-youtube-shorts-only-subscribers, 25 Oct 2026). "Empty" on both tabs means
+  // no snapshot is written this run: the last good one stays, never a blank over it.
+  const readChannel = async () => {
+    const v = calc.youtubeChannel((await ctx.call(env.APIFY_YOUTUBE_ACTOR, { ...base, maxResults: 1, maxResultsShorts: 0 })).items);
+    if (hasTotals(v) || v.error === 'not_found' || v.error === 'private') return v;
+    return calc.youtubeChannel((await ctx.call(env.APIFY_YOUTUBE_ACTOR, { ...base, maxResults: 0, maxResultsShorts: 1 })).items);
+  };
   if (runType === 'profile') {
-    const r = await ctx.call(env.APIFY_YOUTUBE_ACTOR, { startUrls: [{ url }], maxResults: 1, maxResultsShorts: 0, maxResultStreams: 0 });
-    const ch = calc.youtubeChannel(r.items);
+    const ch = await readChannel();
     if (ch.error) { out.profileError = ch.error; return out; }
-    out.snapshot = ch.empty ? { subscribers: null } : ch;
+    if (hasTotals(ch)) out.snapshot = ch;
     return out;
   }
   // Posts (and full): two tab-restricted runs. Channel totals ride on every item, so a full
-  // run needs no separate channel read (founder Q10).
-  const videos = await ctx.call(env.APIFY_YOUTUBE_ACTOR, { startUrls: [{ url }], maxResults: env.SOCIAL_CEILING, maxResultsShorts: 0, maxResultStreams: 0, oldestPostDate: since, sortVideosBy: 'NEWEST' });
+  // run needs no separate channel read (founder Q10) unless neither tab carried them.
+  const videos = await ctx.call(env.APIFY_YOUTUBE_ACTOR, { ...base, maxResults: env.SOCIAL_CEILING, maxResultsShorts: 0, oldestPostDate: since, sortVideosBy: 'NEWEST' });
   const chV = calc.youtubeChannel(videos.items);
   if (chV.error === 'not_found' || chV.error === 'private') { out.profileError = chV.error; return out; }
-  const shorts = await ctx.call(env.APIFY_YOUTUBE_ACTOR, { startUrls: [{ url }], maxResults: 0, maxResultsShorts: env.SOCIAL_CEILING, maxResultStreams: 0, oldestPostDate: since, sortVideosBy: 'NEWEST' });
+  const shorts = await ctx.call(env.APIFY_YOUTUBE_ACTOR, { ...base, maxResults: 0, maxResultsShorts: env.SOCIAL_CEILING, oldestPostDate: since, sortVideosBy: 'NEWEST' });
   const chS = calc.youtubeChannel(shorts.items);
-  const good = !chV.error ? chV : (!chS.error ? chS : null);
+  const good = [chV, chS].find(hasTotals) || null;
   if (good) out.snapshot = good;
   else if (runType === 'full') {
-    // No uploads on either tab: read the channel totals from the 1-result run.
-    const r = await ctx.call(env.APIFY_YOUTUBE_ACTOR, { startUrls: [{ url }], maxResults: 1, maxResultsShorts: 0, maxResultStreams: 0 });
-    const ch = calc.youtubeChannel(r.items);
+    // No uploads in the window on either tab: read the channel totals from a one-item read.
+    const ch = await readChannel();
     if (ch.error === 'not_found' || ch.error === 'private') { out.profileError = ch.error; return out; }
-    out.snapshot = ch.empty ? { subscribers: null } : ch;
+    if (hasTotals(ch)) out.snapshot = ch;
   }
   const v = (videos.items || []).map(i => calc.youtubeItemToUpload(i, 'videos')).filter(Boolean);
   const s = (shorts.items || []).map(i => calc.youtubeItemToUpload(i, 'shorts')).filter(Boolean);

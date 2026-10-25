@@ -1,0 +1,36 @@
+{
+  "feature": "backend-defect-youtube-shorts-only-subscribers",
+  "area": "backend-services",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat, 25 Oct 2026: \"i found youtube stats are not properly picking our system (i am providing screenshot for this pls read and find the probleam and fix that)\" — the screenshot: a live creator's brand-app Creator screen reading YouTube \"—\", Avg video views \"—\", Avg shorts views 646, Recent uploads 30)",
+  "approved_at": "2026-10-25T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": false,
+  "notes": "Carved backend defect in item 3b. No screen, no words, no mockup: the screens already print whatever the snapshot holds. BUILT 25 Oct 2026 (see build and 06-diff/notes.md). Not pushed: production-impacting, awaiting the founder's go.",
+  "related": [
+    "features/item3b-social-numbers"
+  ],
+  "build": {
+    "built_at": "2026-10-25T00:00:00+05:30",
+    "server": "socialCalc youtubeChannel reads the channel totals from the first item that carries a subscriber count (top level or aboutChannelInfo, numbers or '8.1K'), and answers empty when none does; socialMeasure youtubeRun takes the snapshot from whichever tab answer carries totals, the one-item channel read tries the Shorts tab after an empty Videos tab, and an empty read writes no snapshot (the last good one stays).",
+    "diagnosis": "From the code and the 11 Sep probe fixtures: the Videos tab of a shorts-only channel answers with an error item (as the Streams tab does for a channel with no streams); youtubeChannel treated that as 'empty, no error', and youtubeRun's `good = !chV.error ? chV : …` chose it over the Shorts answer that carried the totals. A read of the live rows for the creator in the screenshot was attempted and blocked by the session's production-read permission; not needed — the screenshot matches the fault exactly (totals blank, shorts measured, long '—' because she has no long videos).",
+    "red_first": "run on the code as it was, three new checks failed exactly as the fault describes: full run on a shorts-only channel stored subscribers null / channel_id null; a totals-less profile run wrote a second blank snapshot and blanked the creator's row; the stripped-first calculator case gave null.",
+    "backend_new_tests": "item3b-pipeline: 2 new (shorts-only full run + following profile run keeps 52000 with two Apify calls; totals-less profile run keeps the last snapshot); item3b-calculators: 1 new (first-item-with-totals, nested, '8.1K', no-videos error). 3/3 passing after the fix; the pre-existing item 3b tests unchanged in outcome.",
+    "pre_existing_failures_in_these_suites": "3 item3b-pipeline tests fail before and after on uploads-in-window counts (long 3 → 0, short 4 → 2): the probe fixtures are dated June–Sep 2026 and have aged out of the 90-day window. Recorded with the same diff in backend/baseline_cover_photo_stock.json (11 Oct). Classified stale-fixture; not touched here. The new shorts-only test re-dates its fixture inside the window so it cannot age the same way.",
+    "backend_full_run": "full suite, serial, vs backend/baseline_cover_photo_stock.json (11 Oct): 154 suites / 2183 tests / 1978 passed / 177 failed -> 156 / 2221 / 2016 / 177. 0 that passed before fail now; 39 new tests since that baseline all passing (3 from this contract, 36 from item 21 + creator address/bank); the same 177 old failures by name; 1 suite that does not load, as before (collection-library). Stored as backend/baseline_youtube_shorts_only.json; compare in 06-diff/backend-compare.txt. qa_all_green stays false on the pre-existing failures: the certification is no-regression, never green.",
+    "migration": "none",
+    "website": "none",
+    "phone": "none — no OTA",
+    "live_data": "not read (permission); nothing rewritten at release. Affected accounts heal on their next profile run (weekly) or admin Measure now.",
+    "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release"
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

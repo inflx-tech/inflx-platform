@@ -1,0 +1,48 @@
+BASE 154 suites / 2183 tests / 1978 passed / 177 failed / 28 pending
+NOW  156 suites / 2221 tests / 2016 passed / 177 failed / 28 pending
+newly failing (passed before, fail now): 0
+new tests: 39
+  + passed who can post, and for what (P2, P3; checks 1–3) a Pay for Content collaboration makes shoppable posts on the new terms, and not on the old
+  + passed the terms: a Pay for Content invitation carries the posts number and what she posts about (T1, T4, C1; E1–E3) E1 · without the posts number it is refused; E2 · with nothing to post about it is refused in her name; 12 is refused
+  + passed the terms: a Pay for Content invitation carries the posts number and what she posts about (T1, T4, C1; E1–E3) E3 · stored and shown: n=3, all products without offers frozen, no commission; the creator reads both rows (C1)
+  + passed the Entire store (T2, T3, C4; E4, E5, E10–E12) E4 · on Pay for Sale: a rule, not a list — no linked offers, no frozen products; the agreement says so (E8 unchanged beside it)
+  + passed the Entire store (T2, T3, C4; E4, E5, E10–E12) E5 · a store with no published offer and no product without an offer cannot be given whole
+  + passed the Entire store (T2, T3, C4; E4, E5, E10–E12) E10/E11 · living: a product listed and an offer published after signing are hers; a frozen "all" collaboration sees neither
+  + passed the Entire store (T2, T3, C4; E4, E5, E10–E12) E12/R3 · the End-offer warning counts an unsigned Entire store invitation and a signed one with its live post
+  + passed the counter (C2; E6, E7) E6 · she counters the posts number alone; the brand accepts; the agreement carries 2
+  + passed the counter (C2; E6, E7) E7 · what she posts about is the brand's: a counter that carries offers or the store is refused
+  + passed going live: two paths (G1–G8; E14–E23) E14/E15 · shoot done: Path 1 "0 of 3", Path 2 locked on both sides; an upload is refused by the server; Needs You says make the posts
+  + passed going live: two paths (G1–G8; E14–E23) E16 · the first approval opens Path 2: the rows are the agreement's deliverables, item 12 from here
+  + passed going live: two paths (G1–G8; E14–E23) E17–E19 · confirm live pays 25%; the final 50% waits past its date for the posts; the third approval releases it and completes (G4–G6)
+  + passed going live: two paths (G1–G8; E14–E23) E20 · posts approved before the date: the job pays on the date as item 12 always has
+  + passed going live: two paths (G1–G8; E14–E23) E21 · past the posting date and short: Delayed, stage "shoppable posts not approved"; later, live and still short, the same
+  + passed going live: two paths (G1–G8; E14–E23) E22 · an old-terms Pay for Content collaboration keeps the single path: no Path 1, no lock, the posts door closed
+  + passed going live: two paths (G1–G8; E14–E23) E23 · the brand may report "she hasn't made her posts" only past the posting date; it freezes the step
+  + passed her posts and a sale through one (P1, P3, P5; E24–E26) P1 · the collaboration is in Create with "fixed fee · no commission" and its count against the brand's number
+  + passed her posts and a sale through one (P1, P3, P5; E24–E26) E24–E26 · a shopper buys through her post: her share ₹0, INFLX's rate, the brand the rest; nothing in her wallet; her stats say what sold
+  + passed doors another creator cannot read or move the step; the brand cannot upload
+  + passed a shorts-only channel (backend-defect-youtube-shorts-only-subscribers, 25 Oct 2026) the full run reads the subscribers from the shorts; a later profile run keeps them
+  + passed a shorts-only channel (backend-defect-youtube-shorts-only-subscribers, 25 Oct 2026) a channel whose uploads carry no totals keeps its last snapshot instead of writing a blank one
+  + passed her delivery address in her profile (A1–A5) A1 · with nothing kept, the form starts from her name, her login number and her profile city
+  + passed her delivery address in her profile (A1–A5) A2 · she saves it, reads it back, changes it — there is only ever one
+  + passed her delivery address in her profile (A1–A5) A3 · it is checked the way a Remote address is, in the same words
+  + passed her delivery address in her profile (A1–A5) A4 · she can remove it
+  + passed her delivery address in her profile (A1–A5) A5 · it is hers alone — no brand, no other creator, and it is not on her profile record
+  + passed a Remote collaboration starts from it (A6–A9) A6 · the form arrives filled with the address she keeps, whole
+  + passed a Remote collaboration starts from it (A6–A9) A7 · with nothing kept it arrives as before — name, number, profile city — and says so
+  + passed a Remote collaboration starts from it (A6–A9) A8 · she changes it for one parcel: the brand gets the changed one, her profile keeps its own
+  + passed a Remote collaboration starts from it (A6–A9) A9 · "Keep this address in my profile" fills an empty profile; left unticked it does not
+  + passed her bank account (K1–K8) K1 · all five parts save together; the number is stored encrypted and nothing is sent back
+  + passed her bank account (K1–K8) K2 · the account number typed twice must agree
+  + passed her bank account (K1–K8) K3 · every part is asked for, each with its own line
+  + passed her bank account (K1–K8) K4 · saving a new entry replaces the old one whole; other profile saves leave it alone
+  + passed her bank account (K1–K8) K5 · her UPI and PAN save as before, and do not touch the bank entry
+  + passed a withdrawal carries the full bank entry to INFLX (K6–K8) K6 · INFLX sees the name on the account, the bank and the branch beside the number and IFSC
+  + passed a withdrawal carries the full bank entry to INFLX (K6–K8) K7 · a request keeps the details it was made with, whatever she saves afterwards
+  + passed a withdrawal carries the full bank entry to INFLX (K6–K8) K8 · an account saved before this (number and IFSC only) still withdraws, under her profile name
+  + passed YouTube channel totals — backend-defect-youtube-shorts-only-subscribers (25 Oct 2026) reads the totals from the first item that carries them, and answers empty when no item does
+fixed: 0
+tests in base missing now: 1
+  - who can post, and for what (P2, P3; checks 1–3) a Pay for Content collaboration is not one she makes shoppable posts for
+suites that do not load now: 1 collection-library.test.js
+suites that did not load in base: 1 collection-library.test.js

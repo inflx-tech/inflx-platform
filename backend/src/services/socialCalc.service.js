@@ -127,19 +127,41 @@ function instagramProfile(item) {
   };
 }
 
-/** YouTube channel totals from any item of a run, or { error }. */
+/** "52000" | 52000 | "8.1K" | "1.2M subscribers" → a count, or null when unreadable. Never 0 for "unreadable". */
+function parseCount(v) {
+  if (v == null || v === '') return null;
+  if (typeof v === 'number') return Number.isFinite(v) ? Math.round(v) : null;
+  const m = String(v).trim().replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*([KMB])?/i);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  return Number.isFinite(n) ? Math.round(n * ({ k: 1e3, m: 1e6, b: 1e9 }[(m[2] || '').toLowerCase()] || 1)) : null;
+}
+
+/**
+ * YouTube channel totals from a run's items, or { error } / { error: null, empty: true }.
+ * The totals ride on every upload item, so they are read from the first item that actually
+ * carries them — not from the first item that merely has no error (backend-defect-youtube-
+ * shorts-only-subscribers, 25 Oct 2026: a channel that only posts shorts answers the Videos tab
+ * with an error item, and the shorts' totals were being thrown away). When no item carries a
+ * subscriber count the answer is "empty", never a snapshot with subscribers null.
+ */
 function youtubeChannel(items) {
-  const first = (items || []).find(i => i && !i.error) || (items || [])[0];
-  if (!first) return { error: 'not_found' };
-  if (first.error) {
-    if (/DOES_NOT_EXIST|NOT_FOUND/i.test(first.error)) return { error: 'not_found' };
-    if (/PRIVATE|TERMINATED|UNAVAILABLE/i.test(first.error)) return { error: 'private' };
-    return { error: null, empty: true }; // e.g. CHANNEL_HAS_NO_LIVE_VIDEOS / no uploads on that tab
+  const list = (items || []).filter(Boolean);
+  if (!list.length) return { error: 'not_found' };
+  const totals = (i) => parseCount(i.numberOfSubscribers ?? (i.aboutChannelInfo || {}).numberOfSubscribers);
+  const first = list.find(i => !i.error && totals(i) != null);
+  if (!first) {
+    const bad = list.find(i => i.error);
+    if (bad && !list.some(i => !i.error)) {
+      if (/DOES_NOT_EXIST|NOT_FOUND/i.test(bad.error)) return { error: 'not_found' };
+      if (/PRIVATE|TERMINATED|UNAVAILABLE/i.test(bad.error)) return { error: 'private' };
+    }
+    return { error: null, empty: true }; // e.g. CHANNEL_HAS_NO_VIDEOS / CHANNEL_HAS_NO_LIVE_VIDEOS, or items without totals
   }
   const about = first.aboutChannelInfo || {};
   return {
-    subscribers: num(first.numberOfSubscribers ?? about.numberOfSubscribers), total_videos: num(first.channelTotalVideos ?? about.channelTotalVideos),
-    total_channel_views: num(first.channelTotalViews ?? about.channelTotalViews), channel_name: first.channelName || about.channelName || null,
+    subscribers: totals(first), total_videos: parseCount(first.channelTotalVideos ?? about.channelTotalVideos),
+    total_channel_views: parseCount(first.channelTotalViews ?? about.channelTotalViews), channel_name: first.channelName || about.channelName || null,
     channel_id: first.channelId || about.channelId || null, channel_url: first.channelUrl || null, verified: !!first.isChannelVerified,
   };
 }

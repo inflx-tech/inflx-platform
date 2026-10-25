@@ -156,3 +156,15 @@ describe('YouTube (§3.6)', () => {
     expect(m.long.engagement).toBe(Math.round(((sum(longs, 'likes') + sum(longs, 'comments')) / sum(longs, 'views')) * 1000) / 10);
   });
 });
+
+describe('YouTube channel totals — backend-defect-youtube-shorts-only-subscribers (25 Oct 2026)', () => {
+  it('reads the totals from the first item that carries them, and answers empty when no item does', () => {
+    const shorts = apify.loadFixture('youtube-shorts.json');
+    expect(calc.youtubeChannel(shorts)).toMatchObject({ subscribers: 52000, total_videos: 7, channel_id: 'UCLbs1qmAgK6p6_jIgj0gSlg' });
+    const strip = ({ numberOfSubscribers, channelTotalViews, channelTotalVideos, ...rest }) => rest;
+    expect(calc.youtubeChannel([strip(shorts[0]), shorts[1]])).toMatchObject({ subscribers: 52000 });
+    expect(calc.youtubeChannel(shorts.map(strip))).toMatchObject({ error: null, empty: true });
+    expect(calc.youtubeChannel([{ ...strip(shorts[0]), aboutChannelInfo: { numberOfSubscribers: '8.1K' } }])).toMatchObject({ subscribers: 8100 });
+    expect(calc.youtubeChannel([{ error: 'CHANNEL_HAS_NO_VIDEOS' }])).toMatchObject({ error: null, empty: true });
+  });
+});
