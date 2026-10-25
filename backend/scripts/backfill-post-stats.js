@@ -15,13 +15,18 @@
 const path = require('path');
 const envArg = process.argv.find((a) => a.startsWith('--env='));
 const envFile = envArg ? envArg.slice(6) : '.env.prod-backup';
-require('dotenv').config({ path: path.join(__dirname, '..', envFile), override: true });
+require('dotenv').config({ path: path.join(__dirname, '..', envFile) });
 process.env.ENABLE_CRONS = 'false';
+// A real read, always: the env file may carry APIFY_MOCK=true (it did on 25 Oct 2026, and the first
+// --apply read fixture answers into production until repaired). --mock says so on purpose.
+if (!process.argv.includes('--mock')) process.env.APIFY_MOCK = 'false';
 
 const apply = process.argv.includes('--apply');
 const dry = process.argv.includes('--dry');
 if (!apply && !dry) { console.error('Pass --dry or --apply.'); process.exit(2); }
 if (!process.env.DATABASE_URL) { console.error(`No DATABASE_URL in backend/${envFile}.`); process.exit(2); }
+if (apply && process.env.APIFY_MOCK !== 'false') { console.error('Refusing --apply with APIFY_MOCK on: it would write fixture answers into production.'); process.exit(2); }
+if (apply && !process.env.APIFY_TOKEN) { console.error('No APIFY_TOKEN in the env — nothing can be read.'); process.exit(2); }
 
 (async () => {
   const db = require('../src/config/db');

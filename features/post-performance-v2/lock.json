@@ -10,7 +10,7 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder (chat 25 Oct 2026: \"Lock the post-performance-v2 board v1 as drawn, with defaults M1-M3\")",
   "mockup_locked_at": "2026-10-25T14:51:33.590Z",
-  "notes": "Level 2 of Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md: the campaign post's views / likes / comments on Instagram and YouTube, read from content_proofs.url (the only place live links land since item 12), through the item 3b Apify runner so every run has a run id and a cost in /admin/social/costs, under the US$5 budget guard, on a day-curve instead of §4.16's daily-30-then-weekly (which costs the whole budget at ~40 links). Supersedes features/post-performance (28 Sep draft, never approved) and drops Level 4 from its scope. Spec written 25 Oct 2026 from a verified code read; the 14 questions in 01-spec.md §9 were put to the founder in plain language and he accepted every recommendation (SPEC LOCKED 2026-10-25); production counts read 25 Oct 2026 after the founder's go (00-survey/prod-counts-2026-10-25.md: 14 links on 4 completed collaborations, deliverable_stats empty, Level 1 at US$2.49 of US$5 this month). The founder first parked the cost questions until Level 4, then the same day asked for them in plain language and accepted all 14 recommendations. Spec locked 25 Oct; board v1 LOCKED 25 Oct as drawn with M1-M3 (website first, then brand app, then creator app). BUILT 25 Oct 2026 (see build); not committed, not deployed — the deploy needs the founder's explicit go.",
+  "notes": "Level 2 of Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md: the campaign post's views / likes / comments on Instagram and YouTube, read from content_proofs.url (the only place live links land since item 12), through the item 3b Apify runner so every run has a run id and a cost in /admin/social/costs, under the US$5 budget guard, on a day-curve instead of §4.16's daily-30-then-weekly (which costs the whole budget at ~40 links). Supersedes features/post-performance (28 Sep draft, never approved) and drops Level 4 from its scope. Spec written 25 Oct 2026 from a verified code read; the 14 questions in 01-spec.md §9 were put to the founder in plain language and he accepted every recommendation (SPEC LOCKED 2026-10-25); production counts read 25 Oct 2026 after the founder's go (00-survey/prod-counts-2026-10-25.md: 14 links on 4 completed collaborations, deliverable_stats empty, Level 1 at US$2.49 of US$5 this month). The founder first parked the cost questions until Level 4, then the same day asked for them in plain language and accepted all 14 recommendations. Spec locked 25 Oct; board v1 LOCKED 25 Oct as drawn with M1-M3 (website first, then brand app, then creator app). BUILT 25 Oct 2026 (see build); DEPLOYED 25 Oct 2026 on the founder's go (see deployed_to_production).",
   "supersedes": "features/post-performance",
   "rules": "Docs/OFFER_TERMS_POSTS_RULES.md §4.16 (v1.22, 11 Oct 2026; NOT updated — founder rule: master docx only); master rules v1.35 written 25 Oct 2026 (Downloads/INFLX_Master_Business_Rules_Phase_1_v1.35.docx): new section 13A Post Performance on Social Media; 2A, 12.1, 12.2, 32 and the version list amended",
   "survey": "Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md §Level 2",
@@ -97,8 +97,7 @@
     "Q14_backfill": "the 14 existing production links are read once when this ships (trigger backfill)"
   },
   "next": [
-    "founder go → node backend/scripts/run-210.js --dry then --apply on .env.prod-backup → commit by path → push (Render + Vercel) → OTA brand + creator → backfill the 14 links (trigger backfill)",
-    "founder device walk of B1–B4, C1–C4 and W1/W2; then the Playwright / Maestro captures into 06-diff"
+    "founder device walk of B1–B4, C1–C4 and W1/W2; resolve or keep the 11 owner_mismatch flags; then the Playwright / Maestro captures into 06-diff"
   ],
   "boards": {
     "apps_and_web": {
@@ -128,8 +127,30 @@
     "fixtures": "the Step-0 probe's raw answers copied to backend/tests/fixtures/apify/; the mock resolver re-keys them to the links the worlds paste and may answer { items, usageTotalUsd } (apifyRuns.mockRun extended for it)",
     "decisions_in_build": "see 06-diff/notes.md — proof_stats rows have their own id (a replaced outside link closes the old row); the curve is read from the due date (a skipped day is caught up with one read); not-found stops and counts as a read; Update now is one per collaboration per 24 h for both sides, judged from the run log; admin's read is exempt (POST /admin/collabs/:ciId/content/stats/refresh); the post read carries the summary; numbers_at beside last_read_at; both older sync Apify helpers send the token in the header (E26)",
     "captures": "declared, not run: 04-preview/mockups/post-performance-v2-v1.capture.json (W1, needs a signed-in local brand-web) and qa/maestro/flows/08-post-performance.yaml (B1–B4; needs a device)",
-    "not_done": "Q14 backfill of the 14 production links: scripts/backfill-post-stats.js --dry|--apply (run after the push)",
+    "not_done": "—",
     "production_impacting": "migration 210 on Supabase, Render (backend), Vercel (brand web), OTA brand + creator (runtime 4) — explicit go required; the shopper app and money are untouched",
     "migration_applied": "210 applied on production 25 Oct 2026 with scripts/run-210.js --apply BEFORE the push (founder go in chat): four shape checks on; every count identical before and after (14 content_proofs / 14 links, 5 collab_content, 0 deliverable_stats, 1 social_admin_flags, 79 creator_social_runs)"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-25",
+    "by": "founder go (chat: \"Yes: apply migration 210 with run-210.js --dry then --apply, commit by path, push, OTA brand + creator, then backfill the 14 links.\")",
+    "migration": "210 applied with scripts/run-210.js --apply BEFORE the push: four shape checks on; every count identical before and after (14 content_proofs / 14 links, 5 collab_content, 0 deliverable_stats, 1 social_admin_flags, 79 creator_social_runs)",
+    "commit": "c3e4148d (pushed c50acf88..c3e4148d; 61 files, staged by path; gov-check OK: 35 governed changes, contract-backed, mockup locked, 06-diff/notes.md present)",
+    "render": "proved by route existence: POST /v1/brands/me/campaigns/:id/engagement/refresh answers 401 unauthenticated (new door), POST /v1/deliverables/:id/refresh-stats answers 404 (removed door)",
+    "vercel": "not opened; the four files parse-checked with Next's Babel",
+    "ota": {
+      "brand": 248,
+      "influencer": 239,
+      "native_runtime": "4"
+    },
+    "backfill": {
+      "script": "backend/scripts/backfill-post-stats.js --apply (added after the push; committed in the deploy-record commit)",
+      "result": "14 links tracked (tracked_from = posted_at) and read once through the real Apify runner: Instagram run EfEiiGAbPKbGrepeg (11 links, US/usr/bin/bash.0216), YouTube run YSkP492vnW7efOW1d (3 links, US/usr/bin/bash.008); 12 links with numbers, 2 YouTube links not found (stopped); account at US.67 of 5 after",
+      "what_the_numbers_say": "the 11 Instagram reels are owned by OTHER accounts (the production collaborations were made with pasted reels of other creators), so 11 owner_mismatch flags are open in /admin/social/flags, as decision 5 asks; one YouTube link is owner_unknown (no confirmed YouTube account); the Level 1 seed matched nothing because none of the 14 links is on the creators' own feeds (the 25 Oct count \"14 of 14 match\" was wrong)",
+      "mishaps": "the first --apply read fixture answers through APIFY_MOCK=true from .env.prod-backup (every link \"not found\"); the two mock runs and their 14 readings were deleted and the 14 rows reset before any real read — the script now forces APIFY_MOCK=false and refuses a mocked apply. The second --apply used the stale APIFY_TOKEN of .env.prod-backup (HTTP 401): two technical_failure runs stay in post_stat_runs as honest records; the third, with the token backend/.env holds, is the one above"
+    },
+    "money": "no money moved: nothing here writes escrow, wallets or commission",
+    "walk": "founder device walk of B1–B4, C1–C4 and the website W1/W2 pending; the 11 owner_mismatch flags are the admin's to resolve (or the collaborations' links to replace)",
+    "next_morning": "the post-stats job runs at 06:10 IST; the 12 live links are next due between 26 Oct and 1 Nov on the curve"
   }
 }
