@@ -9,7 +9,7 @@
   "preview_reviewed": true,
   "impact_reviewed": true,
   "ui_governed": false,
-  "notes": "Carved backend defect in item 3b. No screen, no words, no mockup: the screens already print whatever the snapshot holds. BUILT 25 Oct 2026 (see build and 06-diff/notes.md). Not pushed: production-impacting, awaiting the founder's go.",
+  "notes": "Carved backend defect in item 3b. No screen, no words, no mockup: the screens already print whatever the snapshot holds. BUILT 25 Oct 2026 (see build and 06-diff/notes.md). PUSHED 25 Oct 2026 on the founder's go (d7869541; see deployed_to_production — the server deploy is not provable from outside).",
   "related": [
     "features/item3b-social-numbers"
   ],
@@ -32,5 +32,19 @@
     "released": false,
     "released_by": null,
     "released_at": null
+  },
+  "deployed_to_production": {
+    "at": "2026-10-25",
+    "by": "founder go (chat, 25 Oct 2026: \"Yes, commit and push the YouTube shorts-only subscribers fix (backend only, Render redeploys).\")",
+    "migration": "none",
+    "commit": "d7869541 (pushed 72eb2b54..d7869541; gov-check OK: 2 governed changes contract-backed; 13 files staged by path, nothing of another window; the push also carried 56c142d3, the item 21 deploy record, deploy-inert)",
+    "render": "NOT PROVED FROM OUTSIDE. Probed https://inflx-platform.onrender.com at 12:53Z (before) and 12:57-12:58Z (after): /health 200 (52 s cold start first, then 1.2 s and 0.5 s); /v1/admin/social/costs without a session 401 before and after; a made-up /v1/admin/social/... path also answers 401, so the admin gate hides route existence and /health carries no build marker. Render deploys automatically from the push. The proving look is the founder's: Render dashboard -> backend service -> Events -> Deploy live for d7869541.",
+    "websites": "not touched by this release",
+    "ota": "none — no phone code",
+    "live_data": "nothing rewritten. The creator in the screenshot heals on her next weekly profile run or at once with admin Measure now (POST /admin/social/accounts/:id/measure-now).",
+    "money": "NO MONEY MOVED — no order, wallet, commission or payout code is edited.",
+    "not_seen": "Her live rows were not read (production-read permission). The brand-app Creator screen was not reopened on a phone.",
+    "pending": "the founder's look at the Render dashboard (above); then Measure now on her YouTube account, or wait for the weekly run, and reopen her Creator screen: YouTube should read her subscriber count.",
+    "found_on_the_way": "(1) /health still has no build marker — fourth server-only release this bites. (2) The item 3b probe fixtures have aged out of the 90-day window: 3 pipeline tests fail on window counts since before 11 Oct (stale-fixture). (3) Level 2 post-performance scraping is orphaned since item 12 (Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md)."
   }
 }
