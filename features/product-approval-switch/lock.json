@@ -43,6 +43,20 @@
     "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release",
     "released": false
   },
+  "deployed_to_production": {
+    "at": "2026-10-26T06:37:51Z",
+    "by": "founder go (chat, 26 Oct 2026: \"Yes, deploy product-approval-switch: apply migration 211 to prod with run-211.js, then push to main.\")",
+    "migration": "211 applied with backend/scripts/run-211.js --apply after a --dry read (target masked as the Supabase pooler): setting row absent → 0 (OFF); the five columns absent → present; brand_products 74 / pushed 74 / active 67 before and after; platform_settings 25 → 26; products not approved: 0. Nothing rewritten.",
+    "commit": "6c5cd9fc pushed 25cca2fd..6c5cd9fc (gov-check OK: 19 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 33 paths staged by path, nothing of another window)",
+    "render": "PROVED BY PAYLOAD SHAPE, not by route existence: every path under /v1/admin answers 401 unauthenticated whether or not it exists, so the new route cannot be told apart that way. Instead, signed in as the practice brand Label Fern (+917900000191, the allow-listed fixed code) and read GET /v1/brands/me/products every 30 s: 6 products with NO approval_status before the push; OLD at 06:36:47Z and 06:37:19Z, then NEW with approval_status = approved at 06:37:51Z. The new controller is live. Read-only; nothing of the brand's was changed.",
+    "vercel": "admin.inflx.in and brand.inflx.in both serving with X-Vercel-Id at 06:38Z; the pages sit behind login, so the founder opening Admin → Settings → Platform (the second switch) and Admin → Product Queue is the functional gate.",
+    "ota": "none — the mobile apps are untouched",
+    "live_data": "nothing rewritten; all 74 products read approved by default; the switch is OFF, so nothing about publishing has changed for any brand",
+    "money": "NO MONEY MOVED — no order, wallet, commission or payout code is edited",
+    "state": "The switch is OFF. It is now possible to require INFLX approval of published products from admin.",
+    "not_seen": "No admin page opened. The queue, the switch row and the brand pills are proven by the backend suite and the next build, not by a browser session against the live site.",
+    "pending": "the founder's walk: Admin → Settings → Platform shows Product approval (off); turn it on; as a brand, publish a product and see Waiting for INFLX approval; Admin → Product Queue shows it; Approve → the brand's product reads In store and the brand gets the notification; Send back with a reason → the red pill and the reason on the brand's list; turn the switch off with one waiting → it goes live. Also still open: the refund policy sentence reminder."
+  },
   "release": {
     "qa_all_green": false,
     "released": false,
