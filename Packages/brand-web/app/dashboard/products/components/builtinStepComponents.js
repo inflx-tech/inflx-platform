@@ -231,6 +231,9 @@ export function done({ step, publishResult, template, scoreData }) {
   // Never claim "You're live" when saves were rejected by the server.
   const errors = Array.isArray(publishResult?.errors) ? publishResult.errors : [];
   const hasErrors = errors.length > 0;
+  // product-approval-switch (M5): every product saved is waiting for INFLX — say so, never "live".
+  const waiting = publishResult?.products_waiting || 0;
+  const allWaiting = !hasErrors && created > 0 && waiting === created;
 
   // Three next-action cards — primary follow-ups after publish.
   // The yellow card is the recommended path (campaign first); the other
@@ -246,6 +249,8 @@ export function done({ step, publishResult, template, scoreData }) {
       <div className="text-center space-y-3">
         {hasErrors ? (
           <div className="w-16 h-16 rounded-full bg-red-100 mx-auto flex items-center justify-center text-3xl text-red-600">!</div>
+        ) : allWaiting ? (
+          <div className="w-16 h-16 rounded-full bg-blue-100 mx-auto flex items-center justify-center text-3xl" data-testid="done-waiting">⏳</div>
         ) : (
           <div className="w-16 h-16 rounded-full bg-teal-pale mx-auto flex items-center justify-center">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00B894"
@@ -258,11 +263,15 @@ export function done({ step, publishResult, template, scoreData }) {
           <div className="font-display text-2xl font-extrabold text-ink-1 tracking-tight">
             {hasErrors
               ? (created > 0 ? 'Almost there — some items didn\'t save' : 'We couldn\'t save your listing yet')
+              : allWaiting ? 'Sent to INFLX for approval'
               : (step.title || 'You\'re live on INFLX 🎉')}
           </div>
-          {!hasErrors && step.subtitle && <div className="text-sm text-ink-3 mt-1">{step.subtitle}</div>}
+          {!hasErrors && allWaiting && <div className="text-sm text-ink-3 mt-1">Your {noun} go live in your store once INFLX approves them. You will be told either way.</div>}
+          {!hasErrors && !allWaiting && step.subtitle && <div className="text-sm text-ink-3 mt-1">{step.subtitle}</div>}
           <div className="text-xs text-ink-3 mt-2 font-mono uppercase tracking-wider">
-            {created > 0 ? `Published · +${created} ${noun}` : (hasErrors ? `0 ${noun} saved` : 'Brand profile updated')}
+            {created > 0
+              ? (allWaiting ? `Sent for approval · +${created} ${noun}` : waiting > 0 ? `Published · +${created} ${noun} · ${waiting} waiting for INFLX` : `Published · +${created} ${noun}`)
+              : (hasErrors ? `0 ${noun} saved` : 'Brand profile updated')}
           </div>
         </div>
       </div>

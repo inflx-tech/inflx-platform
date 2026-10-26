@@ -669,7 +669,9 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
     // ASSERTION DRIFT, post-links-codes (rules v1.6 §4.14): link_channel_window_days is the one new
     // number — how long a tap on a creator's links decides the channel an order counts under.
     expect(r.body.data.settings.map(x => x.key)).toEqual(
-      ['subscriptions_enforced', 'negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts',
+      // ASSERTION DRIFT, product-approval-switch (26 Oct 2026): the second switch — whether a brand's
+      // published product waits for INFLX before it is live. Ships off.
+      ['subscriptions_enforced', 'product_approval_required', 'negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts',
         'campaign_fee_pct', 'remote_return_days', 'pitch_response_days', 'pitch_cooldown_days',
         // ASSERTION DRIFT, item 10 walk fix 5 (founder, 1 Oct 2026): shoot_auto_confirm_days left
         // this list — a store visit no longer confirms itself, so the number decides nothing.

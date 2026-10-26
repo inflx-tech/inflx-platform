@@ -119,6 +119,7 @@ router.use('/links', postLinksRoutes);           // post-links-codes: what inflx
 router.use('/influencers', shoppablePostsRoutes); // shoppable-posts-v2: Create tab, posts, collections
 router.use('/influencers', creatorPostsRoutes);   // /me/post-scope + /me/posts*
 router.use('/admin/posts', adminPostsRoutes);     // moderation queue
+router.use('/admin/products', require('./adminProducts.routes'));   // product-approval-switch: the Product Queue
 router.get('/media/post/:id', creatorPostsController.servePostMedia);   // public slide serve
 router.get('/media/post/:id/:what(cover)', creatorPostsController.servePostMedia);   // W15 — the picture taken from a video slide
 

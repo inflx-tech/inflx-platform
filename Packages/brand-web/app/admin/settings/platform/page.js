@@ -15,6 +15,8 @@ import { adminApi } from '../../../../lib/api';
  * allows rather than by how much. Contract: features/subscriptions-master-switch
  */
 const SWITCH_MASTER = 'subscriptions_enforced';
+// product-approval-switch: turning THIS one off releases every product still waiting, so it asks too.
+const SWITCH_PRODUCTS = 'product_approval_required';
 const isSwitch = (s) => s.kind === 'switch' || (s.min === 0 && s.max === 1);
 const onOff = (v) => (Number(v) === 0 ? 'off' : 'on');
 const RANGE_MESSAGE = (min, max) => `Enter a number between ${min} and ${max}.`;
@@ -36,6 +38,7 @@ export default function PlatformSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [confirmOff, setConfirmOff] = useState(false);
+  const [confirmProductsOff, setConfirmProductsOff] = useState(false);
 
   const showToast = (msg, type = 'ok') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3500); };
 
@@ -63,23 +66,27 @@ export default function PlatformSettingsPage() {
     return Object.keys(errs).length === 0;
   }
 
-  /** Turning the master switch OFF is the one save on this page that asks first. */
+  /** Turning a switch OFF asks first: plans (everything unlimited) and product approval (waiting products go live). */
+  const turningOff = (key) => { const was = settings.find(x => x.key === key); return !!was && Number(was.value) === 1 && Number(form[key]) === 0; };
   function handleSave() {
     if (!validate()) return;
-    const was = settings.find(x => x.key === SWITCH_MASTER);
-    if (was && Number(was.value) === 1 && Number(form[SWITCH_MASTER]) === 0) { setConfirmOff(true); return; }
+    if (turningOff(SWITCH_MASTER)) { setConfirmOff(true); return; }
+    if (turningOff(SWITCH_PRODUCTS)) { setConfirmProductsOff(true); return; }
     return doSave();
   }
 
   async function doSave() {
-    setConfirmOff(false);
+    setConfirmOff(false); setConfirmProductsOff(false);
     if (!validate()) return;
     setSaving(true);
     const patch = {}; settings.forEach(s => { patch[s.key] = Number(form[s.key]); });
     const res = await adminApi.updatePlatformSettings(patch);
     setSaving(false);
     if (res.success) {
-      showToast(res.data.changed && res.data.changed.length ? 'Platform settings saved. Only things created from now on use the new numbers.' : 'Nothing changed.');
+      const released = Number(res.data.released || 0);
+      showToast(released > 0
+        ? `Saved. ${released} waiting product${released === 1 ? ' is' : 's are'} now live.`
+        : res.data.changed && res.data.changed.length ? 'Platform settings saved. Only things created from now on use the new numbers.' : 'Nothing changed.');
       setEditing(false);
       setSettings(res.data.settings || []); setLastChange(res.data.lastChange || null);
       const f = {}; (res.data.settings || []).forEach(s => { f[s.key] = String(s.value); }); setForm(f);
@@ -191,11 +198,25 @@ export default function PlatformSettingsPage() {
         </div>
       )}
 
+      {confirmProductsOff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" data-testid="confirm-products-off">
+          <div className="max-w-md w-full bg-white rounded-2xl border border-border p-6">
+            <h4 className="font-display text-lg font-bold text-t1 mb-2">Turn product approval off?</h4>
+            <p className="text-sm text-t2 mb-2">Every product still waiting for approval goes live in its brand's store right now. From then on a brand's published product is live at once.</p>
+            <p className="text-sm text-t2 mb-4">You can switch it back on at any time; nothing already live is touched by that.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmProductsOff(false)} className="px-4 py-2 text-sm font-semibold text-t2 rounded-lg border border-border hover:bg-surface2">Cancel</button>
+              <button onClick={doSave} data-testid="confirm-products-off-yes" className="px-4 py-2 bg-red-700 text-white font-semibold text-sm rounded-lg hover:bg-red-800">Turn off</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* The audit line at the foot (N22) */}
       <div className="text-xs text-t3 bg-surface2 rounded-lg px-3 py-2 mt-5" data-testid="audit-line">
         {lastChange
           ? <>Last changed by {lastChange.changedBy || 'an admin'} on {fmtWhen(lastChange.changedAt)} · {lastChange.label.toLowerCase()}{' '}
-              {lastChange.key === SWITCH_MASTER
+              {(lastChange.key === SWITCH_MASTER || lastChange.key === SWITCH_PRODUCTS)
                 ? <>{lastChange.oldValue == null ? '—' : onOff(lastChange.oldValue)} → {onOff(lastChange.newValue)}</>
                 : <>{lastChange.oldValue ?? '—'} → {lastChange.newValue}</>}. Every change is recorded.</>
           : <>No changes yet. Every change is recorded.</>}

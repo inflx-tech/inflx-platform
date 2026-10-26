@@ -20,6 +20,9 @@ const DEFAULTS = Object.freeze({
   // The master switch (features/subscriptions-master-switch). 1 = plan limits apply, 0 = nothing
   // is restricted. 'switch' tells the admin page to draw it as a switch, not a number box.
   subscriptions_enforced: { value: 1, min: 0, max: 1, unit: 'on/off', label: 'Subscription plans', kind: 'switch' },
+  // product-approval-switch: 1 = a brand's published product waits for INFLX before it is live;
+  // 0 = live at once (today). Ships OFF. Read by productApproval.service at every publish.
+  product_approval_required: { value: 0, min: 0, max: 1, unit: 'on/off', label: 'Product approval', kind: 'switch' },
   negotiation_rounds: { value: 2, min: 1, max: 5, unit: 'rounds', label: 'Negotiation rounds' },
   pool_lifetime_days: { value: 30, min: 7, max: 90, unit: 'days', label: 'Pool entry lifetime' },
   min_shoppable_posts: { value: 1, min: 1, max: 10, unit: 'post', label: 'Minimum shoppable posts' },
@@ -87,6 +90,7 @@ const DESCRIPTION = Object.freeze({
   feed_w_recent: "How much a post's freshness counts. Freshness halves every 3 days. Between 0 and 100; only matters when the feed that learns is on.",
   feed_w_near: 'How much being near her counts: full within the near range, falling with distance beyond it. Between 0 and 100; only matters when the feed that learns is on.',
   feed_w_performs: "How much a post's results across all shoppers count: shop taps, saves, likes and finished videos per view, adjusted so a few lucky views cannot jump to the top. Recalculated every hour. Between 0 and 100; only matters when the feed that learns is on.",
+  product_approval_required: "When this is on, a product a brand publishes waits for INFLX before it is in the brand's store, in any creator's list or in any offer. You approve it or send it back with a reason from Product Queue. A product approved once stays approved; hiding and showing it again needs no second look. Products already live when you switch this on are not touched. When you switch it off, every product still waiting goes live at once.",
   subscriptions_enforced: 'When this is off, no plan limit applies to any brand: every quota is unlimited and every feature is included. Your tiers, prices and per-brand overrides are kept exactly as they are and apply again the moment you switch it back on. Billing is not affected — brands on a paid plan keep their plan and are still charged. A brand can go past its plan while this is off; when you switch it back on nothing is deleted and nothing stops working, she simply cannot add more.',
 });
 

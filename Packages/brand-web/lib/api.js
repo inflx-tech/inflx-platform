@@ -730,6 +730,11 @@ export const adminApi = {
   approvePost:   (id) => api.post(`/admin/posts/${encodeURIComponent(id)}/approve`, {}),
   rejectPost:    (id, reason) => api.post(`/admin/posts/${encodeURIComponent(id)}/reject`, { reason }),
 
+  // ─── Product Queue (product-approval-switch) ───────────────────────────────
+  listProductQueue: (status) => api.get(`/admin/products?status=${encodeURIComponent(status || 'pending')}`),
+  approveProduct:   (id) => api.post(`/admin/products/${encodeURIComponent(id)}/approve`, {}),
+  rejectProduct:    (id, reason) => api.post(`/admin/products/${encodeURIComponent(id)}/reject`, { reason }),
+
   // ─── Shopper app (follower-app-v2): comment reports, the feed's readiness and preview ──
   listReportedComments: () => api.get('/admin/shopper/comments'),
   decideComment:        (id, decision) => api.post(`/admin/shopper/comments/${encodeURIComponent(id)}/decide`, { decision }),

@@ -692,6 +692,9 @@ function ProductRow({ product, onEdit, onDelete, onToggle, schema }) {
   if (product.stock > 0) metaBits.push(`📦 Stock: ${product.stock}`);
   if (hasVariants) metaBits.push('🎛 Variants');
   if (product.is_bookable) metaBits.push('📅 Bookable');
+  // product-approval-switch (M4): where the product stands with INFLX while the switch is on.
+  const waiting = product.approval_status === 'pending';
+  const sentBack = product.approval_status === 'rejected';
 
   return (
     <div className={`rc${product.is_active ? '' : ' dim'}`}>
@@ -702,10 +705,20 @@ function ProductRow({ product, onEdit, onDelete, onToggle, schema }) {
           {product.section && <span className="rc-tag">{product.section}</span>}
           {!product.is_active && <span className="rc-tag" style={{ background: 'var(--bg2)', color: 'var(--muted)' }}>Hidden</span>}
         </div>
-        <div className="rc-meta">{metaBits.join(' · ') || '—'}</div>
+        <div className="rc-meta">
+          {sentBack
+            ? <span style={{ color: '#C42B2B' }}>INFLX: {product.approval_note || 'not approved'} — fix it, then show it in your store to send it again.</span>
+            : waiting ? 'It goes live in your store once INFLX approves it.' : (metaBits.join(' · ') || '—')}
+        </div>
       </div>
       <div className="rc-price">{product.price != null ? fmtRupees(product.price) : '—'}<span className="l">price</span></div>
-      <span className={`status-pill ${product.is_active ? 'live' : 'hidden'}`}>● {product.is_active ? 'Live' : 'Hidden'}</span>
+      {waiting ? (
+        <span className="status-pill" style={{ background: '#E6EEFF', color: '#1B4FB3' }} data-testid="pill-waiting">● Waiting for INFLX approval</span>
+      ) : sentBack ? (
+        <span className="status-pill" style={{ background: '#FDE8E8', color: '#C42B2B' }} data-testid="pill-sent-back">● Sent back</span>
+      ) : (
+        <span className={`status-pill ${product.is_active ? 'live' : 'hidden'}`}>● {product.is_active ? 'Live' : 'Hidden'}</span>
+      )}
       <div className="rc-action">
         <button onClick={() => onEdit(product)}>Edit</button>
         <button onClick={() => onToggle(product)}>{product.is_active ? 'Hide' : 'Show'}</button>

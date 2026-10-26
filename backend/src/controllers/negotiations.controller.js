@@ -149,8 +149,12 @@ const getPlatformSettings = asyncHandler(async (req, res) => {
 });
 const updatePlatformSettings = asyncHandler(async (req, res) => {
   const out = await settings.update(req.body || {}, req.user.sub);
+  // product-approval-switch (D7): the switch going on → off releases every product still waiting.
+  const productApproval = require('../services/productApproval.service');
+  const flippedOff = out.changed.find((c) => c.key === productApproval.KEY && c.old === 1 && c.value === 0);
+  const released = flippedOff ? await productApproval.releaseAll(req.user.sub) : 0;
   const audit = await settings.audit({ limit: 20 });
-  return success(res, { settings: settings.KEYS.map(k => out.settings[k]), changed: out.changed, lastChange: audit[0] || null, audit });
+  return success(res, { settings: settings.KEYS.map(k => out.settings[k]), changed: out.changed, released, lastChange: audit[0] || null, audit });
 });
 
 module.exports = {

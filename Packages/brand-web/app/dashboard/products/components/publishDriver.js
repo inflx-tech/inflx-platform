@@ -156,12 +156,15 @@ function extractBrandListingData(template, wizardState) {
 /**
  * runPublish — execute the publish flow for a wizard session.
  *
- * Returns: { brand_updated, products_created, errors[] }
+ * Returns: { brand_updated, products_created, products_waiting, errors[] }
+ *   products_waiting — product-approval-switch: how many of the created products wait for INFLX
+ *   (the server says so on each create response); the finish screen reads it.
  */
 export async function runPublish({ template, brand, wizardState, wizardItems }) {
   const errors = [];
   let brandUpdated = false;
   let productsCreated = 0;
+  let productsWaiting = 0;
 
   // 1. Brand listing_data update (only if any brand_config field was touched)
   const brandPatch = extractBrandListingData(template, wizardState);
@@ -212,6 +215,7 @@ export async function runPublish({ template, brand, wizardState, wizardItems }) 
         continue;
       }
       productsCreated += 1;
+      if (productRes?.data?.approval?.waiting === true) productsWaiting += 1;
 
       // Fashion-1: if the item carries `_variants`, write them via the
       // dedicated variants endpoint after the product is created. The
@@ -252,7 +256,7 @@ export async function runPublish({ template, brand, wizardState, wizardItems }) 
     }
   }
 
-  return { brand_updated: brandUpdated, products_created: productsCreated, errors };
+  return { brand_updated: brandUpdated, products_created: productsCreated, products_waiting: productsWaiting, errors };
 }
 
 // Fallback when template has no storage_format defined — copies wizardState

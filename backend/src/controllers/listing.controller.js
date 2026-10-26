@@ -28,6 +28,8 @@ const imageIngest = require('../services/imageIngest.service');
 const { resolveProductImage } = require('../utils/productImage');
 const offerLife = require('../services/offerLife.service');
 const stockService = require('../services/stock.service');
+// product-approval-switch: the batch add and the Excel import publish, so they pass the switch.
+const productApproval = require('../services/productApproval.service');
 
 const INGEST_ERR_MSG = {
   bad_scheme: 'Only http/https links are allowed', private_ip: 'That address is not allowed',
@@ -111,6 +113,8 @@ async function insertProducts(brand, node, items) {
     // per batch; unknown/free tags are dropped.
     const allowedTags = new Set(
       (await tagsService.listTagOptions(brand.category || node.vertical)).map((r) => r.slug));
+    // product-approval-switch (spec §4.1): one read of the switch for the whole batch.
+    const gate = await productApproval.onCreate(true);
 
     for (const it of items) {
       seq += 1;
@@ -126,9 +130,10 @@ async function insertProducts(brand, node, items) {
       const { rows } = await client.query(
         `INSERT INTO brand_products
            (brand_id, name, price, mrp, sku, category_key, super_category, section,
-            image_url, description, stock, variants_json, category_node_id, facets, tags, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14::jsonb,$15::text[],true)
-         RETURNING id, name, price, sku, category_node_id, image_url`,
+            image_url, description, stock, variants_json, category_node_id, facets, tags, is_active,
+            pushed_to_store, approval_status, approval_requested_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14::jsonb,$15::text[],true,$16,$17,$18)
+         RETURNING id, name, price, sku, category_node_id, image_url, pushed_to_store, approval_status`,
         [brand.id, String(it.name).trim(), Number(it.price),
          null,  // mrp retired (offer-mrp-retirement) — discounts come from the offer engine; column kept dormant
          sku, node.vertical, node.segment, node.category,
@@ -136,7 +141,8 @@ async function insertProducts(brand, node, items) {
          // stock-asked-once: a product with sizes has ONE stock, its sizes — the own number is their
          // total, never what was sent for it.
          stockService.ownStock(variantsJson, it.stock),
-         JSON.stringify(variantsJson), node.id, JSON.stringify(facets), tags]
+         JSON.stringify(variantsJson), node.id, JSON.stringify(facets), tags,
+         gate.pushed_to_store, gate.approval_status, gate.approval_requested_at]
       );
       // Count photos this product already has (from URL-ingested cover + colour
       // images) so the post-import tray shows "photo added", not "needs photos".
@@ -704,6 +710,7 @@ const getMyNodeProducts = asyncHandler(async (req, res) => {
        SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id)
      SELECT bp.id, bp.name, bp.price, bp.image_url, bp.sku, bp.stock,
             bp.is_active, bp.pushed_to_store, bp.facets, bp.variants_json,
+            bp.approval_status, bp.approval_note, bp.approval_requested_at,
             bp.category_node_id, bp.created_at, bp.description, bp.section,
             cn.name AS leaf_name, cn.segment, cn.category
        FROM brand_products bp
@@ -735,7 +742,8 @@ const getListingProduct = asyncHandler(async (req, res) => {
 
   const { rows } = await db.query(
     `SELECT id, name, price, description, sku, stock, image_url,
-            variants_json, facets, category_node_id, is_active, pushed_to_store, tags
+            variants_json, facets, category_node_id, is_active, pushed_to_store, tags,
+            approval_status, approval_note, approval_requested_at
        FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.id, brand.id]);
   const product = rows[0];

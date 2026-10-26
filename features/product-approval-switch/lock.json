@@ -1,0 +1,53 @@
+{
+  "feature": "product-approval-switch",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 26 Oct 2026: \"as an admin i need a toggle for this, if i switch on that then this approval feature will on and all published products need admin approval for go to live, if toggle switch off then no need of permission. pls analyse and implement this feature\") — spec, decisions D1-D10 and the mockup drawn and locked by Claude under the founder's standing autonomy on that instruction; the founder has not seen the drawn frames yet",
+  "approved_at": "2026-10-26T06:30:00.000Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "Claude, under the founder's \"analyse and implement\" of 26 Oct 2026 (M1-M5, product-approval-switch.html); to be walked by the founder before the deploy go",
+  "mockup_locked_at": "2026-10-26T06:30:00.000Z",
+  "notes": "One admin switch (product_approval_required, ships OFF). ON: a brand's published product waits for INFLX before it is in the store; the admin approves or sends it back with a reason from a new Product Queue. pushed_to_store stays the one live flag, so no shopper / creator / offer reader changes. Four columns on brand_products with approved as the default. Switch OFF releases every waiting product. No OTA. Production-impacting (migration 211 + Render + Vercel); explicit go required before push.",
+  "related": [
+    "features/subscriptions-master-switch",
+    "features/merch-engine-p2a-product-push-store",
+    "features/concept-p2-posts",
+    "features/listing-shop-safety"
+  ],
+  "decisions": {
+    "D1": "one switch, product_approval_required, ships OFF",
+    "D2": "pushed_to_store stays the only live flag; no reader changes",
+    "D3": "four states: approved / pending / rejected / withdrawn",
+    "D4": "approval is once per product; edits and re-showing an approved product need no review",
+    "D5": "hiding a waiting product withdraws it; showing sends it again",
+    "D6": "a sent-back product is re-sent by the brand with Show, after fixing it",
+    "D7": "switch OFF releases every waiting product; switch ON touches nothing live",
+    "D8": "queue under the Approvals capability, like the Post Queue",
+    "D9": "the brand is told by notification on each decision",
+    "D10": "reason is required on Send back"
+  },
+  "ui_governed": true,
+  "build": {
+    "built_at": "2026-10-26",
+    "migration": "211_product_approval_switch.sql — one platform_settings row (0, OFF); approval_status (default approved) + approval_requested_at/decided_at/decided_by/note on brand_products; CHECK on the four states; partial index on pending. Runner backend/scripts/run-211.js (--dry / --apply).",
+    "server": "new productApproval.service (required / onCreate / onShowHide / listQueue / decide / releaseAll); platformSettings gains the key + description; brand.controller createProduct + Excel upload inserts and updateProduct's pushed_to_store go through the gate, responses carry approval; listing.controller insertProducts (batch add + import) through the gate, the brand's listing reads return the approval columns; new adminProducts.controller + routes at /admin/products (approvals capability); negotiations.controller releases waiting products when the switch goes 1 → 0 and answers `released`; admin.controller /admin/stats pending_products.",
+    "web": "admin/products/page.js (the queue: Waiting · Approved · Sent back, Approve / Send back with a required reason); admin/layout.js nav entry + badge; admin/approvals tile + card; admin/settings/platform confirm when this switch turns off + the toast says how many went live; lib/api.js three calls; dashboard/products DefaultFleetRow + ProductRow pills (Waiting for INFLX approval / Sent back: reason); builtinStepComponents done + publishDriver: 'Sent to INFLX for approval' when every saved product waits.",
+    "mobile": "NOTHING — the brand app lists no products of its own (ProductPicker reads is_active only, for sets). No OTA.",
+    "tests": "backend/tests/product-approval-switch.test.js 22/22 (E1–E24; E19 by spy on creatorTerms.afterProductChange, E22 with capabilities set on the profile row). tests/helpers/db.js reseeds the new setting row after truncateAll; item6-negotiation.test.js's exact key list gains the key (assertion drift, noted inline).",
+    "regression": "full suite, serial, vs backend/baseline_post_engagement_stats.json (26 Oct): 158 suites / 2259 tests / 2054 passed / 177 failed -> 159 / 2281 / 2076 / 177. 0 that passed before fail now; 22 new, all passing; the same 177 old failures by name; the one suite that does not load (collection-library) as before. Stored as backend/baseline_product_approval_switch.json; compare in 06-diff/backend-compare.txt. The GET /brands/me/products column addition landed after that run started; product-approval-switch, brand, offers-v2-listings and listing-engine re-run after it.",
+    "web_build": "Packages/brand-web `next build` exits 0; /admin/products in the route list.",
+    "looked_at": "no admin or brand session opened against the live site (prod is the only environment; the code is not there until release). The mockup was rendered in the browser pane. The founder's walk of M1–M5 is owed before the deploy go.",
+    "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release",
+    "released": false
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

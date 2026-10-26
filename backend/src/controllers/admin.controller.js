@@ -334,7 +334,9 @@ const getStats = asyncHandler(async (req, res) => {
       -- campaign wizard; admin needs to run cold outreach. Pending = not yet
       -- contacted; contacted = outreach run but creator hasn't signed up yet.
       (SELECT COUNT(*) FROM creator_invitations WHERE status = 'pending')                               AS pending_invitations,
-      (SELECT COUNT(*) FROM creator_invitations WHERE status IN ('pending','contacted'))                AS open_invitations
+      (SELECT COUNT(*) FROM creator_invitations WHERE status IN ('pending','contacted'))                AS open_invitations,
+      -- product-approval-switch: products waiting for INFLX (the Product Queue badge)
+      (SELECT COUNT(*) FROM brand_products WHERE approval_status = 'pending')                           AS pending_products
   `);
 
   const r = counts[0];
@@ -370,6 +372,7 @@ const getStats = asyncHandler(async (req, res) => {
       influencers: parseInt(r.pending_influencers),
     },
     pending_verifications: parseInt(r.pending_verifications || 0),
+    pending_products:      parseInt(r.pending_products || 0),
     pending_invitations:   parseInt(r.pending_invitations || 0),
     open_invitations:      parseInt(r.open_invitations || 0),
     active_brands:   parseInt(r.active_brands),

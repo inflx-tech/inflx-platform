@@ -31,6 +31,8 @@ const NAV = [
   // visible. Food pages (Master Dishes, Meals) HIDDEN — vertical parked; the
   // backend routes stay mounted, pages return when food does.
   { href: '/admin/posts', label: 'Post Queue', icon: '📮', cap: 'approvals' },
+  // product-approval-switch: a brand's published products waiting for INFLX while the switch is on.
+  { href: '/admin/products', label: 'Product Queue', icon: '🛍️', badge: 'products', cap: 'approvals' },
   // follower-app-v2 (29 Sep 2026): the old shopper app's pages (Concepts, Collections, Discover
   // Builder, App Builder, World Settings, Custom Pages, Category Images) went with the old app.
   // The shopper app's own: shoppers' reported comments, and the feed's readiness and preview.
@@ -98,6 +100,7 @@ export default function DashboardLayout({ children }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [verificationCount, setVerificationCount] = useState(0);
   const [invitationCount, setInvitationCount] = useState(0);
+  const [productCount, setProductCount] = useState(0);   // product-approval-switch: waiting products
   // Item 17 — what is waiting in Money: withdrawals to pay, added payments not credited.
   const [moneyCounts, setMoneyCounts] = useState({ withdrawals: 0, notCredited: 0 });
   // B-2 capability scoping. null = not yet loaded (show full nav to avoid a
@@ -139,6 +142,7 @@ export default function DashboardLayout({ children }) {
           setPendingCount((p.pending_approvals?.brands || 0) + (p.pending_approvals?.influencers || 0));
           setVerificationCount(p.pending_verifications || 0);
           setInvitationCount(p.pending_invitations || 0);
+          setProductCount(p.pending_products || 0);
         }
       } catch {}
     }
@@ -218,6 +222,9 @@ export default function DashboardLayout({ children }) {
                 )}
                 {item.badge === 'invitations' && invitationCount > 0 && (
                   <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{invitationCount}</span>
+                )}
+                {item.badge === 'products' && productCount > 0 && (
+                  <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{productCount}</span>
                 )}
                 {(item.badge === 'withdrawals' || item.badge === 'notCredited') && moneyCounts[item.badge] > 0 && (
                   <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{moneyCounts[item.badge]}</span>

@@ -1,0 +1,28 @@
+BASE 158 suites / 2259 tests / 2054 passed / 177 failed / 28 pending
+NOW  159 suites / 2281 tests / 2076 passed / 177 failed / 28 pending
+newly failing (passed before, fail now): 0
+new tests: 22
+  + passed product-approval-switch.test.js :: the switch off — today E1 the setting is there, off, drawn as a switch
+  + passed product-approval-switch.test.js :: the switch off — today E2 a generic create is live at once and approved
+  + passed product-approval-switch.test.js :: the switch off — today E3 a batch create is live at once and approved
+  + passed product-approval-switch.test.js :: the switch on E5 a generic create waits: not pushed, pending, with the time it was sent
+  + passed product-approval-switch.test.js :: the switch on E6 a batch create waits, every item
+  + passed product-approval-switch.test.js :: the switch on E7 a waiting product is in no store, no creator list, no public browse
+  + passed product-approval-switch.test.js :: the switch on E8 the admin queue lists the three with brand, price, category and when; the counts agree
+  + passed product-approval-switch.test.js :: the switch on E9 /admin/stats counts them
+  + passed product-approval-switch.test.js :: the switch on E10 approve: live now, decided by this admin, the brand told, in the store
+  + passed product-approval-switch.test.js :: the switch on E11 send back without a reason is refused
+  + passed product-approval-switch.test.js :: the switch on E12 send back with a reason: rejected, the note kept, still off the store, the brand told the reason
+  + passed product-approval-switch.test.js :: the switch on E13 Show on the sent-back product sends it again: pending, the note cleared, still not pushed
+  + passed product-approval-switch.test.js :: the switch on E14 Hide on a waiting product withdraws it: out of the queue
+  + passed product-approval-switch.test.js :: the switch on E15 Show on the withdrawn product sends it again
+  + passed product-approval-switch.test.js :: the switch on E16 an approved product hidden and shown again goes live at once and never re-enters the queue
+  + passed product-approval-switch.test.js :: the switch on E17 approve on a product that is not waiting is 404
+  + passed product-approval-switch.test.js :: the switch on E18 a product listed while the switch was off is still live and approved
+  + passed product-approval-switch.test.js :: the switch on E19 approving tells the creators holding it, the way the brand's own Show does
+  + passed product-approval-switch.test.js :: the switch on E22 a reviewer admin can list and decide; a finance admin cannot
+  + passed product-approval-switch.test.js :: the switch on E23 a settings read that fails never blocks a publish: the gate answers off
+  + passed product-approval-switch.test.js :: the switch on E24 a second brand's products sit in the same queue and are decided the same way
+  + passed product-approval-switch.test.js :: the switch turned off with products waiting E20/E21 every waiting product goes live, the sent-back and withdrawn ones are untouched, then publishing is immediate
+tests no longer present: 0
+same old failures by name: 178

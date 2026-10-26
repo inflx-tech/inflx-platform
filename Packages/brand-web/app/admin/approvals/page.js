@@ -40,7 +40,8 @@ export default function ApprovalsPage() {
   const brandsPending = stats?.pending_approvals?.brands || 0;
   const influencersPending = stats?.pending_verifications || 0;
   const invitationsPending = stats?.pending_invitations || 0;
-  const totalPending = brandsPending + influencersPending;
+  const productsPending = stats?.pending_products || 0;   // product-approval-switch
+  const totalPending = brandsPending + influencersPending + productsPending;
 
   return (
     <div className="max-w-4xl">
@@ -57,14 +58,30 @@ export default function ApprovalsPage() {
         <div className="bg-white rounded-xl border border-border p-8 text-center text-t3 text-sm">Loading…</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <CountTile label="Total pending" value={totalPending} color="t1" />
             <CountTile label="Brands" value={brandsPending} color="navy" />
             <CountTile label="Influencers" value={influencersPending} color="orange" />
+            <CountTile label="Products" value={productsPending} color="teal" />
             <CountTile label="Invitations" value={invitationsPending} color="gold" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* product-approval-switch: products waiting for INFLX while the switch is on */}
+            <div className="bg-white rounded-xl border border-border p-5 md:col-span-2" data-testid="products-pending-card">
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-display text-sm font-bold text-t1">Products waiting to go live</div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal text-white">{productsPending} waiting</span>
+              </div>
+              <p className="text-xs text-t3 mb-4">
+                {productsPending > 0
+                  ? `${productsPending} product${productsPending === 1 ? ' is' : 's are'} waiting for your approval before ${productsPending === 1 ? 'it is' : 'they are'} in the brand's store.`
+                  : 'No products waiting. (Products wait only while Product approval is on in Settings → Platform.)'}
+              </p>
+              <a href="/admin/products" className="inline-block px-4 py-2 bg-navy text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity">
+                Review in Product Queue →
+              </a>
+            </div>
             <div className="bg-white rounded-xl border border-border p-5">
               <div className="flex items-center justify-between mb-2">
                 <div className="font-display text-sm font-bold text-t1">Brands needing a decision</div>

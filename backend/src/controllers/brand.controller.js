@@ -28,6 +28,8 @@ const { encrypt } = require('../utils/encrypt');
 // offer-builder-v2 — auto-add on create, creator notices on a price change.
 const offerLife = require('../services/offerLife.service');
 const stockService = require('../services/stock.service');
+// product-approval-switch: every publish (create, Show) passes through the admin switch.
+const productApproval = require('../services/productApproval.service');
 
 const LOGO_MSG = 'Upload a JPG or PNG under 5 MB.';
 const LOGO_MAX_BYTES = 5 * 1024 * 1024;
@@ -566,6 +568,7 @@ const listProducts = asyncHandler(async (req, res) => {
             p.veg_flag, p.duration_mins, p.variants_json, p.image_url, p.facets,
             p.is_active, p.is_bookable, p.stock, p.availability_json,
             p.booking_config_json, p.tags, p.pushed_to_store,
+            p.approval_status, p.approval_note, p.approval_requested_at,
             p.badge, p.is_featured, p.featured_sort, p.created_at, p.updated_at,
             p.category_node_id,
             cn.name AS category_label,
@@ -633,13 +636,17 @@ const createProduct = asyncHandler(async (req, res) => {
 
   if (!name || !name.trim()) throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
 
+  // product-approval-switch (spec §4.1): with the switch on, a published product waits instead.
+  const gate = await productApproval.onCreate(pushed_to_store);
+
   const { rows } = await db.query(
     `INSERT INTO brand_products
        (brand_id, name, description, price, category_key, section,
         veg_flag, duration_mins, variants_json, image_url, sku,
         is_active, is_bookable, stock, availability_json, booking_config_json,
-        master_vehicle_id, master_service_id, master_dish_id, tags, pushed_to_store)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+        master_vehicle_id, master_service_id, master_dish_id, tags, pushed_to_store,
+        approval_status, approval_requested_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
      RETURNING *`,
     [
       brand.id,
@@ -665,7 +672,9 @@ const createProduct = asyncHandler(async (req, res) => {
       master_service_id ? parseInt(master_service_id, 10) : null,
       master_dish_id ? parseInt(master_dish_id, 10) : null,
       tagsService.sanitizeProductTags(tags),
-      pushed_to_store !== false,
+      gate.pushed_to_store,
+      gate.approval_status,
+      gate.approval_requested_at,
     ]
   );
 
@@ -691,7 +700,7 @@ const createProduct = asyncHandler(async (req, res) => {
     }
   }
 
-  return success(res, { product }, 201);
+  return success(res, { product, approval: productApproval.approvalOf(product) }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -741,7 +750,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows: existing } = await db.query(
-    `SELECT id, name, price, stock, is_active, pushed_to_store, variants_json FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    `SELECT id, name, price, stock, is_active, pushed_to_store, variants_json, approval_status FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.pid, brand.id]
   );
   if (!existing[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
@@ -768,6 +777,16 @@ const updateProduct = asyncHandler(async (req, res) => {
   }
 
   if (!Object.keys(updates).length) throw new AppError('VALIDATION_ERROR', 'No valid fields to update', 422);
+
+  // product-approval-switch (spec §4.2–4.3): Show on a product never approved waits for INFLX
+  // while the switch is on; Hide on a waiting product withdraws it. The gate's columns win over
+  // the raw pushed_to_store sent.
+  let approval = null;
+  if (req.body.pushed_to_store !== undefined) {
+    const g = await productApproval.onShowHide(existing[0], req.body.pushed_to_store !== false);
+    Object.assign(updates, g.updates);
+    approval = g.approval;
+  }
 
   const write = async (q) => {
     updates.updated_at = new Date();
@@ -821,7 +840,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   // she sells at normal price — the creators who can sell it are told. Never fails the save.
   await require('../services/creatorTerms.service').afterProductChange(req.params.pid, existing[0], rows[0]);
 
-  return success(res, { product: rows[0], affected_offers });
+  return success(res, { product: rows[0], affected_offers, approval: approval || productApproval.approvalOf(rows[0]) });
 });
 
 /**
@@ -1404,15 +1423,18 @@ const bulkUploadProducts = asyncHandler(async (req, res) => {
       }
     }
 
+    // product-approval-switch (spec §4.1): the Excel upload publishes, so it waits like the wizard.
+    const gateRow = await productApproval.onCreate(true);
     const { rows: [newProd] } = await db.query(
       `INSERT INTO brand_products (
          brand_id, name, price, section, description, image_url, veg_flag,
          variants_json, stock, duration_mins,
          is_active, is_bookable, category_key,
-         master_dish_id, master_service_id, return_policy_days
+         master_dish_id, master_service_id, return_policy_days,
+         pushed_to_store, approval_status, approval_requested_at
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15)
-       RETURNING id, name, price, section, master_dish_id, master_service_id`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15, $16, $17, $18)
+       RETURNING id, name, price, section, master_dish_id, master_service_id, pushed_to_store, approval_status`,
       [
         brand.id,
         product.name,
@@ -1429,6 +1451,9 @@ const bulkUploadProducts = asyncHandler(async (req, res) => {
         masterDishId,
         masterServiceId,
         product.return_policy_days || null,
+        gateRow.pushed_to_store,
+        gateRow.approval_status,
+        gateRow.approval_requested_at,
       ]
     );
     created.push(newProd);

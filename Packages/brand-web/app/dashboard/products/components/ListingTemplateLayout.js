@@ -584,8 +584,11 @@ function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRem
 
 function DefaultFleetRow({ product, icon, onRemove, onTogglePush, onEdit, selected, onToggleSelect }) {
   const pushed = product.pushed_to_store !== false;
+  // product-approval-switch (M4): where the product stands with INFLX while the switch is on.
+  const waiting = product.approval_status === 'pending';
+  const sentBack = product.approval_status === 'rejected';
   return (
-    <div className={`bg-white border rounded-xl p-4 flex items-center gap-4 ${selected ? 'border-yellow ring-1 ring-yellow' : 'border-gray-200'} ${pushed ? '' : 'opacity-60'}`}>
+    <div className={`bg-white border rounded-xl p-4 flex items-center gap-4 ${selected ? 'border-yellow ring-1 ring-yellow' : 'border-gray-200'} ${pushed || waiting ? '' : 'opacity-60'}`}>
       {onToggleSelect && (
         // eslint-disable-next-line jsx-a11y/label-has-associated-control
         <input type="checkbox" checked={!!selected} onChange={onToggleSelect}
@@ -601,11 +604,23 @@ function DefaultFleetRow({ product, icon, onRemove, onTogglePush, onEdit, select
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-gray-900">{product.name}</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${pushed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-            {pushed ? 'In store' : 'Hidden'}
-          </span>
+          {waiting ? (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700" data-testid="pill-waiting">Waiting for INFLX approval</span>
+          ) : sentBack ? (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700" data-testid="pill-sent-back">Sent back</span>
+          ) : (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${pushed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              {pushed ? 'In store' : 'Hidden'}
+            </span>
+          )}
         </div>
-        <p className="text-xs text-gray-500 mt-0.5">{product.description || product.section}</p>
+        {waiting ? (
+          <p className="text-xs text-gray-500 mt-0.5">It goes live in your store once INFLX approves it.</p>
+        ) : sentBack ? (
+          <p className="text-xs text-red-600 mt-0.5">INFLX: {product.approval_note || 'not approved'} — fix it, then switch In store on to send it again.</p>
+        ) : (
+          <p className="text-xs text-gray-500 mt-0.5">{product.description || product.section}</p>
+        )}
       </div>
       <div className="text-right flex-shrink-0">
         <div className="text-lg font-extrabold text-gray-900">
@@ -617,7 +632,7 @@ function DefaultFleetRow({ product, icon, onRemove, onTogglePush, onEdit, select
           <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">In store</span>
           <button type="button" onClick={() => onTogglePush(product.id, !pushed)}
             className={`w-10 h-5 rounded-full relative transition-colors ${pushed ? 'bg-green-500' : 'bg-gray-300'}`}
-            title={pushed ? 'Showing in your store — tap to hide' : 'Hidden from your store — tap to show'}>
+            title={waiting ? 'Waiting for INFLX approval — tap to withdraw' : sentBack ? 'Sent back by INFLX — tap to send it again' : pushed ? 'Showing in your store — tap to hide' : 'Hidden from your store — tap to show'}>
             <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${pushed ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </button>
         </div>
