@@ -69,6 +69,8 @@ router.get ('/:id/sets/:sid/products-without-offers',         ...brandAuth, invC
 // post-links-codes (L7, L8): the posts made for this set, their codes and numbers.
 router.get ('/:id/sets/:sid/posts',                            ...brandAuth, require('../controllers/postLinks.controller').setPosts);
 router.get ('/:id/sets/:sid/posts/:postId/stats',              ...brandAuth, require('../controllers/postLinks.controller').setPostStats);
+// post-engagement-stats (B5): the comments on a post made for this set, read only.
+router.get ('/:id/sets/:sid/posts/:postId/comments',           ...brandAuth, require('../controllers/postEngagement.controller').brandComments);
 router.post('/:id/sets/:sid/invitations/:ciId/withdraw',      ...brandAuth, invCtrl.withdraw);
 router.post('/:id/sets/:sid/invitations/:ciId/remove',        ...brandAuth, invCtrl.remove);
 

@@ -421,6 +421,8 @@ export const brandApi = {
   // post-links-codes (L7, L8) — the posts made for a set, their codes and numbers.
   setPosts:          (campaignId, setId) => api.get(`/campaigns/${campaignId}/sets/${setId}/posts`),
   setPostStats:      (campaignId, setId, postId) => api.get(`/campaigns/${campaignId}/sets/${setId}/posts/${postId}/stats`),
+  // post-engagement-stats (B5) — the comments on a post made for this set, read only.
+  setPostComments:   (campaignId, setId, postId) => api.get(`/campaigns/${campaignId}/sets/${setId}/posts/${postId}/comments`),
   productsWithoutOffersForSet: (campaignId, setId, params) => api.get(`/campaigns/${campaignId}/sets/${setId}/products-without-offers${params && Object.keys(params).length ? '?' + Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&') : ''}`),
   invitationDetail:  (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}`),
   withdrawInvitation: (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/withdraw`),
@@ -753,6 +755,11 @@ export const influencerApi = {
   // post-links-codes — a post's code and links, its stats, her store and collection links. Contract: features/post-links-codes
   postShare:         (id) => api.get(`/influencers/me/shoppable-posts/${id}/share`),
   postStats:         (id) => api.get(`/influencers/me/shoppable-posts/${id}/stats`),
+  // post-engagement-stats (C5) — the comments on her post: read, reply, hide, unhide. Contract: features/post-engagement-stats
+  postComments:      (id) => api.get(`/influencers/me/shoppable-posts/${id}/comments`),
+  postReply:         (id, body) => api.post(`/influencers/me/shoppable-posts/${id}/comments`, body),
+  commentHide:       (id) => api.post(`/influencers/me/comments/${id}/hide`, {}),
+  commentUnhide:     (id) => api.post(`/influencers/me/comments/${id}/unhide`, {}),
   myLinks:           () => api.get('/influencers/me/links'),
   // ── Item 20 · a creator who owns a brand: the link, and where he shared an own-brand post. Contract: features/item20-own-brand ──
   brandLink:            () => api.get('/influencers/me/brand-link'),

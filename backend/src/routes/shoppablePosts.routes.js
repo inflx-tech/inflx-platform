@@ -9,6 +9,7 @@ const { Router } = require('express');
 const { authenticate, requireApproved, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/shoppablePosts.controller');
 const links = require('../controllers/postLinks.controller');
+const engagement = require('../controllers/postEngagement.controller');
 
 const router = Router();
 const creator = [authenticate, requireRole('influencer')];
@@ -25,6 +26,11 @@ router.get('/me/shoppable-posts/:postId/options', ...creator, ctrl.options);
 router.get('/me/shoppable-posts/:postId/share', ...creator, links.share);
 router.get('/me/shoppable-posts/:postId/stats', ...creator, links.stats);
 router.get('/me/links', ...creator, links.myLinks);
+// post-engagement-stats (C5): the comments on her post — read, reply, hide, unhide. Contract: features/post-engagement-stats
+router.get('/me/shoppable-posts/:postId/comments', ...creator, engagement.myComments);
+router.post('/me/shoppable-posts/:postId/comments', ...acting, engagement.reply);
+router.post('/me/comments/:id/hide', ...acting, engagement.hide);
+router.post('/me/comments/:id/unhide', ...acting, engagement.unhide);
 router.patch('/me/shoppable-posts/:postId', ...acting, ctrl.update);
 router.post('/me/shoppable-posts/:postId/upload-url', ...acting, ctrl.uploadUrl);
 router.post('/me/shoppable-posts/:postId/submit', ...acting, ctrl.submit);

@@ -1,0 +1,52 @@
+BASE 156 suites / 2221 tests / 2016 passed / 177 failed / 28 pending
+NOW  158 suites / 2259 tests / 2054 passed / 177 failed / 28 pending
+newly failing (passed before, fail now): 0
+new tests: 41
+  + passed A · Pay for Content — tracking starts when the links are final (E1–E4) E1 · a link saved before posting creates no proof_stats row; E2 · "I've posted everything" tracks one row per Instagram/YouTube link, none for a Story
+  + passed A · Pay for Content — tracking starts when the links are final (E1–E4) E3 · her read says waiting under each link and story under each screenshot; nothing read yet
+  + passed A · Pay for Content — tracking starts when the links are final (E1–E4) E4 · a link Level 1 already measured is seeded for free, labelled level1 with Level 1's date, until the first paid read
+  + passed A · the clock reads the due links, one run per platform (E5–E8) E5 · one run per platform with trigger, actor, Apify run id, cost, counts; one reading per link with the raw item · E6 · the latest numbers, reads = 1, next due day 2, owner match · E7 · the exact inputs
+  + passed A · the clock reads the due links, one run per platform (E5–E8) E8 · the brand reads the numbers under each link, the screenshot line under each Story
+  + passed A · Update now, the curve, the website and the admin (E9–E12) E9 · Update now reads both links with trigger update_now (reads = 2); a second press within 24 h is 422 UPDATE_TOO_SOON with no run; admin is exempt
+  + passed A · Update now, the curve, the website and the admin (E9–E12) E10 · the curve: day 1, 2, 3, 5, 7, 10, 14, 21, 30, then every 14 days; day 91 stops the row; a stopped row is never read
+  + passed A · Update now, the curve, the website and the admin (E9–E12) E11 · GET /brands/me/campaigns/:id/engagement — the new shape, no engagement rate, no deliverables; Update now once a day
+  + passed A · Update now, the curve, the website and the admin (E9–E12) E12 · /admin/social/costs adds postRuns by platform and totalUsd = socialRunsUsd + postRuns.usd; existing keys unchanged; the run_log fallback sums both tables
+  + passed B · Pay for Sale — the shoppable post's social numbers (E13–E16, E23, E24) E13 · her post stats list the links under social[] with rowKey, type, label, url, stats; the post read carries the one line
+  + passed B · Pay for Sale — the shoppable post's social numbers (E13–E16, E23, E24) E14 · the set posts list: social on every post; a post with no links after the posting date → missing (M3: nothing before it)
+  + passed B · Pay for Sale — the shoppable post's social numbers (E13–E16, E23, E24) E15 · an outside row's link is tracked at save · E24 · a replaced link closes the old row (link_changed) and tracks the new one
+  + passed B · Pay for Sale — the shoppable post's social numbers (E13–E16, E23, E24) E16 · the shoppable post taken down → its rows stop (post_left_shop) on the next run; the lines keep their numbers
+  + passed B · Pay for Sale — the shoppable post's social numbers (E13–E16, E23, E24) E23 · a Facebook link makes no proof_stats row; its stats say facebook
+  + passed C · the guard rails (E17–E22) E17 · month usage at the budget → the job skips, writes no run, flags budget once; Level 1 keeps its exempt runs
+  + passed C · the guard rails (E17–E22) E18 · Apify refuses the run for credit → the run is `budget`, every link keeps its due date, no reading
+  + passed C · the guard rails (E17–E22) E19 · an Instagram not_found item and a YouTube id with no item back stop their links; the others in the batch are read, matched by shortCode / id
+  + passed C · the guard rails (E17–E22) E20 · likesCount −1 → likes NULL, likes_hidden; commentsTurnedOff → comments NULL, comments_off
+  + passed C · the guard rails (E17–E22) E21 · another account owns the post → numbers kept, owner_state other_account, ONE flag across two reads; a co-author counts as her
+  + passed C · the guard rails (E17–E22) E22 · no confirmed account on that platform → owner_unknown, no flag, numbers shown
+  + passed the legacy is retired (E25, E26) and migration 210 is additive (E27) E25 · refresh-stats answers 404; jobs/index.js exports no apifyEngagementJob; apify.service exports no scrapePostEngagement; the engagement mock is gone
+  + passed the legacy is retired (E25, E26) and migration 210 is additive (E27) E26 · no Apify URL anywhere in backend/src carries token=
+  + passed the legacy is retired (E25, E26) and migration 210 is additive (E27) E27 · migration 210 is additive: the new tables and the widened CHECK exist; a second run changes nothing; the dry-run script counts
+  + passed data assertions — every reading has its run; no money moves reads = apify readings per link; every apify reading has a run with an Apify run id; level1 readings have none; the month's cost is the sum of the runs; no money row changes
+  + passed her post inside INFLX (E1–E10) E5 · her comments list: newest first, the hidden one flagged, the removed one absent, replies nested
+  + passed her post inside INFLX (E1–E10) E6 · she replies: a creator row under the comment; shoppers see it with her label; the count is unchanged
+  + passed her post inside INFLX (E1–E10) E7 · hide: gone from the shopper list and from the count; unhide: back
+  + passed her post inside INFLX (E1–E10) E1 · the block: every number from the tables, a like taken back is 0, hidden and removed not counted, guests count where they can act
+  + passed her post inside INFLX (E1–E10) E2 · Post status carries the three
+  + passed her post inside INFLX (E1–E10) E8 · a comment INFLX removed cannot be unhidden
+  + passed her post inside INFLX (E1–E10) E9 · an empty or 301-character reply is refused in the shopper app's words; a reply to another post's comment is 404
+  + passed her post inside INFLX (E1–E10) E10 · another creator: 404 on all four
+  + passed her post inside INFLX (E1–E10) E16 · no money row was read or written by any of this
+  + passed nothing yet, and image vs video (E3, E4) a live post nobody opened: zeros, finished null for an image
+  + passed the brand reads (E11–E14) E11 · Set posts rows carry the three; E12 · the post stats carry the block
+  + passed the brand reads (E11–E14) E13 · the brand's comments: visible and her replies only, read-only; E14 · another brand 404
+  + passed housekeeping (E17) creatorPosts.service no longer computes like_count / save_count that nothing read
+  + passed Engagement Analytics the daily post-stats job never reads a legacy deliverable and never writes deliverable_stats
+  + passed Engagement Analytics GET /brands/me/campaigns/:id/engagement returns the post-performance-v2 shape, empty for a legacy campaign (C9)
+  + passed Engagement Analytics POST /deliverables/:id/refresh-stats is gone (404)
+  + passed item 12 · the eight /deliverables doors refuse for every Aim (check 32) the stats refresh is gone too (post-performance-v2): the route file no longer mounts it
+fixed: 0
+tests in base missing now: 3
+  - item 12 · the eight /deliverables doors refuse for every Aim (check 32) the stats refresh is NOT retired — it is not part of the content flow
+  - Engagement Analytics apify-engagement cron creates deliverable_stats rows
+  - Engagement Analytics GET /brands/me/campaigns/:id/engagement returns correct structure
+suites that do not load now: 1 collection-library.test.js
+suites that did not load in base: 1 collection-library.test.js

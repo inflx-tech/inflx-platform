@@ -19,6 +19,8 @@ import { rupeesP } from '../../components/create/copyCreate';
 import { StateChip, s as b } from '../../components/create/bitsCreate';
 // post-performance-v2 (board B3): the set's views on social media, and one line per post. Contract: features/post-performance-v2
 import { SocialLine } from '../../components/content/StatLine12';
+// post-engagement-stats (B3): one line per row under visits and orders. Contract: features/post-engagement-stats
+import { InflxLine } from '../../components/content/InflxBlock';
 import { STATS, indian } from '../../components/content/copyStats';
 
 export default function BrandSetPostsScreen({ navigation, route }) {
@@ -60,6 +62,7 @@ export default function BrandSetPostsScreen({ navigation, route }) {
                 <Text style={x.name}>{p.title} · {p.creator_name.split(' ')[0]}</Text>
                 <Text style={x.code}>{p.code}</Text>
                 <Text style={b.rowMeta}>{p.state === 'approved' ? CL.goesLiveRow(p.goes_live_on) : CL.postRow(p.totals)}</Text>
+                {p.inflx ? <InflxLine three={p.inflx} testID={`inflx-${p.id}`} /> : null}
                 {p.social ? <SocialLine sum={p.social} side="brand" testID={`social-${p.id}`} /> : null}
               </View>
               <StateChip state={p.state} />

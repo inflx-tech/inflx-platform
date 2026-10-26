@@ -20,6 +20,8 @@ import { O20 } from '../../components/ownbrand/copy20';
 import PlacesCard20 from '../../components/ownbrand/PlacesCard20';
 // post-performance-v2 (board C3): the post's numbers on social media, one line under Share and Stats. Contract: features/post-performance-v2
 import { SocialLine } from '../../components/content/StatLine12';
+// post-engagement-stats (C3): "In INFLX · views · likes · comments", one line above the social line. Contract: features/post-engagement-stats
+import { InflxLine } from '../../components/content/InflxBlock';
 import { STATS, indian } from '../../components/content/copyStats';
 import { day10 } from '../../components/shoot/copy10';
 
@@ -140,6 +142,7 @@ export default function PostStatusScreen({ navigation, route }) {
               <View style={{ flex: 1, marginRight: post.state === 'live' ? 8 : 0 }}><SecondaryButton label={`${CL.share} · ${post.code}`} onPress={() => navigation.navigate('PostShare', { postId })} testID="share" /></View>
               {post.state === 'live' ? <View style={{ flex: 1 }}><SecondaryButton label={CL.stats} onPress={() => navigation.navigate('PostStats', { postId })} testID="stats" /></View> : null}
             </View> : null}
+            {post.inflx ? <InflxLine three={post.inflx} style={{ marginBottom: 8 }} /> : null}
             {/* post-performance-v2 (C3): "On social media · …", then the links she gave at going live with their views. */}
             {!own && post.social ? <SocialLine sum={post.social} side="creator" testID="social-line" style={{ marginBottom: 10 }} /> : null}
             {!own && post.social && post.social.items && post.social.items.length ? (

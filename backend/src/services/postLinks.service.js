@@ -292,7 +292,10 @@ async function statsOf(p) {
   // post-performance-v2 (E13): the post's links on Instagram and YouTube with their numbers, above "By channel".
   const social = p.own_brand ? { links: [], summary: null }
     : await require('./postStats.service').socialOfPost(p.id, { postingDate: p.collaboration ? p.collaboration.posting_date : null });
+  // post-engagement-stats (E1, E12): what shoppers did with it inside INFLX — the block between the money and the links.
+  const inflx = await require('./postEngagement.service').numbersOf(p.id, { since: p.state === 'live' ? p.live_since : null });
   return {
+    inflx,
     post_id: p.id, title: p.title, code: p.code, brand_name: p.collaboration.brand_name, own_brand: !!p.own_brand,
     live_since: p.state === 'live' ? p.live_since : null, state: p.state,
     collaboration_id: p.collaboration ? p.collaboration.id || null : null,
@@ -331,12 +334,15 @@ async function setPosts(brandUserId, campaignId, setId, { ciId = null } = {}) {
   // post-performance-v2 (E14, M3): one line per post — its links' views, likes and comments, or
   // "Social links not added yet" from the posting date on.
   const social = await require('./postStats.service').summariesOfPosts(all, { postingDate: set.go_live_date });
+  // post-engagement-stats (E11): the three in-app numbers on every row.
+  const inflx = await require('./postEngagement.service').threeOf(all.map((p) => p.id));
   const out = [];
   for (const p of all) {
     const s = await statsOf(p);
     const creator = await storeOf(p.influencer_id);
     out.push({ id: p.id, title: p.shopper_title || p.title, code: p.code, state: p.state, creator_name: creator ? creator.name : '',
-      goes_live_on: p.state === 'approved' ? p.goes_live_on : null, totals: s.totals, social: social.get(p.id) || null });
+      goes_live_on: p.state === 'approved' ? p.goes_live_on : null, totals: s.totals, social: social.get(p.id) || null,
+      inflx: inflx.get(p.id) || { views: 0, likes: 0, comments: 0 } });
   }
   const live = out.filter((p) => p.state === 'live');
   const { rows: [t] } = await db.query(

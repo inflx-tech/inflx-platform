@@ -252,6 +252,106 @@ async function reportComment(who, commentId) {
   return { reported: true, message: MSG.REPORTED };
 }
 
+/* ───────────────────────────────────────────── the creator's and the brand's view (post-engagement-stats, §4.15) */
+
+const COMMENT_ROW_SQL = `
+  SELECT c.id, c.body, c.created_at, c.author_kind, c.follower_id, c.reply_to, c.status,
+         COALESCE(u.name, COALESCE(i.full_name, iu.name)) AS name
+    FROM post_comments c
+    LEFT JOIN followers f ON f.id = c.follower_id LEFT JOIN users u ON u.id = f.user_id
+    LEFT JOIN influencers i ON i.id = c.influencer_id LEFT JOIN users iu ON iu.id = i.user_id`;
+
+function commentView(r) {
+  const creator = r.author_kind === 'creator';
+  const name = !creator && nameNeeded(r.name) ? NO_NAME : (r.name || NO_NAME);
+  return { id: r.id, body: r.body, at: r.created_at, ago: ago(r.created_at), author: { name, initials: initials(name), creator } };
+}
+
+/**
+ * The post's comments as the creator (hidden ones included, flagged) or the brand (visible only) reads
+ * them: shoppers' comments newest first, 30 a page, each with her replies under it. Removed by INFLX
+ * is never shown. `total` is the shoppers' visible comments — the number the stats block prints.
+ */
+async function threadOf(postId, { before = null, limit = 30, includeHidden = false } = {}) {
+  const statuses = includeHidden ? ['visible', 'hidden'] : ['visible'];
+  const params = [postId, statuses, Math.min(100, Math.max(1, Number(limit) || 30))];
+  let extra = '';
+  if (before && !Number.isNaN(new Date(before).getTime())) { params.push(new Date(before)); extra = ` AND c.created_at < $4`; }
+  const { rows } = await db.query(
+    `${COMMENT_ROW_SQL} WHERE c.post_id = $1 AND c.author_kind = 'follower' AND c.status = ANY($2::text[])${extra}
+      ORDER BY c.created_at DESC LIMIT $3`, params);
+  const ids = rows.map((r) => r.id);
+  const { rows: replies } = ids.length ? await db.query(
+    `${COMMENT_ROW_SQL} WHERE c.reply_to = ANY($1::uuid[]) AND c.author_kind = 'creator' AND c.status = 'visible' ORDER BY c.created_at ASC`, [ids]) : { rows: [] };
+  const under = new Map(ids.map((id) => [id, []]));
+  for (const r of replies) under.get(r.reply_to).push(commentView(r));
+  const { rows: [t] } = await db.query(
+    `SELECT count(*)::int AS n FROM post_comments WHERE post_id = $1 AND status = 'visible' AND author_kind = 'follower'`, [postId]);
+  return {
+    total: t.n,
+    comments: rows.map((r) => ({ ...commentView(r), ...(includeHidden ? { hidden: r.status === 'hidden' } : {}), replies: under.get(r.id) })),
+  };
+}
+
+/** Her own post (an own-brand post too), or 404 — the same door the post screens use. */
+async function herPost(influencerId, postId) {
+  if (!UUID.test(String(postId || ''))) throw notFound();
+  return posts.getPost(influencerId, postId);
+}
+
+const creatorNameOf = async (postId) => {
+  const { rows: [r] } = await db.query(
+    `SELECT COALESCE(i.full_name, u.name) AS name FROM creator_posts cp JOIN influencers i ON i.id = cp.influencer_id JOIN users u ON u.id = i.user_id WHERE cp.id = $1`, [postId]);
+  return { creator_name: r ? r.name || null : null };
+};
+
+async function creatorComments(influencerId, postId, opts = {}) {
+  await herPost(influencerId, postId);
+  return { read_only: false, ...(await creatorNameOf(postId)), ...(await threadOf(postId, { ...opts, includeHidden: true })) };
+}
+
+/** A reply under a shopper's comment on her post: author_kind creator, never counted, never hideable. */
+async function replyAsCreator(influencerId, postId, { reply_to: replyTo, body } = {}) {
+  await herPost(influencerId, postId);
+  const text = String(body || '').trim();
+  if (!text) throw bad(MSG.COMMENT_EMPTY, 'body');
+  if (text.length > 300) throw bad(MSG.COMMENT_LONG, 'body');
+  if (!UUID.test(String(replyTo || ''))) throw notFound();
+  const { rows: [parent] } = await db.query(
+    `SELECT id FROM post_comments WHERE id = $1 AND post_id = $2 AND author_kind = 'follower' AND status <> 'removed'`, [replyTo, postId]);
+  if (!parent) throw notFound();
+  const { rows: [made] } = await db.query(
+    `INSERT INTO post_comments (post_id, author_kind, influencer_id, reply_to, body) VALUES ($1, 'creator', $2, $3, $4) RETURNING id`,
+    [postId, influencerId, replyTo, text]);
+  const { rows: [r] } = await db.query(`${COMMENT_ROW_SQL} WHERE c.id = $1`, [made.id]);
+  return { comment: { ...commentView(r), reply_to: replyTo } };
+}
+
+/** Hide (or unhide) a shopper's comment on her post. Removed by INFLX is final either way. */
+async function setHidden(influencerId, commentId, hidden) {
+  if (!UUID.test(String(commentId || ''))) throw notFound();
+  const { rows: [c] } = await db.query(
+    `SELECT c.id, c.status FROM post_comments c JOIN creator_posts cp ON cp.id = c.post_id
+      WHERE c.id = $1 AND cp.influencer_id = $2 AND c.author_kind = 'follower'`, [commentId, influencerId]);
+  if (!c) throw notFound();
+  if (c.status === 'removed') throw new AppError('COMMENT_REMOVED', MSG.COMMENT_REMOVED, 409);
+  await db.query(
+    hidden ? `UPDATE post_comments SET status = 'hidden', hidden_at = now() WHERE id = $1`
+           : `UPDATE post_comments SET status = 'visible', hidden_at = NULL WHERE id = $1`, [commentId]);
+  return { id: commentId, hidden: !!hidden };
+}
+
+/** The brand reads the comments on a post made for one of its sets: visible only, no buttons. */
+async function brandComments(brandUserId, campaignId, setId, postId, opts = {}) {
+  if (![campaignId, setId, postId].every((x) => UUID.test(String(x || '')))) throw notFound();
+  const { rows: [p] } = await db.query(
+    `SELECT cp.id FROM creator_posts cp JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
+       JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id JOIN brands b ON b.id = c.brand_id
+      WHERE cp.id = $1 AND cs.id = $2 AND c.id = $3 AND b.user_id = $4 AND cp.v2 AND cp.post_code IS NOT NULL`, [postId, setId, campaignId, brandUserId]);
+  if (!p) throw notFound();
+  return { read_only: true, ...(await creatorNameOf(postId)), ...(await threadOf(postId, { ...opts, includeHidden: false })) };
+}
+
 /* ───────────────────────────────────────────── admin: the reports queue */
 
 async function reportedComments() {
@@ -422,5 +522,6 @@ async function profile(who) {
 module.exports = {
   setLike, setSave, saveProduct, unsaveProduct, saved, resolveSaved,
   comments, addComment, reportComment, reportedComments, decideComment,
+  creatorComments, replyAsCreator, setHidden, brandComments,
   setFollow, following, merge, cities, welcome, setPreferences, profile, nameNeeded,
 };

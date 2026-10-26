@@ -20,6 +20,8 @@ const MSG = {
   UPCOMING: (day) => `This post goes live on ${day}`,
   COMMENT_EMPTY: 'Write something first.',
   COMMENT_LONG: 'Keep a comment under 300 characters.',
+  // post-engagement-stats: hide / unhide of a comment INFLX already removed from the reports queue
+  COMMENT_REMOVED: 'INFLX removed this comment.',
   REPORTED: 'Thanks. INFLX will look at this comment.',
   SIGN_IN: 'Sign in to like and comment',
   SIGN_IN_WHY: 'Your likes and comments are public. Saving and following work without signing in.',

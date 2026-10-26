@@ -104,6 +104,8 @@ import PostShareScreen from '../screens/create/PostShareScreen';
 import WhereToShareScreen from '../screens/create/WhereToShareScreen';
 import StoreLinksScreen from '../screens/create/StoreLinksScreen';
 import PostStatsScreen from '../screens/create/PostStatsScreen';
+// post-engagement-stats (C5): her post's comments. Contract: features/post-engagement-stats
+import PostCommentsScreen from '../screens/create/PostCommentsScreen';
 
 const Tab = createBottomTabNavigator();
 const CollabsStack = createNativeStackNavigator();
@@ -166,6 +168,7 @@ function CreateStackScreen() {
       <CreateStack.Screen name="WhereToShare" component={WhereToShareScreen} />
       <CreateStack.Screen name="StoreLinks" component={StoreLinksScreen} />
       <CreateStack.Screen name="PostStats" component={PostStatsScreen} />
+      <CreateStack.Screen name="PostComments" component={PostCommentsScreen} />
     </CreateStack.Navigator>
   );
 }

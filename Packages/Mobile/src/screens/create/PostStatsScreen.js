@@ -20,6 +20,8 @@ import { rupeesP } from '../../components/create/copyCreate';
 import { s as b } from '../../components/create/bitsCreate';
 // Item 20 — a post for the brand he runs shows what it sold, and where he shared it. Contract: features/item20-own-brand
 import { O20 } from '../../components/ownbrand/copy20';
+// post-engagement-stats (C4, B4): the "In INFLX" block between the money row and the links; the comments box opens C5 / B5. Contract: features/post-engagement-stats
+import { InflxBlock } from '../../components/content/InflxBlock';
 
 export default function PostStatsScreen({ navigation, route }) {
   const { postId, brand } = route.params || {};
@@ -57,6 +59,8 @@ export default function PostStatsScreen({ navigation, route }) {
             <View style={st.k}><Text style={st.kv}>{d.totals.orders}</Text><Text style={st.kl}>{CL.orders}</Text></View>
             <View style={st.k} testID="stat-money"><Text style={st.kv}>{rupeesP(d.own_brand ? d.totals.sales : d.totals.commission)}</Text><Text style={st.kl}>{d.own_brand ? O20.salesWord : brand ? CL.commissionWord : CL.toYou}</Text></View>
           </View>
+          {/* post-engagement-stats (C4, B4) — what shoppers did with it inside INFLX. */}
+          <InflxBlock n={d.inflx} onComments={() => navigation.navigate(brand ? 'BrandPostComments' : 'PostComments', { postId, title: d.title, brand })} />
           {/* post-performance-v2 (B4, C4) — the post's links on Instagram and YouTube, above the channels. */}
           {social.length ? (
             <View testID="on-social">

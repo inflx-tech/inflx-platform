@@ -61,6 +61,8 @@ import BrandSetDetailScreen from '../screens/brand/BrandSetDetailScreen';
 // post-links-codes (L7, L8): the posts made for a set, and one post's channel breakdown (L6).
 import BrandSetPostsScreen from '../screens/brand/BrandSetPostsScreen';
 import BrandPostStatsScreen from '../screens/create/PostStatsScreen';
+// post-engagement-stats (B5): the comments on a post made for its set, read only. Contract: features/post-engagement-stats
+import BrandPostCommentsScreen from '../screens/create/PostCommentsScreen';
 // Item 5 — the set's creator picker, the group check, terms per creator, review and send.
 import BrandSetPickCreatorsScreen from '../screens/brand/BrandSetPickCreatorsScreen';
 import BrandGroupInviteCheckScreen from '../screens/brand/BrandGroupInviteCheckScreen';
@@ -154,6 +156,7 @@ function CampaignsStackScreen() {
       <CampaignsStack.Screen name="BrandSetDetail" component={BrandSetDetailScreen} />
       <CampaignsStack.Screen name="BrandSetPosts" component={BrandSetPostsScreen} />
       <CampaignsStack.Screen name="BrandPostStats" component={BrandPostStatsScreen} />
+      <CampaignsStack.Screen name="BrandPostComments" component={BrandPostCommentsScreen} />
       {/* Item 5 — choosing creators, terms and invitations. Contract: features/item5-invitations */}
       <CampaignsStack.Screen name="BrandSetPickCreators" component={BrandSetPickCreatorsScreen} />
       <CampaignsStack.Screen name="BrandGroupInviteCheck" component={BrandGroupInviteCheckScreen} />

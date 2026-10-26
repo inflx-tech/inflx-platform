@@ -596,6 +596,8 @@ async function getPost(influencerId, postId) {
   if (['approved', 'live', 'removed'].includes(out.state) && !out.own_brand) {
     out.social = (await require('./postStats.service').socialOfPost(p.id, { postingDate: out.collaboration ? out.collaboration.posting_date : null })).summary;
   }
+  // post-engagement-stats (E2): "In INFLX · views · likes · comments", one line under Share / Stats.
+  if (['approved', 'live', 'removed'].includes(out.state)) out.inflx = await require('./postEngagement.service').threeOne(p.id);
   return out;
 }
 

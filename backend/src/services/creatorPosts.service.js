@@ -302,9 +302,7 @@ async function listMyPosts(influencerId, { status, limit = 20, offset = 0 } = {}
   if (status) { params.push(status); statusClause = ` AND status = $${params.length}`; }
   params.push(Math.min(Number(limit) || 20, 50), Math.max(Number(offset) || 0, 0));
   const { rows } = await db.query(
-    `SELECT cp.*,
-            (SELECT COUNT(*)::int FROM post_likes pl WHERE pl.post_id = cp.id) AS like_count,
-            (SELECT COUNT(*)::int FROM post_saves ps WHERE ps.post_id = cp.id) AS save_count
+    `SELECT cp.*
        FROM creator_posts cp
       WHERE cp.influencer_id = $1 AND NOT cp.v2${statusClause ? statusClause.replace(' AND status', ' AND cp.status') : ''}
       ORDER BY cp.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
