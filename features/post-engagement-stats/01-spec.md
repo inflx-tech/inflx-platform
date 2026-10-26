@@ -1,4 +1,4 @@
-# post-engagement-stats — spec (LOCKED 26 Oct 2026 — all ten questions decided as recommended; board v1 drawn, mockup lock pending)
+# post-engagement-stats — spec (LOCKED 26 Oct 2026 — all ten questions decided as recommended; board v1 LOCKED 26 Oct 2026 as drawn)
 
 > Level 4 of `Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md`: what shoppers do with a creator's post **inside
 > INFLX** — views, likes, comments, shares, saves, shop taps, added to bag — shown to the creator on each of
