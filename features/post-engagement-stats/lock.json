@@ -10,7 +10,7 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder (chat 26 Oct 2026: \"Lock the post-engagement-stats board v1 as drawn.\")",
   "mockup_locked_at": "2026-10-26T03:15:17.926Z",
-  "notes": "Level 4 of Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md: what shoppers do with a creator's post inside INFLX (views, likes, comments, shares, saves, shop taps, added to bag, finished) shown to the creator on each post and to the brand on each post made for it, from the tables the shopper app already fills (post_likes, post_saves, post_comments, post_events); plus the comment management rules §4.15 promised (creator replies and hides, brand reads). No Apify, no job, no migration, no money. SPEC DRAFTED 26 Oct 2026 from a verified code read (01-spec.md §1, 19 claims) with 11 proposed decisions and 10 questions for the founder (§7); board v1 drawn the same day (04-preview/mockups/post-engagement-stats-v1.html: C3, C4, C5, B3, B4, B5). SPEC LOCKED 26 Oct 2026: the founder accepted all ten recommendations (lock.json.decisions Q1-Q10). BOARD v1 LOCKED 26 Oct 2026 as drawn (C3, C4, C5, B3, B4, B5). BUILT 26 Oct 2026 on the founder's go (\"Yes, build post-engagement-stats now: backend first, then the brand and creator app changes, with red-first tests. Do not push without my go.\") — see build and 06-diff/notes.md. NOT pushed: Render + OTA brand + OTA creator await the founder's go. The founder started this from the survey's card on 26 Oct 2026 (\"Do this task here\").",
+  "notes": "Level 4 of Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md: what shoppers do with a creator's post inside INFLX (views, likes, comments, shares, saves, shop taps, added to bag, finished) shown to the creator on each post and to the brand on each post made for it, from the tables the shopper app already fills (post_likes, post_saves, post_comments, post_events); plus the comment management rules §4.15 promised (creator replies and hides, brand reads). No Apify, no job, no migration, no money. SPEC DRAFTED 26 Oct 2026 from a verified code read (01-spec.md §1, 19 claims) with 11 proposed decisions and 10 questions for the founder (§7); board v1 drawn the same day (04-preview/mockups/post-engagement-stats-v1.html: C3, C4, C5, B3, B4, B5). SPEC LOCKED 26 Oct 2026: the founder accepted all ten recommendations (lock.json.decisions Q1-Q10). BOARD v1 LOCKED 26 Oct 2026 as drawn (C3, C4, C5, B3, B4, B5). BUILT 26 Oct 2026 on the founder's go (\"Yes, build post-engagement-stats now: backend first, then the brand and creator app changes, with red-first tests. Do not push without my go.\") — see build and 06-diff/notes.md. DEPLOYED 26 Oct 2026 on the founder's go (see deployed_to_production): 32f23e0e pushed, Render proved by route existence, OTA brand 249 / influencer 240. The founder started this from the survey's card on 26 Oct 2026 (\"Do this task here\").",
   "rules": "Docs/OFFER_TERMS_POSTS_RULES.md §4.15 (v1.22; counts kept per post, creator reply/hide, brand reads) and §4.16 (screen order on INFLX · on social media · shopping). Master rules v1.35 docx in Downloads has §13A for Level 2; this contract would add its own section at the lock.",
   "survey": "Docs/APIFY_ANALYTICS_SURVEY_2026-10-25.md §Level 4",
   "related": [
@@ -70,5 +70,33 @@
     "looked_at": "render tests only; no device, no local app run. The board's six frames are proven by the tests above, not on a phone.",
     "live_data": "nothing to repair; nothing rewritten at release. Production event-log volume not read (permission); /admin/feed has it.",
     "pnpm_qa": "NOT RUN — that lane drives the live site, which does not have this code until release"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-26",
+    "by": "founder go (chat, 26 Oct 2026: \"Yes, release post-engagement-stats: push to main (Render), then OTA brand, then OTA creator, one publish at a time.\")",
+    "migration": "none",
+    "commit": "32f23e0e (pushed b5109022..32f23e0e with 3ae395f1 spec lock and fa21a68e board lock; first push attempt hit a network reset before anything was sent, the retry went through; gov-check OK: 20 governed changes contract-backed, mockup_locked, 06-diff/notes.md present; 22 files staged by path, nothing of another window)",
+    "render": "PROVED BY ROUTE EXISTENCE. Before the push (04:58Z, no session): POST /v1/influencers/me/comments/<uuid>/hide 404, GET /v1/influencers/me/shoppable-posts/<uuid>/comments 404, GET /v1/campaigns/<uuid>/sets/<uuid>/posts/<uuid>/comments 404, the existing stats route 401. Polled every 30 s after the push: 404 at 05:00:16Z, 05:00:47Z, 05:01:18Z, then 401 at 05:01:49Z; the other two new routes 401, a made-up route under the same prefix 404, /health 200. The new code is live.",
+    "ota": {
+      "brand": {
+        "before": 248,
+        "after": 249,
+        "runtime": "4",
+        "message": "In INFLX block on post stats, line on set posts, read-only Comments"
+      },
+      "influencer": {
+        "before": 239,
+        "after": 240,
+        "runtime": "4",
+        "message": "In INFLX block and line, Comments screen with reply and hide"
+      },
+      "note": "published one at a time (brand first, manifest read before and after each; brand still 249 after the creator publish); one Metro bundle per publish, 3521 KB; follower untouched"
+    },
+    "websites": "not touched by this release",
+    "live_data": "nothing rewritten; the numbers are counted at read from rows the shopper app already wrote",
+    "money": "NO MONEY MOVED — no order, wallet, commission or payout code is edited (E16).",
+    "not_seen": "No phone opened the new screens. The six frames are proven by render tests (E18-E20) and the API by the backend suite (E1-E17).",
+    "pending": "the founder's device walk: creator app — a live post's status shows the In INFLX line; Stats shows the block; the comments box opens Comments; reply and hide, then the shopper app shows the reply and loses the hidden comment; brand app — Set posts rows show the line; a post's stats shows the block; its comments box opens the read-only list.",
+    "found_on_the_way": "(1) the full backend run caught a patch reading a non-existent column that isolated runs had missed — rerun the full suite after the last patch, always. (2) creatorStrips.test.js enforces FormScroll for every typing screen and lists them; a new typing screen must be registered there."
   }
 }
