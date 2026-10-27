@@ -60,3 +60,6 @@ Built 27 Oct 2026 against board v1 (locked the same day). Brand-web only.
 
 ## Build
 `next build` on 27 Oct 2026: exit 0, no errors, no warnings. Routes: /dashboard/campaigns 3.13 kB (was the 709-line page), /dashboard/campaigns/[id] 8.67 kB, the four sub-routes 504–512 B redirects.
+
+## Deployed
+27 Oct 2026, commit 2ca007c3, founder go. Live inflx.in build id moved to 5bcYp1a-VKA6Cxtw8yUNh; the served bundles for /dashboard/campaigns, /dashboard/campaigns/[id] and /dashboard carry the new strings and none of the old ones (curl past the cookie gate, grep). The founder's walk on the live site is the remaining check.
