@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { brandApi, walletApi, campaignApi, brandInboxApi, fmtMoney, fmtRupees } from '../../lib/api';
+import { StateChip, fmtDay } from './campaigns/campaignBits';
 
 /* ── StatCard — yellow icon-in-circle (poster pattern) ──────── */
 
@@ -31,39 +32,24 @@ function StatCard({ label, value, sub, href, icon, subTone }) {
   return href ? <a href={href} className="block">{card}</a> : card;
 }
 
-/* ── Campaign status pill ───────────────────────────────────── */
-
-const CAMPAIGN_STATUS = {
-  draft:          { bg: 'bg-[#F4F4F5]',    text: 'text-[#71717A]',  dot: 'bg-[#A1A1AA]',  label: 'Draft' },
-  pending_wallet: { bg: 'bg-[#FFF7CC]',    text: 'text-[#6B5A00]',  dot: 'bg-[#E0A800]',  label: 'Pending wallet' },
-  active:         { bg: 'bg-[#D1FAE5]',    text: 'text-[#047857]',  dot: 'bg-[#10B981]',  label: 'Active' },
-  live:           { bg: 'bg-[#D1FAE5]',    text: 'text-[#047857]',  dot: 'bg-[#10B981]',  label: 'Live' },
-  published:      { bg: 'bg-[#FFF7CC]',    text: 'text-[#6B5A00]',  dot: 'bg-[#E0A800]',  label: 'Published' },
-  completed:      { bg: 'bg-[#F4F4F5]',    text: 'text-[#52525B]',  dot: 'bg-[#71717A]',  label: 'Completed' },
-  cancelled:      { bg: 'bg-[#FDEEE9]',    text: 'text-[#B91C1C]',  dot: 'bg-[#E8401A]',  label: 'Cancelled' },
-};
+/* ── Campaign row — the phone's card line (features/web-campaigns-monitor, W6) ── */
 
 function CampaignRow({ c }) {
-  const status = CAMPAIGN_STATUS[c.status] || CAMPAIGN_STATUS.draft;
+  const sets = c.setCount || 0;
+  const setsWord = `${sets} set${sets === 1 ? '' : 's'}`;
+  const line = c.state === 'draft'
+    ? `${setsWord} · no invitations sent`
+    : c.nextPostingDate
+      ? `${setsWord} · next posting ${fmtDay(c.nextPostingDate)} · ${c.counts?.signed || 0} of ${c.counts?.invited || 0} signed`
+      : `${setsWord} · ${c.state === 'expired' ? 'expired' : 'completed'}`;
   return (
     <a href={`/dashboard/campaigns/${c.id}`}
       className="flex items-center gap-3 py-3 px-4 hover:bg-[#FAFAFA] border-t border-[#E4E4E7] first:border-t-0 transition-colors">
       <div className="flex-1 min-w-0">
         <div className="text-[13.5px] font-semibold text-[#0A0A0A] truncate">{c.name}</div>
-        <div className="text-[11px] text-[#71717A] mt-0.5 flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono">
-            {c.start_date ? new Date(c.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
-            {/* collab-part5 — "Ongoing" rather than a bare start date. */}
-            {c.end_date ? ` → ${new Date(c.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ' → Ongoing'}
-          </span>
-          <span className="text-[#D4D4D8]">·</span>
-          <span className="font-mono font-semibold text-[#0A0A0A]">{fmtRupees(c.total_budget || 0)}</span>
-        </div>
+        <div className="text-[11px] text-[#71717A] mt-0.5 font-mono">{line}</div>
       </div>
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2px] ${status.bg} ${status.text}`}>
-        <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-        {status.label}
-      </span>
+      <StateChip state={c.state} />
     </a>
   );
 }
@@ -106,6 +92,7 @@ export default function BrandDashboardHome() {
   const [brand, setBrand]               = useState(null);
   const [wallet, setWallet]             = useState(null);
   const [campaigns, setCampaigns]       = useState([]);
+  const [campaignTabs, setCampaignTabs] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary]           = useState(null);
   const [products, setProducts]         = useState([]);
@@ -118,7 +105,8 @@ export default function BrandDashboardHome() {
       const [br, wl, cp, tx, pr, ib] = await Promise.all([
         brandApi.getMe(),
         walletApi.getBalance(),
-        campaignApi.list(),
+        // features/web-campaigns-monitor — the phone's door; the old status column is never read here.
+        campaignApi.summary(),
         brandApi.get('/brands/me/transactions?limit=5'),
         brandApi.getProducts(),
         brandInboxApi.summary().catch(() => ({ success: false })),
@@ -131,7 +119,7 @@ export default function BrandDashboardHome() {
       setBrandError(!br.success);
       if (br.success) setBrand(br.data?.brand || br.data);
       if (wl.success) setWallet(wl.data?.wallet || wl.data);
-      if (cp.success) setCampaigns(cp.data?.campaigns || []);
+      if (cp.success) { setCampaigns(cp.data?.campaigns || []); setCampaignTabs(cp.data?.tabs || null); }
       if (tx.success) {
         // The endpoint returns { transactions: [...], summary: { total_revenue, ... } }
         // Read both — surface a true cumulative Total Revenue from .summary instead of
@@ -151,7 +139,8 @@ export default function BrandDashboardHome() {
 
   const balance         = wallet?.wallet_balance || 0;
   const escrowLocked    = wallet?.escrow_locked || 0;
-  const activeCampaigns = campaigns.filter(c => ['active', 'live'].includes(c.status));
+  const liveCampaigns   = campaignTabs?.live || 0;
+  const totalCampaigns  = campaignTabs ? (campaignTabs.live || 0) + (campaignTabs.draft || 0) + (campaignTabs.past || 0) : campaigns.length;
   const recentCampaigns = campaigns.slice(0, 3);
   const recentTx        = Array.isArray(transactions) ? transactions.slice(0, 5) : [];
   const productCount    = Array.isArray(products) ? products.length : 0;
@@ -294,9 +283,9 @@ export default function BrandDashboardHome() {
       {/* ── Overview Stat Cards ─────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-8">
         <StatCard
-          label="Active campaigns"
-          value={activeCampaigns.length}
-          sub={`${campaigns.length} total`}
+          label="Live campaigns"
+          value={liveCampaigns}
+          sub={`${totalCampaigns} total`}
           icon={ic.trophy}
           href="/dashboard/campaigns"
         />
@@ -333,7 +322,7 @@ export default function BrandDashboardHome() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <a href="/dashboard/campaigns"
             className="bg-[#FFC107] text-[#0A0A0A] rounded-[14px] py-3.5 px-4 font-display font-bold text-[13px] flex items-center justify-between hover:-translate-y-0.5 transition-transform relative overflow-hidden">
-            <span className="z-10 relative">Create campaign</span>
+            <span className="z-10 relative">Campaigns</span>
             <span className="font-mono z-10 relative">→</span>
             <span className="absolute -top-5 -right-5 w-14 h-14 rounded-full bg-[#0A0A0A] opacity-[0.08]"></span>
           </a>
@@ -391,7 +380,7 @@ export default function BrandDashboardHome() {
               <div className="w-12 h-12 rounded-full bg-[#F4F4F5] inline-flex items-center justify-center mb-3 text-xl">·</div>
               <div>No campaigns yet.</div>
               <div className="text-[11.5px] mt-1">
-                <span className="text-[#71717A]">Create your first campaign in the INFLX brand app on your phone</span>
+                <span className="text-[#71717A]">Build your first campaign in the INFLX brand app on your phone: Campaigns › New campaign</span>
               </div>
             </div>
           ) : (

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- preview-size: desktop -->
+<title>INFLX — Web Campaigns tab as a monitor (board v1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --white:#FFFFFF;--bg:#FAFAFA;--bg-2:#F4F4F5;
+  --yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-text:#6B5A00;
+  --ink:#0A0A0A;--ink-2:#1F1F22;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;
+  --border:#E4E4E7;--border-2:#D4D4D8;
+  --live-bg:#D1FAE5;--live-fg:#047857;--live-dot:#10B981;
+  --wait-bg:#E6EFFC;--wait-fg:#1D5FBF;
+  --move-bg:#FFEBDD;--move-fg:#B04600;
+  --done-bg:#F4F4F5;--done-fg:#52525B;
+  --no-bg:#FDEEE9;--no-fg:#B91C1C;
+  --fd:'Outfit',system-ui,sans-serif;--fb:'Plus Jakarta Sans',system-ui,sans-serif;--fm:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg-2);color:var(--ink);font-family:var(--fb);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.review-bar{background:var(--ink);color:#fff;padding:12px 28px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;font-size:12px}
+.review-bar .name{font-family:var(--fd);font-weight:800}
+.review-bar .name .y{color:var(--yellow)}
+.review-bar .tag{background:rgba(255,193,7,.15);color:var(--yellow);padding:4px 10px;border-radius:100px;font-weight:700;font-size:11px}
+.board{max-width:1400px;margin:0 auto;padding:28px}
+.intro{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:28px}
+.intro h1{font-family:var(--fd);font-size:24px;font-weight:800;margin-bottom:6px}
+.intro p{color:var(--muted);font-size:13px;max-width:900px}
+.intro ul{margin:10px 0 0 18px;color:var(--muted);font-size:13px}
+.screen{margin-bottom:40px}
+.screen > .cap{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.screen > .cap .n{font-family:var(--fm);font-weight:700;font-size:12px;background:var(--ink);color:#fff;padding:3px 8px;border-radius:6px}
+.screen > .cap h2{font-family:var(--fd);font-size:18px;font-weight:700}
+.screen > .cap .what{font-size:12.5px;color:var(--muted-2)}
+.frame{background:var(--bg-2);border:1px solid var(--border-2);border-radius:14px;overflow:hidden}
+.topbar{background:var(--ink);height:56px;padding:0 24px;display:flex;align-items:center;gap:20px;color:#fff}
+.topbar .logo{font-family:var(--fd);font-weight:800;color:var(--yellow);font-size:18px}
+.topbar nav{display:flex;gap:2px;flex:1}
+.topbar nav span{font-size:12px;color:#A1A1AA;padding:7px 11px;border-radius:9px}
+.topbar nav span.on{background:var(--yellow);color:var(--ink);font-weight:700}
+.topbar .av{width:30px;height:30px;border-radius:50%;background:var(--yellow);color:var(--ink);font-family:var(--fm);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center}
+.shell{padding:24px 28px}
+.crumbs{font-family:var(--fm);font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.crumbs b{color:var(--ink)}
+h1.pg{font-family:var(--fd);font-size:26px;font-weight:700}
+.yrule{width:42px;height:4px;background:var(--yellow);border-radius:100px;margin:6px 0 16px}
+.note{font-size:12.5px;color:var(--muted);background:#fff;border:1px dashed var(--border-2);border-radius:10px;padding:9px 12px;display:inline-flex;gap:8px;align-items:center;margin-bottom:18px}
+.note .ph{font-family:var(--fm);font-size:11px;background:var(--bg-2);padding:2px 7px;border-radius:6px;color:var(--ink)}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--border);border-radius:12px;padding:3px;gap:2px;margin-bottom:16px}
+.seg span{padding:7px 16px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg span.on{background:var(--ink);color:#fff}
+.seg span i{font-style:normal;font-family:var(--fm);font-size:11px;margin-left:6px;opacity:.75}
+.filter{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--muted-3);margin-left:12px;width:260px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;display:grid;gap:10px}
+.card .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.card .hd b{font-family:var(--fd);font-size:15px;font-weight:700}
+.card .sub{font-size:12px;color:var(--muted-2);font-family:var(--fm)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:100px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.chip .d{width:5px;height:5px;border-radius:50%;background:currentColor}
+.chip.live{background:var(--live-bg);color:var(--live-fg)}
+.chip.draft{background:#fff;color:var(--muted);border:1px solid var(--border-2)}
+.chip.done{background:var(--done-bg);color:var(--done-fg)}
+.chip.wait{background:var(--wait-bg);color:var(--wait-fg)}
+.chip.move{background:var(--move-bg);color:var(--move-fg)}
+.chip.no{background:var(--no-bg);color:var(--no-fg)}
+.bar{height:6px;background:var(--bg-2);border-radius:100px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:100px}
+.counts{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.counts b{color:var(--ink);font-family:var(--fm);font-weight:600}
+.empty{background:#fff;border:1px solid var(--border);border-radius:14px;padding:40px;text-align:center;color:var(--muted)}
+.empty b{display:block;font-family:var(--fd);font-size:16px;color:var(--ink);margin-bottom:6px}
+/* hub */
+.hub{display:grid;grid-template-columns:1fr 320px;gap:20px}
+.hhd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:6px}
+.hhd .meta{font-size:12.5px;color:var(--muted);margin-top:4px}
+.hhd .meta b{font-family:var(--fm);font-weight:600;color:var(--ink)}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 18px}
+.strip div{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.strip .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2);font-weight:700}
+.strip .v{font-family:var(--fm);font-size:22px;font-weight:700;margin-top:2px}
+.strip .s{font-size:11px;color:var(--muted-2)}
+.blk{background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.blk > .t{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+.blk > .t h3{font-family:var(--fd);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.blk > .t h3::before{content:"";width:4px;height:16px;background:var(--yellow);border-radius:3px}
+.blk > .t .r{font-size:11.5px;color:var(--muted-2)}
+.setrow{display:grid;grid-template-columns:1.4fr 1.2fr 1fr auto;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.setrow:last-child{border-bottom:0}
+.setrow:hover{background:var(--bg)}
+.setrow .nm{font-family:var(--fd);font-weight:700;font-size:14px}
+.setrow .ai{font-size:12px;color:var(--muted);margin-top:2px}
+.setrow .dt{font-size:12.5px}
+.setrow .dt b{font-family:var(--fm);font-weight:600}
+.setrow .dt .c{font-size:11.5px;color:var(--muted-2);display:block}
+.setrow .cnt{font-size:12px;color:var(--muted)}
+.setrow .cnt b{font-family:var(--fm);color:var(--ink);font-weight:600}
+.setrow .chev{color:var(--muted-3);font-size:16px}
+.pastlbl{padding:8px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2);font-weight:700;background:var(--bg)}
+.num{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.num > div{padding:14px 16px;border-right:1px solid var(--border)}
+.num > div:last-child{border-right:0}
+.num .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2);font-weight:700}
+.num .v{font-family:var(--fm);font-size:20px;font-weight:700;margin-top:2px}
+.num .s{font-size:11px;color:var(--muted-2)}
+.rows{padding:4px 16px 10px}
+.rows div{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--border)}
+.rows div:last-child{border-bottom:0}
+.rows b{font-family:var(--fm);font-weight:600}
+.btn-ghost{background:#fff;border:1px solid var(--border-2);color:var(--ink);font-family:var(--fd);font-weight:600;font-size:12px;padding:7px 12px;border-radius:9px}
+.btn-ghost.off{opacity:.45}
+.rail{position:sticky;top:80px;align-self:start}
+.rail .blk > .t h3::before{background:var(--wait-fg)}
+.need{padding:12px 16px;border-bottom:1px solid var(--border);display:grid;gap:4px}
+.need:last-child{border-bottom:0}
+.need b{font-size:13px}
+.need span{font-size:12px;color:var(--muted)}
+.need .ph{font-size:11.5px;color:var(--wait-fg);font-weight:600}
+.phoneline{padding:12px 16px;font-size:12.5px;color:var(--muted);background:var(--bg)}
+.phoneline b{color:var(--ink)}
+/* drawer */
+.drawerwrap{display:grid;grid-template-columns:1fr 440px;gap:0;min-height:560px}
+.dim{background:rgba(10,10,10,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--fd);font-size:14px;opacity:.9}
+.drawer{background:#fff;border-left:1px solid var(--border);display:flex;flex-direction:column}
+.drawer .dh{padding:16px 18px;border-bottom:1px solid var(--border)}
+.drawer .dh .x{float:right;color:var(--muted-2)}
+.drawer .dh h3{font-family:var(--fd);font-size:17px;font-weight:700}
+.drawer .dh .m{font-size:12px;color:var(--muted);margin-top:3px}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 18px}
+.tabs span{padding:10px 12px;font-size:12.5px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent}
+.tabs span.on{color:var(--ink);border-bottom-color:var(--ink)}
+.dbody{padding:10px 18px 18px;overflow:auto}
+.grp{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2);font-weight:700;margin:14px 0 6px;display:flex;justify-content:space-between}
+.grp i{font-style:normal;font-family:var(--fm)}
+.crow{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.crow .avt{width:34px;height:34px;border-radius:50%;background:var(--bg-2);flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:11px;font-weight:700;color:var(--muted)}
+.crow .t{flex:1;min-width:0;display:grid;gap:2px}
+.crow .t b{font-size:13.5px}
+.crow .t .h{font-family:var(--fm);font-size:11px;color:var(--muted-2)}
+.crow .t .l{font-size:12px;color:var(--muted)}
+.crow .t .ag{font-size:12px;color:var(--ink)}
+.crow .t .ph{font-size:11.5px;color:var(--wait-fg);font-weight:600}
+.post{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:center}
+.post .code{font-family:var(--fm);font-weight:700;font-size:12px;background:var(--bg-2);padding:4px 7px;border-radius:7px}
+.post .t b{font-size:13px;display:block}
+.post .t span{font-size:11.5px;color:var(--muted)}
+.post .st{font-size:11.5px;color:var(--muted);text-align:right;font-family:var(--fm)}
+.tot{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:12px 0}
+.tot div{background:var(--bg);border-radius:10px;padding:8px 10px}
+.tot .k{font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted-2);font-weight:700}
+.tot .v{font-family:var(--fm);font-size:14px;font-weight:700}
+/* home */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2);font-weight:700}
+.stat .v{font-family:var(--fm);font-size:24px;font-weight:700}
+.stat .s{font-size:11.5px;color:var(--muted-2)}
+.qa{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.qa a{display:flex;justify-content:space-between;align-items:center;border-radius:14px;padding:14px 16px;font-family:var(--fd);font-weight:700;font-size:13px;text-decoration:none}
+.qa .y{background:var(--yellow);color:var(--ink)}
+.qa .k{background:var(--ink);color:#fff}
+.qa .w{background:#fff;border:1px solid var(--border);color:var(--ink)}
+.recent{background:#fff;border:1px solid var(--border);border-radius:14px}
+.recent .t{padding:12px 16px;border-bottom:1px solid var(--border);font-family:var(--fd);font-weight:700;font-size:14px;display:flex;justify-content:space-between}
+.recent .t a{font-size:12px;font-weight:600;color:var(--ink)}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-top:1px solid var(--border)}
+.rrow:first-of-type{border-top:0}
+.rrow .nm{font-weight:600;font-size:13.5px}
+.rrow .sub{font-size:11.5px;color:var(--muted-2);font-family:var(--fm)}
+/* side doors */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.prof{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;gap:16px;align-items:center}
+.prof .avt{width:64px;height:64px;border-radius:50%;background:var(--bg-2)}
+.prof h3{font-family:var(--fd);font-size:18px;font-weight:700}
+.prof .h{font-family:var(--fm);font-size:12px;color:var(--muted-2)}
+.prof .line{font-size:12.5px;color:var(--muted);margin-top:6px}
+.prof .line b{color:var(--ink)}
+.nextcards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.nc{border-radius:12px;padding:16px;border:1px solid var(--border);background:#fff}
+.nc.y{background:var(--yellow-pale);border-color:var(--yellow)}
+.nc .ic{font-size:22px}
+.nc b{display:block;font-family:var(--fd);font-size:13.5px;margin-top:8px}
+.nc span{font-size:12px;color:var(--muted);display:block;margin-top:3px}
+.nc .b{display:inline-block;margin-top:10px;font-size:12px;font-weight:700;padding:7px 11px;border-radius:9px;background:var(--ink);color:#fff}
+.nc.y .b{background:var(--yellow);color:var(--ink)}
+.legend{font-size:12px;color:var(--muted);margin-top:8px}
+.rm{background:var(--no-bg);color:var(--no-fg);font-family:var(--fm);font-size:11px;padding:2px 7px;border-radius:6px;font-weight:700}
+.kept{background:var(--live-bg);color:var(--live-fg);font-family:var(--fm);font-size:11px;padding:2px 7px;border-radius:6px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="review-bar"><div class="name"><span class="y">INFLX</span> · features/web-campaigns-monitor · board v1</div><div class="tag">MOCKUP — for lock</div></div>
+<div class="board">
+
+<div class="intro">
+  <h1>Web Campaigns tab becomes a monitor of what the phone built</h1>
+  <p>Brand website only. No server change, no phone change. Every number on these screens comes from a door the phone already uses. Nothing on these screens can move a campaign; each "do" points to the phone.</p>
+  <ul>
+    <li><b>W1–W2</b> the list · <b>W3</b> the hub · <b>W4–W5</b> the set drawer · <b>W6–W8</b> the three side doors that still say "create here".</li>
+    <li><span class="rm">GONE</span> New campaign · Continue draft · Fund wallet &amp; publish · End · Cancel · Delete · Export CSV · Sign all · Counter-sign · Approve/Reject · Counter offer · Invite more · Manage logistics · the 7 old status chips · Total budget · posting window.</li>
+    <li><span class="kept">KEPT</span> Engagement with "Update now" · Store clicks · Conversions · Payout (read-only) · per-set Posts with sales totals.</li>
+  </ul>
+</div>
+
+<!-- W1 -->
+<div class="screen" id="w1">
+  <div class="cap"><span class="n">W1</span><h2>Campaigns · Live</h2><span class="what">/dashboard/campaigns — three segments, the phone's cards, no buttons</span></div>
+  <div class="frame">
+    <div class="topbar"><span class="logo">INFLX</span><nav><span>Dashboard</span><span class="on">Campaigns</span><span>Influencers</span><span>Listings</span><span>Gallery</span><span>Fulfillment</span><span>Returns</span><span>Conversions</span><span>Wallet</span><span>Settings</span></nav><span class="av">21</span></div>
+    <div class="shell">
+      <div class="crumbs">/dashboard / <b>campaigns</b></div>
+      <h1 class="pg">Campaigns</h1><div class="yrule"></div>
+      <div class="note"><span class="ph">PHONE</span> Campaigns are built and run in the INFLX brand app on your phone. This page shows what is happening and the numbers.</div>
+      <div style="display:flex;align-items:center">
+        <div class="seg"><span class="on">Live<i>4</i></span><span>Drafts<i>5</i></span><span>Past<i>3</i></span></div>
+        <div class="filter">⌕ &nbsp;Filter by name</div>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="hd"><div><b>Pay for sale test 2</b><div class="sub">2 sets · next posting 2 Nov 2026</div></div><span class="chip live"><i class="d"></i>Live</span></div><div class="bar"><i style="width:50%"></i></div><div class="counts"><span><b>6</b> invited</span><span><b>3</b> signed</span><span><b>2</b> waiting</span><span><b>1</b> declined</span></div></div>
+        <div class="card"><div class="hd"><div><b>Test 15/10/26</b><div class="sub">1 set · next posting 29 Oct 2026</div></div><span class="chip live"><i class="d"></i>Live</span></div><div class="bar"><i style="width:100%"></i></div><div class="counts"><span><b>1</b> invited</span><span><b>1</b> signed</span><span><b>0</b> waiting</span><span><b>0</b> declined</span></div></div>
+        <div class="card"><div class="hd"><div><b>Test pay for content</b><div class="sub">1 set · next posting 5 Nov 2026 · from group <b>Chennai micro</b></div></div><span class="chip live"><i class="d"></i>Live</span></div><div class="bar"><i style="width:0%"></i></div><div class="counts"><span><b>4</b> invited</span><span><b>0</b> signed</span><span><b>4</b> waiting</span><span><b>0</b> declined</span></div></div>
+        <div class="card"><div class="hd"><div><b>Pay day sale</b><div class="sub">3 sets · next posting 12 Nov 2026</div></div><span class="chip live"><i class="d"></i>Live</span></div><div class="bar"><i style="width:25%"></i></div><div class="counts"><span><b>8</b> invited</span><span><b>2</b> signed</span><span><b>5</b> waiting</span><span><b>1</b> declined</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">Card = the phone's card (name · state · "N sets · next posting" · signed-of-invited bar · four counts). Order = server order. The filter box narrows by name only; segment counts do not change.</div>
+</div>
+
+<!-- W2 -->
+<div class="screen" id="w2">
+  <div class="cap"><span class="n">W2</span><h2>Campaigns · Drafts, Past, and empty</h2><span class="what">same page, the other two segments and the empty state</span></div>
+  <div class="frame"><div class="shell">
+    <div class="seg"><span>Live<i>4</i></span><span class="on">Drafts<i>5</i></span><span>Past<i>3</i></span></div>
+    <div class="grid" style="margin-bottom:22px">
+      <div class="card"><div class="hd"><div><b>Sunrise sale 2</b><div class="sub">1 set · no invitations sent</div></div><span class="chip draft">Draft</span></div><div class="counts"><span>Add creators on the phone to make it live.</span></div></div>
+      <div class="card"><div class="hd"><div><b>Test campaign</b><div class="sub">0 sets · no invitations sent</div></div><span class="chip draft">Draft</span></div><div class="counts"><span>Add a set on the phone.</span></div></div>
+      <div class="card"><div class="hd"><div><b>Diwali looks</b><div class="sub">2 sets · no invitations sent</div></div><span class="chip draft">Draft</span></div><div class="counts"><span>Add creators on the phone to make it live.</span></div></div>
+    </div>
+    <div class="seg"><span>Live<i>4</i></span><span>Drafts<i>5</i></span><span class="on">Past<i>3</i></span></div>
+    <div class="grid" style="margin-bottom:22px">
+      <div class="card"><div class="hd"><div><b>Sunrise sale</b><div class="sub">1 set · posted 14 Oct 2026</div></div><span class="chip done"><i class="d"></i>Completed</span></div><div class="bar"><i style="width:100%"></i></div><div class="counts"><span><b>3</b> invited</span><span><b>3</b> signed</span><span><b>0</b> waiting</span><span><b>0</b> declined</span></div></div>
+      <div class="card"><div class="hd"><div><b>Dusshera</b><div class="sub">2 sets · posted 2 Oct 2026</div></div><span class="chip done"><i class="d"></i>Completed</span></div><div class="bar"><i style="width:66%"></i></div><div class="counts"><span><b>3</b> invited</span><span><b>2</b> signed</span><span><b>0</b> waiting</span><span><b>1</b> declined</span></div></div>
+      <div class="card"><div class="hd"><div><b>Pay per sale offers testing</b><div class="sub">1 set · invitations closed 20 Sep 2026</div></div><span class="chip done"><i class="d"></i>Expired</span></div><div class="bar"><i style="width:0%"></i></div><div class="counts"><span><b>2</b> invited</span><span><b>0</b> signed</span><span><b>0</b> waiting</span><span><b>2</b> declined</span></div></div>
+    </div>
+    <div class="empty"><b>No campaigns yet</b>Build your first campaign in the INFLX brand app on your phone: Campaigns › New campaign. It will appear here the moment it is saved.</div>
+  </div></div>
+  <div class="legend">Past cards: "posted {last posting date}" when completed, "invitations closed {cutoff}" when expired. Empty state has no button.</div>
+</div>
+
+<!-- W3 -->
+<div class="screen" id="w3">
+  <div class="cap"><span class="n">W3</span><h2>Campaign hub</h2><span class="what">/dashboard/campaigns/[id] — sets from the summary, numbers from the existing analytics doors, "needs you on the phone" on the right</span></div>
+  <div class="frame"><div class="shell">
+    <div class="crumbs">/dashboard / campaigns / <b>pay for sale test 2</b></div>
+    <div class="hhd">
+      <div><h1 class="pg">Pay for sale test 2 <span class="chip live" style="vertical-align:middle;margin-left:8px"><i class="d"></i>Live</span></h1>
+        <div class="meta">Negotiation <b>on</b> · created <b>15 Oct 2026</b> · "Festive push for the new denim line" </div></div>
+    </div>
+    <div class="strip">
+      <div><div class="k">Invited</div><div class="v">6</div><div class="s">across 2 sets</div></div>
+      <div><div class="k">Signed</div><div class="v">3</div><div class="s">agreements signed by both</div></div>
+      <div><div class="k">Waiting</div><div class="v">2</div><div class="s">yet to answer</div></div>
+      <div><div class="k">Declined</div><div class="v">1</div><div class="s"></div></div>
+    </div>
+    <div class="hub">
+      <div>
+        <div class="blk">
+          <div class="t"><h3>Sets</h3><span class="r">tap a set to see its creators and posts</span></div>
+          <div class="setrow"><div><div class="nm">Set A · Store visit</div><div class="ai">Pay for Sale · Store Visit · T Nagar, Chennai</div></div><div class="dt"><b>Posting 2 Nov 2026</b><span class="c">Invitations close 30 Oct · 3 days</span></div><div class="cnt"><b>4</b> invited · <b>2</b> signed · <b>1</b> waiting · <b>1</b> declined</div><span class="chev">›</span></div>
+          <div class="setrow"><div><div class="nm">Set B · Remote</div><div class="ai">Hybrid · Remote</div></div><div class="dt"><b>Posting 9 Nov 2026</b><span class="c">Invitations close 6 Nov · 10 days</span></div><div class="cnt"><b>2</b> invited · <b>1</b> signed · <b>1</b> waiting · <b>0</b> declined</div><span class="chev">›</span></div>
+          <div class="pastlbl">Past sets</div>
+          <div class="setrow"><div><div class="nm">Set 0 · trial</div><div class="ai">Pay for Content · Remote</div></div><div class="dt"><b>Posted 1 Oct 2026</b><span class="c">Completed</span></div><div class="cnt"><b>1</b> invited · <b>1</b> signed</div><span class="chev">›</span></div>
+          <div class="phoneline">Add a set, add creators, or change a set: <b>INFLX brand app › Campaigns › Pay for sale test 2</b></div>
+        </div>
+        <div class="blk">
+          <div class="t"><h3>Engagement</h3><span class="r">updated 26 Oct 2026, 09:10 · <span class="btn-ghost">Update now</span></span></div>
+          <div class="num"><div><div class="k">Views</div><div class="v">48,210</div><div class="s">5 links read</div></div><div><div class="k">Likes</div><div class="v">3,904</div></div><div><div class="k">Comments</div><div class="v">212</div></div><div><div class="k">Waiting</div><div class="v">1</div><div class="s">link not read yet</div></div></div>
+          <div class="rows"><div><span>Set A · Store visit</span><b>31,400 views · 2,610 likes · 140 comments</b></div><div><span>Set B · Remote</span><b>16,810 views · 1,294 likes · 72 comments</b></div></div>
+        </div>
+        <div class="blk">
+          <div class="t"><h3>Sales and clicks</h3><span class="r">full view → Conversions</span></div>
+          <div class="num"><div><div class="k">Store clicks</div><div class="v">1,120</div></div><div><div class="k">Sales</div><div class="v">38</div></div><div><div class="k">Revenue</div><div class="v">₹61,400</div></div><div><div class="k">Commission paid</div><div class="v">₹6,140</div><div class="s">ROI 10.0×</div></div></div>
+          <div class="rows"><div><span>Instagram</span><b>29 sales · 76%</b></div><div><span>YouTube</span><b>9 sales · 24%</b></div></div>
+        </div>
+        <div class="blk">
+          <div class="t"><h3>Payout</h3><span class="r">what is locked and what has moved</span></div>
+          <div class="num"><div><div class="k">Locked</div><div class="v">₹12,500</div></div><div><div class="k">Released</div><div class="v">₹6,250</div></div><div><div class="k">Owed</div><div class="v">₹6,250</div></div><div><div class="k">Creators</div><div class="v">3</div></div></div>
+          <div class="rows"><div><span>@priya.wears · Set A</span><b>T1 ₹2,500 released · T2 ₹2,500 locked</b></div><div><span>@meena.fits · Set A</span><b>T1 ₹1,250 released · T2 ₹1,250 locked</b></div><div><span>@kavi.k · Set B</span><b>commission only · no tranches</b></div></div>
+        </div>
+      </div>
+      <div class="rail">
+        <div class="blk">
+          <div class="t"><h3>Needs you — on the phone</h3></div>
+          <div class="need"><b>1 agreement waits for your signature</b><span>@priya.wears signed on 25 Oct</span><span class="ph">INFLX brand app › Campaigns › Set A</span></div>
+          <div class="need"><b>1 creator is waiting for your reply</b><span>@arjun.styles countered ₹4,000</span><span class="ph">INFLX brand app › Campaigns › Set B</span></div>
+          <div class="need"><b>1 store visit to plan</b><span>@meena.fits, Set A</span><span class="ph">INFLX brand app › Campaigns › Set A</span></div>
+        </div>
+        <div class="blk">
+          <div class="t"><h3>About this campaign</h3></div>
+          <div class="need"><span>Started from group</span><b>Chennai micro</b></div>
+          <div class="need"><span>Negotiation</span><b>On — creators may counter</b></div>
+          <div class="need"><span>Campaign id</span><b style="font-family:var(--fm);font-size:11px;font-weight:500">c1f2…9a</b></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="legend">Header strip = <code>campaign.counts</code>. Sets = <code>sets.current</code> / <code>sets.past</code>. "Needs you" counts are derived from the rows the hub already loaded; the lines are text, not actions. The only button on the page is "Update now" (engagement refresh).</div>
+</div>
+
+<!-- W4 -->
+<div class="screen" id="w4">
+  <div class="cap"><span class="n">W4</span><h2>Set drawer · Creators</h2><span class="what">opens over the hub when a set row is tapped — the phone's nine groups, in its order</span></div>
+  <div class="frame"><div class="drawerwrap">
+    <div class="dim">hub stays behind, dimmed</div>
+    <div class="drawer">
+      <div class="dh"><span class="x">✕</span><h3>Set A · Store visit</h3><div class="m">Pay for Sale · Store Visit · T Nagar, Chennai · Posting 2 Nov 2026 · Invitations close 30 Oct</div></div>
+      <div class="tabs"><span class="on">Creators · 4</span><span>Posts · 2</span></div>
+      <div class="dbody">
+        <div class="grp"><span>Your move</span><i>1</i></div>
+        <div class="crow"><div class="avt">PW</div><div class="t"><b>Priya W <span class="chip move" style="margin-left:6px">Your move</span></b><span class="h">@priya.wears</span><span class="l">12% commission · Entire store</span><span class="ag">She signed on 25 Oct. Your signature completes the agreement.</span><span class="ph">Sign on the phone: Campaigns › Set A › Priya</span></div></div>
+        <div class="grp"><span>Signed</span><i>2</i></div>
+        <div class="crow"><div class="avt">MF</div><div class="t"><b>Meena F</b><span class="h">@meena.fits</span><span class="l">10% commission · 3 offers</span><span class="ag">Signed by both on 22 Oct · ref AG-0412</span><span class="l">Store visit: plan not sent yet — your move on the phone</span></div></div>
+        <div class="crow"><div class="avt">RK</div><div class="t"><b>Ravi K</b><span class="h">@ravi.kicks</span><span class="l">10% commission · 8 products</span><span class="ag">Signed by both on 23 Oct · ref AG-0415</span><span class="l">Store visit: Fri 31 Oct, 4 pm · agreed</span></div></div>
+        <div class="grp"><span>Waiting to answer</span><i>1</i></div>
+        <div class="crow"><div class="avt">SD</div><div class="t"><b>Sana D</b><span class="h">@sana.dresses</span><span class="l">12% commission · Entire store</span><span class="l">Sent 24 Oct · no answer yet</span></div></div>
+        <div class="grp"><span>Declined</span><i>1</i></div>
+        <div class="crow"><div class="avt">AJ</div><div class="t"><b>Anu J</b><span class="h">@anu.j</span><span class="l">12% commission</span><span class="l">Declined 25 Oct · "Dates don't work for me"</span></div></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="legend">Groups and titles come from the server (<code>creators.order</code>, <code>groups[key].title</code>); empty groups are skipped. Terms, agreement and shoot lines are the server's sentences, unchanged. No row has an action.</div>
+</div>
+
+<!-- W5 -->
+<div class="screen" id="w5">
+  <div class="cap"><span class="n">W5</span><h2>Set drawer · Posts</h2><span class="what">the posts the set produced and what they sold — hidden for Pay for Content sets</span></div>
+  <div class="frame"><div class="drawerwrap">
+    <div class="dim">hub stays behind, dimmed</div>
+    <div class="drawer">
+      <div class="dh"><span class="x">✕</span><h3>Set A · Store visit</h3><div class="m">2 creators · 2 posts live · 31,400 social views</div></div>
+      <div class="tabs"><span>Creators · 4</span><span class="on">Posts · 2</span></div>
+      <div class="dbody">
+        <div class="tot"><div><div class="k">Orders</div><div class="v">24</div></div><div><div class="k">Sales</div><div class="v">₹38,900</div></div><div><div class="k">Commission</div><div class="v">₹3,890</div></div><div><div class="k">INFLX fee</div><div class="v">₹1,556</div></div><div><div class="k">You receive</div><div class="v">₹33,454</div></div></div>
+        <div class="post"><span class="code">DENIM-PW1</span><div class="t"><b>Three denim looks for Diwali</b><span>Priya W · live since 28 Oct</span></div><div class="st">18,200 views · 1,540 likes · 90 comments<br>in INFLX 1,320 · 210 · 14</div></div>
+        <div class="post"><span class="code">DENIM-MF1</span><div class="t"><b>Store visit haul</b><span>Meena F · live since 30 Oct</span></div><div class="st">13,200 views · 1,070 likes · 50 comments<br>in INFLX 980 · 160 · 9</div></div>
+        <div class="post"><span class="code">DENIM-RK1</span><div class="t"><b>Kicks to match</b><span>Ravi K · goes live 2 Nov</span></div><div class="st">Social links not added yet<br>in INFLX 0 · 0 · 0</div></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="legend">Totals = <code>totals.*</code> from the posts door, rupees as stored. Social line from <code>posts[].social</code>, in-app line from <code>posts[].inflx</code>.</div>
+</div>
+
+<!-- W6 -->
+<div class="screen" id="w6">
+  <div class="cap"><span class="n">W6</span><h2>Dashboard home · top row</h2><span class="what">/dashboard — tile reads the phone's state; the quick action stops promising a create</span></div>
+  <div class="frame"><div class="shell">
+    <div class="stats">
+      <div class="stat"><div class="k">Live campaigns</div><div class="v">4</div><div class="s">12 total</div></div>
+      <div class="stat"><div class="k">Wallet balance</div><div class="v">₹18,250</div><div class="s">₹12,500 locked</div></div>
+      <div class="stat"><div class="k">Total revenue</div><div class="v">₹61,400</div><div class="s">38 sales</div></div>
+      <div class="stat"><div class="k">Products</div><div class="v">142</div><div class="s">in your catalogue</div></div>
+    </div>
+    <div class="qa"><a class="y">Campaigns <span>→</span></a><a class="k">Browse influencers <span>→</span></a><a class="w">Add a listing <span>→</span></a><a class="w">Top up wallet <span>→</span></a></div>
+    <div class="recent">
+      <div class="t">Recent campaigns <a>View all →</a></div>
+      <div class="rrow"><div><div class="nm">Pay for sale test 2</div><div class="sub">2 sets · next posting 2 Nov · 3 of 6 signed</div></div><span class="chip live"><i class="d"></i>Live</span></div>
+      <div class="rrow"><div><div class="nm">Sunrise sale 2</div><div class="sub">1 set · no invitations sent</div></div><span class="chip draft">Draft</span></div>
+      <div class="rrow"><div><div class="nm">Sunrise sale</div><div class="sub">1 set · posted 14 Oct</div></div><span class="chip done"><i class="d"></i>Completed</span></div>
+    </div>
+  </div></div>
+  <div class="legend">Tile = <code>tabs.live</code>; sub = total of the three tabs. The yellow quick action keeps its place (the home page's one main button) but reads "Campaigns".</div>
+</div>
+
+<!-- W7 + W8 -->
+<div class="screen" id="w7">
+  <div class="cap"><span class="n">W7 · W8</span><h2>Creator profile header · Listings publish step</h2><span class="what">the two remaining "create or invite here" doors</span></div>
+  <div class="two">
+    <div class="frame"><div class="shell">
+      <div class="prof"><div class="avt"></div><div><h3>Priya W</h3><div class="h">@priya.wears · 48.2k followers · Chennai</div><div class="line">Invite her from the INFLX brand app: <b>Campaigns › a set › Add creators</b>. Her pitches and your pool are there too.</div></div></div>
+      <div class="legend">W7 — the "Invite to campaign" button and its modal are gone. The rest of the profile page is untouched.</div>
+    </div></div>
+    <div class="frame"><div class="shell">
+      <div class="nextcards">
+        <div class="nc y"><div class="ic">📱</div><b>Run a campaign on the phone</b><span>Open the INFLX brand app › Campaigns › New campaign. Your new listings are ready to be sold there.</span></div>
+        <div class="nc"><div class="ic">🤝</div><b>Browse creators</b><span>See who fits your store.</span><span class="b">Influencers →</span></div>
+        <div class="nc"><div class="ic">📥</div><b>Back to dashboard</b><span>Numbers, orders, wallet.</span><span class="b">Dashboard →</span></div>
+      </div>
+      <div class="legend">W8 — the first card keeps its yellow weight but has no link; it names the phone path.</div>
+    </div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

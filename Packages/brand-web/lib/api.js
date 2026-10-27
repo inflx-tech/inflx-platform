@@ -316,8 +316,6 @@ export const brandApi = {
   },
 };
 
-
-
 export const walletApi = {
   getBalance: () => api.get('/brands/me/wallet'),
   createTopup: (amount) => api.post('/brands/me/wallet/topup', { amount }),
@@ -355,47 +353,24 @@ export const moneyApi = {
 };
 
 export const campaignApi = {
-  list: () => api.get('/campaigns'),
-  create: (data) => api.post('/campaigns', data),
-  get: (id) => api.get(`/campaigns/${id}`),
-  update: (id, data) => api.patch(`/campaigns/${id}`, data),
-  delete: (id) => api.delete(`/campaigns/${id}`),
-  publish: (id) => api.post(`/campaigns/${id}/publish`),
-  cancel: (id) => api.post(`/campaigns/${id}/cancel`),
-  // collab-part5 — the deliberate finish. Completes rather than aborts; the only way to
-  // close an open-ended sales campaign, and refuses while a creator is owed money or has
-  // work awaiting review.
-  end: (id) => api.post(`/campaigns/${id}/end`),
-  cancelInfluencer: (cid, ciid) => api.post(`/campaigns/${cid}/influencers/${ciid}/cancel`),
-  getLive: (id) => api.get(`/campaigns/${id}/live`),
-  // Sets
-  getSets: (cid) => api.get(`/campaigns/${cid}/sets`),
-  createSet: (cid, data) => api.post(`/campaigns/${cid}/sets`, data),
-  updateSet: (cid, sid, data) => api.patch(`/campaigns/${cid}/sets/${sid}`, data),
-  deleteSet: (cid, sid) => api.delete(`/campaigns/${cid}/sets/${sid}`),
-  duplicateSet: (cid, sid) => api.post(`/campaigns/${cid}/sets/${sid}/duplicate`),
-  // Offers (legacy)
-  createOffer: (cid, sid, data) => api.post(`/campaigns/${cid}/sets/${sid}/offers`, data),
-  // Invite / update influencer assignment
-  inviteInfluencer: (cid, sid, data) => api.post(`/campaigns/${cid}/sets/${sid}/invite`, data),
-  updateInfluencer: (cid, sid, ciId, data) => api.patch(`/campaigns/${cid}/sets/${sid}/influencers/${ciId}`, data),
-  // Search
-  searchInfluencers: (cid, params) => api.get(`/campaigns/${cid}/influencer-search${params ? '?' + new URLSearchParams(params) : ''}`),
-  getOpenGroupMatches: (cid, si, params) => api.get(`/campaigns/${cid}/sets/${si}/open-group-matches${params ? '?' + params : ''}`),
-  // Analytics
+  // features/web-campaigns-monitor — the website reads the SAME four doors the brand phone reads
+  // (item 4 campaignSets.controller + item 5 invitationRows + post links). The campaign model is
+  // derived from invitations; the old status column is never read here.
+  summary: (state) => api.get(`/campaigns/summary?limit=50${state ? '&state=' + state : ''}`),
+  campaignSummary: (id) => api.get(`/campaigns/${id}/summary`),
+  setSummary: (id, sid) => api.get(`/campaigns/${id}/sets/${sid}/summary`),
+  setPosts: (id, sid) => api.get(`/campaigns/${id}/sets/${sid}/posts`),
+  // Analytics (unchanged doors)
   getEngagement: (id) => api.get(`/brands/me/campaigns/${id}/engagement`),
   // post-performance-v2 (P7): the campaign's one "Update now" — every link read once; once a day; budget-gated.
+  // The only write the website's Campaigns tab can make (web-campaigns-monitor D4).
   refreshEngagement: (id) => api.post(`/brands/me/campaigns/${id}/engagement/refresh`, {}),
   getConversions: (id) => api.get(`/brands/me/campaigns/${id}/conversions`),
-  // Command Center Phase 2 — store-clicks rollup (per-influencer + per-set)
   getClicks: (id) => api.get(`/brands/me/campaigns/${id}/clicks`),
-  // Command Center Phase 3 — per-creator date-change request/approve flow
-  getDateChangeRequests: (id) => api.get(`/brands/me/campaigns/${id}/date-change-requests`),
-  decideDateChange: (ciId, requestId, action) =>
-    api.post(`/campaign-influencers/${ciId}/date-change/${requestId}/decision`, { action }),
-  // Influencer-app create-request endpoint (brand-web doesn't call this; the
-  // mobile influencer screen is a follow-up — kept here for completeness):
-  // POST /campaign-influencers/:id/date-change { requested_start, requested_end, reason }
+  // Campaigns are built, invited, negotiated, signed, shot, reviewed and paid on the phone.
+  // create / update / delete / publish / cancel / end / sets / offers / invite / search were
+  // removed from this client on 27 Oct 2026 (features/web-campaigns-monitor). The server keeps
+  // answering them for the phone.
 };
 
 export const influencerApi = {
@@ -447,32 +422,6 @@ export const proposalApi = {
   reject: (id, message) => api.post(`/brands/me/proposals/${id}/reject`, { message }),
   counter: (id, counterTerms, message) => api.post(`/brands/me/proposals/${id}/counter`, { counter_terms: counterTerms, message }),
   flag: (id, reason) => api.post(`/brands/me/proposals/${id}/flag`, { reason }),
-};
-
-
-export const productionApi = {
-  // GET — both parties see their own contract's production event + log
-  get: (contractId) => api.get(`/contracts/${contractId}/production`),
-  // Valid date range for the visit (today+1 to posting_date−2 / content_end_date−3)
-  getDateRange: (contractId) => api.get(`/contracts/${contractId}/production/date-range`),
-  // Force-initialise the production event when it didn't auto-create (legacy)
-  initialise: (contractId, mode) => api.post(`/contracts/${contractId}/production/initialise`, { mode }),
-  // Brand sets / updates visit details (location-only or with slot)
-  setVisitDetails: (contractId, data) => api.post(`/contracts/${contractId}/production/visit-details`, data),
-  // Influencer-only: pick a slot when brand has set only the location
-  proposeSlot: (eventId, data) => api.post(`/production-events/${eventId}/propose-slot`, data),
-  // Accept proposed visit/shipment terms (whichever side didn't propose)
-  accept: (eventId) => api.post(`/production-events/${eventId}/accept`),
-  // Counter-propose a different slot/address (either party)
-  counterPropose: (eventId, data) => api.post(`/production-events/${eventId}/counter-propose`, data),
-  // Brand: package shipped (with AWB + courier)
-  dispatch: (eventId, data) => api.post(`/production-events/${eventId}/dispatch`, data),
-  // Influencer: package received
-  confirmReceived: (eventId, data) => api.post(`/production-events/${eventId}/confirm-received`, data),
-  // Mark visit done (either party)
-  // Item 12 (approval Q3): `complete` is retired for both modes; the shoot is marked in the app.
-  // Mutual flip to remote — either side requests, the other confirms
-  flipToRemote: (eventId, data) => api.post(`/production-events/${eventId}/flip-to-remote`, data || {}),
 };
 
 export const mediaGalleryApi = {
@@ -596,27 +545,6 @@ export async function uploadAdminStockImage(file, presignFn) {
 // Item 12 (approval Q2): the content doors — read, media, review, confirm-live — are retired
 // server-side. Content is sent, reviewed and confirmed in the app. post-performance-v2 (P11): the
 // per-deliverable stats refresh is gone too; the campaign's numbers come from campaignApi.getEngagement.
-
-export const negotiationApi = {
-  get: (id) => api.get(`/negotiations/${id}`),
-  getByCampaignInfluencer: (ciId) => api.get(`/negotiations/by-ci/${ciId}`),
-  respond: (id, data) => api.post(`/negotiations/${id}/respond`, data),
-};
-
-export const contractApi = {
-  get: (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
-  brandSign: (id) => api.post(`/contracts/${id}/brand-sign`),
-  bulkSign: (ids) => api.post(`/contracts/bulk-sign`, { ids }),
-  listPending: () => api.get(`/contracts/brand/pending`),
-  approve: (id, body) => api.post(`/contracts/${id}/approve`, body),
-  regeneratePdf: (id) => api.post(`/contracts/${id}/regenerate-pdf`),
-  retryCreate: (ciId) => api.post(`/contracts/by-ci/${ciId}/retry`),
-  // Preferred: fetch a short-lived presigned R2 URL that works in iframes,
-  // downloads, and Google Docs Viewer without any Authorization header.
-  getPdfUrl: (id) => api.get(`/contracts/${id}/pdf-url`),
-  // Legacy streaming URL kept as a fallback (JWT via query string).
-  pdfUrl: (id) => `${API_BASE}/contracts/${id}/pdf?download_token=${encodeURIComponent(getToken() || '')}`,
-};
 
 export const brandInboxApi = {
   summary:        ()      => api.get('/brands/me/inbox-summary'),
@@ -858,7 +786,6 @@ export const marketingApi = {
   // Returns { ok, skipped, failed, by_type: { creator: {...}, brand: {...} } }
   backfillProfilePics: (payload = {}) => api.post('/admin/marketing/backfill-profile-pics', payload),
 };
-
 
 // (getStoredUser is already exported near the top of this file — duplicate
 //  removed here to avoid the webpack "redefined" error.)

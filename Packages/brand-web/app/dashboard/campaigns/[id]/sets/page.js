@@ -2,9 +2,9 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-/* Retired route (features/brand-cc-sets-escrow, A4). The sets rollup is now the
-   campaign command center's Hierarchy (grouped by set); set creation lives in the
-   campaign wizard (campaigns/new). This page redirects to the hub. */
+/* Retired route (features/brand-cc-sets-escrow, A4; features/web-campaigns-monitor). The
+   sets are listed on the campaign page; sets are created and changed in the INFLX brand app on
+   the phone. This page redirects to the hub. */
 export default function RetiredSetsRedirect() {
   const { id } = useParams();
   const router = useRouter();

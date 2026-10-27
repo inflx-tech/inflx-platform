@@ -9,7 +9,7 @@ export default function RetiredEscrowRedirect() {
   const { id } = useParams();
   const router = useRouter();
   useEffect(() => {
-    router.replace(`/dashboard/campaigns/${id}?tab=payout`);
+    router.replace(`/dashboard/campaigns/${id}`);
   }, [id, router]);
   return (
     <div className="p-8 text-[13px] text-[#71717A]">

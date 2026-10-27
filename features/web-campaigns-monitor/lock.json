@@ -1,0 +1,43 @@
+{
+  "feature": "web-campaigns-monitor",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 27 Oct 2026: \"ok make it as it is and lock the screens\")",
+  "approved_at": "2026-10-27T10:00:00.000Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 27 Oct 2026: \"ok make it as it is and lock the screens\")",
+  "mockup_locked_at": "2026-10-27T10:00:00.000Z",
+  "notes": "Web Campaigns tab becomes a read-only monitor of the phone's campaign model (GET /campaigns/summary, /:id/summary, /sets/:sid/summary, /sets/:sid/posts). Brand-web only; zero backend, zero mobile. Survey 24 Oct 2026; founder chose to proceed 27 Oct 2026 ('as per your recommendation'): D1 signing phone-only, D2 CSV dropped, D3 builder-on-web later, D4 engagement Update now kept, D5 payout kept read-only. Board v1 drawn 27 Oct 2026; LOCKED 27 Oct 2026 as drawn (set drawer kept as a slide-in panel over the dimmed hub). BUILT 27 Oct 2026; not deployed.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "walk_fixes": []
+  },
+  "boards": {
+    "web": {
+      "file": "04-preview/mockups/web-campaigns-monitor-v1.html",
+      "screens": "W1-W8",
+      "locked_by": "founder (chat 27 Oct 2026: \"ok make it as it is and lock the screens\")",
+      "locked_at": "2026-10-27T10:00:00.000Z"
+    }
+  },
+  "decisions": {
+    "decided_by": "founder (chat 27 Oct 2026: 'we proceed with this web change now', 'as per your recommendation')",
+    "D1_signing_phone_only": true,
+    "D2_csv_export_dropped": true,
+    "D3_builder_on_web_later": true,
+    "D4_engagement_update_now_kept": true,
+    "D5_payout_kept_read_only": true
+  },
+  "build": {
+    "built_at": "2026-10-27",
+    "proof": "next build exit 0 (scratch log); grep: zero callers of removed campaignApi methods, contractApi, negotiationApi, productionApi, lib/contracts",
+    "files": "campaigns/page.js, campaigns/campaignBits.js, campaigns/[id]/page.js, campaigns/[id]/SetDrawer.js, campaigns/[id]/{escrow,sets,influencers}/page.js, campaigns/[id]/PayoutSection.js, dashboard/page.js, influencers/[id]/page.js, products/components/builtinStepComponents.js, lib/api.js; deleted CommandRail.js, ProductionSection.js, lib/contracts.js",
+    "deploy": "NOT pushed — production-impacting (Vercel brand-web); needs the founder's explicit go"
+  }
+}

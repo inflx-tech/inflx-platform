@@ -58,7 +58,7 @@ export default function PayoutSection({ id, onOpenConversions }) {
     return (
       <div className="bg-white border border-[#E4E4E7] rounded-[14px] p-8 text-center">
         <div className="text-[13.5px] font-bold text-[#0A0A0A] mb-1">No payouts yet</div>
-        <div className="text-[12px] text-[#71717A]">Escrow tranches are created when the campaign is published and influencers are contracted.</div>
+        <div className="text-[12px] text-[#71717A]">Money is locked when you sign an agreement on the phone; it appears here then.</div>
       </div>
     );
   }

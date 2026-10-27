@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { api, campaignApi, fmtNum, fmtRupees } from '../../../../lib/api';
+import { api, fmtNum, fmtRupees } from '../../../../lib/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -186,97 +186,18 @@ const CSS = `
    placeholder that just said "go to your campaign wizard". Picks a campaign + set,
    then calls the same endpoint the wizard uses: POST /campaigns/:id/sets/:sid/invite
    (influencer_id is the only required field). */
-function InviteToCampaignModal({ influencerId, handle, onClose }) {
-  const [campaigns, setCampaigns] = useState([]);
-  const [campaignId, setCampaignId] = useState('');
-  const [sets, setSets] = useState([]);
-  const [setId, setSetId] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    campaignApi.list().then(res => {
-      if (res.success) {
-        const list = (res.data?.campaigns || res.data || []).filter(c => !['completed', 'cancelled'].includes(c.status));
-        setCampaigns(list);
-      }
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    if (!campaignId) { setSets([]); setSetId(''); return; }
-    campaignApi.get(campaignId).then(res => {
-      if (res.success) {
-        const s = res.data?.campaign?.sets || res.data?.sets || [];
-        setSets(s);
-        if (s.length === 1) setSetId(s[0].id);
-      }
-    }).catch(() => {});
-  }, [campaignId]);
-
-  async function submit() {
-    if (!campaignId || !setId) return;
-    setBusy(true); setMsg('');
-    const res = await campaignApi.inviteInfluencer(campaignId, setId, { influencer_id: influencerId });
-    setBusy(false);
-    if (res.success) { setDone(true); setMsg(`Invite sent — @${handle} will see it in their offer inbox.`); }
-    else setMsg(res.error?.message || 'Could not send the invite.');
-  }
-
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Invite @{handle}</h3>
-        {loading ? <p>Loading your campaigns…</p> : done ? (
-          <p>{msg}</p>
-        ) : campaigns.length === 0 ? (
-          <p>You have no active campaigns yet. Create one first, then invite this creator to it.</p>
-        ) : (
-          <>
-            <p style={{ marginBottom: 10 }}>Choose the campaign and set to invite this creator into.</p>
-            <select value={campaignId} onChange={(e) => setCampaignId(e.target.value)}
-              style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: '1px solid #E4E4E7', fontSize: 13, marginBottom: 8 }}>
-              <option value="">— Select campaign —</option>
-              {campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            {campaignId && (
-              <select value={setId} onChange={(e) => setSetId(e.target.value)}
-                style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: '1px solid #E4E4E7', fontSize: 13 }}>
-                <option value="">— Select set —</option>
-                {sets.map(s => <option key={s.id} value={s.id}>{s.name || 'Set'}</option>)}
-              </select>
-            )}
-            {campaignId && sets.length === 0 && (
-              <p style={{ fontSize: 12, color: '#B91C1C', marginTop: 8 }}>This campaign has no sets yet — add one in the campaign wizard.</p>
-            )}
-            {msg && <p style={{ fontSize: 12.5, color: '#B91C1C', marginTop: 10 }}>{msg}</p>}
-          </>
-        )}
-        <div className="modal-actions">
-          <button className="cancel" onClick={onClose}>{done ? 'Done' : 'Cancel'}</button>
-          {!done && !loading && campaigns.length > 0 && (
-            <button className="go" disabled={busy || !campaignId || !setId} onClick={submit}
-              style={{ opacity: (busy || !campaignId || !setId) ? 0.4 : 1, cursor: (busy || !campaignId || !setId) ? 'not-allowed' : 'pointer' }}>
-              {busy ? 'Sending…' : 'Send invite'}
-            </button>
-          )}
-          {!done && !loading && campaigns.length === 0 && <a className="go" href="/dashboard/campaigns">Go to Campaigns</a>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Page ──────────────────────────────────────────────────────────────
+/* The "Invite to campaign" modal was removed on 27 Oct 2026 (features/web-campaigns-monitor).
+   Invitations carry per-creator terms and are sent from the INFLX brand app on the phone. */
 
 export default function InfluencerProfilePage() {
   const { id } = useParams();
   const router = useRouter();
   const [inf, setInf]               = useState(null);
+  // A dead avatar URL used to hide the <img> and leave an empty coloured
+  // block. Fall back to initials instead, so a decayed image degrades to
+  // something legible rather than looking like a broken page.
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const [loading, setLoading]       = useState(true);
-  const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
     api.get(`/influencers/${id}`).then(res => {
@@ -308,9 +229,19 @@ export default function InfluencerProfilePage() {
 
   const inits      = initials(inf.instagram_handle, inf.full_name || inf.name);
   const isScraped  = inf.source === 'scraped';
-  const erVal      = Number(inf.engagement_rate || 0);
+  // Headline the VIEW-based rate. `engagement_rate` is aliased from
+  // follower_based_er for scraped creators, so showing it under a hardcoded
+  // "view-based" caption stated the wrong thing — and disagreed with the
+  // Discover list, which shows view-based. The thresholds below are calibrated
+  // for the view-based scale too. Onboarded rows carry the same number in both
+  // fields, so they are unaffected.
+  const erView     = Number(inf.view_based_er ?? inf.engagement_rate ?? 0);
+  const erFollower = Number(inf.engagement_rate ?? 0);
+  const erVal      = erView;
   const erColor    = erVal >= 8 ? 'green' : erVal >= 4 ? 'info' : '';
   const erLabel    = erVal >= 8 ? '🔥 Excellent' : erVal >= 4 ? '✅ Good' : 'Average';
+  // Only worth showing when it is genuinely a second number.
+  const showFollowerEr = erFollower > 0 && Math.abs(erFollower - erView) >= 0.01;
 
   // Engagement bar segments — only render those with > 0
   const ebMax = Math.max(inf.avg_likes || 0, 1);
@@ -348,9 +279,9 @@ export default function InfluencerProfilePage() {
       {/* HERO */}
       <div className="prof-hero">
         <div className="prof-av">
-          {inf.profile_image_url ? (
+          {inf.profile_image_url && !avatarFailed ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={inf.profile_image_url} alt={inf.instagram_handle} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <img src={inf.profile_image_url} alt={inf.instagram_handle} onError={() => setAvatarFailed(true)} />
           ) : inits}
         </div>
         <div className="prof-info">
@@ -393,7 +324,10 @@ export default function InfluencerProfilePage() {
         <div className="prof-stat">
           <div className={`prof-stat-v ${erColor}`}>{erVal}%</div>
           <div className="prof-stat-l">Engagement Rate</div>
-          <div className="prof-stat-s">{erLabel} · view-based</div>
+          <div className="prof-stat-s">
+            {erLabel} · view-based
+            {showFollowerEr && <> · {erFollower}% of followers</>}
+          </div>
         </div>
         <div className="prof-stat">
           <div className="prof-stat-v">{fmtNum(inf.avg_views)}</div>
@@ -414,7 +348,9 @@ export default function InfluencerProfilePage() {
           {/* Engagement */}
           {ebSegs.length > 0 && (
             <div className="prof-card">
-              <h3>📊 Avg Engagement per Post <span className="ind">view-based</span></h3>
+              {/* These are absolute average counts, not a rate — the old
+                  "view-based" tag described nothing. */}
+              <h3>📊 Avg Engagement per Post <span className="ind">last 90d</span></h3>
               {ebSegs.map(s => {
                 const pct = Math.min(100, Math.max(2, ((s.value || 0) / ebMax) * 100));
                 return (
@@ -493,7 +429,7 @@ export default function InfluencerProfilePage() {
             <h3>👥 Audience Insights</h3>
             <div className="kv-list">
               <div className="kv"><span className="kv-k">Platform</span><span className="kv-v">{PLATFORM_ICON[inf.platform] || '📸'} {inf.platform || 'Instagram'}</span></div>
-              <div className="kv"><span className="kv-k">Primary Location</span><span className="kv-v">{inf.city || '—'}</span></div>
+              <div className="kv"><span className="kv-k">Primary Location</span><span className="kv-v">{[inf.city, inf.state].filter(Boolean).join(', ') || '—'}</span></div>
               <div className="kv"><span className="kv-k">Languages</span><span className="kv-v">{(inf.language || []).join(' · ') || '—'}</span></div>
               <div className="kv"><span className="kv-k">Gender</span><span className="kv-v" style={{ textTransform: 'capitalize' }}>{inf.gender || '—'}</span></div>
               <div className="kv"><span className="kv-k">Content Niches</span><span className="kv-v">{niches.slice(0, 3).join(' · ') || '—'}</span></div>
@@ -541,20 +477,12 @@ export default function InfluencerProfilePage() {
 
       {/* STICKY BOTTOM CTA */}
       <div className="sticky-cta">
-        <div className="sticky-cta-l"><b>Invitations are sent from the INFLX Brand app.</b> Open Campaigns on your phone to invite <b>{inf.full_name || inf.name || `@${inf.instagram_handle}`}</b> into a set.</div>
+        <div className="sticky-cta-l">Invite <b>{inf.full_name || inf.name || `@${inf.instagram_handle}`}</b> from the INFLX brand app: <b>Campaigns › a set › Add creators</b>. Her pitches and your pool are there too.</div>
         <div className="sticky-cta-r">
           <button className="btn-ghost" onClick={() => router.push('/dashboard/influencers')}>← Back to search</button>
         </div>
       </div>
 
-      {/* Item 4: InviteToCampaignModal is switched off (APPROVAL.md §2.2) — kept in the file, never rendered. */}
-      {false && showInvite && (
-        <InviteToCampaignModal
-          influencerId={inf.id || id}
-          handle={inf.instagram_handle}
-          onClose={() => setShowInvite(false)}
-        />
-      )}
     </div>
   );
 }
